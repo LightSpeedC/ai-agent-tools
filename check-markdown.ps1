@@ -75,6 +75,7 @@ if ($Token) { $headers['Authorization'] = "Bearer $Token" }
 $root = if ($item.PSIsContainer) { $item.FullName } else { Split-Path $item.FullName }
 $ngTotal = 0
 $ngFiles = 0
+$errFiles = 0
 
 foreach ($f in $files) {
 	$md = [System.IO.File]::ReadAllText($f.FullName)
@@ -87,7 +88,8 @@ foreach ($f in $files) {
 			-ContentType 'application/json' -Headers $headers -TimeoutSec 60
 	}
 	catch {
-		Write-Host ("  {0,-34} 取得できません: {1}" -f $f.Name, $_.Exception.Message) -ForegroundColor Red
+		Write-Host ("  {0,-34} 検証できません: {1}" -f $f.Name, $_.Exception.Message) -ForegroundColor Red
+		$errFiles++
 		continue
 	}
 
@@ -114,6 +116,18 @@ foreach ($f in $files) {
 }
 
 Write-Host ''
+
+# 検証できなかったファイルがあるなら「問題なし」とは言えない
+if ($errFiles -gt 0) {
+	Write-Host ("=== {0} ファイルを検証できませんでした ===" -f $errFiles) -ForegroundColor Red
+	Write-Host 'レート制限（認証なしで 60 回/時）に達した可能性があります。'
+	Write-Host '時間をおくか、-Token を渡して再実行してください。'
+	if ($ngTotal -gt 0) {
+		Write-Host ("あわせて {0} ファイルに {1} 箇所の問題が見つかっています。" -f $ngFiles, $ngTotal) -ForegroundColor Yellow
+	}
+	exit 2
+}
+
 if ($ngTotal -eq 0) {
 	Write-Host '=== 問題なし。すべて正しく表示されます ===' -ForegroundColor Green
 	exit 0
