@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 250" width="1000" height="250" role="img" aria-label="開きの ** の直後が句読点で、その手前が通常文字だと開き記号として働かない例と、strong タグに置き換えた出力" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+		<defs>
+			<linearGradient id="i1" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(0,60%,40%)"/>
+			</linearGradient>
+			<linearGradient id="i2" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(140,78%,22%)"/>
+				<stop offset="1" stop-color="hsl(140,60%,34%)"/>
+			</linearGradient>
+		</defs>
+	<rect width="100%" height="100%" fill="#ffffff"/>
+
+		<rect x="30" y="20" width="940" height="92" rx="8" fill="url(#i1)"/>
+		<text x="48" y="46" font-size="14" font-weight="700" fill="#fff">そのまま ** にすると</text>
+		<text x="48" y="74" font-size="16" fill="#fff" font-family="Consolas, Courier New, monospace">主題は**「何が流れるか」**です</text>
+		<text x="48" y="98" font-size="12.5" fill="#ffe8e8">開きの直後が 「（句読点）、その手前の「は」は通常文字 → 開き記号にならない。** がそのまま出る</text>
+
+		<rect x="30" y="128" width="940" height="92" rx="8" fill="url(#i2)"/>
+		<text x="48" y="154" font-size="14" font-weight="700" fill="#fff">この箇所だけタグで出す</text>
+		<text x="48" y="182" font-size="16" fill="#fff" font-family="Consolas, Courier New, monospace">主題は&lt;strong&gt;「何が流れるか」&lt;/strong&gt;です</text>
+		<text x="48" y="206" font-size="12.5" fill="#e8f7ee">GitHub は Markdown 中の HTML を解釈するので、確実に太字になる</text>
+	</svg>

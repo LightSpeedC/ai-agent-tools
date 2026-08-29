@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>html2md ツール共通化計画</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（8 章 / 色相 280 → 0 を 40 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,65%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(240,78%,25%); --accent2:hsl(240,58%,65%); --soft:hsl(240,28%,95%); }
+	.ch03{ --accent:hsl(200,78%,25%); --accent2:hsl(200,58%,65%); --soft:hsl(200,28%,95%); }
+	.ch04{ --accent:hsl(160,78%,25%); --accent2:hsl(160,58%,65%); --soft:hsl(160,28%,95%); }
+	.ch05{ --accent:hsl(120,78%,25%); --accent2:hsl(120,58%,65%); --soft:hsl(120,28%,95%); }
+	.ch06{ --accent:hsl(80,78%,25%);  --accent2:hsl(80,58%,65%);  --soft:hsl(80,28%,95%); }
+	.ch07{ --accent:hsl(40,78%,25%);  --accent2:hsl(40,58%,65%);  --soft:hsl(40,28%,95%); }
+	.ch08{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,65%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .sub{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .meta{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	.titlebar a{ color:#fff; background:transparent; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nw{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+	td.c{ text-align:center; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	.badge{
+		display:inline-block; padding:1px 9px; border-radius:11px;
+		background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff;
+		font-size:.85em; font-weight:600; white-space:nowrap;
+	}
+	.badge.b-ok{ background:linear-gradient(100deg,#1d7a3c,#45b56c); color:#fff; }
+	.badge.b-ng{ background:linear-gradient(100deg,#a51f22,#e05a5c); color:#fff; }
+	.badge.b-warn{ background:linear-gradient(100deg,#b8620a,#f0a548); color:#fff; }
+	.badge.b-none{ background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff; }
+
+	svg{ max-width:100%; height:auto; display:block; margin:18px auto; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>html2md ツール共通化計画</h1>
+		<p class="sub">5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、<code>N:\2026\html2md</code> の共通ツールに統合する。あわせて PowerShell スクリプトを <code>csc.exe</code> でビルドする C# の exe に置き換える。</p>
+		<p class="meta">📅 作成: 2026-08-28 / 更新: 2026-08-29</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め →</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">いまどうなっているか</a></li>
+		<li class="ch02"><a href="#ch02">5 本の実装を突き合わせる</a></li>
+		<li class="ch03"><a href="#ch03">共通化の形</a></li>
+		<li class="ch04"><a href="#ch04">exe にする理由と作り方</a></li>
+		<li class="ch05"><a href="#ch05">日本語の強調が壊れる問題</a></li>
+		<li class="ch06"><a href="#ch06">生成後の検査</a></li>
+		<li class="ch07"><a href="#ch07">進め方</a></li>
+		<li class="ch08"><a href="#ch08">決めたこと</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>いまどうなっているか</h1>
+
+	<p><code>~/.claude/CLAUDE.md</code> の「HTML→Markdown 変換ルール」は、以前は変換スクリプトを各プロジェクトの <code>src/scripts/70_html2md/</code> に置くことにしていた。この決まりに従った結果、同じ目的のスクリプトが 5 プロジェクトにそれぞれ書かれた。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead>
+			<tr><th>プロジェクト</th><th>実装</th><th>行数</th><th>変換対象の決め方</th></tr>
+		</thead>
+		<tbody>
+			<tr><td class="nw">20260824-node-deno-bun-compare</td><td class="nw">html2md.ps1</td><td class="num">729</td><td>自動探索（README + docs 配下）</td></tr>
+			<tr><td class="nw">20260824-local-llm-llama-cp</td><td class="nw">html2md.ps1</td><td class="num">596</td><td>スクリプト内に 5 件ハードコード</td></tr>
+			<tr><td class="nw">20260826-make-company</td><td class="nw">html2md.ps1</td><td class="num">529</td><td>自動探索（<code>-Root</code> 引数あり）</td></tr>
+			<tr><td class="nw">20260824-dos-command-learn</td><td class="nw">html2md.ps1</td><td class="num">292</td><td>ルート配下の全 html を再帰</td></tr>
+			<tr><td class="nw">20260824-ai-pc</td><td class="nw">html2md.mjs</td><td class="num">396</td><td>スクリプト内に 5 件ハードコード</td></tr>
+			<tr><td class="nw">20260828-typescript-learn</td><td class="nw">（空）</td><td class="num">0</td><td>フォルダだけ存在する</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>5 本は独立に書かれており、共有しているコードは 1 行も無い。関数名も設計も別で、たとえばブロックの切り出しは <code>Get-BlockEnd</code>・<code>Get-TagBlock</code>・巨大な 1 本の正規表現・<code>String.replace</code> の連鎖と、4 通りの方法が使われている。</p>
+
+	<h2>何が困るか</h2>
+	<ul>
+		<li>1 本で見つけた不具合が、他の 4 本に伝わらない。</li>
+		<li>1 本にしかない機能が、他の 4 本では使えない。表の <code>rowspan</code> 展開は <code>local-llm-llama-cp</code> 版だけ、<code>md-skip</code> は <code>node-deno-bun-compare</code> 版だけにある。</li>
+		<li>新しいプロジェクトを作るたび、6 本目を書くことになる。</li>
+	</ul>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>5 本の実装を突き合わせる</h1>
+
+	<p>共通版に何を入れるかを決めるため、5 本が実際に何をしているかを機能単位で並べた。<span class="badge b-ok">実装あり</span> <span class="badge b-ng">実装なし</span></p>
+
+	<div class="tablewrap">
+	<table>
+		<thead>
+			<tr>
+				<th>機能</th>
+				<th>node-deno</th><th>local-llm</th><th>make-company</th><th>dos-cmd</th><th>ai-pc</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr><td>変換対象の自動探索</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td><td class="c">✅</td><td class="c">❌</td></tr>
+			<tr><td>入れ子に対応したブロック切り出し</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>ブロックの再帰処理</td><td class="c">❌</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td><code>md-skip</code> による出力除外</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>目次のアンカー張り替え</td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td></tr>
+			<tr><td>callout の種別をクラスで指定</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>表の <code>rowspan</code> / <code>colspan</code> 展開</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>セル内の <code>|</code> エスケープ</td><td class="c">❌</td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td></tr>
+			<tr><td>コードフェンスの言語指定</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>SVG の内部 id 振り直し</td><td class="c">❌</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td><code>figure</code> / <code>figcaption</code></td><td class="c">❌</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td><code>img</code> タグ</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">✅</td></tr>
+			<tr><td>ミニタイトルバー</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td></tr>
+			<tr><td>入れ子リスト</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>検査: Markdown 側のリンク切れ</td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td></tr>
+			<tr><td>検査: アンカー先の実在</td><td class="c">❌</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>検査: HTML が <code>.md</code> を参照</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td></tr>
+			<tr><td>検査: HTML 側のリンク切れ</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>検査: Markdown 側だけの文言</td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td class="c">❌</td><td class="c">✅</td></tr>
+			<tr><td>検査: 更新日の書き換え忘れ</td><td class="c">❌</td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td>書き出さずに確認する <code>--dry-run</code></td><td class="c">✅</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td></tr>
+			<tr><td><strong>日本語の強調が壊れるのを避ける</strong></td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td><td class="c">❌</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>最後の行が 5 本とも <span class="badge b-ng">実装なし</span> だった。<code>~/.claude/CLAUDE.md</code> は「判定は変換スクリプト側で機械的に行う。書き手に意識させない」と決めているが、実際にはどの版も <code>&lt;strong&gt;</code> を無条件に <code>**</code> へ置き換えている。壊れた箇所は <code>check-markdown.ps1</code> で後から見つけて手で直す運用になっていた。これは第 5 章で扱う。</p>
+
+	<p>共通版に入れる機能は、この表の <strong>合併集合</strong>とする。同じ機能が複数の版にある場合は、より正確な実装を採る。ブロック切り出しは <code>&lt;p&gt;</code> と <code>&lt;pre&gt;</code> を取り違えないタグ名の境界チェックがある <code>make-company</code> 版、表は <code>rowspan</code> を展開する <code>local-llm</code> 版、といった選び方になる。入れ子リストはどの版にも無いが、基本機能として加える。</p>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>共通化の形</h1>
+
+	<p>実装は <code>N:\2026\html2md</code> に 1 本だけ置き、各プロジェクトにはそれを呼ぶランチャーだけを置く。<code>check-markdown.ps1</code> をプロジェクトを問わず 1 箇所に置いているのと同じ扱いにする。</p>
+
+	<svg viewBox="0 0 1000 330" role="img" aria-label="現状は 5 プロジェクトにそれぞれ実装があり、共通化後は共有実装 1 本を各プロジェクトのランチャーが呼ぶ" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+		<defs>
+			<linearGradient id="g-03-1a" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(0,60%,42%)"/>
+			</linearGradient>
+			<linearGradient id="g-03-1b" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(140,78%,22%)"/>
+				<stop offset="1" stop-color="hsl(140,60%,34%)"/>
+			</linearGradient>
+			<linearGradient id="g-03-1c" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(140,45%,32%)"/>
+				<stop offset="1" stop-color="hsl(140,38%,44%)"/>
+			</linearGradient>
+			<marker id="m-03-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 1 L 9 5 L 0 9 z" fill="#4a5568"/>
+			</marker>
+		</defs>
+
+		<text x="30" y="24" font-size="15" font-weight="700" fill="hsl(0,78%,25%)">現状: 実装が 5 本、共有コードは 0 行</text>
+		<rect x="30" y="40" width="410" height="38" rx="7" fill="url(#g-03-1a)"/>
+		<text x="45" y="64" font-size="13" fill="#fff">node-deno-bun-compare / html2md.ps1（729 行）</text>
+		<rect x="30" y="86" width="410" height="38" rx="7" fill="url(#g-03-1a)"/>
+		<text x="45" y="110" font-size="13" fill="#fff">local-llm-llama-cp / html2md.ps1（596 行）</text>
+		<rect x="30" y="132" width="410" height="38" rx="7" fill="url(#g-03-1a)"/>
+		<text x="45" y="156" font-size="13" fill="#fff">make-company / html2md.ps1（529 行）</text>
+		<rect x="30" y="178" width="410" height="38" rx="7" fill="url(#g-03-1a)"/>
+		<text x="45" y="202" font-size="13" fill="#fff">dos-command-learn / html2md.ps1（292 行）</text>
+		<rect x="30" y="224" width="410" height="38" rx="7" fill="url(#g-03-1a)"/>
+		<text x="45" y="248" font-size="13" fill="#fff">ai-pc / html2md.mjs（396 行）</text>
+		<text x="30" y="288" font-size="12.5" fill="#3a4252">1 本の修正は他の 4 本に伝わらない</text>
+
+		<line x1="460" y1="150" x2="516" y2="150" stroke="#4a5568" stroke-width="2.5" marker-end="url(#m-03-1)"/>
+
+		<text x="540" y="24" font-size="15" font-weight="700" fill="hsl(140,78%,22%)">共通化後: 実装は 1 本</text>
+		<rect x="540" y="40" width="430" height="52" rx="7" fill="url(#g-03-1b)"/>
+		<text x="556" y="62" font-size="13.5" fill="#fff">N:\2026\html2md\html2md.exe</text>
+		<text x="556" y="82" font-size="12" fill="#e8f7ee">唯一の実装。check-markdown.exe と並べて置く</text>
+
+		<line x1="755" y1="92" x2="755" y2="118" stroke="#4a5568" stroke-width="2" marker-start="url(#m-03-1)"/>
+
+		<rect x="540" y="122" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
+		<text x="556" y="142" font-size="12.5" fill="#fff">node-deno-bun-compare / tools\30_html2md\html2md.cmd</text>
+		<rect x="540" y="158" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
+		<text x="556" y="178" font-size="12.5" fill="#fff">local-llm-llama-cp / tools\30_html2md\html2md.cmd</text>
+		<rect x="540" y="194" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
+		<text x="556" y="214" font-size="12.5" fill="#fff">make-company / tools\30_html2md\html2md.cmd</text>
+		<rect x="540" y="230" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
+		<text x="556" y="250" font-size="12.5" fill="#fff">dos-command-learn / tools\30_html2md\html2md.cmd</text>
+		<rect x="540" y="266" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
+		<text x="556" y="286" font-size="12.5" fill="#fff">ai-pc / tools\30_html2md\html2md.cmd</text>
+		<text x="540" y="318" font-size="12.5" fill="#3a4252">プロジェクト側はランチャー 3 行だけ</text>
+	</svg>
+
+	<h2>プロジェクト側に置くもの</h2>
+
+	<p>ランチャーは共有実装にプロジェクトフォルダを渡すだけにする。置き場所は <code>tools/30_html2md/</code> になる（納品しないものは <code>tools/</code> に置く決まりのため）。このフォルダの <code>html2md.cmd</code> をダブルクリックする使い方は従来どおり。</p>
+
+<pre><code>@echo off
+rem 共通の html2md を、このプロジェクトを対象に呼ぶ
+"N:\2026\html2md\html2md.exe" --root "%~dp0..\..\.."
+pause</code></pre>
+
+	<h2>この形の代償</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>内容</th></tr></thead>
+		<tbody>
+			<tr><td class="nw">得るもの</td><td>修正が全プロジェクトに即座に反映される。実装が 1 本になるので、機能を足す場所も直す場所も 1 箇所で済む</td></tr>
+			<tr><td class="nw">失うもの</td><td><code>N:</code> ドライブに依存する。プロジェクトを git clone しただけでは変換できない。ランチャーは git 管理下に入るが、実体は入らない</td></tr>
+			<tr><td class="nw">判断</td><td>これらの HTML ドキュメントは手元で書いて手元で Markdown 化するもので、clone 先で変換をやり直す場面が無い。ドライブ依存は受け入れる</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>exe にする理由と作り方</h1>
+
+	<p>共通実装は PowerShell スクリプトではなく、<code>csc.exe</code> でビルドする C# の exe にする。<code>check-markdown.ps1</code> も同じく exe に置き換える。</p>
+
+	<h2>なぜ exe か</h2>
+	<ul>
+		<li>起動が速い。PowerShell はプロセス起動とプロファイル読み込みに時間がかかり、正規表現も実行ごとに解釈される。ドキュメント 5 本の変換を何度も回す作業では、この差がそのまま待ち時間になる。</li>
+		<li>PowerShell のバージョン差を気にしなくなる。現状の <code>node-deno</code> 版は <code>ScriptBlock</code> をデリゲートに変換するため <code>#Requires -Version 6.0</code> が付いており、Windows 標準の 5.1 では動かない。</li>
+		<li>文字コードの事故が減る。BOM の有無で 5.1 の日本語が壊れる、といった制約から離れられる。</li>
+	</ul>
+
+	<h2>どの csc.exe を使うか</h2>
+
+	<p>この PC には 3 通りある。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>候補</th><th>C# の版</th><th>前提</th><th>採否</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nw"><code>C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe</code></td>
+				<td class="nw">C# 5 相当</td>
+				<td>Windows に標準搭載。追加インストール不要</td>
+				<td class="nw"><span class="badge b-ok">採用</span></td>
+			</tr>
+			<tr>
+				<td class="nw">VS 2022 Community 同梱の Roslyn <code>csc.exe</code></td>
+				<td class="nw">最新</td>
+				<td>Visual Studio が入っている環境だけ</td>
+				<td class="nw"><span class="badge b-warn">あれば優先</span></td>
+			</tr>
+			<tr>
+				<td class="nw">dotnet SDK 7.0.202（<code>dotnet build</code>）</td>
+				<td class="nw">最新</td>
+				<td>SDK が必要。単一 exe にするには publish 手順が要る</td>
+				<td class="nw"><span class="badge b-none">使わない</span></td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>基準は「Windows さえあればビルドできる」こと。標準搭載の <code>csc.exe</code> で通るコードなら、どの環境でも同じ手順で作り直せる。C# 5 相当なので文字列補間（<code>$"..."</code>）や <code>out var</code> は使えないが、正規表現・ジェネリクス・LINQ は揃っており、この用途では困らない。</p>
+
+	<p>ビルドスクリプトは Roslyn 版があればそれを、無ければ標準搭載版を選ぶ。どちらでビルドしても同じ動作になるよう、コードは C# 5 の範囲で書く。</p>
+
+	<h2>置くもの</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ファイル</th><th>役割</th></tr></thead>
+		<tbody>
+			<tr><td class="nw"><code>src\Html2Md\*.cs</code></td><td>変換と検査の実装</td></tr>
+			<tr><td class="nw"><code>src\CheckMarkdown\*.cs</code></td><td>GitHub の Markdown API で表示を確かめる実装</td></tr>
+			<tr><td class="nw"><code>build.cmd</code></td><td><code>csc.exe</code> を探して 2 本の exe をビルドする</td></tr>
+			<tr><td class="nw"><code>html2md.exe</code> / <code>check-markdown.exe</code></td><td>ビルド成果物。各プロジェクトのランチャーが呼ぶ</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>日本語の強調が壊れる問題</h1>
+
+	<p>CommonMark は <code>**</code> の前後にある文字を見て、それが開き記号として使えるか・閉じ記号として使えるかを判定する。日本語では判定に落ちる並びが頻繁に現れ、<code>**</code> が記号のまま表示される。</p>
+
+	<svg viewBox="0 0 1000 250" role="img" aria-label="開きの ** の直後が句読点で、その手前が通常文字だと開き記号として働かない例と、strong タグに置き換えた出力" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+		<defs>
+			<linearGradient id="g-05-1a" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(0,60%,40%)"/>
+			</linearGradient>
+			<linearGradient id="g-05-1b" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(140,78%,22%)"/>
+				<stop offset="1" stop-color="hsl(140,60%,34%)"/>
+			</linearGradient>
+		</defs>
+
+		<rect x="30" y="20" width="940" height="92" rx="8" fill="url(#g-05-1a)"/>
+		<text x="48" y="46" font-size="14" font-weight="700" fill="#fff">そのまま ** にすると</text>
+		<text x="48" y="74" font-size="16" fill="#fff" font-family="Consolas, Courier New, monospace">主題は**「何が流れるか」**です</text>
+		<text x="48" y="98" font-size="12.5" fill="#ffe8e8">開きの直後が 「（句読点）、その手前の「は」は通常文字 → 開き記号にならない。** がそのまま出る</text>
+
+		<rect x="30" y="128" width="940" height="92" rx="8" fill="url(#g-05-1b)"/>
+		<text x="48" y="154" font-size="14" font-weight="700" fill="#fff">この箇所だけタグで出す</text>
+		<text x="48" y="182" font-size="16" fill="#fff" font-family="Consolas, Courier New, monospace">主題は&lt;strong&gt;「何が流れるか」&lt;/strong&gt;です</text>
+		<text x="48" y="206" font-size="12.5" fill="#e8f7ee">GitHub は Markdown 中の HTML を解釈するので、確実に太字になる</text>
+	</svg>
+
+	<h2>判定の規則</h2>
+
+	<p><code>**</code> は語中にも置けるため、開閉が成立しないのは次の 2 つの場合だけになる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>側</th><th>成立しない条件</th><th>踏んだ文字</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nw">開き</td>
+				<td>強調する内容の先頭が句読点で、<code>**</code> の手前が通常文字（空白でも句読点でもない）</td>
+				<td class="nw"><code>「</code> <code>［</code> <code>.</code> <code>-</code> <code>@</code></td>
+			</tr>
+			<tr>
+				<td class="nw">閉じ</td>
+				<td>強調する内容の末尾が句読点で、<code>**</code> の直後が通常文字</td>
+				<td class="nw"><code>。</code> <code>」</code> <code>）</code> <code>］</code></td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>ここでいう句読点は Unicode の P 系カテゴリと S 系カテゴリで、<code>✅</code> や <code>⚠</code> のような記号も含まれる。バッジを <code>**✅ 良い**</code> の形で出している既存の版は、この規則にそのまま該当する。第 8 章でバッジの記号を太字の外に出すと決めたのは、この並びを作らないためでもある。</p>
+
+	<h2>実装の方法</h2>
+
+	<p>変換の途中では記法を決められない。<code>**</code> が成立するかは前後の文字で決まり、その文字は他の要素の変換が終わるまで確定しないためだ。そこで次の順序にする。</p>
+
+	<ol>
+		<li><code>&lt;strong&gt;</code> と <code>&lt;em&gt;</code> は、いったん本文に現れない制御文字（センチネル）で囲んでおく。</li>
+		<li>ブロックを組み立て、コードスパンを戻して本文を完成させる。</li>
+		<li>センチネルを内側から順に見て、その位置の前後の文字で判定し、<code>**</code> かタグかを確定させる。</li>
+	</ol>
+
+	<p>内側から処理するのは、入れ子の強調では内側の記号が外側の判定材料になるため。<code>**</code> で足りる箇所は <code>**</code> のままにして、タグは必要な箇所だけに留める。</p>
+
+	<div class="callout">
+		<p><strong>この規則は既存の Markdown にも当てはまる。</strong>すでに生成済みの Markdown には、手で <code>&lt;strong&gt;</code> に直した箇所と、まだ壊れたままの箇所が混ざっている。共通版で作り直せば機械的に揃うが、そのとき既存ファイルの差分は大きくなる。</p>
+	</div>
+</section>
+
+<section class="ch06" id="ch06">
+	<h1>生成後の検査</h1>
+
+	<p>変換のあとに機械的な検査を行う。5 本にあった検査をすべて入れる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>検査</th><th>見るもの</th><th>扱い</th></tr></thead>
+		<tbody>
+			<tr><td>Markdown 側のリンク切れ</td><td>相対リンクの参照先が実在するか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>アンカー切れ</td><td><code>#...</code> のリンク先が、生成した見出しに存在するか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>HTML が <code>.md</code> を参照</td><td>HTML 側のリンクに <code>.md</code> が書かれていないか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>HTML 側のリンク切れ</td><td>HTML 側の相対リンクの参照先が実在するか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>Markdown 側だけの文言</td><td>HTML の可視テキストに無い文字列が Markdown に現れていないか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>更新日の書き換え忘れ</td><td>ヘッダの更新日が、ファイルの最終更新時刻より古くないか</td><td class="nw"><span class="badge b-warn">警告</span></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>更新日だけを警告に留めるのは、体裁だけの変更では更新日を変えない決まりがあり、古いことが正しい場合があるため。指摘は 1 件でもあれば終了コード 1 を返す。</p>
+
+	<div class="callout callout-warning">
+		<p><strong>リンクとクラス名の検査は、コードブロックとコードスパンの中を除く。</strong>HTML の書き方を説明する文書では、<code>&lt;pre&gt;</code> や <code>&lt;code&gt;</code> の中にコード例としてリンクやクラス名が現れる。タグを実体参照でエスケープしても属性の中身は生のままなので、素朴に拾うと存在しないファイルへのリンクや、書き換え漏れのクラス名として誤検出する。この計画とクラス名の取り決めを書いている最中に、どちらも実際に踏んだ。<code>&lt;pre&gt;</code> だけを除いても足りない。</p>
+	</div>
+
+	<h2>check-markdown との役割分担</h2>
+
+	<p><code>html2md</code> の検査はローカルのファイルだけを見る。GitHub 上で実際にどう表示されるかは <code>check-markdown</code> が Markdown API に投げて確かめる。第 5 章の判定を入れれば <code>**</code> の破綻は出なくなる見込みだが、<strong>見込みで済ませずに実物で確認する</strong>という役割は残す。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>終了コード</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="num">0</td><td>問題なし</td></tr>
+			<tr><td class="num">1</td><td>表示が壊れる箇所がある</td></tr>
+			<tr><td class="num">2</td><td>検証できなかった（レート制限・通信断など）。「問題なし」ではない</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch07" id="ch07">
+	<h1>進め方</h1>
+
+	<p>一度に全部を差し替えず、出力を比べながら段階的に移す。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>段階</th><th>やること</th><th>確認方法</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nw">1</td>
+				<td>クラス名の取り決めを固める</td>
+				<td><a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め</a>に書いた</td>
+			</tr>
+			<tr>
+				<td class="nw">2</td>
+				<td><code>html2md</code> を C# で実装する（変換＋ローカル検査）</td>
+				<td><code>build.cmd</code> が通ること</td>
+			</tr>
+			<tr>
+				<td class="nw">3</td>
+				<td>既存 5 プロジェクトを <code>--dry-run</code> で変換し、現行 ps1 の出力と差分を取る</td>
+				<td>差分が「意図した改善」だけになるまで直す</td>
+			</tr>
+			<tr>
+				<td class="nw">4</td>
+				<td>各プロジェクトの HTML のクラス名を取り決めに合わせる</td>
+				<td>1 プロジェクトずつ、見た目を確かめてから次に移る</td>
+			</tr>
+			<tr>
+				<td class="nw">5</td>
+				<td>各プロジェクトの <code>tools/30_html2md</code> にランチャーを置き、旧 <code>src/scripts/70_html2md</code> の ps1 / mjs を退避する</td>
+				<td>ダブルクリックで従来どおり動くこと</td>
+			</tr>
+			<tr>
+				<td class="nw">6</td>
+				<td>生成した Markdown を <code>check-markdown</code> にかける</td>
+				<td><code>**</code> の残りが 0 件になること</td>
+			</tr>
+			<tr>
+				<td class="nw">7</td>
+				<td><code>check-markdown</code> を C# に移す</td>
+				<td>ps1 版と同じ判定結果になること</td>
+			</tr>
+			<tr>
+				<td class="nw">8</td>
+				<td>旧 ps1 / mjs を削除する</td>
+				<td>削除対象を提示して確認を取ってから実施</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>段階 3 が要になる。5 本はそれぞれ別の HTML を相手にしてきたので、共通版が同じ HTML から同じ内容を出せるかは実際に流してみないと分からない。差分が出た箇所は、共通版の不足か、旧版の不具合か、意図した仕様変更かを 1 件ずつ判断する。</p>
+
+	<div class="callout">
+		<p><strong>段階 5 で旧版をすぐ削除しない。</strong>退避して残しておけば、出力が変わったときに旧版と突き合わせられる。削除は段階 8 まで待つ。</p>
+	</div>
+</section>
+
+<section class="ch08" id="ch08">
+	<h1>決めたこと</h1>
+
+	<p>保留していた 5 件を確定させた。いずれも「プロジェクトごとに分岐させない」方向で揃えている。差分を吸収する仕組みを作るのではなく、差分そのものを無くす。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>論点</th><th>決定</th><th>理由・補足</th></tr></thead>
+		<tbody>
+			<tr>
+				<td>プロジェクト固有の差分（バッジのクラス名・callout の種別クラス）</td>
+				<td>既定のクラス名に統一する。設定ファイルは持たない</td>
+				<td>クラス名がプロジェクトごとに違うこと自体をやめる。命名は<a href="../90_rules/html-class-rules.html">別文書</a>にルールとして残した</td>
+			</tr>
+			<tr>
+				<td>バッジの出力形式</td>
+				<td>記号を太字の外に出す（<code>✅ **良い**</code>）</td>
+				<td>共通ルールとして固定する。強調の内側に記号が入らないので、第 5 章の判定に該当する箇所も減る</td>
+			</tr>
+			<tr>
+				<td>段落内の <code>&lt;br&gt;</code></td>
+				<td><code>&lt;br&gt;</code> タグをそのまま出す</td>
+				<td>表のセル内はすでにこの形で、表の中と外で表現が一致する。行末 2 空白は CommonMark の標準記法だが、trailing space はエディタや <code>.editorconfig</code> で落ちるうえ差分にも現れない</td>
+			</tr>
+			<tr>
+				<td>ビルド成果物の exe を git に含めるか</td>
+				<td>含めない</td>
+				<td>ビルド後にサイズを測り、小さければ含める方向で再検討する</td>
+			</tr>
+			<tr>
+				<td>変換対象の探索範囲</td>
+				<td><code>README.html</code> と <code>notes\</code> 配下を既定とし、探索するフォルダを引数で渡せるようにする</td>
+				<td>既存プロジェクトはまだ <code>docs\</code> を使っているため、フォルダ名を実装に埋め込まない</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>クラス名を統一する意味</h2>
+
+	<p>設定ファイルで差分を吸収する案は採らなかった。設定を用意すると、プロジェクトごとに違う状態が固定される。<code>~/.claude/CLAUDE.md</code> の HTML デザインルールはすでに配色・見出し・バッジの構造を 1 つに決めており、クラス名だけが揃っていないのは、書いた時期がばらばらだったからにすぎない。</p>
+
+	<p>名前の取り決めは<a href="../90_rules/html-class-rules.html">別文書</a>に分けた。統一先は 6 プロジェクト 26 ファイルの集計で採用数の多いほうを選んでいるので、書き換えは最少で済む。<code>~/.claude/CLAUDE.md</code> には、この別文書を参照する 1 行を入れた。</p>
+
+	<h2>引数の形</h2>
+
+	<p>探索するフォルダを外から渡せるようにする。既定は CLAUDE.md のルールどおり <code>README.html</code> と <code>notes\</code> 配下。</p>
+
+<pre><code>html2md.exe [オプション]
+
+  --root &lt;パス&gt;     対象のプロジェクトフォルダ（既定: カレントフォルダ）
+  --dir &lt;名前&gt;      探索するフォルダ。複数回指定できる（既定: notes）
+  --no-readme       ルート直下の README.html を対象から外す
+  --dry-run         書き出さず、変換結果と検査結果だけを表示する</code></pre>
+
+	<p>まだ <code>docs\</code> を使っているプロジェクトでは、ランチャー側で <code>--dir docs</code> を渡す。実装を触らずに済む。</p>
+
+	<h2>この計画に入っていないもの</h2>
+	<ul>
+		<li>Markdown から HTML への逆変換。HTML を正とする方針が変わらない限り必要ない。</li>
+		<li><code>20260828-typescript-learn</code> の空フォルダの扱い。ランチャーを置けばそのまま使えるようになる。</li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め →</a></p>
+</footer>
+
+</body>
+</html>

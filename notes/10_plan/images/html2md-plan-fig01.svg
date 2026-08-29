@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" width="1000" height="330" role="img" aria-label="現状は 5 プロジェクトにそれぞれ実装があり、共通化後は共有実装 1 本を各プロジェクトのランチャーが呼ぶ" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+		<defs>
+			<linearGradient id="i1" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(0,60%,42%)"/>
+			</linearGradient>
+			<linearGradient id="i2" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(140,78%,22%)"/>
+				<stop offset="1" stop-color="hsl(140,60%,34%)"/>
+			</linearGradient>
+			<linearGradient id="i3" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(140,45%,32%)"/>
+				<stop offset="1" stop-color="hsl(140,38%,44%)"/>
+			</linearGradient>
+			<marker id="i4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 1 L 9 5 L 0 9 z" fill="#4a5568"/>
+			</marker>
+		</defs>
+	<rect width="100%" height="100%" fill="#ffffff"/>
+
+		<text x="30" y="24" font-size="15" font-weight="700" fill="hsl(0,78%,25%)">現状: 実装が 5 本、共有コードは 0 行</text>
+		<rect x="30" y="40" width="410" height="38" rx="7" fill="url(#i1)"/>
+		<text x="45" y="64" font-size="13" fill="#fff">node-deno-bun-compare / html2md.ps1（729 行）</text>
+		<rect x="30" y="86" width="410" height="38" rx="7" fill="url(#i1)"/>
+		<text x="45" y="110" font-size="13" fill="#fff">local-llm-llama-cp / html2md.ps1（596 行）</text>
+		<rect x="30" y="132" width="410" height="38" rx="7" fill="url(#i1)"/>
+		<text x="45" y="156" font-size="13" fill="#fff">make-company / html2md.ps1（529 行）</text>
+		<rect x="30" y="178" width="410" height="38" rx="7" fill="url(#i1)"/>
+		<text x="45" y="202" font-size="13" fill="#fff">dos-command-learn / html2md.ps1（292 行）</text>
+		<rect x="30" y="224" width="410" height="38" rx="7" fill="url(#i1)"/>
+		<text x="45" y="248" font-size="13" fill="#fff">ai-pc / html2md.mjs（396 行）</text>
+		<text x="30" y="288" font-size="12.5" fill="#3a4252">1 本の修正は他の 4 本に伝わらない</text>
+
+		<line x1="460" y1="150" x2="516" y2="150" stroke="#4a5568" stroke-width="2.5" marker-end="url(#i4)"/>
+
+		<text x="540" y="24" font-size="15" font-weight="700" fill="hsl(140,78%,22%)">共通化後: 実装は 1 本</text>
+		<rect x="540" y="40" width="430" height="52" rx="7" fill="url(#i2)"/>
+		<text x="556" y="62" font-size="13.5" fill="#fff">N:\2026\html2md\html2md.exe</text>
+		<text x="556" y="82" font-size="12" fill="#e8f7ee">唯一の実装。check-markdown.exe と並べて置く</text>
+
+		<line x1="755" y1="92" x2="755" y2="118" stroke="#4a5568" stroke-width="2" marker-start="url(#i4)"/>
+
+		<rect x="540" y="122" width="430" height="30" rx="6" fill="url(#i3)"/>
+		<text x="556" y="142" font-size="12.5" fill="#fff">node-deno-bun-compare / tools\30_html2md\html2md.cmd</text>
+		<rect x="540" y="158" width="430" height="30" rx="6" fill="url(#i3)"/>
+		<text x="556" y="178" font-size="12.5" fill="#fff">local-llm-llama-cp / tools\30_html2md\html2md.cmd</text>
+		<rect x="540" y="194" width="430" height="30" rx="6" fill="url(#i3)"/>
+		<text x="556" y="214" font-size="12.5" fill="#fff">make-company / tools\30_html2md\html2md.cmd</text>
+		<rect x="540" y="230" width="430" height="30" rx="6" fill="url(#i3)"/>
+		<text x="556" y="250" font-size="12.5" fill="#fff">dos-command-learn / tools\30_html2md\html2md.cmd</text>
+		<rect x="540" y="266" width="430" height="30" rx="6" fill="url(#i3)"/>
+		<text x="556" y="286" font-size="12.5" fill="#fff">ai-pc / tools\30_html2md\html2md.cmd</text>
+		<text x="540" y="318" font-size="12.5" fill="#3a4252">プロジェクト側はランチャー 3 行だけ</text>
+	</svg>
