@@ -96,6 +96,8 @@ foreach ($f in $files) {
 	# コードブロックとコードスパンは対象外。GitHub は class を付けるので属性も許す
 	$body2 = [regex]::Replace($html, '(?s)<pre[^>]*>.*?</pre>', '')
 	$body2 = [regex]::Replace($body2, '(?s)<code[^>]*>.*?</code>', '')
+	# 残りのタグも落とす。img の alt や a の title に ** があっても画面には出ない
+	$body2 = [regex]::Replace($body2, '<[^>]+>', ' ')
 
 	$hits = @([regex]::Matches($body2, '.{0,45}\*\*.{0,45}'))
 	$rel = $f.FullName.Substring($root.Length).TrimStart('\')
