@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>コントラスト検査のセルフテスト</title>
+<style>
+:root { --ok: #12224d; }
+
+body { background: #fff; color: #1c2330; font-family: sans-serif; }
+p { padding: 10px 16px; margin: 8px 0; }
+
+/* 1. 変数が未定義でグラデーションが無効化され、白背景に白文字になる（今回の事故の再現） */
+.case1 { background: linear-gradient(100deg, var(--undefined1), var(--undefined2)); color: #fff; }
+
+/* 2. 黒背景に黒に近い文字 */
+.case2 { background: #000000; color: #131313; }
+
+/* 3. 淡いグレー同士 */
+.case3 { background: #f0f0f0; color: #e6e6e6; }
+
+/* 4. 親から白文字を継承したまま、白い箱の中に置かれた要素 */
+.dark { background: #12224d; color: #fff; padding: 10px 16px; }
+.dark .inner { background: #ffffff; }
+
+/* 5. 正常：濃い背景に白文字（検出されてはいけない） */
+.case5 { background: linear-gradient(100deg, var(--ok), #2f5fbf); color: #fff; }
+
+/* 6. 正常：白背景に濃い文字（検出されてはいけない） */
+.case6 { background: #ffffff; color: #1c2330; }
+
+/* 7. 正常：緑のグラデーションに白文字（今の資料と同じ配色。検出されてはいけない） */
+.case7 { background: linear-gradient(100deg, hsl(120,78%,25%), hsl(120,58%,65%)); color: #fff; }
+</style>
+</head>
+<body>
+
+<p class="case1">1 変数未定義で背景が消えた白文字 — 検出されるべき</p>
+<p class="case2">2 黒背景に黒に近い文字 — 検出されるべき</p>
+<p class="case3">3 淡いグレー同士 — 検出されるべき</p>
+<div class="dark"><p class="inner">4 白文字を継承したまま白い箱に入った — 検出されるべき</p></div>
+<p class="case5">5 濃い紺のグラデーションに白文字 — 検出されてはいけない</p>
+<p class="case6">6 白背景に濃い文字 — 検出されてはいけない</p>
+<p class="case7">7 緑のグラデーションに白文字（資料と同じ配色）— 検出されてはいけない</p>
+
+</body>
+</html>
