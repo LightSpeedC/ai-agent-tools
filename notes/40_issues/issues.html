@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- details で畳んでいるため Markdown にすると構造が失われる。変換しない -->
+<meta name="md-skip">
+<title>html2md の課題</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* グループのアクセント色（4 グループ / 色相 280 → 0 を 93.3 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#d6e2fa; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	.titlebar a{ color:#fff; background:transparent; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	.badge{
+		display:inline-block; padding:1px 9px; border-radius:11px;
+		background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff;
+		font-size:.85em; font-weight:600; white-space:nowrap;
+	}
+	.badge.b-ok{ background:linear-gradient(100deg,#1d7a3c,#45b56c); color:#fff; }
+	.badge.b-ng{ background:linear-gradient(100deg,#a51f22,#e05a5c); color:#fff; }
+	.badge.b-warn{ background:linear-gradient(100deg,#b8620a,#f0a548); color:#fff; }
+	.badge.b-none{ background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff; }
+
+	/* 課題 1 件。JS を使わず details で畳む */
+	details{
+		border:1px solid var(--line,#d9dfe8); border-radius:8px;
+		margin:10px 0; background:#fff; color:var(--ink,#1c2330);
+	}
+	summary{
+		padding:9px 14px; cursor:pointer;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330); font-weight:600;
+		border-radius:8px;
+	}
+	details[open] summary{
+		border-bottom:1px solid var(--line,#d9dfe8);
+		border-radius:8px 8px 0 0;
+	}
+	summary .no{
+		display:inline-block; margin:0 8px;
+		background:transparent; color:var(--ink-soft,#4a5568);
+		font-family:Consolas,"Courier New",monospace; font-size:.9em; font-weight:400;
+	}
+	.issue-body{
+		padding:4px 16px 12px; background:#fff; color:var(--ink,#1c2330);
+	}
+	.issue-body p:first-child{ margin-top:8px; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>html2md の課題</h1>
+		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-08-30</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="../10_plan/html2md-plan.html">共通化計画</a> ／ <a href="../10_plan/html2md-tag-spec.html">タグ対応仕様</a> ／ <a href="../90_rules/html-class-rules.html">クラス名の取り決め</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">変換仕様の未決事項</a></li>
+		<li class="ch02"><a href="#ch02">PowerShell 学習資料からの要求</a></li>
+		<li class="ch03"><a href="#ch03">共通化の残り段階</a></li>
+		<li class="ch04"><a href="#ch04">保留中の判断</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>変換仕様の未決事項</h1>
+
+	<p>タグ対応仕様の第 5 章に挙げた論点のうち、まだ決まっていないもの。実装を変えるときは先に方針を決める。</p>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-01</span>caption が出力されない</summary>
+		<div class="issue-body">
+			<p><code>&lt;table&gt;</code> の中にある <code>&lt;caption&gt;</code> が Markdown に出ない。表の処理が <code>thead</code> と <code>tbody</code> しか見ていないため、<code>caption</code> に到達しない。</p>
+			<p>36 ケースの実測で唯一残った欠落。Markdown のテーブルにキャプションの記法が無いので、表の直前か直後の段落にする必要がある。どちらに置くかを決める。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-02</span>ブロックとして扱っていないタグの構造が失われる</summary>
+		<div class="issue-body">
+			<p>次のタグは <code>BlockTags</code> に無いため、中身が地の文として 1 つに連結される。テキストは消えないが構造は失われる。</p>
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>タグ</th><th>いまの出力</th><th>本来あるべき形</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>main</code> <code>article</code> <code>aside</code> <code>header</code></td><td>5 つが 1 段落に連結される</td><td><code>div</code> と同じ「中身を処理する」扱い</td></tr>
+					<tr><td class="nowrap"><code>dl</code> <code>dt</code> <code>dd</code></td><td><code>dt</code> と <code>dd</code> が連結される</td><td>Markdown に定義リストは無い。箇条書きか表に落とす</td></tr>
+					<tr><td class="nowrap"><code>details</code> <code>summary</code></td><td>連結される</td><td>GitHub は HTML のまま解釈するので、そのまま残す手もある</td></tr>
+					<tr><td class="nowrap"><code>hr</code></td><td>消える</td><td><code>---</code>。ただし記号を足さない方針との兼ね合いがある</td></tr>
+				</tbody>
+			</table>
+			</div>
+			<p><code>main</code> 系の 4 つは <code>BlockTags</code> に足すだけで済む。<code>dl</code> と <code>details</code> は落とし方を決める必要がある。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-03</span>章の外で見出しの段が飛ぶ</summary>
+		<div class="issue-body">
+			<p>章（<code>section</code>）の外に <code>h2</code> と <code>h3</code> を並べると <code>###</code> が抜ける。</p>
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>入力</th><th>章の中</th><th>章の外</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>h2</code></td><td class="nowrap"><code>###</code></td><td class="nowrap"><code>##</code></td></tr>
+					<tr><td class="nowrap"><code>h3</code></td><td class="nowrap"><code>####</code></td><td class="nowrap"><code>####</code></td></tr>
+				</tbody>
+			</table>
+			</div>
+			<p><code>h2</code> だけが章の内外で段を変え、<code>h3</code> は変えていない。章の外の <code>h3</code> を <code>###</code> にするか、<code>h2</code> を章の中と同じ <code>###</code> に統一するかを決める。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-04</span>意味を持つインラインタグが平文になる</summary>
+		<div class="issue-body">
+			<p><code>del</code> <code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>abbr</code> <code>small</code> <code>q</code> <code>cite</code> <code>time</code> はタグが消えて中身のテキストだけが残る。取り消し線や上付きの区別は Markdown に出ない。</p>
+			<p>GitHub は <code>~~取り消し線~~</code> を解釈するので <code>del</code> は記法にできる。<code>sup</code> <code>sub</code> <code>kbd</code> は HTML のまま残す手もある。どこまで対応するかを決める。</p>
+		</div>
+	</details>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>PowerShell 学習資料からの要求</h1>
+
+	<p><code>N:\2026\20260822-powershell-pwsh-learn</code> からの要求。詳細は root の <code>req-01-from-powershell.md</code> にある。優先度は要求元が付けたもの。</p>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-05</span>章カード（.chapters）を表にする ［高］</summary>
+		<div class="issue-body">
+			<p><code>&lt;ul class="chapters"&gt;</code> の中の <code>span</code> 3 つが連結され、リンクのラベルが 1 本の長い文字列になる。</p>
+<pre><code>- [第1部 基礎編 01. PowerShell の生まれた経緯 DOS・Bash・Node.js と比較しながら、…](docs/01-背景.md)</code></pre>
+			<p>要求は 3 列の表にすること。<strong>ヘッダ行の「章」「タイトル」「内容」が HTML のどこにも無い</strong>のが論点で、そのまま実装すると html2md 自身の「HTML に無い文言」検査に毎回引っかかる。</p>
+			<p>案は 4 つある。HTML 側にヘッダを持たせる（<code>data-columns</code>）／ HTML 側を最初から表にして CSS でカード表示にする／表にせず区切りを入れた箇条書きにする／固定文言を足して検査の対象外にする。<strong>HTML 側を表にする案が最も筋が良い</strong>と考えている。変換器・検査・ルールのどれにも手を入れずに済むため。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-06</span>.html → .md の書き換えを変換対象だけに絞る ［高］</summary>
+		<div class="issue-body">
+			<p>いまは相対リンクの <code>.html</code> をすべて <code>.md</code> に置き換えている。変換対象でない HTML へのリンクまで書き換わり、存在しないファイルを指す。</p>
+			<p>変換対象のファイル一覧は既に持っているので、その集合に含まれるものだけを書き換えるようにする。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-07</span>他ファイルへのアンカーをスラッグに変換 ［高］</summary>
+		<div class="issue-body">
+			<p>同一ファイル内の <code>#chNN</code> は見出しアンカーに張り替えているが、<strong>他ファイルへのリンクのアンカー部分は変換していない</strong>。</p>
+<pre><code>[03.2 実行ポリシー](docs/03-実行環境.html#ch02)
+  ↓ いま
+[03.2 実行ポリシー](docs/03-実行環境.md#ch02)     ← 飛ばない
+  ↓ あるべき
+[03.2 実行ポリシー](docs/03-実行環境.md#032-実行ポリシー--なぜ動かないのか)</code></pre>
+			<p>変換対象すべてのアンカーマップを先に作り、リンク先のファイルのマップを引く形にする必要がある。いまはファイルごとに独立して変換しているため、構造を変えることになる。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-08</span>画像の相対パスを出力位置から計算 ［中］</summary>
+		<div class="issue-body">
+			<p>いまは切り出した SVG を <code>images/</code> 固定で参照している。画像を 1 か所に集約する構成では、出力先の階層によって相対パスが変わる。</p>
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>md の位置</th><th>画像への相対パス</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>README.md</code></td><td class="nowrap"><code>docs/images/</code></td></tr>
+					<tr><td class="nowrap"><code>docs/01-背景.md</code></td><td class="nowrap"><code>images/</code></td></tr>
+					<tr><td class="nowrap"><code>docs/plan/構成案.md</code></td><td class="nowrap"><code>../images/</code></td></tr>
+				</tbody>
+			</table>
+			</div>
+			<p>要求元は「ルート直下か否か」の 2 分岐で書いて 3 階層目で壊れた経験がある。出力先からの相対パスを毎回計算する。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-09</span>章間ナビを冒頭にも出す ［中］</summary>
+		<div class="issue-body">
+			<p><code>&lt;footer&gt;</code> の内容は末尾に出るが、冒頭には出ない。900 行を超える章があり、次の章へ行くのに末尾までスクロールすることになる。</p>
+			<p>ナビを持たないページ（README）には出さない判定が要る。要求元は「前章」「次章」「目次に戻る」を含むかで判定している。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-10</span>SVG 切り出し時に CSS 変数を解決する</summary>
+		<div class="issue-body">
+			<p>デザインルールは <code>stop-color="var(--accent)"</code> の書き方を前提にしているが、SVG を単体ファイルに切り出すと変数が解決されず<strong>色が失われる</strong>。</p>
+<pre><code>&lt;section class="ch03"&gt;
+	&lt;svg&gt;&lt;linearGradient id="g-03-1a"&gt;
+		&lt;stop stop-color="var(--accent)"/&gt;    ← .ch03 の定義が要る
+	&lt;/linearGradient&gt;&lt;/svg&gt;
+&lt;/section&gt;</code></pre>
+			<p><code>&lt;style&gt;</code> から <code>.chNN { --accent: … }</code> を読み、切り出す <code>svg</code> の祖先 <code>section</code> のクラスと突き合わせれば静的に解決できる。<code>@media</code> と JS による上書きは対象外とする。</p>
+			<div class="callout callout-important">
+				<p><strong>ルールに従って書いた HTML ほどこの問題を踏む。</strong>この html2md 自身の図はリテラルの <code>hsl()</code> で書いていたため表面化していなかった。</p>
+			</div>
+		</div>
+	</details>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>共通化の残り段階</h1>
+
+	<p>共通化計画の第 7 章に挙げた 8 段階のうち、まだ終わっていないもの。</p>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-11</span>既存 HTML のクラス名を取り決めに合わせる</summary>
+		<div class="issue-body">
+			<p>クラス名の取り決めの第 8 章に移行表がある。<strong>書き換えはそのプロジェクトの側で行う</strong>。共通ツールのリポジトリから他のプロジェクトのファイルは触らない。</p>
+			<p>出力が壊れているのは <code>b-good</code> / <code>b-bad</code> だけ（記号が付かない）。残りは名前が違っても出力は同じなので急がない。</p>
+			<p>ai-pc は <code>b-good</code>→<code>b-ok</code>(43)、<code>b-bad</code>→<code>b-ng</code>(11) を適用済みだが<strong>未コミットのまま</strong>。ai-pc 側で内容を確認して判断してもらう。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-12</span>各プロジェクトへランチャーを配置</summary>
+		<div class="issue-body">
+			<p>各プロジェクトの <code>tools/30_html2md/</code> に <code>html2md.cmd</code> を置く。中身は CLAUDE.md の「HTML と Markdown の併存」に書いてある。</p>
+			<p><strong>ランチャーを置いて動作を確かめてから旧スクリプトを消す。</strong>先に消さない。旧スクリプトは <code>src/scripts/70_html2md/</code> にある。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-13</span>check-markdown を C# 化</summary>
+		<div class="issue-body">
+			<p>html2md は C# 化したが、<code>check-markdown.ps1</code> は PowerShell のまま。C# 化すると <code>ConvertTo-Json</code> の UTF-8 バイト列の扱いなど ps1 固有の注意が不要になる。</p>
+			<p>C# 化したら CLAUDE.md の「生成した Markdown は GitHub のレンダラで検証する」の記述も更新する。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-14</span>旧 ps1 / mjs を削除</summary>
+		<div class="issue-body">
+			<p>各プロジェクトの <code>src/scripts/70_html2md/</code> にある 5 本（ps1 4 本、mjs 1 本）を削除する。ランチャーへの置き換えが済み、出力を確かめてから。</p>
+			<p>共通ツール側の <code>html2md.ps1</code> は参照実装として残す。テストで exe との一致を確かめている。</p>
+		</div>
+	</details>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>保留中の判断</h1>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-15</span>PlayWright の projects\html2md\ の扱い</summary>
+		<div class="issue-body">
+			<p><code>N:\2026\PlayWright\projects\html2md\contrast.spec.ts</code> を作ったが、後から <code>check-contrast.ps1</code> が独自の実装（<code>contrast/check-contrast.cjs</code>）を持っていることが分かり<strong>重複している</strong>。</p>
+			<p>削除するか、将来別の検証を書くときの台として残すか。共有環境の規約どおりの使い方ではある。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-16</span>exe を git に含めるか</summary>
+		<div class="issue-body">
+			<p>いまは <code>.gitignore</code> の <code>*.exe</code> で除外している。<strong>ビルド後にサイズを測り、小さければ含める方向で再検討する</strong>と決めていた。</p>
+			<p>現在のサイズは 35 KB 程度。含めれば clone 直後にビルドせずに使える。含めなければ差分の読めないものが履歴に残らない。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-17</span>CLAUDE.md の重複を整理</summary>
+		<div class="issue-body">
+			<p>クラス名の参照が 2 箇所にある。「# HTMLデザインルール」の「クラス名」と、「# HTML→Markdown 変換ルール」の「変換に使うクラス名は…に合わせる」。</p>
+			<p>重複と分かったうえで残している。後で CLAUDE.md 側をまとめて整理する予定。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">20260830-18</span>PowerShell の配列の受け取り方をルールに追記</summary>
+		<div class="issue-body">
+			<p>CLAUDE.md の「PowerShellの落とし穴」には「関数から配列を返すときは <code>return ,$array</code>」とあるが、<strong>受け取り側の書き方が規定されていない</strong>。そこで踏んだ。</p>
+<pre><code>// 誤り1: foreach に直接渡すと、配列そのものが 1 要素として来る
+foreach ($b in (Convert-Blocks ... )) { }
+
+// 誤り2: @() で包むと外側が剥がれず、1 要素の配列（中身が配列）になる
+$blocks = @(Convert-Blocks $body $ctx)
+
+// 正しい: 代入だけにすると外側が外れる
+$sub = Convert-Blocks ...</code></pre>
+			<p>ps1 が出力 <code>System.Object[]</code> の 1 行だけになる、という形で表面化した。ルールに 1 行足す案を出したが、まだ提示していない。</p>
+		</div>
+	</details>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>
