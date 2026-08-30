@@ -29,8 +29,8 @@
 	}
 	.titlebar .inner{ max-width:1600px; margin:0 auto; }
 	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
-	.titlebar .sub{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
-	.titlebar .meta{ margin:0; font-size:.88em; color:#d6e2fa; background:transparent; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#d6e2fa; background:transparent; }
 	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
 	.titlebar a{ color:#fff; background:transparent; }
 
@@ -91,7 +91,7 @@
 	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
 	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
 	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
-	td.nw{ white-space:nowrap; }
+	td.nowrap{ white-space:nowrap; }
 	td.num{ text-align:right; white-space:nowrap; }
 
 	.callout{
@@ -115,6 +115,7 @@
 		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
 		color:#fff; text-decoration:none; padding:9px 13px;
 		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
 	}
 	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
 </style>
@@ -124,8 +125,8 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>html2md</h1>
-		<p class="sub">HTML と、そこから生成した Markdown を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
-		<p class="meta">📅 作成: 2026-08-27 / 更新: 2026-08-29</p>
+		<p class="lead">HTML と、そこから生成した Markdown を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-08-29</p>
 	</div>
 </div>
 
@@ -147,9 +148,9 @@
 	<table>
 		<thead><tr><th>ツール</th><th>何を確かめるか</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><code>check-markdown.ps1</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
-			<tr><td class="nw"><code>check-contrast.ps1</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
-			<tr><td class="nw"><code>html2md.ps1</code></td><td>HTML から Markdown を生成する</td></tr>
+			<tr><td class="nowrap"><code>check-markdown.ps1</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
+			<tr><td class="nowrap"><code>check-contrast.ps1</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
+			<tr><td class="nowrap"><code>html2md.ps1</code></td><td>HTML から Markdown を生成する</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -162,8 +163,8 @@
 	<table>
 		<thead><tr><th>文書</th><th>内容</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><a href="notes/10_plan/html2md-plan.html">html2md ツール共通化計画</a></td><td>各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り</td></tr>
-			<tr><td class="nw"><a href="notes/90_rules/html-class-rules.html">HTML クラス名の取り決め</a></td><td>html2md が読むクラス名。バッジ・callout・表・図の書き方</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/html2md-plan.html">html2md ツール共通化計画</a></td><td>各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り</td></tr>
+			<tr><td class="nowrap"><a href="notes/90_rules/html-class-rules.html">HTML クラス名の取り決め</a></td><td>html2md が読むクラス名。バッジ・callout・表・図の書き方</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -220,9 +221,9 @@
 	<table>
 		<thead><tr><th>項目</th><th>内容</th></tr></thead>
 		<tbody>
-			<tr><td class="nw">レート制限</td><td>認証なし 60 回/時。<code>-Token</code> で 5000 回/時</td></tr>
-			<tr><td class="nw">文字コード</td><td><code>ConvertTo-Json</code> の結果を UTF-8 のバイト列にして送る。そのままだと日本語が壊れる</td></tr>
-			<tr><td class="nw">除外の注意</td><td>GitHub は <code>&lt;code class="notranslate"&gt;</code> とクラスを付ける。<code>&lt;code&gt;</code> 決め打ちでは拾えない</td></tr>
+			<tr><td class="nowrap">レート制限</td><td>認証なし 60 回/時。<code>-Token</code> で 5000 回/時</td></tr>
+			<tr><td class="nowrap">文字コード</td><td><code>ConvertTo-Json</code> の結果を UTF-8 のバイト列にして送る。そのままだと日本語が壊れる</td></tr>
+			<tr><td class="nowrap">除外の注意</td><td>GitHub は <code>&lt;code class="notranslate"&gt;</code> とクラスを付ける。<code>&lt;code&gt;</code> 決め打ちでは拾えない</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -252,9 +253,9 @@
 	<table>
 		<thead><tr><th>経路</th><th>起きること</th></tr></thead>
 		<tbody>
-			<tr><td class="nw">変数が未定義</td><td>その宣言だけ無効。背景が消えて文字色が残る</td></tr>
-			<tr><td class="nw">セレクタが広すぎる</td><td>想定外の要素に片方だけ当たる</td></tr>
-			<tr><td class="nw">継承</td><td>親の <code>color</code> を継いだ要素が、別の背景の上に置かれる</td></tr>
+			<tr><td class="nowrap">変数が未定義</td><td>その宣言だけ無効。背景が消えて文字色が残る</td></tr>
+			<tr><td class="nowrap">セレクタが広すぎる</td><td>想定外の要素に片方だけ当たる</td></tr>
+			<tr><td class="nowrap">継承</td><td>親の <code>color</code> を継いだ要素が、別の背景の上に置かれる</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -293,11 +294,11 @@
 	<table>
 		<thead><tr><th>項目</th><th>内容</th></tr></thead>
 		<tbody>
-			<tr><td class="nw">実効背景色</td><td><code>background-color</code> が透明なら親を遡る。行き当たらなければページの地色（白）</td></tr>
-			<tr><td class="nw">グラデーション</td><td>色停止点の<strong>平均色</strong>を使う</td></tr>
-			<tr><td class="nw">半透明</td><td>下の色と合成してから比を求める</td></tr>
-			<tr><td class="nw">対象外</td><td>SVG（文字色が <code>fill</code> で決まる）、非表示要素、サイズ 0 の要素</td></tr>
-			<tr><td class="nw">リダイレクトページ</td><td><code>meta refresh</code> / <code>location.replace</code> は転送先を二重検査するため除外</td></tr>
+			<tr><td class="nowrap">実効背景色</td><td><code>background-color</code> が透明なら親を遡る。行き当たらなければページの地色（白）</td></tr>
+			<tr><td class="nowrap">グラデーション</td><td>色停止点の<strong>平均色</strong>を使う</td></tr>
+			<tr><td class="nowrap">半透明</td><td>下の色と合成してから比を求める</td></tr>
+			<tr><td class="nowrap">対象外</td><td>SVG（文字色が <code>fill</code> で決まる）、非表示要素、サイズ 0 の要素</td></tr>
+			<tr><td class="nowrap">リダイレクトページ</td><td><code>meta refresh</code> / <code>location.replace</code> は転送先を二重検査するため除外</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -318,13 +319,13 @@
 	<table>
 		<thead><tr><th>ケース</th><th>期待</th></tr></thead>
 		<tbody>
-			<tr><td>変数未定義で背景が消えた白文字</td><td class="nw">検出（1.00:1）</td></tr>
-			<tr><td>黒背景に黒に近い文字</td><td class="nw">検出（1.13:1）</td></tr>
-			<tr><td>淡いグレー同士</td><td class="nw">検出（1.10:1）</td></tr>
-			<tr><td>白文字を継承したまま白い箱に入った</td><td class="nw">検出（1.00:1）</td></tr>
-			<tr><td>濃い紺のグラデーションに白文字</td><td class="nw">検出しない</td></tr>
-			<tr><td>白背景に濃い文字</td><td class="nw">検出しない</td></tr>
-			<tr><td>緑のグラデーションに白文字</td><td class="nw">検出しない</td></tr>
+			<tr><td>変数未定義で背景が消えた白文字</td><td class="nowrap">検出（1.00:1）</td></tr>
+			<tr><td>黒背景に黒に近い文字</td><td class="nowrap">検出（1.13:1）</td></tr>
+			<tr><td>淡いグレー同士</td><td class="nowrap">検出（1.10:1）</td></tr>
+			<tr><td>白文字を継承したまま白い箱に入った</td><td class="nowrap">検出（1.00:1）</td></tr>
+			<tr><td>濃い紺のグラデーションに白文字</td><td class="nowrap">検出しない</td></tr>
+			<tr><td>白背景に濃い文字</td><td class="nowrap">検出しない</td></tr>
+			<tr><td>緑のグラデーションに白文字</td><td class="nowrap">検出しない</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -335,9 +336,9 @@
 	<table>
 		<thead><tr><th>原因</th><th>直し方</th></tr></thead>
 		<tbody>
-			<tr><td class="nw">色の <code>var()</code> が未定義</td><td><code>var(--accent, #12224d)</code> のように<strong>フォールバックを書く</strong></td></tr>
-			<tr><td class="nw">配色セレクタが広すぎる</td><td><code>.toc a</code> ではなく <code>.toc ul a</code> のように<strong>要素構造で絞る</strong></td></tr>
-			<tr><td class="nw">親から <code>color</code> を継承した</td><td>その要素に <code>color</code> と <code>background</code> を<strong>対で指定する</strong></td></tr>
+			<tr><td class="nowrap">色の <code>var()</code> が未定義</td><td><code>var(--accent, #12224d)</code> のように<strong>フォールバックを書く</strong></td></tr>
+			<tr><td class="nowrap">配色セレクタが広すぎる</td><td><code>.toc a</code> ではなく <code>.toc ul a</code> のように<strong>要素構造で絞る</strong></td></tr>
+			<tr><td class="nowrap">親から <code>color</code> を継承した</td><td>その要素に <code>color</code> と <code>background</code> を<strong>対で指定する</strong></td></tr>
 		</tbody>
 	</table>
 	</div>

@@ -2,15 +2,15 @@
 		<defs>
 			<linearGradient id="i1" x1="0" y1="1" x2="0" y2="0">
 				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
-				<stop offset="1" stop-color="hsl(0,60%,42%)"/>
+				<stop offset="1" stop-color="hsl(0,58%,55%)"/>
 			</linearGradient>
 			<linearGradient id="i2" x1="0" y1="1" x2="0" y2="0">
-				<stop offset="0" stop-color="hsl(140,78%,22%)"/>
-				<stop offset="1" stop-color="hsl(140,60%,34%)"/>
+				<stop offset="0" stop-color="hsl(140,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(140,58%,55%)"/>
 			</linearGradient>
 			<linearGradient id="i3" x1="0" y1="1" x2="0" y2="0">
-				<stop offset="0" stop-color="hsl(140,45%,32%)"/>
-				<stop offset="1" stop-color="hsl(140,38%,44%)"/>
+				<stop offset="0" stop-color="hsl(140,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(140,58%,55%)"/>
 			</linearGradient>
 			<marker id="i4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
 				<path d="M 0 1 L 9 5 L 0 9 z" fill="#4a5568"/>

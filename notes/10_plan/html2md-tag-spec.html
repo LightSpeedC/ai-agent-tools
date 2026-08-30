@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>html2md タグ対応仕様</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#d6e2fa; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	.titlebar a{ color:#fff; background:transparent; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	.badge{
+		display:inline-block; padding:1px 9px; border-radius:11px;
+		background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff;
+		font-size:.85em; font-weight:600; white-space:nowrap;
+	}
+	.badge.b-ok{ background:linear-gradient(100deg,#1d7a3c,#45b56c); color:#fff; }
+	.badge.b-ng{ background:linear-gradient(100deg,#a51f22,#e05a5c); color:#fff; }
+	.badge.b-warn{ background:linear-gradient(100deg,#b8620a,#f0a548); color:#fff; }
+	.badge.b-none{ background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>html2md タグ対応仕様</h1>
+		<p class="lead">html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-08-30</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="html2md-plan.html">html2md ツール共通化計画</a> ／ <a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">この文書について</a></li>
+		<li class="ch02"><a href="#ch02">ブロック要素</a></li>
+		<li class="ch03"><a href="#ch03">インライン要素</a></li>
+		<li class="ch04"><a href="#ch04">テキストが消える 17 ケース</a></li>
+		<li class="ch05"><a href="#ch05">決着と残る論点</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>この文書について</h1>
+
+	<p>html2md には仕様書が無く、<code>src/Html2Md/Converter.cs</code> の実装が唯一の仕様になっていた。そのため「<code>div</code> に直接書いたテキストが Markdown から消える」ことに、実際に変換するまで気づけなかった。</p>
+
+	<p>この文書は<strong>実測した結果</strong>を記録する。36 ケースのタグを含む HTML を変換し、出力を 1 件ずつ確認した。推測ではない。</p>
+
+	<div class="callout callout-important">
+		<p>ここに書いた内容は<strong>現状であって、あるべき姿ではない</strong>。直すべきものは第 5 章に論点として挙げてある。実装を変えたらこの文書も更新する。</p>
+	</div>
+
+	<h2>検証の方法</h2>
+
+	<p>ここに書いた挙動は <code>tests/cases/</code> のテストケースで固定してある。<code>tools/40_test/run-tests.cmd</code> を実行すると、exe と ps1 の両方で変換し、<strong>出力が一致することと、出ているべき文字列がすべて出ていること</strong>を確かめる。</p>
+
+	<p>参照実装の ps1 と本実装の exe が食い違ったら、どちらかに入れ忘れた修正がある。実際、この仕組みを入れた時点で ps1 側に 6 件の入れ忘れが見つかった。</p>
+
+	<h2>用語</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>語</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">ブロック要素</td><td>html2md が走査の対象にするタグ。Markdown の行やブロックになる</td></tr>
+			<tr><td class="nowrap">インライン要素</td><td>ブロックの中で記法に置き換えるタグ。行にはならない</td></tr>
+			<tr><td class="nowrap">地の文</td><td>ブロック要素で囲まれていない、剥き出しのテキスト</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>ブロック要素</h1>
+
+	<p>走査の対象にするタグ。実装では <code>Converter.cs</code> の <code>BlockTags</code> に列挙している。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>タグ</th><th>条件</th><th>Markdown の出力</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>section</code></td><td>—</td><td>中身を処理する。章の中であることを覚える</td></tr>
+			<tr><td class="nowrap"><code>h1</code></td><td>タイトルバーの中</td><td><code># タイトル</code></td></tr>
+			<tr><td class="nowrap"><code>h1</code></td><td>章の中</td><td><code>## 1. 章名</code>（連番が付く）</td></tr>
+			<tr><td class="nowrap"><code>h2</code></td><td>章の中</td><td><code>### 節名</code></td></tr>
+			<tr><td class="nowrap"><code>h2</code></td><td>章の外</td><td><code>## 節名</code></td></tr>
+			<tr><td class="nowrap"><code>h3</code>〜<code>h6</code></td><td>—</td><td><code>####</code>〜<code>######</code></td></tr>
+			<tr><td class="nowrap"><code>p</code></td><td>—</td><td>段落</td></tr>
+			<tr><td class="nowrap"><code>p.date</code> <code>p.meta</code></td><td>—</td><td><code>&gt; 📅 …</code> の引用行</td></tr>
+			<tr><td class="nowrap"><code>div.titlebar</code></td><td>—</td><td>中身を処理する。中の <code>h1</code> が <code>#</code> になる</td></tr>
+			<tr><td class="nowrap"><code>div.callout</code></td><td>—</td><td><code>&gt; [!NOTE]</code> 等。種別は追加クラスで決まる</td></tr>
+			<tr><td class="nowrap"><code>div.toc</code></td><td>—</td><td>見出し＋番号付きリスト。アンカーを張り替える</td></tr>
+			<tr><td class="nowrap"><code>div.minibar</code></td><td>—</td><td><code>## テキスト</code></td></tr>
+			<tr><td class="nowrap"><code>div.date</code> <code>div.meta</code></td><td>—</td><td>引用行</td></tr>
+			<tr><td class="nowrap"><code>div</code>（上記以外）</td><td>—</td><td>中身を処理する。<code>div</code> 自体は行にならない</td></tr>
+			<tr><td class="nowrap"><code>ul</code> <code>ol</code></td><td>—</td><td>箇条書き／番号付きリスト。入れ子は 4 空白ずつ字下げ</td></tr>
+			<tr><td class="nowrap"><code>ol.toc</code></td><td>—</td><td>目次として扱い、アンカーを張り替える</td></tr>
+			<tr><td class="nowrap"><code>table</code></td><td>—</td><td>Markdown テーブル。<code>rowspan</code> / <code>colspan</code> を展開する</td></tr>
+			<tr><td class="nowrap"><code>pre</code></td><td>—</td><td>コードフェンス。言語は <code>code.language-xxx</code> から取る</td></tr>
+			<tr><td class="nowrap"><code>blockquote</code></td><td>—</td><td>中身の各ブロックに <code>&gt; </code> を付ける</td></tr>
+			<tr><td class="nowrap"><code>figure</code></td><td>—</td><td>中の <code>svg</code> を画像に、<code>figcaption</code> を段落にする</td></tr>
+			<tr><td class="nowrap"><code>svg</code></td><td>—</td><td><code>images/</code> に切り出して <code>![alt](images/x.svg)</code></td></tr>
+			<tr><td class="nowrap"><code>footer</code> <code>nav</code></td><td>—</td><td>中身を処理する。タグ自体は行にならない</td></tr>
+			<tr><td class="nowrap"><code>a</code></td><td>段落の外に単独</td><td>リンク 1 行</td></tr>
+			<tr><td class="nowrap">どれか</td><td><code>class="md-skip"</code></td><td>要素ごと出力しない</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>インライン要素</h1>
+
+	<p>ブロックの中で記法に置き換えるタグ。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>タグ</th><th>Markdown の出力</th><th>備考</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>a</code></td><td><code>[文字](リンク先)</code></td><td>拡張子を <code>.md</code> に、<code>#chNN</code> を見出しアンカーに置き換える</td></tr>
+			<tr><td class="nowrap"><code>code</code></td><td><code>`コード`</code></td><td>中身は他の変換の対象にしない</td></tr>
+			<tr><td class="nowrap"><code>strong</code> <code>b</code></td><td><code>**太字**</code> または <code>&lt;strong&gt;</code></td><td>前後の文字で判定する</td></tr>
+			<tr><td class="nowrap"><code>em</code> <code>i</code></td><td><code>*斜体*</code> または <code>&lt;em&gt;</code></td><td>同上</td></tr>
+			<tr><td class="nowrap"><code>span.badge</code></td><td><code>✅ **完了**</code></td><td>記号は太字の外。予約語以外は記号なし</td></tr>
+			<tr><td class="nowrap"><code>span</code>（バッジ以外）</td><td>中身だけ残る</td><td>装飾目的とみなす</td></tr>
+			<tr><td class="nowrap"><code>img</code></td><td><code>![alt](src)</code></td><td></td></tr>
+			<tr><td class="nowrap"><code>br</code></td><td><code>&lt;br&gt;</code></td><td>表の中と外で同じ</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>タグが消えて中身だけ残るもの</h2>
+
+	<p>次のタグは記法に置き換えず、中身のテキストだけを残す。<strong>意味は失われる。</strong></p>
+
+<pre><code>&lt;del&gt; &lt;ins&gt; &lt;sup&gt; &lt;sub&gt; &lt;mark&gt; &lt;kbd&gt; &lt;abbr&gt; &lt;small&gt; &lt;q&gt; &lt;cite&gt; &lt;time&gt;</code></pre>
+
+	<p>取り消し線・上付き・キー表記といった区別は Markdown に出ない。GitHub は <code>~~取り消し線~~</code> を解釈するので <code>del</code> だけは記法にできるが、いまは対応していない。</p>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>テキストが消える 17 ケース</h1>
+
+	<p>36 ケースを含む HTML を変換したところ、17 件のテキストが出力に現れなかった。原因は 2 つに分かれる。</p>
+
+	<div class="callout callout-important">
+		<p><strong>この章は 2026-08-30 に対処済み。</strong>17 件のうち 16 件が出るようになった。残るのは <code>caption</code> の 1 件。以下は何が起きていたかの記録として残す。</p>
+	</div>
+
+	<h2>原因 1 — ブロック要素の中の地の文</h2>
+
+	<p>html2md はブロックタグを見つけて飛び移る走査をしている。<strong>その隙間にある地の文を拾っていない。</strong></p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>入力</th><th>出力</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>&lt;div&gt;テキスト&lt;/div&gt;</code></td><td>消える</td></tr>
+			<tr><td class="nowrap"><code>&lt;blockquote&gt;テキスト&lt;/blockquote&gt;</code></td><td>消える</td></tr>
+			<tr><td class="nowrap"><code>&lt;nav&gt;テキスト&lt;/nav&gt;</code></td><td>消える</td></tr>
+			<tr><td class="nowrap"><code>&lt;footer&gt;テキスト&lt;/footer&gt;</code></td><td>消える</td></tr>
+			<tr><td class="nowrap"><code>&lt;div class="callout"&gt;テキスト&lt;/div&gt;</code></td><td><code>&gt; [!NOTE]</code> だけ残り中身が消える</td></tr>
+			<tr><td class="nowrap"><code>&lt;div&gt;前&lt;p&gt;段落&lt;/p&gt;後&lt;/div&gt;</code></td><td>「前」と「後」が消える</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>いずれも <code>&lt;p&gt;</code> で囲めば出る。囲み忘れると<strong>警告も出ずに消える</strong>のが問題で、検査もこれを検出しない（Markdown 側にしか無い文言は調べるが、HTML 側にしか無い文言は調べていない）。</p>
+
+	<h2>原因 2 — ブロックとして扱っていないタグ</h2>
+
+	<p><code>BlockTags</code> に無いタグは走査の対象外なので、中身ごと飛ばされる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>タグ</th><th>用途</th><th>本来あるべき出力</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>dl</code> <code>dt</code> <code>dd</code></td><td>定義リスト</td><td>Markdown に定義リストは無い。箇条書きか表に落とす</td></tr>
+			<tr><td class="nowrap"><code>details</code> <code>summary</code></td><td>折りたたみ</td><td>GitHub は HTML のまま解釈する。そのまま残す手もある</td></tr>
+			<tr><td class="nowrap"><code>caption</code></td><td>表の見出し</td><td>表の直前か直後の段落</td></tr>
+			<tr><td class="nowrap"><code>main</code> <code>article</code> <code>aside</code> <code>header</code></td><td>文書構造</td><td>中身を処理する（<code>div</code> と同じ扱い）</td></tr>
+			<tr><td class="nowrap"><code>address</code></td><td>連絡先</td><td>段落</td></tr>
+			<tr><td class="nowrap"><code>hr</code></td><td>区切り線</td><td><code>---</code>。ただし記号を足さない方針との兼ね合いがある</td></tr>
+			<tr><td class="nowrap"><code>span</code></td><td>ブロックの外に単独で置いた場合</td><td>段落</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>見出しの段が飛ぶ</h2>
+
+	<p>章の外に <code>h2</code> と <code>h3</code> を並べると、<code>##</code> の次が <code>####</code> になり <code>###</code> が抜ける。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>入力</th><th>章の中</th><th>章の外</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>h2</code></td><td class="nowrap"><code>###</code></td><td class="nowrap"><code>##</code></td></tr>
+			<tr><td class="nowrap"><code>h3</code></td><td class="nowrap"><code>####</code></td><td class="nowrap"><code>####</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><code>h2</code> だけが章の内外で段を変え、<code>h3</code> は変えていない。目次の生成には影響しないが、見出しの階層としては崩れている。</p>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>決着と残る論点</h1>
+
+	<h2>決着 1 — 地の文を拾う <span class="badge b-ok">対処済み</span></h2>
+
+	<p>ブロック要素の中の地の文を段落として出すようにした。書いたものが黙って消えるより、余分な段落が出るほうが気づけるため。既存 6 プロジェクトで確かめたところ、出力が変わったところは無かった（空白だけの隙間は段落にならない）。</p>
+
+	<h2>決着 2 — ブロックの終端を 1 か所で決める <span class="badge b-ok">対処済み</span></h2>
+
+	<p>地の文の対処では足りず、より深いところに原因があった。<code>GetTagBlock</code>（ブロック全体を返す）と <code>GetInnerHtml</code>（中身を探し直す）が<strong>同じブロックについて別々に終端を判断していた</strong>。</p>
+
+<pre><code>// GetTagBlock: depth を数えて終端を知っている
+if (nc &lt; 0) return html.Substring(start);      // 閉じタグが無いと分かっている
+
+// GetInnerHtml: その情報を捨てて、独立に探し直す
+int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグを拾ってしまう</code></pre>
+
+	<p>ブロックの終端という<strong>既に判明している情報が受け渡されていない</strong>のが原因で、閉じタグの有無に関わらず誤りうる構造だった。書き込み途中のログ HTML（<code>&lt;div class="log"&gt;</code> を閉じない形式）で最後の 1 行が必ず落ちる、という形で表面化した。</p>
+
+	<p><code>GetBlock</code> がブロック全体（<code>Outer</code>）と中身（<code>Inner</code>）を一度に返す形に変え、呼び出し側が閉じタグを探し直す余地をなくした。</p>
+
+	<div class="callout">
+		<p>この修正で callout の中身が正しく取れるようになった結果、<strong>検査側の穴が露出した</strong>。callout 内のコードフェンスは <code>&gt; ```</code> の形になるが、検査は行頭の <code>```</code> しか見ていなかった。引用記号を外してから判定するよう直している。</p>
+	</div>
+
+	<h2>論点 3 — 未対応タグをどうするか</h2>
+
+	<p><code>main</code> <code>article</code> <code>aside</code> <code>header</code> は <code>div</code> と同じ「中身を処理する」扱いにすれば済む。<code>dl</code> と <code>details</code> は Markdown に対応する記法が無いため、落とし方を決める必要がある。</p>
+
+	<h2>論点 4 — 見出しの段飛び</h2>
+
+	<p>章の外の <code>h3</code> を <code>###</code> にするか、<code>h2</code> を章の中と同じ <code>###</code> に統一するか。</p>
+
+	<h2>論点 5 — 意味を持つインラインタグ</h2>
+
+	<p><code>del</code> は <code>~~取り消し線~~</code> にできる。<code>sup</code> <code>sub</code> <code>kbd</code> は GitHub が HTML を解釈するのでタグのまま残す手もある。どこまで対応するかを決める。</p>
+
+	<div class="callout callout-warning">
+		<p><strong>論点 3 から 5 はまだ決まっていない。</strong>実装を変えるときは、先にここで方針を決めてから着手する。<code>caption</code> が出力されない件は論点 3 に含まれる。</p>
+	</div>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>

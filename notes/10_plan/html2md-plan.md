@@ -4,7 +4,7 @@
 
 > 📅 作成: 2026-08-28 / 更新: 2026-08-29
 
-[HTML クラス名の取り決め →](../90_rules/html-class-rules.md)
+[← html2md](../../README.md) ／ [HTML クラス名の取り決め](../90_rules/html-class-rules.md)
 
 ## 目次
 
@@ -245,4 +245,4 @@ html2md.exe [オプション]
 - Markdown から HTML への逆変換。HTML を正とする方針が変わらない限り必要ない。
 - `20260828-typescript-learn` の空フォルダの扱い。ランチャーを置けばそのまま使えるようになる。
 
-[HTML クラス名の取り決め →](../90_rules/html-class-rules.md)
+[← html2md](../../README.md)

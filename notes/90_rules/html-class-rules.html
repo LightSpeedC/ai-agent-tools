@@ -12,14 +12,14 @@
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
 	/* 章のアクセント色（8 章 / 色相 280 → 0 を 40 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,65%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(240,78%,25%); --accent2:hsl(240,58%,65%); --soft:hsl(240,28%,95%); }
-	.ch03{ --accent:hsl(200,78%,25%); --accent2:hsl(200,58%,65%); --soft:hsl(200,28%,95%); }
-	.ch04{ --accent:hsl(160,78%,25%); --accent2:hsl(160,58%,65%); --soft:hsl(160,28%,95%); }
-	.ch05{ --accent:hsl(120,78%,25%); --accent2:hsl(120,58%,65%); --soft:hsl(120,28%,95%); }
-	.ch06{ --accent:hsl(80,78%,25%);  --accent2:hsl(80,58%,65%);  --soft:hsl(80,28%,95%); }
-	.ch07{ --accent:hsl(40,78%,25%);  --accent2:hsl(40,58%,65%);  --soft:hsl(40,28%,95%); }
-	.ch08{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,65%);   --soft:hsl(0,28%,95%); }
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(240,78%,25%); --accent2:hsl(240,58%,55%); --soft:hsl(240,28%,95%); }
+	.ch03{ --accent:hsl(200,78%,25%); --accent2:hsl(200,58%,55%); --soft:hsl(200,28%,95%); }
+	.ch04{ --accent:hsl(160,78%,25%); --accent2:hsl(160,58%,55%); --soft:hsl(160,28%,95%); }
+	.ch05{ --accent:hsl(120,78%,25%); --accent2:hsl(120,58%,55%); --soft:hsl(120,28%,95%); }
+	.ch06{ --accent:hsl(80,78%,25%);  --accent2:hsl(80,58%,55%);  --soft:hsl(80,28%,95%); }
+	.ch07{ --accent:hsl(40,78%,25%);  --accent2:hsl(40,58%,55%);  --soft:hsl(40,28%,95%); }
+	.ch08{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -34,8 +34,8 @@
 	}
 	.titlebar .inner{ max-width:1600px; margin:0 auto; }
 	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
-	.titlebar .sub{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
-	.titlebar .meta{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
 	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
 	.titlebar a{ color:#fff; background:transparent; }
 
@@ -97,7 +97,7 @@
 	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
 	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
 	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
-	td.nw{ white-space:nowrap; }
+	td.nowrap{ white-space:nowrap; }
 	td.num{ text-align:right; white-space:nowrap; }
 
 	.callout{
@@ -121,6 +121,7 @@
 		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
 		color:#fff; text-decoration:none; padding:9px 13px;
 		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
 	}
 	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
 
@@ -147,14 +148,14 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>HTML クラス名の取り決め</h1>
-		<p class="sub">html2md が読むクラス名を 1 つに決める。変換側は設定を持たず、ここに書いた名前だけを見る。プロジェクトごとに違う名前を使わない。</p>
-		<p class="meta">📅 作成: 2026-08-29 / 更新: 2026-08-29</p>
+		<p class="lead">html2md が読むクラス名を 1 つに決める。変換側は設定を持たず、ここに書いた名前だけを見る。プロジェクトごとに違う名前を使わない。</p>
+		<p class="date">📅 作成: 2026-08-29 / 更新: 2026-08-29</p>
 	</div>
 </div>
 
 <div class="wrap">
 
-<p class="backlink"><a href="../10_plan/html2md-plan.html">← html2md ツール共通化計画</a></p>
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="../10_plan/html2md-plan.html">html2md ツール共通化計画</a></p>
 
 <div class="toc">
 	<h2>目次</h2>
@@ -177,7 +178,13 @@
 
 	<h2>名前の決め方</h2>
 
-	<p>いま 6 プロジェクトで使われている名前を集計し、<strong>採用数の多いほうを残した</strong>。デザインの良し悪しではなく、書き換えるファイルが少ないほうを選んでいる。判断の材料は第 8 章に載せた。</p>
+	<p><strong>読んで役割が分かる語を選ぶ。</strong>既存の採用数では決めない。</p>
+
+	<p>最初は 6 プロジェクトの集計で多数派を採る方針にしていたが、それでは名前が意味を伝えるかを見ないことになる。実際、数だけで決めた結果 <code>nw</code>（2 文字で何の略か追えない）・<code>sub</code>（subtitle とも subsection とも読める）・<code>meta</code>（範囲が広く、日付を指すと分からない）が残っていた。この 3 つは <code>nowrap</code> ・ <code>lead</code> ・ <code>date</code> に改めている。</p>
+
+	<p>ただし <code>badge</code> と <code>b-</code> シリーズは変えない。<code>b-ng</code> の NG は和製英語で、<code>b-</code> が何の略かも名前からは追えないが、6 プロジェクトすべてで定着しており、書き換えの量に見合わない。<strong>意味で決めるのが原則、定着しているものは例外</strong>という線引きになる。</p>
+
+	<p>集計の数値は第 8 章に載せた。移行の優先度を決める材料として使う。</p>
 
 	<div class="callout">
 		<p><strong>ここに無いクラス名は変換に影響しない。</strong>装飾のためのクラスは自由に付けてよい。html2md はこの文書に出てくる名前だけを見て、それ以外は中身のテキストだけを拾う。</p>
@@ -201,8 +208,8 @@
 <pre><code>&lt;div class="titlebar"&gt;
 	&lt;div class="inner"&gt;
 		&lt;h1&gt;文書のタイトル&lt;/h1&gt;
-		&lt;p class="sub"&gt;何を書いた文書かの補足&lt;/p&gt;
-		&lt;p class="meta"&gt;📅 作成: 2026-08-29 / 更新: 2026-08-29&lt;/p&gt;
+		&lt;p class="lead"&gt;何を書いた文書かの補足&lt;/p&gt;
+		&lt;p class="date"&gt;📅 作成: 2026-08-29 / 更新: 2026-08-29&lt;/p&gt;
 	&lt;/div&gt;
 &lt;/div&gt;</code></pre>
 
@@ -210,10 +217,10 @@
 	<table>
 		<thead><tr><th>クラス</th><th>役割</th><th>Markdown の出力</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><code>titlebar</code></td><td>帯そのもの</td><td>中身を出す。帯自体は記法にならない</td></tr>
-			<tr><td class="nw"><code>inner</code></td><td>幅を揃えるためのラッパー</td><td>中身をそのまま処理する</td></tr>
-			<tr><td class="nw"><code>sub</code></td><td>タイトルの補足文</td><td>通常の段落</td></tr>
-			<tr><td class="nw"><code>meta</code></td><td>作成日・更新日</td><td><code>&gt; 📅 作成: ... / 更新: ...</code> の引用行</td></tr>
+			<tr><td class="nowrap"><code>titlebar</code></td><td>帯そのもの</td><td>中身を出す。帯自体は記法にならない</td></tr>
+			<tr><td class="nowrap"><code>inner</code></td><td>幅を揃えるためのラッパー</td><td>中身をそのまま処理する</td></tr>
+			<tr><td class="nowrap"><code>lead</code></td><td>タイトルの補足文（リード文）</td><td>通常の段落</td></tr>
+			<tr><td class="nowrap"><code>date</code></td><td>作成日・更新日</td><td><code>&gt; 📅 作成: ... / 更新: ...</code> の引用行</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -244,11 +251,11 @@
 	<table>
 		<thead><tr><th>HTML</th><th>Markdown</th><th>備考</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><code>.titlebar h1</code></td><td class="nw"><code># タイトル</code></td><td>文書に 1 つだけ</td></tr>
-			<tr><td class="nw"><code>section &gt; h1</code></td><td class="nw"><code>## 1. 章名</code></td><td>連番が付く。番号は HTML に書かない</td></tr>
-			<tr><td class="nw"><code>h2</code></td><td class="nw"><code>### 節名</code></td><td>章の外にある <code>h2</code> は <code>##</code> になる</td></tr>
-			<tr><td class="nw"><code>h3</code></td><td class="nw"><code>#### 小見出し</code></td><td></td></tr>
-			<tr><td class="nw"><code>h4</code></td><td class="nw"><code>##### …</code></td><td></td></tr>
+			<tr><td class="nowrap"><code>.titlebar h1</code></td><td class="nowrap"><code># タイトル</code></td><td>文書に 1 つだけ</td></tr>
+			<tr><td class="nowrap"><code>section &gt; h1</code></td><td class="nowrap"><code>## 1. 章名</code></td><td>連番が付く。番号は HTML に書かない</td></tr>
+			<tr><td class="nowrap"><code>h2</code></td><td class="nowrap"><code>### 節名</code></td><td>章の外にある <code>h2</code> は <code>##</code> になる</td></tr>
+			<tr><td class="nowrap"><code>h3</code></td><td class="nowrap"><code>#### 小見出し</code></td><td></td></tr>
+			<tr><td class="nowrap"><code>h4</code></td><td class="nowrap"><code>##### …</code></td><td></td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -298,10 +305,10 @@
 	<table>
 		<thead><tr><th>クラス</th><th>見え方</th><th>意味</th><th>Markdown の出力</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><code>badge b-ok</code></td><td class="nw"><span class="badge b-ok">完了</span></td><td>良い・完了・可</td><td class="nw"><code>✅ **完了**</code></td></tr>
-			<tr><td class="nw"><code>badge b-ng</code></td><td class="nw"><span class="badge b-ng">未対応</span></td><td>悪い・リスク・不可</td><td class="nw"><code>❌ **未対応**</code></td></tr>
-			<tr><td class="nw"><code>badge b-warn</code></td><td class="nw"><span class="badge b-warn">要注意</span></td><td>警告・注意</td><td class="nw"><code>⚠ **要注意**</code></td></tr>
-			<tr><td class="nw"><code>badge b-none</code></td><td class="nw"><span class="badge b-none">未実施</span></td><td>未実施・対象外・該当なし</td><td class="nw"><code>**未実施**</code></td></tr>
+			<tr><td class="nowrap"><code>badge b-ok</code></td><td class="nowrap"><span class="badge b-ok">完了</span></td><td>良い・完了・可</td><td class="nowrap"><code>✅ **完了**</code></td></tr>
+			<tr><td class="nowrap"><code>badge b-ng</code></td><td class="nowrap"><span class="badge b-ng">未対応</span></td><td>悪い・リスク・不可</td><td class="nowrap"><code>❌ **未対応**</code></td></tr>
+			<tr><td class="nowrap"><code>badge b-warn</code></td><td class="nowrap"><span class="badge b-warn">要注意</span></td><td>警告・注意</td><td class="nowrap"><code>⚠ **要注意**</code></td></tr>
+			<tr><td class="nowrap"><code>badge b-none</code></td><td class="nowrap"><span class="badge b-none">未実施</span></td><td>未実施・対象外・該当なし</td><td class="nowrap"><code>**未実施**</code></td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -339,18 +346,42 @@
 	<table>
 		<thead><tr><th>クラス</th><th>Markdown の出力</th><th>使いどころ</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><code>callout</code></td><td class="nw"><code>&gt; [!NOTE]</code></td><td>補足。種別を書かない場合の既定</td></tr>
-			<tr><td class="nw"><code>callout callout-tip</code></td><td class="nw"><code>&gt; [!TIP]</code></td><td>知っていると楽になること</td></tr>
-			<tr><td class="nw"><code>callout callout-important</code></td><td class="nw"><code>&gt; [!IMPORTANT]</code></td><td>読み飛ばすと困ること</td></tr>
-			<tr><td class="nw"><code>callout callout-warning</code></td><td class="nw"><code>&gt; [!WARNING]</code></td><td>踏むと壊れること</td></tr>
-			<tr><td class="nw"><code>callout callout-caution</code></td><td class="nw"><code>&gt; [!CAUTION]</code></td><td>取り返しがつかないこと</td></tr>
+			<tr><td class="nowrap"><code>callout</code></td><td class="nowrap"><code>&gt; [!NOTE]</code></td><td>補足。種別を書かない場合の既定</td></tr>
+			<tr><td class="nowrap"><code>callout callout-tip</code></td><td class="nowrap"><code>&gt; [!TIP]</code></td><td>知っていると楽になること</td></tr>
+			<tr><td class="nowrap"><code>callout callout-important</code></td><td class="nowrap"><code>&gt; [!IMPORTANT]</code></td><td>読み飛ばすと困ること</td></tr>
+			<tr><td class="nowrap"><code>callout callout-warning</code></td><td class="nowrap"><code>&gt; [!WARNING]</code></td><td>踏むと壊れること</td></tr>
+			<tr><td class="nowrap"><code>callout callout-caution</code></td><td class="nowrap"><code>&gt; [!CAUTION]</code></td><td>取り返しがつかないこと</td></tr>
 		</tbody>
 	</table>
 	</div>
 
 	<p>種別を <code>callout-</code> 付きの名前にしているのは、<code>important</code> や <code>warning</code> のような汎用的な名前を単独で使うと、他の用途のクラスとぶつかるため。</p>
 
-	<p>内容から種別を推測する実装は採らない。「注意」「必ず」といった語で判定する版が既存に 2 つあるが、HTML に書いていないことを推測すると結果が読めなくなる。種別は HTML 側で明示する。</p>
+	<h2>種別の選び方</h2>
+
+	<p><strong>読み手がその内容を知らずに進むと、何が起きるか</strong>で決める。文章の強さや語調では決めない。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>種別</th><th>知らずに進むと</th><th>例</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">NOTE</td><td>何も起きない。背景を知らないだけ</td><td>調査の手順、価格差の内訳の説明</td></tr>
+			<tr><td class="nowrap">TIP</td><td>損をする。知っていれば得だった</td><td>学割で 16 万円安くなる</td></tr>
+			<tr><td class="nowrap">IMPORTANT</td><td>選択を誤る。制約や数値の意味を知らずに決めてしまう</td><td>メモリスロットが埋まっていて増設できない／その数値は別の指標を指している</td></tr>
+			<tr><td class="nowrap">WARNING</td><td>損害が出る。ただし取り返しはつく</td><td>見積の期限切れ、出典が不確かな数値をそのまま採用</td></tr>
+			<tr><td class="nowrap">CAUTION</td><td>取り返しがつかない</td><td>データの消失、契約の確定</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<ul>
+		<li>迷ったら NOTE にする。種別を書かなければ NOTE になる。</li>
+		<li><strong>本文の語で機械的に決めない。</strong>同じ語でも重さが違う。</li>
+	</ul>
+
+	<p>最後の 1 行は実例がある。ある版は <code>/注意|失効|期限|限定|リスク|壁/</code> に一致すれば WARNING という実装だったため、「価格差 87 万円は保証と流通経路の差です」という単なる解説まで WARNING になっていた。逆に「メモリスロットが 2 つとも埋まっている」という制約は、どの語にも当たらないので NOTE のままだった。</p>
+
+	<p>内容から種別を推測する実装は採らない。HTML に書いていないことを推測すると結果が読めなくなる。種別は HTML 側で明示する。</p>
 
 	<div class="callout callout-important">
 		<p><strong>callout の中身はブロックとして変換される。</strong>段落・リスト・表を入れると、それぞれが <code>&gt;</code> の付いた行になる。本文で述べた結論を callout で言い直さない、という決まりはそのまま適用される。</p>
@@ -368,7 +399,7 @@
 &lt;table&gt;
 	&lt;thead&gt;&lt;tr&gt;&lt;th&gt;項目&lt;/th&gt;&lt;th&gt;件数&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
 	&lt;tbody&gt;
-		&lt;tr&gt;&lt;td class="nw"&gt;折り返さない値&lt;/td&gt;&lt;td class="num"&gt;123&lt;/td&gt;&lt;/tr&gt;
+		&lt;tr&gt;&lt;td class="nowrap"&gt;折り返さない値&lt;/td&gt;&lt;td class="num"&gt;123&lt;/td&gt;&lt;/tr&gt;
 	&lt;/tbody&gt;
 &lt;/table&gt;
 &lt;/div&gt;</code></pre>
@@ -377,9 +408,9 @@
 	<table>
 		<thead><tr><th>クラス</th><th>HTML での効果</th><th>Markdown の出力</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><code>tablewrap</code></td><td>横スクロールさせる</td><td>影響しない（構造で表と判断する）</td></tr>
-			<tr><td class="nw"><code>num</code></td><td>右寄せ・折り返さない</td><td>列全体が <code>num</code> なら区切り行が <code>---:</code> になる</td></tr>
-			<tr><td class="nw"><code>nw</code></td><td>折り返さない</td><td>影響しない</td></tr>
+			<tr><td class="nowrap"><code>tablewrap</code></td><td>横スクロールさせる</td><td>影響しない（構造で表と判断する）</td></tr>
+			<tr><td class="nowrap"><code>num</code></td><td>右寄せ・折り返さない</td><td>列全体が <code>num</code> なら区切り行が <code>---:</code> になる</td></tr>
+			<tr><td class="nowrap"><code>nowrap</code></td><td>折り返さない</td><td>影響しない</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -406,9 +437,9 @@
 	<table>
 		<thead><tr><th>属性</th><th>役割</th><th>無いとどうなるか</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><code>id</code></td><td>切り出し先が <code>images/&lt;id&gt;.svg</code> になる</td><td><code>&lt;ファイル名&gt;-figNN.svg</code> の連番になる</td></tr>
-			<tr><td class="nw"><code>viewBox</code></td><td><code>width</code> / <code>height</code> の算出元</td><td>寸法の付かない SVG になり、単体で開いたときの大きさが決まらない</td></tr>
-			<tr><td class="nw"><code>aria-label</code></td><td>画像の <code>alt</code> になる</td><td><code>alt</code> が空になる</td></tr>
+			<tr><td class="nowrap"><code>id</code></td><td>切り出し先が <code>images/&lt;id&gt;.svg</code> になる</td><td><code>&lt;ファイル名&gt;-figNN.svg</code> の連番になる</td></tr>
+			<tr><td class="nowrap"><code>viewBox</code></td><td><code>width</code> / <code>height</code> の算出元</td><td>寸法の付かない SVG になり、単体で開いたときの大きさが決まらない</td></tr>
+			<tr><td class="nowrap"><code>aria-label</code></td><td>画像の <code>alt</code> になる</td><td><code>alt</code> が空になる</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -440,101 +471,172 @@
 		<thead><tr><th>用途</th><th>使われている名前と採用プロジェクト数</th><th>統一先</th></tr></thead>
 		<tbody>
 			<tr>
-				<td class="nw">バッジの基底</td>
+				<td class="nowrap">バッジの基底</td>
 				<td><code>badge</code>（5） / <code>b</code>（1）</td>
-				<td class="nw"><code>badge</code></td>
+				<td class="nowrap"><code>badge</code></td>
 			</tr>
 			<tr>
-				<td class="nw">良い</td>
+				<td class="nowrap">良い</td>
 				<td><code>b-ok</code>（5） / <code>b-good</code>（1）</td>
-				<td class="nw"><code>b-ok</code></td>
+				<td class="nowrap"><code>b-ok</code></td>
 			</tr>
 			<tr>
-				<td class="nw">悪い</td>
+				<td class="nowrap">悪い</td>
 				<td><code>b-ng</code>（5） / <code>b-bad</code>（1）</td>
-				<td class="nw"><code>b-ng</code></td>
+				<td class="nowrap"><code>b-ng</code></td>
 			</tr>
 			<tr>
-				<td class="nw">警告</td>
+				<td class="nowrap">警告</td>
 				<td><code>b-warn</code>（6）</td>
-				<td class="nw"><code>b-warn</code></td>
+				<td class="nowrap"><code>b-warn</code></td>
 			</tr>
 			<tr>
-				<td class="nw">未実施</td>
+				<td class="nowrap">未実施</td>
 				<td><code>b-none</code>（3） / <code>b-non</code>（1） / <code>b-na</code>（1） / <code>b-todo</code>（1）</td>
-				<td class="nw"><code>b-none</code></td>
+				<td class="nowrap"><code>b-none</code></td>
 			</tr>
 			<tr>
-				<td class="nw">表のラッパー</td>
+				<td class="nowrap">表のラッパー</td>
 				<td><code>tablewrap</code>（4） / <code>tw</code>（2）</td>
-				<td class="nw"><code>tablewrap</code></td>
+				<td class="nowrap"><code>tablewrap</code></td>
 			</tr>
 			<tr>
-				<td class="nw">日付</td>
+				<td class="nowrap">日付</td>
 				<td><code>meta</code>（3） / <code>date</code>（2）</td>
-				<td class="nw"><code>meta</code></td>
+				<td class="nowrap"><code>date</code></td>
 			</tr>
 			<tr>
-				<td class="nw">タイトルの補足</td>
+				<td class="nowrap">タイトルの補足</td>
 				<td><code>sub</code>（2） / <code>lead</code>（1）</td>
-				<td class="nw"><code>sub</code></td>
+				<td class="nowrap"><code>lead</code></td>
 			</tr>
 			<tr>
-				<td class="nw">callout の種別</td>
+				<td class="nowrap">折り返さない</td>
+				<td><code>nw</code>（6）</td>
+				<td class="nowrap"><code>nowrap</code></td>
+			</tr>
+			<tr>
+				<td class="nowrap">callout の種別</td>
 				<td><code>callout-xxx</code>（1） / 種別なし（5）</td>
-				<td class="nw"><code>callout-xxx</code></td>
+				<td class="nowrap"><code>callout-xxx</code></td>
 			</tr>
 		</tbody>
 	</table>
+	</div>
+
+	<p><strong>下の 4 行は多数派を採っていない。</strong>名前は読んで役割が分かることが先で、数はその次だという理由による。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>用途</th><th>多数派</th><th>統一先</th><th>多数派を採らなかった理由</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">日付</td><td class="nowrap"><code>meta</code></td><td class="nowrap"><code>date</code></td><td>メタ情報は範囲が広く、日付を指すと読み取れない</td></tr>
+			<tr><td class="nowrap">タイトルの補足</td><td class="nowrap"><code>sub</code></td><td class="nowrap"><code>lead</code></td><td><code>sub</code> は接頭辞で、subtitle とも subsection とも読める</td></tr>
+			<tr><td class="nowrap">折り返さない</td><td class="nowrap"><code>nw</code></td><td class="nowrap"><code>nowrap</code></td><td>2 文字では何の略か追えない。CSS のプロパティ値と同じ語にする</td></tr>
+			<tr><td class="nowrap">callout の種別</td><td class="nowrap">種別なし</td><td class="nowrap"><code>callout-xxx</code></td><td><code>important</code> のような汎用語を単独で使うと他のクラスと衝突する</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>急ぐものと急がないもの</h2>
+
+	<p>名前が違っていても、変換結果が変わるとは限らない。html2md は予約語以外の <code>b-</code> 付きクラスもバッジとして拾うし、クラス名を見ずに構造で判断している箇所もある。<strong>先に直すべきは「出力が壊れているもの」だけ</strong>で、残りは見た目を揃えるための整理になる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>分類</th><th>対象</th><th>なぜそうなるか</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nowrap"><span class="badge b-ng">出力が壊れる</span></td>
+				<td class="nowrap"><code>b-good</code> <code>b-bad</code></td>
+				<td>予約語でないため記号が付かず、色分けの情報が Markdown で失われる</td>
+			</tr>
+			<tr>
+				<td class="nowrap"><span class="badge b-none">出力は同じ</span></td>
+				<td class="nowrap"><code>b-none</code> <code>b-non</code> <code>b-na</code> <code>b-todo</code></td>
+				<td>どれも記号なしの太字になる。未実施は記号を付けない決まりなので結果が一致する</td>
+			</tr>
+			<tr>
+				<td class="nowrap"><span class="badge b-none">出力は同じ</span></td>
+				<td class="nowrap"><code>tablewrap</code> <code>tw</code></td>
+				<td>クラス名を見ず、<code>div</code> の中に <code>table</code> があるかで判断している</td>
+			</tr>
+			<tr>
+				<td class="nowrap"><span class="badge b-none">出力は同じ</span></td>
+				<td class="nowrap"><code>meta</code> <code>date</code> ／ <code>sub</code> <code>lead</code></td>
+				<td>html2md がどちらの名前も同じ扱いにしている</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>各プロジェクトでの直し方</h2>
+
+	<p>書き換えはそのプロジェクトの側で行う。共通ツールのリポジトリから他のプロジェクトのファイルを触らない。</p>
+
+	<ol>
+		<li><code>html2md.exe --root . --dry-run</code> を流し、指摘と警告を確認する。</li>
+		<li>上の「急ぐものと急がないもの」で <span class="badge b-ng">出力が壊れる</span> に当たるクラス名を直す。<strong>HTML と CSS の両方を直す。</strong>片方だけだと色が消える。</li>
+		<li><code>callout</code> に種別が付いていないものを、第 6 章の「種別の選び方」に従って分類する。<strong>1 件ずつ内容を読んで判断する。</strong></li>
+		<li>章の <code>h1</code> に番号を書いていたら消す。html2md が連番を振るため二重になる。</li>
+		<li>再変換して指摘 0 件を確認し、生成された Markdown の差分を目で見る。</li>
+	</ol>
+
+	<div class="callout callout-important">
+		<p>手順 3 は機械的に決められない。同じ「期限」という語でも、単なる補足のこともあれば損害に直結することもある。<strong>語句での自動判定は入れない方針なので、人が読んで決める。</strong></p>
 	</div>
 
 	<h2>プロジェクトごとの書き換え</h2>
 
-	<p>置き換える箇所の数を数えた。<code>b-bun</code> <code>b-esm</code> のような種類を表すバッジは第 5 章のとおりそのまま通るので、書き換えなくてよい。</p>
+	<p>置き換える箇所の数を数えた（2026-08-29 時点）。<code>b-bun</code> <code>b-esm</code> のような種類を表すバッジは第 5 章のとおりそのまま通るので、書き換えなくてよい。<strong>ファイルが増えれば数も変わる</strong>ので、着手前に数え直すこと。</p>
 
 	<div class="tablewrap">
 	<table>
-		<thead><tr><th>プロジェクト</th><th>書き換え</th><th>箇所</th><th>状況</th></tr></thead>
+		<thead><tr><th>プロジェクト</th><th>出力が壊れている箇所</th><th>揃えるだけの箇所</th><th>状況</th></tr></thead>
 		<tbody>
 			<tr>
-				<td class="nw">20260824-ai-pc</td>
-				<td><code>b-good</code>→<code>b-ok</code>、<code>b-bad</code>→<code>b-ng</code></td>
-				<td class="num">54</td>
-				<td class="nw"><span class="badge b-warn">要変更</span></td>
+				<td class="nowrap">20260824-ai-pc</td>
+				<td class="nowrap"><code>b-good</code>→<code>b-ok</code>(43)<br><code>b-bad</code>→<code>b-ng</code>(11)</td>
+				<td class="nowrap"><code>nw</code>→<code>nowrap</code>(538)</td>
+				<td class="nowrap"><span class="badge b-warn">バッジのみ適用</span></td>
 			</tr>
 			<tr>
-				<td class="nw">20260824-dos-command-learn</td>
-				<td><code>b-todo</code>→<code>b-none</code>、<code>date</code>→<code>meta</code>、<code>tablewrap</code> は据え置き</td>
-				<td class="num">12</td>
-				<td class="nw"><span class="badge b-warn">要変更</span></td>
+				<td class="nowrap">20260824-dos-command-learn</td>
+				<td class="nowrap">—</td>
+				<td class="nowrap"><code>b-todo</code>→<code>b-none</code>(4)<br><code>sub</code>→<code>lead</code>(8)<br><code>nw</code>→<code>nowrap</code>(1053)</td>
+				<td class="nowrap"><span class="badge b-none">未着手</span></td>
 			</tr>
 			<tr>
-				<td class="nw">20260824-local-llm-llama-cp</td>
-				<td><code>b-non</code>→<code>b-none</code></td>
-				<td class="num">29</td>
-				<td class="nw"><span class="badge b-warn">要変更</span></td>
+				<td class="nowrap">20260824-local-llm-llama-cp</td>
+				<td class="nowrap">—</td>
+				<td class="nowrap"><code>b-non</code>→<code>b-none</code>(29)<br><code>meta</code>→<code>date</code>(5)</td>
+				<td class="nowrap"><span class="badge b-none">未着手</span></td>
 			</tr>
 			<tr>
-				<td class="nw">20260824-node-deno-bun-compare</td>
-				<td><code>tw</code>→<code>tablewrap</code></td>
-				<td class="num">32</td>
-				<td class="nw"><span class="badge b-warn">要変更</span></td>
+				<td class="nowrap">20260824-node-deno-bun-compare</td>
+				<td class="nowrap">—</td>
+				<td class="nowrap"><code>tw</code>→<code>tablewrap</code>(32)<br><code>meta</code>→<code>date</code>(3)<br><code>nw</code>→<code>nowrap</code>(329)</td>
+				<td class="nowrap"><span class="badge b-none">未着手</span></td>
 			</tr>
 			<tr>
-				<td class="nw">20260826-make-company</td>
-				<td><code>b</code>→<code>badge</code>、<code>b-na</code>→<code>b-none</code>、<code>tw</code>→<code>tablewrap</code></td>
-				<td class="num">127</td>
-				<td class="nw"><span class="badge b-ng">最多</span></td>
+				<td class="nowrap">20260826-make-company</td>
+				<td class="nowrap">—</td>
+				<td class="nowrap"><code>b</code>→<code>badge</code>(89)<br><code>b-na</code>→<code>b-none</code>(3)<br><code>tw</code>→<code>tablewrap</code>(35)<br><code>meta</code>→<code>date</code>(2)<br><code>sub</code>→<code>lead</code>(2)<br><code>nw</code>→<code>nowrap</code>(378)</td>
+				<td class="nowrap"><span class="badge b-none">未着手</span></td>
 			</tr>
 			<tr>
-				<td class="nw">20260828-typescript-learn</td>
-				<td><code>date</code>→<code>meta</code>、<code>lead</code>→<code>sub</code></td>
-				<td class="num">6</td>
-				<td class="nw"><span class="badge b-ok">最少</span></td>
+				<td class="nowrap">20260828-typescript-learn</td>
+				<td class="nowrap">—</td>
+				<td class="nowrap">なし</td>
+				<td class="nowrap"><span class="badge b-ok">対応不要</span></td>
 			</tr>
 		</tbody>
 	</table>
 	</div>
+
+	<p><strong>最も新しい typescript-learn だけが書き換え 0 件になった。</strong>このプロジェクトは <code>date</code> と <code>lead</code> を使い、<code>nw</code> を使っていない。名前を意味で選ぶと、後から書いたものほど取り決めに近くなる。数の多数派に合わせていたら、この 36 箇所を逆向きに書き換えることになっていた。</p>
+
+	<p><strong>callout の種別付与は全プロジェクトで必要になる。</strong>これまで種別を書いていたのは 1 プロジェクトだけで、残りはすべて種別なし（NOTE 扱い）になっている。内容から推測する実装をやめたため、HTML 側に明示しないと重要な注意が NOTE のまま埋もれる。</p>
 
 	<h2>書き換えるときの注意</h2>
 
@@ -556,17 +658,17 @@
 		<thead><tr><th>名前</th><th>使用箇所</th><th>扱い</th></tr></thead>
 		<tbody>
 			<tr>
-				<td class="nw"><code>best</code></td>
+				<td class="nowrap"><code>best</code></td>
 				<td>node-deno-bun-compare で 33 箇所</td>
 				<td>表のセルを強調する用途と見られる。変換に影響しないため据え置き</td>
 			</tr>
 			<tr>
-				<td class="nw"><code>tocnote</code></td>
+				<td class="nowrap"><code>tocnote</code></td>
 				<td>typescript-learn で 1 箇所</td>
 				<td>目次の補足。通常の段落として出る</td>
 			</tr>
 			<tr>
-				<td class="nw"><code>backlink</code></td>
+				<td class="nowrap"><code>backlink</code></td>
 				<td>6 プロジェクトすべて</td>
 				<td>名前は揃っている。通常のリンクとして出る</td>
 			</tr>
@@ -578,7 +680,7 @@
 </div>
 
 <footer>
-	<p><a href="../10_plan/html2md-plan.html">← html2md ツール共通化計画</a></p>
+	<p><a href="../../README.html">← html2md</a></p>
 </footer>
 
 </body>

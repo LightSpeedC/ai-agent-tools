@@ -12,14 +12,14 @@
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
 	/* 章のアクセント色（8 章 / 色相 280 → 0 を 40 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,65%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(240,78%,25%); --accent2:hsl(240,58%,65%); --soft:hsl(240,28%,95%); }
-	.ch03{ --accent:hsl(200,78%,25%); --accent2:hsl(200,58%,65%); --soft:hsl(200,28%,95%); }
-	.ch04{ --accent:hsl(160,78%,25%); --accent2:hsl(160,58%,65%); --soft:hsl(160,28%,95%); }
-	.ch05{ --accent:hsl(120,78%,25%); --accent2:hsl(120,58%,65%); --soft:hsl(120,28%,95%); }
-	.ch06{ --accent:hsl(80,78%,25%);  --accent2:hsl(80,58%,65%);  --soft:hsl(80,28%,95%); }
-	.ch07{ --accent:hsl(40,78%,25%);  --accent2:hsl(40,58%,65%);  --soft:hsl(40,28%,95%); }
-	.ch08{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,65%);   --soft:hsl(0,28%,95%); }
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(240,78%,25%); --accent2:hsl(240,58%,55%); --soft:hsl(240,28%,95%); }
+	.ch03{ --accent:hsl(200,78%,25%); --accent2:hsl(200,58%,55%); --soft:hsl(200,28%,95%); }
+	.ch04{ --accent:hsl(160,78%,25%); --accent2:hsl(160,58%,55%); --soft:hsl(160,28%,95%); }
+	.ch05{ --accent:hsl(120,78%,25%); --accent2:hsl(120,58%,55%); --soft:hsl(120,28%,95%); }
+	.ch06{ --accent:hsl(80,78%,25%);  --accent2:hsl(80,58%,55%);  --soft:hsl(80,28%,95%); }
+	.ch07{ --accent:hsl(40,78%,25%);  --accent2:hsl(40,58%,55%);  --soft:hsl(40,28%,95%); }
+	.ch08{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -34,8 +34,8 @@
 	}
 	.titlebar .inner{ max-width:1600px; margin:0 auto; }
 	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
-	.titlebar .sub{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
-	.titlebar .meta{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
 	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
 	.titlebar a{ color:#fff; background:transparent; }
 
@@ -97,7 +97,7 @@
 	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
 	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
 	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
-	td.nw{ white-space:nowrap; }
+	td.nowrap{ white-space:nowrap; }
 	td.num{ text-align:right; white-space:nowrap; }
 	td.c{ text-align:center; }
 
@@ -122,6 +122,7 @@
 		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
 		color:#fff; text-decoration:none; padding:9px 13px;
 		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
 	}
 	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
 
@@ -150,14 +151,14 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>html2md ツール共通化計画</h1>
-		<p class="sub">5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、<code>N:\2026\html2md</code> の共通ツールに統合する。あわせて PowerShell スクリプトを <code>csc.exe</code> でビルドする C# の exe に置き換える。</p>
-		<p class="meta">📅 作成: 2026-08-28 / 更新: 2026-08-29</p>
+		<p class="lead">5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、<code>N:\2026\html2md</code> の共通ツールに統合する。あわせて PowerShell スクリプトを <code>csc.exe</code> でビルドする C# の exe に置き換える。</p>
+		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-08-29</p>
 	</div>
 </div>
 
 <div class="wrap">
 
-<p class="backlink"><a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め →</a></p>
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め</a></p>
 
 <div class="toc">
 	<h2>目次</h2>
@@ -184,12 +185,12 @@
 			<tr><th>プロジェクト</th><th>実装</th><th>行数</th><th>変換対象の決め方</th></tr>
 		</thead>
 		<tbody>
-			<tr><td class="nw">20260824-node-deno-bun-compare</td><td class="nw">html2md.ps1</td><td class="num">729</td><td>自動探索（README + docs 配下）</td></tr>
-			<tr><td class="nw">20260824-local-llm-llama-cp</td><td class="nw">html2md.ps1</td><td class="num">596</td><td>スクリプト内に 5 件ハードコード</td></tr>
-			<tr><td class="nw">20260826-make-company</td><td class="nw">html2md.ps1</td><td class="num">529</td><td>自動探索（<code>-Root</code> 引数あり）</td></tr>
-			<tr><td class="nw">20260824-dos-command-learn</td><td class="nw">html2md.ps1</td><td class="num">292</td><td>ルート配下の全 html を再帰</td></tr>
-			<tr><td class="nw">20260824-ai-pc</td><td class="nw">html2md.mjs</td><td class="num">396</td><td>スクリプト内に 5 件ハードコード</td></tr>
-			<tr><td class="nw">20260828-typescript-learn</td><td class="nw">（空）</td><td class="num">0</td><td>フォルダだけ存在する</td></tr>
+			<tr><td class="nowrap">20260824-node-deno-bun-compare</td><td class="nowrap">html2md.ps1</td><td class="num">729</td><td>自動探索（README + docs 配下）</td></tr>
+			<tr><td class="nowrap">20260824-local-llm-llama-cp</td><td class="nowrap">html2md.ps1</td><td class="num">596</td><td>スクリプト内に 5 件ハードコード</td></tr>
+			<tr><td class="nowrap">20260826-make-company</td><td class="nowrap">html2md.ps1</td><td class="num">529</td><td>自動探索（<code>-Root</code> 引数あり）</td></tr>
+			<tr><td class="nowrap">20260824-dos-command-learn</td><td class="nowrap">html2md.ps1</td><td class="num">292</td><td>ルート配下の全 html を再帰</td></tr>
+			<tr><td class="nowrap">20260824-ai-pc</td><td class="nowrap">html2md.mjs</td><td class="num">396</td><td>スクリプト内に 5 件ハードコード</td></tr>
+			<tr><td class="nowrap">20260828-typescript-learn</td><td class="nowrap">（空）</td><td class="num">0</td><td>フォルダだけ存在する</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -258,15 +259,15 @@
 		<defs>
 			<linearGradient id="g-03-1a" x1="0" y1="1" x2="0" y2="0">
 				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
-				<stop offset="1" stop-color="hsl(0,60%,42%)"/>
+				<stop offset="1" stop-color="hsl(0,58%,55%)"/>
 			</linearGradient>
 			<linearGradient id="g-03-1b" x1="0" y1="1" x2="0" y2="0">
-				<stop offset="0" stop-color="hsl(140,78%,22%)"/>
-				<stop offset="1" stop-color="hsl(140,60%,34%)"/>
+				<stop offset="0" stop-color="hsl(140,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(140,58%,55%)"/>
 			</linearGradient>
 			<linearGradient id="g-03-1c" x1="0" y1="1" x2="0" y2="0">
-				<stop offset="0" stop-color="hsl(140,45%,32%)"/>
-				<stop offset="1" stop-color="hsl(140,38%,44%)"/>
+				<stop offset="0" stop-color="hsl(140,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(140,58%,55%)"/>
 			</linearGradient>
 			<marker id="m-03-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
 				<path d="M 0 1 L 9 5 L 0 9 z" fill="#4a5568"/>
@@ -323,9 +324,9 @@ pause</code></pre>
 	<table>
 		<thead><tr><th>項目</th><th>内容</th></tr></thead>
 		<tbody>
-			<tr><td class="nw">得るもの</td><td>修正が全プロジェクトに即座に反映される。実装が 1 本になるので、機能を足す場所も直す場所も 1 箇所で済む</td></tr>
-			<tr><td class="nw">失うもの</td><td><code>N:</code> ドライブに依存する。プロジェクトを git clone しただけでは変換できない。ランチャーは git 管理下に入るが、実体は入らない</td></tr>
-			<tr><td class="nw">判断</td><td>これらの HTML ドキュメントは手元で書いて手元で Markdown 化するもので、clone 先で変換をやり直す場面が無い。ドライブ依存は受け入れる</td></tr>
+			<tr><td class="nowrap">得るもの</td><td>修正が全プロジェクトに即座に反映される。実装が 1 本になるので、機能を足す場所も直す場所も 1 箇所で済む</td></tr>
+			<tr><td class="nowrap">失うもの</td><td><code>N:</code> ドライブに依存する。プロジェクトを git clone しただけでは変換できない。ランチャーは git 管理下に入るが、実体は入らない</td></tr>
+			<tr><td class="nowrap">判断</td><td>これらの HTML ドキュメントは手元で書いて手元で Markdown 化するもので、clone 先で変換をやり直す場面が無い。ドライブ依存は受け入れる</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -352,22 +353,22 @@ pause</code></pre>
 		<thead><tr><th>候補</th><th>C# の版</th><th>前提</th><th>採否</th></tr></thead>
 		<tbody>
 			<tr>
-				<td class="nw"><code>C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe</code></td>
-				<td class="nw">C# 5 相当</td>
+				<td class="nowrap"><code>C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe</code></td>
+				<td class="nowrap">C# 5 相当</td>
 				<td>Windows に標準搭載。追加インストール不要</td>
-				<td class="nw"><span class="badge b-ok">採用</span></td>
+				<td class="nowrap"><span class="badge b-ok">採用</span></td>
 			</tr>
 			<tr>
-				<td class="nw">VS 2022 Community 同梱の Roslyn <code>csc.exe</code></td>
-				<td class="nw">最新</td>
+				<td class="nowrap">VS 2022 Community 同梱の Roslyn <code>csc.exe</code></td>
+				<td class="nowrap">最新</td>
 				<td>Visual Studio が入っている環境だけ</td>
-				<td class="nw"><span class="badge b-warn">あれば優先</span></td>
+				<td class="nowrap"><span class="badge b-warn">あれば優先</span></td>
 			</tr>
 			<tr>
-				<td class="nw">dotnet SDK 7.0.202（<code>dotnet build</code>）</td>
-				<td class="nw">最新</td>
+				<td class="nowrap">dotnet SDK 7.0.202（<code>dotnet build</code>）</td>
+				<td class="nowrap">最新</td>
 				<td>SDK が必要。単一 exe にするには publish 手順が要る</td>
-				<td class="nw"><span class="badge b-none">使わない</span></td>
+				<td class="nowrap"><span class="badge b-none">使わない</span></td>
 			</tr>
 		</tbody>
 	</table>
@@ -383,10 +384,10 @@ pause</code></pre>
 	<table>
 		<thead><tr><th>ファイル</th><th>役割</th></tr></thead>
 		<tbody>
-			<tr><td class="nw"><code>src\Html2Md\*.cs</code></td><td>変換と検査の実装</td></tr>
-			<tr><td class="nw"><code>src\CheckMarkdown\*.cs</code></td><td>GitHub の Markdown API で表示を確かめる実装</td></tr>
-			<tr><td class="nw"><code>build.cmd</code></td><td><code>csc.exe</code> を探して 2 本の exe をビルドする</td></tr>
-			<tr><td class="nw"><code>html2md.exe</code> / <code>check-markdown.exe</code></td><td>ビルド成果物。各プロジェクトのランチャーが呼ぶ</td></tr>
+			<tr><td class="nowrap"><code>src\Html2Md\*.cs</code></td><td>変換と検査の実装</td></tr>
+			<tr><td class="nowrap"><code>src\CheckMarkdown\*.cs</code></td><td>GitHub の Markdown API で表示を確かめる実装</td></tr>
+			<tr><td class="nowrap"><code>build.cmd</code></td><td><code>csc.exe</code> を探して 2 本の exe をビルドする</td></tr>
+			<tr><td class="nowrap"><code>html2md.exe</code> / <code>check-markdown.exe</code></td><td>ビルド成果物。各プロジェクトのランチャーが呼ぶ</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -401,11 +402,11 @@ pause</code></pre>
 		<defs>
 			<linearGradient id="g-05-1a" x1="0" y1="1" x2="0" y2="0">
 				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
-				<stop offset="1" stop-color="hsl(0,60%,40%)"/>
+				<stop offset="1" stop-color="hsl(0,58%,55%)"/>
 			</linearGradient>
 			<linearGradient id="g-05-1b" x1="0" y1="1" x2="0" y2="0">
-				<stop offset="0" stop-color="hsl(140,78%,22%)"/>
-				<stop offset="1" stop-color="hsl(140,60%,34%)"/>
+				<stop offset="0" stop-color="hsl(140,78%,25%)"/>
+				<stop offset="1" stop-color="hsl(140,58%,55%)"/>
 			</linearGradient>
 		</defs>
 
@@ -429,14 +430,14 @@ pause</code></pre>
 		<thead><tr><th>側</th><th>成立しない条件</th><th>踏んだ文字</th></tr></thead>
 		<tbody>
 			<tr>
-				<td class="nw">開き</td>
+				<td class="nowrap">開き</td>
 				<td>強調する内容の先頭が句読点で、<code>**</code> の手前が通常文字（空白でも句読点でもない）</td>
-				<td class="nw"><code>「</code> <code>［</code> <code>.</code> <code>-</code> <code>@</code></td>
+				<td class="nowrap"><code>「</code> <code>［</code> <code>.</code> <code>-</code> <code>@</code></td>
 			</tr>
 			<tr>
-				<td class="nw">閉じ</td>
+				<td class="nowrap">閉じ</td>
 				<td>強調する内容の末尾が句読点で、<code>**</code> の直後が通常文字</td>
-				<td class="nw"><code>。</code> <code>」</code> <code>）</code> <code>］</code></td>
+				<td class="nowrap"><code>。</code> <code>」</code> <code>）</code> <code>］</code></td>
 			</tr>
 		</tbody>
 	</table>
@@ -470,12 +471,12 @@ pause</code></pre>
 	<table>
 		<thead><tr><th>検査</th><th>見るもの</th><th>扱い</th></tr></thead>
 		<tbody>
-			<tr><td>Markdown 側のリンク切れ</td><td>相対リンクの参照先が実在するか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
-			<tr><td>アンカー切れ</td><td><code>#...</code> のリンク先が、生成した見出しに存在するか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
-			<tr><td>HTML が <code>.md</code> を参照</td><td>HTML 側のリンクに <code>.md</code> が書かれていないか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
-			<tr><td>HTML 側のリンク切れ</td><td>HTML 側の相対リンクの参照先が実在するか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
-			<tr><td>Markdown 側だけの文言</td><td>HTML の可視テキストに無い文字列が Markdown に現れていないか</td><td class="nw"><span class="badge b-ng">指摘</span></td></tr>
-			<tr><td>更新日の書き換え忘れ</td><td>ヘッダの更新日が、ファイルの最終更新時刻より古くないか</td><td class="nw"><span class="badge b-warn">警告</span></td></tr>
+			<tr><td>Markdown 側のリンク切れ</td><td>相対リンクの参照先が実在するか</td><td class="nowrap"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>アンカー切れ</td><td><code>#...</code> のリンク先が、生成した見出しに存在するか</td><td class="nowrap"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>HTML が <code>.md</code> を参照</td><td>HTML 側のリンクに <code>.md</code> が書かれていないか</td><td class="nowrap"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>HTML 側のリンク切れ</td><td>HTML 側の相対リンクの参照先が実在するか</td><td class="nowrap"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>Markdown 側だけの文言</td><td>HTML の可視テキストに無い文字列が Markdown に現れていないか</td><td class="nowrap"><span class="badge b-ng">指摘</span></td></tr>
+			<tr><td>更新日の書き換え忘れ</td><td>ヘッダの更新日が、ファイルの最終更新時刻より古くないか</td><td class="nowrap"><span class="badge b-warn">警告</span></td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -512,42 +513,42 @@ pause</code></pre>
 		<thead><tr><th>段階</th><th>やること</th><th>確認方法</th></tr></thead>
 		<tbody>
 			<tr>
-				<td class="nw">1</td>
+				<td class="nowrap">1</td>
 				<td>クラス名の取り決めを固める</td>
 				<td><a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め</a>に書いた</td>
 			</tr>
 			<tr>
-				<td class="nw">2</td>
+				<td class="nowrap">2</td>
 				<td><code>html2md</code> を C# で実装する（変換＋ローカル検査）</td>
 				<td><code>build.cmd</code> が通ること</td>
 			</tr>
 			<tr>
-				<td class="nw">3</td>
+				<td class="nowrap">3</td>
 				<td>既存 5 プロジェクトを <code>--dry-run</code> で変換し、現行 ps1 の出力と差分を取る</td>
 				<td>差分が「意図した改善」だけになるまで直す</td>
 			</tr>
 			<tr>
-				<td class="nw">4</td>
+				<td class="nowrap">4</td>
 				<td>各プロジェクトの HTML のクラス名を取り決めに合わせる</td>
 				<td>1 プロジェクトずつ、見た目を確かめてから次に移る</td>
 			</tr>
 			<tr>
-				<td class="nw">5</td>
+				<td class="nowrap">5</td>
 				<td>各プロジェクトの <code>tools/30_html2md</code> にランチャーを置き、旧 <code>src/scripts/70_html2md</code> の ps1 / mjs を退避する</td>
 				<td>ダブルクリックで従来どおり動くこと</td>
 			</tr>
 			<tr>
-				<td class="nw">6</td>
+				<td class="nowrap">6</td>
 				<td>生成した Markdown を <code>check-markdown</code> にかける</td>
 				<td><code>**</code> の残りが 0 件になること</td>
 			</tr>
 			<tr>
-				<td class="nw">7</td>
+				<td class="nowrap">7</td>
 				<td><code>check-markdown</code> を C# に移す</td>
 				<td>ps1 版と同じ判定結果になること</td>
 			</tr>
 			<tr>
-				<td class="nw">8</td>
+				<td class="nowrap">8</td>
 				<td>旧 ps1 / mjs を削除する</td>
 				<td>削除対象を提示して確認を取ってから実施</td>
 			</tr>
@@ -629,7 +630,7 @@ pause</code></pre>
 </div>
 
 <footer>
-	<p><a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め →</a></p>
+	<p><a href="../../README.html">← html2md</a></p>
 </footer>
 
 </body>
