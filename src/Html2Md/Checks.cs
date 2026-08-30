@@ -150,7 +150,10 @@ namespace Html2Md
 			foreach (string line in Regex.Split(result.Markdown, "\\r?\\n"))
 			{
 				lineNo++;
-				if (line.TrimStart().StartsWith("```", StringComparison.Ordinal))
+				// callout の中のコードフェンスは "> ```" の形になる。
+				// 引用記号を外してから判定しないとフェンスの内外を取り違える
+				string lineHead = Regex.Replace(line.TrimStart(), "^>\\s?", "").TrimStart();
+				if (lineHead.StartsWith("```", StringComparison.Ordinal))
 				{
 					inFence = !inFence;
 					continue;

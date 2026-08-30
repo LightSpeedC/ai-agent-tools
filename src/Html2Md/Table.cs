@@ -144,7 +144,8 @@ namespace Html2Md
 		/// <summary>リストを変換する。入れ子は 4 空白ずつ字下げする。</summary>
 		public string ConvertList(string listHtml, string tag, Dictionary<string, string> anchors, int depth)
 		{
-			string inner = HtmlUtil.GetInnerHtml(listHtml, tag);
+			// リストの中身。閉じられていない場合も末尾までを中身とする
+			string inner = HtmlUtil.GetBlock(listHtml, 0, tag).Inner;
 			string indent = new string(' ', 4 * depth);
 			List<string> outLines = new List<string>();
 			int n = 0;
@@ -155,9 +156,9 @@ namespace Html2Md
 				Match m = Regex.Match(inner.Substring(i), "<li\\b");
 				if (!m.Success) break;
 				int start = i + m.Index;
-				string block = HtmlUtil.GetTagBlock(inner, start, "li");
-				i = start + block.Length;
-				string liInner = HtmlUtil.GetInnerHtml(block, "li");
+				HtmlUtil.Block block = HtmlUtil.GetBlock(inner, start, "li");
+				i = start + block.Outer.Length;
+				string liInner = block.Inner;
 
 				// 入れ子のリストを取り出してから、残りを 1 行のテキストにする
 				List<string[]> nested = new List<string[]>();
@@ -166,7 +167,7 @@ namespace Html2Md
 					Match nm = Regex.Match(liInner, "<(ul|ol)\\b");
 					if (!nm.Success) break;
 					string nTag = nm.Groups[1].Value.ToLowerInvariant();
-					string nBlock = HtmlUtil.GetTagBlock(liInner, nm.Index, nTag);
+					string nBlock = HtmlUtil.GetBlock(liInner, nm.Index, nTag).Outer;
 					nested.Add(new string[] { nTag, nBlock });
 					liInner = liInner.Remove(nm.Index, nBlock.Length);
 				}

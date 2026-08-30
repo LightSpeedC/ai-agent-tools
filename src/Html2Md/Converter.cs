@@ -115,13 +115,13 @@ namespace Html2Md
 				Match m = Regex.Match(body.Substring(i), "<section\\b");
 				if (!m.Success) break;
 				int start = i + m.Index;
-				string block = HtmlUtil.GetTagBlock(body, start, "section");
-				i = start + block.Length;
+				HtmlUtil.Block block = HtmlUtil.GetBlock(body, start, "section");
+				i = start + block.Outer.Length;
 
-				Match h1 = Regex.Match(block, "(?s)<h1\\b[^>]*>(.*?)</h1>");
+				Match h1 = Regex.Match(block.Outer, "(?s)<h1\\b[^>]*>(.*?)</h1>");
 				if (!h1.Success) continue;   // 目次など h1 を持たない section は章に数えない
 				no++;
-				string id = HtmlUtil.GetAttr(HtmlUtil.GetOpenTag(block), "id");
+				string id = HtmlUtil.GetAttr(HtmlUtil.GetOpenTag(block.Outer), "id");
 				if (id.Length == 0) continue;
 				string title = HtmlUtil.GetPlainText(h1.Groups[1].Value);
 				map[id] = HtmlUtil.GetAnchor(no.ToString() + ". " + title);
@@ -148,6 +148,20 @@ namespace Html2Md
 			return new string('#', level) + " ";
 		}
 
+		/// <summary>
+		/// ブロック要素で囲まれていない地の文を 1 段落として足す。
+		/// 空白だけなら何もしない。
+		///
+		/// これが無いと &lt;div&gt;テキスト&lt;/div&gt; のように p で囲まなかった文が、
+		/// 警告も出ずに出力から消える。
+		/// </summary>
+		private void AddInlineText(string html, ConvertContext ctx, List<string> outBlocks)
+		{
+			if (string.IsNullOrEmpty(html)) return;
+			string text = inline.Convert(html, ctx.Anchors, false);
+			if (text.Length > 0) outBlocks.Add(text);
+		}
+
 		private List<string> ConvertBlocks(string html, ConvertContext ctx)
 		{
 			List<string> outBlocks = new List<string>();
@@ -159,12 +173,20 @@ namespace Html2Md
 			while (true)
 			{
 				Match m = Regex.Match(html.Substring(i), BlockTags);
-				if (!m.Success) break;
+				if (!m.Success)
+				{
+					// 最後のブロックより後ろに残ったテキスト
+					AddInlineText(html.Substring(i), ctx, outBlocks);
+					break;
+				}
 				int start = i + m.Index;
+				// ブロックの手前に地の文がある場合、それも 1 段落として出す。
+				// <div>テキスト<p>段落</p></div> のようにブロックと混在していても落とさない
+				AddInlineText(html.Substring(i, m.Index), ctx, outBlocks);
 				string tag = m.Groups[1].Value.ToLowerInvariant();
-				string block = HtmlUtil.GetTagBlock(html, start, tag);
-				i = start + block.Length;
-				string openTag = HtmlUtil.GetOpenTag(block);
+				HtmlUtil.Block block = HtmlUtil.GetBlock(html, start, tag);
+				i = start + block.Outer.Length;
+				string openTag = HtmlUtil.GetOpenTag(block.Outer);
 				string[] classes = HtmlUtil.GetClassList(openTag);
 
 				if (HtmlUtil.HasClass(classes, "md-skip")) continue;
@@ -173,18 +195,18 @@ namespace Html2Md
 				{
 					case "section":
 						ctx.InSection = true;
-						outBlocks.AddRange(ConvertBlocks(HtmlUtil.GetInnerHtml(block, "section"), ctx));
+						outBlocks.AddRange(ConvertBlocks(block.Inner, ctx));
 						ctx.InSection = false;
 						break;
 
 					case "footer":
 					case "nav":
-						outBlocks.AddRange(ConvertBlocks(HtmlUtil.GetInnerHtml(block, tag), ctx));
+						outBlocks.AddRange(ConvertBlocks(block.Inner, ctx));
 						break;
 
 					case "blockquote":
 						{
-							List<string> sub = ConvertBlocks(HtmlUtil.GetInnerHtml(block, "blockquote"), ctx);
+							List<string> sub = ConvertBlocks(block.Inner, ctx);
 							List<string> q = new List<string>();
 							bool first = true;
 							foreach (string b in sub)
@@ -203,13 +225,13 @@ namespace Html2Md
 
 					case "figure":
 						{
-							Match svgM = Regex.Match(block, "(?s)<svg\\b.*?</svg>");
+							Match svgM = Regex.Match(block.Outer, "(?s)<svg\\b.*?</svg>");
 							if (svgM.Success)
 							{
 								SvgExporter.Result info = SvgExporter.Export(svgM.Value, ctx);
 								outBlocks.Add("![" + info.Label + "](images/" + info.FileName + ")");
 							}
-							Match capM = Regex.Match(block, "(?s)<figcaption\\b[^>]*>(.*?)</figcaption>");
+							Match capM = Regex.Match(block.Outer, "(?s)<figcaption\\b[^>]*>(.*?)</figcaption>");
 							if (capM.Success)
 							{
 								string cap = inline.Convert(capM.Groups[1].Value, anchors, false);
@@ -220,21 +242,21 @@ namespace Html2Md
 
 					case "svg":
 						{
-							SvgExporter.Result info = SvgExporter.Export(block, ctx);
+							SvgExporter.Result info = SvgExporter.Export(block.Outer, ctx);
 							outBlocks.Add("![" + info.Label + "](images/" + info.FileName + ")");
 						}
 						break;
 
 					case "table":
 						{
-							string t = listTable.ConvertTable(block, anchors);
+							string t = listTable.ConvertTable(block.Outer, anchors);
 							if (t.Length > 0) outBlocks.Add(t);
 						}
 						break;
 
 					case "h1":
 						{
-							string text = inline.Convert(HtmlUtil.GetInnerHtml(block, "h1"), anchors, false);
+							string text = inline.Convert(block.Inner, anchors, false);
 							if (ctx.InTitlebar)
 							{
 								// タイトルバーの h1 は文書のタイトル
@@ -250,7 +272,7 @@ namespace Html2Md
 
 					case "h2":
 						{
-							string text = inline.Convert(HtmlUtil.GetInnerHtml(block, "h2"), anchors, false);
+							string text = inline.Convert(block.Inner, anchors, false);
 							if (text.Length == 0) break;
 							// 章の外にある h2（目次や索引の案内）は章と同じ深さにする
 							string mark = ctx.InSection ? HeadingMark(ctx, 2) : HeadingMark(ctx, 1);
@@ -264,17 +286,18 @@ namespace Html2Md
 					case "h6":
 						{
 							int level = int.Parse(tag.Substring(1));
-							string text = inline.Convert(HtmlUtil.GetInnerHtml(block, tag), anchors, false);
+							string text = inline.Convert(block.Inner, anchors, false);
 							if (text.Length > 0) outBlocks.Add(HeadingMark(ctx, level) + text);
 						}
 						break;
 
 					case "p":
 						{
-							string text = inline.Convert(HtmlUtil.GetInnerHtml(block, "p"), anchors, false);
+							string text = inline.Convert(block.Inner, anchors, false);
 							if (text.Length == 0) break;
 							// タイトルバー内の作成日・更新日は引用行にする
-							bool isMeta = HtmlUtil.HasClass(classes, "meta") || HtmlUtil.HasClass(classes, "date");
+							// 日付のクラス名は date に統一したが、meta を使っている既存プロジェクトも受ける
+							bool isMeta = HtmlUtil.HasClass(classes, "date") || HtmlUtil.HasClass(classes, "meta");
 							if (isMeta || (ctx.InTitlebar && text.StartsWith("📅", StringComparison.Ordinal)))
 							{
 								outBlocks.Add("> " + Regex.Replace(text, "\\s*\\r?\\n\\s*", " "));
@@ -288,7 +311,7 @@ namespace Html2Md
 
 					case "ul":
 						{
-							string items = listTable.ConvertList(block, "ul", anchors, 0);
+							string items = listTable.ConvertList(block.Outer, "ul", anchors, 0);
 							if (items.Length > 0) outBlocks.Add(items);
 						}
 						break;
@@ -296,20 +319,20 @@ namespace Html2Md
 					case "ol":
 						{
 							string items = HtmlUtil.HasClass(classes, "toc")
-								? listTable.ConvertToc(block, anchors)
-								: listTable.ConvertList(block, "ol", anchors, 0);
+								? listTable.ConvertToc(block.Outer, anchors)
+								: listTable.ConvertList(block.Outer, "ol", anchors, 0);
 							if (items.Length > 0) outBlocks.Add(items);
 						}
 						break;
 
 					case "pre":
-						outBlocks.Add(ConvertPre(block));
+						outBlocks.Add(ConvertPre(block.Inner));
 						break;
 
 					case "a":
 						{
 							// 段落の外に単独で置かれたリンク（.doclink など）
-							string text = inline.Convert(block, anchors, false);
+							string text = inline.Convert(block.Outer, anchors, false);
 							if (text.Length > 0) outBlocks.Add(text);
 						}
 						break;
@@ -324,7 +347,7 @@ namespace Html2Md
 			return cleaned;
 		}
 
-		private void ConvertDiv(string block, string[] classes, ConvertContext ctx, List<string> outBlocks)
+		private void ConvertDiv(HtmlUtil.Block block, string[] classes, ConvertContext ctx, List<string> outBlocks)
 		{
 			Dictionary<string, string> anchors = ctx.Anchors;
 
@@ -336,7 +359,7 @@ namespace Html2Md
 					string found;
 					if (CalloutKinds.TryGetValue(c, out found)) kind = found;
 				}
-				List<string> sub = ConvertBlocks(HtmlUtil.GetInnerHtml(block, "div"), ctx);
+				List<string> sub = ConvertBlocks(block.Inner, ctx);
 				List<string> q = new List<string>();
 				q.Add("> [!" + kind + "]");
 				foreach (string b in sub)
@@ -350,45 +373,46 @@ namespace Html2Md
 			if (HtmlUtil.HasClass(classes, "titlebar"))
 			{
 				ctx.InTitlebar = true;
-				outBlocks.AddRange(ConvertBlocks(HtmlUtil.GetInnerHtml(block, "div"), ctx));
+				outBlocks.AddRange(ConvertBlocks(block.Inner, ctx));
 				ctx.InTitlebar = false;
 				return;
 			}
 
 			if (HtmlUtil.HasClass(classes, "minibar"))
 			{
-				string text = inline.Convert(HtmlUtil.GetInnerHtml(block, "div"), anchors, false);
+				string text = inline.Convert(block.Inner, anchors, false);
 				if (text.Length > 0) outBlocks.Add("## " + text);
 				return;
 			}
 
 			if (HtmlUtil.HasClass(classes, "toc"))
 			{
-				Match h = Regex.Match(block, "(?s)<h2\\b[^>]*>(.*?)</h2>");
+				Match h = Regex.Match(block.Outer, "(?s)<h2\\b[^>]*>(.*?)</h2>");
 				if (h.Success)
 				{
 					outBlocks.Add("## " + inline.Convert(h.Groups[1].Value, anchors, false));
 				}
-				string items = listTable.ConvertToc(block, anchors);
+				string items = listTable.ConvertToc(block.Outer, anchors);
 				if (items.Length > 0) outBlocks.Add(items);
 				return;
 			}
 
-			if (HtmlUtil.HasClass(classes, "meta"))
+			// 日付のクラス名は date に統一したが、meta を使っている既存プロジェクトも受ける
+			if (HtmlUtil.HasClass(classes, "date") || HtmlUtil.HasClass(classes, "meta"))
 			{
 				// タイトルバー内の作成日・更新日は引用行にする
-				string text = inline.Convert(HtmlUtil.GetInnerHtml(block, "div"), anchors, false);
+				string text = inline.Convert(block.Inner, anchors, false);
 				if (text.Length > 0) outBlocks.Add("> " + Regex.Replace(text, "\\s*\\r?\\n\\s*", " "));
 				return;
 			}
 
 			// .wrap や .inner のような位置合わせだけのラッパは中身をそのまま処理する
-			outBlocks.AddRange(ConvertBlocks(HtmlUtil.GetInnerHtml(block, "div"), ctx));
+			outBlocks.AddRange(ConvertBlocks(block.Inner, ctx));
 		}
 
-		private static string ConvertPre(string block)
+		private static string ConvertPre(string blockInner)
 		{
-			string inner = HtmlUtil.GetInnerHtml(block, "pre");
+			string inner = blockInner;
 			string lang = "";
 			Match codeM = Regex.Match(inner, "(?s)<code\\b([^>]*)>(.*?)</code>");
 			if (codeM.Success)

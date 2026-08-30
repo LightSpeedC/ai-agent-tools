@@ -104,21 +104,38 @@ namespace Html2Md
 			return Regex.Replace(href, "\\.html(?=$|[#?])", ".md");
 		}
 
+		/// <summary>切り出したブロックと、その中身。</summary>
+		public sealed class Block
+		{
+			/// <summary>開きタグから閉じタグまで（閉じタグが無ければ末尾まで）</summary>
+			public string Outer;
+			/// <summary>開きタグと閉じタグの間（閉じタグが無ければ開きタグより後ろ全部）</summary>
+			public string Inner;
+		}
+
 		/// <summary>
-		/// start 位置から始まるタグの、対応する閉じタグまでを丸ごと返す（同名タグの入れ子に対応）。
+		/// start 位置から始まるタグのブロックと中身を切り出す（同名タグの入れ子に対応）。
 		/// タグ名の直後の文字を確かめるので、&lt;p&gt; が &lt;pre&gt; に一致することはない。
+		///
+		/// 中身の範囲はここで一緒に決める。ブロック全体を返して呼び出し側で
+		/// 閉じタグを探し直すと、子要素の閉じタグを自分のものと取り違える。
+		/// 閉じられていない要素（書き込み途中のログ HTML 等）では最後の子要素が失われていた。
 		/// </summary>
-		public static string GetTagBlock(string html, int start, string tag)
+		public static Block GetBlock(string html, int start, string tag)
 		{
 			string open = "<" + tag;
 			string close = "</" + tag + ">";
+			int contentStart = html.IndexOf('>', start);
+			contentStart = (contentStart < 0) ? html.Length : contentStart + 1;
+
 			int depth = 0;
 			int i = start;
 			while (i < html.Length)
 			{
 				int no = html.IndexOf(open, i, StringComparison.OrdinalIgnoreCase);
 				int nc = html.IndexOf(close, i, StringComparison.OrdinalIgnoreCase);
-				if (nc < 0) return html.Substring(start);
+				// 閉じタグが無い。末尾までをブロックとし、中身も末尾までとする
+				if (nc < 0) return MakeBlock(html.Substring(start), html.Substring(contentStart));
 				if (no >= 0 && no < nc)
 				{
 					char after = (no + open.Length < html.Length) ? html[no + open.Length] : ' ';
@@ -128,18 +145,23 @@ namespace Html2Md
 				}
 				depth--;
 				i = nc + close.Length;
-				if (depth <= 0) return html.Substring(start, i - start);
+				if (depth <= 0)
+				{
+					// nc がこのブロックに対応する閉じタグ
+					int len = nc - contentStart;
+					string inner = (len > 0) ? html.Substring(contentStart, len) : "";
+					return MakeBlock(html.Substring(start, i - start), inner);
+				}
 			}
-			return html.Substring(start);
+			return MakeBlock(html.Substring(start), html.Substring(contentStart));
 		}
 
-		/// <summary>ブロックの中身（開きタグと閉じタグの間）を返す。</summary>
-		public static string GetInnerHtml(string block, string tag)
+		private static Block MakeBlock(string outer, string inner)
 		{
-			int i = block.IndexOf('>');
-			int j = block.LastIndexOf("</" + tag + ">", StringComparison.OrdinalIgnoreCase);
-			if (i < 0 || j < 0 || j <= i) return "";
-			return block.Substring(i + 1, j - i - 1);
+			Block b = new Block();
+			b.Outer = outer;
+			b.Inner = inner;
+			return b;
 		}
 
 		/// <summary>ブロックの先頭の開きタグを返す。</summary>
