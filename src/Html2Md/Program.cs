@@ -21,9 +21,12 @@ namespace Html2Md
 			"\n" +
 			"    --root <パス>     対象のプロジェクトフォルダ（既定: カレントフォルダ）\n" +
 			"    --dir <名前>      探索するフォルダ。複数回指定できる（既定: notes）\n" +
+			"    --exclude <名前>  変換しないファイル名。複数回指定できる（既定: index.html）\n" +
 			"    --no-readme       ルート直下の README.html を対象から外す\n" +
 			"    --dry-run         書き出さず、変換結果と検査結果だけを表示する\n" +
 			"    --help            この説明を表示する\n" +
+			"\n" +
+			"  HTML 側で除外する場合は head に <meta name=\"md-skip\"> を置く\n" +
 			"\n" +
 			"  終了コード  0=指摘なし  1=指摘あり  2=引数や対象の誤り\n";
 
@@ -31,6 +34,7 @@ namespace Html2Md
 		{
 			string root = null;
 			List<string> dirs = new List<string>();
+			List<string> excludes = new List<string>();
 			bool noReadme = false;
 			bool dryRun = false;
 
@@ -46,6 +50,10 @@ namespace Html2Md
 					case "--dir":
 						if (i + 1 >= args.Length) return Fail("--dir にフォルダ名を指定してください。");
 						dirs.Add(args[++i]);
+						break;
+					case "--exclude":
+						if (i + 1 >= args.Length) return Fail("--exclude にファイル名を指定してください。");
+						excludes.Add(args[++i]);
 						break;
 					case "--no-readme":
 						noReadme = true;
@@ -67,6 +75,8 @@ namespace Html2Md
 			if (!Directory.Exists(root)) return Fail("フォルダが見つかりません: " + root);
 			root = Path.GetFullPath(root);
 			if (dirs.Count == 0) dirs.Add("notes");
+			// index.html は README.html へのリダイレクト専用なので既定で外す
+			if (excludes.Count == 0) excludes.Add("index.html");
 
 			Console.WriteLine();
 			Console.WriteLine("=== HTML → Markdown 変換 ===");
@@ -74,7 +84,7 @@ namespace Html2Md
 			Console.WriteLine("対象ルート: " + root);
 			Console.WriteLine("探索フォルダ: " + string.Join(", ", dirs.ToArray()) + (noReadme ? "" : " と README.html"));
 
-			List<string> targets = CollectTargets(root, dirs, noReadme);
+			List<string> targets = CollectTargets(root, dirs, excludes, noReadme);
 			if (targets.Count == 0)
 			{
 				Console.WriteLine();
@@ -88,6 +98,15 @@ namespace Html2Md
 			Console.WriteLine();
 			foreach (string t in targets)
 			{
+				// head に <meta name="md-skip"> があるページは Markdown にしない。
+				// details で畳んだ課題一覧のように、変換すると構造が失われるものがある
+				if (HtmlUtil.IsMdSkipPage(File.ReadAllText(t, Encoding.UTF8)))
+				{
+					Console.WriteLine("[" + Rel(root, t) + "]");
+					Console.WriteLine("    -- md-skip の指定により変換しません");
+					continue;
+				}
+
 				ConvertResult res;
 				try
 				{
@@ -195,7 +214,7 @@ namespace Html2Md
 		}
 
 		/// <summary>変換対象を集める。ルート直下の README.html と、指定フォルダ配下の *.html。</summary>
-		private static List<string> CollectTargets(string root, List<string> dirs, bool noReadme)
+		private static List<string> CollectTargets(string root, List<string> dirs, List<string> excludes, bool noReadme)
 		{
 			List<string> targets = new List<string>();
 			if (!noReadme)
@@ -211,12 +230,21 @@ namespace Html2Md
 				Array.Sort(found, StringComparer.OrdinalIgnoreCase);
 				foreach (string f in found)
 				{
-					// index.html は README.html へのリダイレクト専用なので変換しない
-					if (string.Equals(Path.GetFileName(f), "index.html", StringComparison.OrdinalIgnoreCase)) continue;
+					if (IsExcluded(f, excludes)) continue;
 					if (!targets.Contains(f)) targets.Add(f);
 				}
 			}
 			return targets;
+		}
+
+		private static bool IsExcluded(string path, List<string> excludes)
+		{
+			string name = Path.GetFileName(path);
+			foreach (string e in excludes)
+			{
+				if (string.Equals(name, e, StringComparison.OrdinalIgnoreCase)) return true;
+			}
+			return false;
 		}
 
 		private static string Rel(string root, string path)

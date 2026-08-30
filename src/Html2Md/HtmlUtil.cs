@@ -191,6 +191,19 @@ namespace Html2Md
 			}
 		}
 
+		/// <summary>
+		/// ページ全体を Markdown に出さない指定があるか。
+		/// &lt;meta name="md-skip"&gt; を head に置いたページは変換しない。
+		///
+		/// details / summary で畳んだ課題一覧のように、Markdown にすると
+		/// 構造が失われる HTML がある。クラスの md-skip は要素単位なので、
+		/// ページ単位の指定をこちらで受ける。
+		/// </summary>
+		public static bool IsMdSkipPage(string html)
+		{
+			return Regex.IsMatch(html, "<meta\\b[^>]*\\sname=\"md-skip\"", RegexOptions.IgnoreCase);
+		}
+
 		/// <summary>コメント・style・script・head を落とす。</summary>
 		public static string StripNonContent(string html)
 		{

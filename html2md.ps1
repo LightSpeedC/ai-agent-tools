@@ -43,6 +43,9 @@ param(
 	# 変換対象のプロジェクトフォルダ（既定: カレントフォルダ）
 	[string]$Root,
 
+	# 変換しないファイル名（既定: index.html）
+	[string[]]$Exclude,
+
 	# ファイルを書き出さず、変換結果と検査結果だけを表示する
 	[switch]$DryRun
 )
@@ -53,8 +56,9 @@ $ErrorActionPreference = 'Stop'
 # 既定値（プロジェクト固有の差分はここに集約する）
 # ---------------------------------------------------------------------------
 
-# 変換対象から外すファイル名（index.html は README.html へのリダイレクト専用）
-$ExcludeNames = @('index.html')
+# 変換対象から外すファイル名（index.html は README.html へのリダイレクト専用）。
+# -Exclude で置き換えられる
+$ExcludeNames = if ($Exclude) { $Exclude } else { @('index.html') }
 
 # バッジのクラス名 → Markdown で使う記号。
 # 色でしか区別していない情報なので、記号＋太字の文字情報に落とす。
@@ -223,6 +227,16 @@ function Get-Block {
 		}
 	}
 	return [pscustomobject]@{ Outer = $Html.Substring($Start); Inner = $Html.Substring($contentStart) }
+}
+
+# ページ全体を Markdown に出さない指定があるか。
+# <meta name="md-skip"> を head に置いたページは変換しない。
+#
+# details / summary で畳んだ課題一覧のように、Markdown にすると
+# 構造が失われる HTML がある。クラスの md-skip は要素単位なので、
+# ページ単位の指定をこちらで受ける。
+function Test-MdSkipPage([string]$Html) {
+	return [regex]::IsMatch($Html, '<meta\b[^>]*\sname="md-skip"', 'IgnoreCase')
 }
 
 function Get-OpenTag([string]$Block) {
@@ -1207,6 +1221,15 @@ $results = @()
 Write-Host ''
 foreach ($t in $targets) {
 	$rel = $t.FullName.Substring($Root.Length).TrimStart('\')
+
+	# head に <meta name="md-skip"> があるページは Markdown にしない。
+	# details で畳んだ課題一覧のように、変換すると構造が失われるものがある
+	if (Test-MdSkipPage ([System.IO.File]::ReadAllText($t.FullName, [System.Text.Encoding]::UTF8))) {
+		Write-Host ('[{0}]' -f $rel)
+		Write-Host '    -- md-skip の指定により変換しません'
+		continue
+	}
+
 	$res = Convert-HtmlFile -HtmlPath $t.FullName -Write (-not $DryRun)
 	$lines = ($res.Markdown -split '\r?\n').Count
 	$size = [System.Text.Encoding]::UTF8.GetByteCount($res.Markdown)

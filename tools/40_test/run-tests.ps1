@@ -57,6 +57,9 @@ $Expect = @{
 		'外部CSSのテスト',
 		'本文'
 	)
+	'md-skip' = @(
+		'KEEPMARK'                 # meta が無いページは変換される
+	)
 	'log-test' = @(
 		# 閉じていない div。最後の 1 行まで出ること
 		'2026-08-30 12:44:58.448',
@@ -116,12 +119,24 @@ foreach ($c in $cases) {
 		$ok = $false
 	}
 
+	# --- 出てはいけない文字列（md-skip の確認） ---
+	$forbidden = @{ 'md-skip' = @('SKIPMARK') }
+
 	# --- 出ているべき文字列 ---
 	$all = ($exeOut.Values -join "`n")
 	if ($Expect.ContainsKey($c.Name)) {
 		foreach ($e in $Expect[$c.Name]) {
 			if (-not $all.Contains($e)) {
 				Write-Result '[NG]' ('出力に含まれていません: ' + $e)
+				$ok = $false
+			}
+		}
+	}
+
+	if ($forbidden.ContainsKey($c.Name)) {
+		foreach ($f in $forbidden[$c.Name]) {
+			if ($all.Contains($f)) {
+				Write-Result '[NG]' ('出力に含まれてはいけません: ' + $f)
 				$ok = $false
 			}
 		}
