@@ -180,8 +180,13 @@ function Convert-LinkTarget([AllowEmptyString()][string]$Href) {
 	return ($Href -replace '\.html(?=$|[#?])', '.md')
 }
 
-# $Start 位置から始まるタグの、対応する閉じタグまでを丸ごと返す（同名タグの入れ子に対応）
-function Get-TagBlock {
+# $Start 位置から始まるタグのブロックと中身を切り出す（同名タグの入れ子に対応）。
+# Outer = 開きタグから閉じタグまで、Inner = 開きタグと閉じタグの間。
+#
+# 中身の範囲はここで一緒に決める。ブロック全体を返して呼び出し側で
+# 閉じタグを探し直すと、子要素の閉じタグを自分のものと取り違える。
+# 閉じられていない要素（書き込み途中のログ HTML 等）では最後の子要素が失われていた。
+function Get-Block {
 	param(
 		[string]$Html,
 		[int]$Start,
@@ -189,12 +194,18 @@ function Get-TagBlock {
 	)
 	$open = '<' + $Tag
 	$close = '</' + $Tag + '>'
+	$contentStart = $Html.IndexOf('>', $Start)
+	$contentStart = if ($contentStart -lt 0) { $Html.Length } else { $contentStart + 1 }
+
 	$depth = 0
 	$i = $Start
 	while ($i -lt $Html.Length) {
 		$no = $Html.IndexOf($open, $i, [System.StringComparison]::OrdinalIgnoreCase)
 		$nc = $Html.IndexOf($close, $i, [System.StringComparison]::OrdinalIgnoreCase)
-		if ($nc -lt 0) { return $Html.Substring($Start) }
+		# 閉じタグが無い。末尾までをブロックとし、中身も末尾までとする
+		if ($nc -lt 0) {
+			return [pscustomobject]@{ Outer = $Html.Substring($Start); Inner = $Html.Substring($contentStart) }
+		}
 		if ($no -ge 0 -and $no -lt $nc) {
 			# <p> が <pre> に一致してしまうのを防ぐため、タグ名の直後を確かめる
 			$after = if ($no + $open.Length -lt $Html.Length) { $Html[$no + $open.Length] } else { ' ' }
@@ -204,16 +215,14 @@ function Get-TagBlock {
 		}
 		$depth--
 		$i = $nc + $close.Length
-		if ($depth -le 0) { return $Html.Substring($Start, $i - $Start) }
+		if ($depth -le 0) {
+			# $nc がこのブロックに対応する閉じタグ
+			$len = $nc - $contentStart
+			$inner = if ($len -gt 0) { $Html.Substring($contentStart, $len) } else { '' }
+			return [pscustomobject]@{ Outer = $Html.Substring($Start, $i - $Start); Inner = $inner }
+		}
 	}
-	return $Html.Substring($Start)
-}
-
-function Get-InnerHtml([string]$Block, [string]$Tag) {
-	$i = $Block.IndexOf('>')
-	$j = $Block.LastIndexOf('</' + $Tag + '>', [System.StringComparison]::OrdinalIgnoreCase)
-	if ($i -lt 0 -or $j -lt 0 -or $j -le $i) { return '' }
-	return $Block.Substring($i + 1, $j - $i - 1)
+	return [pscustomobject]@{ Outer = $Html.Substring($Start); Inner = $Html.Substring($contentStart) }
 }
 
 function Get-OpenTag([string]$Block) {
@@ -438,14 +447,11 @@ function Convert-Inline {
 	$s = Convert-Entity $s
 	$s = $s -replace '\s+', ' '
 
+	# <br> はタグのまま出す。表の中と外で表現を揃える
+	$s = $s.Replace([string]$script:BR, '<br>')
 	if ($InTable) {
-		# セル内は Markdown が改行できないので <br> のまま残す
-		$s = $s.Replace([string]$script:BR, '<br>')
+		# セル区切りとの衝突を避ける
 		$s = $s -replace '\|', '\|'
-	}
-	else {
-		# 段落内の改行は行末 2 空白＋改行で表す
-		$s = $s.Replace([string]$script:BR, "  `n")
 	}
 	return $s.Trim()
 }
@@ -550,7 +556,8 @@ function Convert-List {
 		[hashtable]$Anchors,
 		[int]$Depth = 0
 	)
-	$inner = Get-InnerHtml $ListHtml $Tag
+	# リストの中身。閉じられていない場合も末尾までを中身とする
+	$inner = (Get-Block $ListHtml 0 $Tag).Inner
 	$indent = ' ' * (4 * $Depth)
 	$out = @()
 	$n = 0
@@ -559,9 +566,9 @@ function Convert-List {
 		$m = [regex]::Match($inner.Substring($i), '<li\b')
 		if (-not $m.Success) { break }
 		$start = $i + $m.Index
-		$block = Get-TagBlock $inner $start 'li'
-		$i = $start + $block.Length
-		$liInner = Get-InnerHtml $block 'li'
+		$block = Get-Block $inner $start 'li'
+		$i = $start + $block.Outer.Length
+		$liInner = $block.Inner
 
 		# 入れ子のリストを取り出してから、残りを 1 行のテキストにする
 		$nested = @()
@@ -569,7 +576,7 @@ function Convert-List {
 			$nm = [regex]::Match($liInner, '<(ul|ol)\b')
 			if (-not $nm.Success) { break }
 			$nTag = $nm.Groups[1].Value.ToLowerInvariant()
-			$nBlock = Get-TagBlock $liInner $nm.Index $nTag
+			$nBlock = (Get-Block $liInner $nm.Index $nTag).Outer
 			$nested += , @($nTag, $nBlock)
 			$liInner = $liInner.Remove($nm.Index, $nBlock.Length)
 		}
@@ -720,12 +727,21 @@ function Convert-Blocks {
 	while ($true) {
 		$m = [regex]::Match($Html.Substring($i),
 			'<(section|figure|footer|blockquote|div|nav|table|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\b')
-		if (-not $m.Success) { break }
+		if (-not $m.Success) {
+			# 最後のブロックより後ろに残ったテキスト
+			$rest = Convert-Inline -Html $Html.Substring($i) -Anchors $anchors
+			if ($rest) { $out.Add($rest) | Out-Null }
+			break
+		}
 		$start = $i + $m.Index
+		# ブロックの手前に地の文がある場合、それも 1 段落として出す。
+		# <div>テキスト<p>段落</p></div> のようにブロックと混在していても落とさない
+		$lead = Convert-Inline -Html $Html.Substring($i, $m.Index) -Anchors $anchors
+		if ($lead) { $out.Add($lead) | Out-Null }
 		$tag = $m.Groups[1].Value.ToLowerInvariant()
-		$block = Get-TagBlock $Html $start $tag
-		$i = $start + $block.Length
-		$openTag = Get-OpenTag $block
+		$block = Get-Block $Html $start $tag
+		$i = $start + $block.Outer.Length
+		$openTag = Get-OpenTag $block.Outer
 		$classes = Get-ClassList $openTag
 
 		if ($classes -contains 'md-skip') { continue }
@@ -733,17 +749,20 @@ function Convert-Blocks {
 		switch ($tag) {
 			'section' {
 				$Ctx.InSection = $true
-				foreach ($b in (Convert-Blocks (Get-InnerHtml $block 'section') $Ctx)) { $out.Add($b) | Out-Null }
+				$sub = Convert-Blocks ($block.Inner) $Ctx
+				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 				$Ctx.InSection = $false
 			}
 			'footer' {
-				foreach ($b in (Convert-Blocks (Get-InnerHtml $block 'footer') $Ctx)) { $out.Add($b) | Out-Null }
+				$sub = Convert-Blocks ($block.Inner) $Ctx
+				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 			}
 			'nav' {
-				foreach ($b in (Convert-Blocks (Get-InnerHtml $block 'nav') $Ctx)) { $out.Add($b) | Out-Null }
+				$sub = Convert-Blocks ($block.Inner) $Ctx
+				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 			}
 			'blockquote' {
-				$sub = @(Convert-Blocks (Get-InnerHtml $block 'blockquote') $Ctx)
+				$sub = Convert-Blocks ($block.Inner) $Ctx
 				$q = @()
 				$first = $true
 				foreach ($b in $sub) {
@@ -761,7 +780,7 @@ function Convert-Blocks {
 						if ($key -eq 'callout') { continue }
 						if ($script:CalloutKinds.ContainsKey($key)) { $kind = $script:CalloutKinds[$key] }
 					}
-					$sub = @(Convert-Blocks (Get-InnerHtml $block 'div') $Ctx)
+					$sub = Convert-Blocks ($block.Inner) $Ctx
 					$q = @('> [!' + $kind + ']')
 					foreach ($b in $sub) {
 						foreach ($line in ($b -split "`n")) { $q += ('> ' + $line).TrimEnd() }
@@ -770,50 +789,52 @@ function Convert-Blocks {
 				}
 				elseif ($classes -contains 'titlebar') {
 					$Ctx.InTitlebar = $true
-					foreach ($b in (Convert-Blocks (Get-InnerHtml $block 'div') $Ctx)) { $out.Add($b) | Out-Null }
+					$sub = Convert-Blocks ($block.Inner) $Ctx
+				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 					$Ctx.InTitlebar = $false
 				}
 				elseif ($classes -contains 'minibar') {
-					$text = Convert-Inline -Html (Get-InnerHtml $block 'div') -Anchors $anchors
+					$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 					if ($text) { $out.Add('## ' + $text) | Out-Null }
 				}
 				elseif ($classes -contains 'toc') {
-					$h = [regex]::Match($block, '(?s)<h2\b[^>]*>(.*?)</h2>')
+					$h = [regex]::Match($block.Outer, '(?s)<h2\b[^>]*>(.*?)</h2>')
 					if ($h.Success) { $out.Add('## ' + (Convert-Inline -Html $h.Groups[1].Value -Anchors $anchors)) | Out-Null }
-					$items = Convert-Toc -TocHtml $block -Anchors $anchors
+					$items = Convert-Toc -TocHtml $block.Outer -Anchors $anchors
 					if ($items) { $out.Add($items) | Out-Null }
 				}
 				elseif ($classes -contains 'meta') {
 					# タイトルバー内の作成日・更新日は引用行にする
-					$text = Convert-Inline -Html (Get-InnerHtml $block 'div') -Anchors $anchors
+					$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 					if ($text) { $out.Add('> ' + ($text -replace '\s*\r?\n\s*', ' ')) | Out-Null }
 				}
 				else {
-					foreach ($b in (Convert-Blocks (Get-InnerHtml $block 'div') $Ctx)) { $out.Add($b) | Out-Null }
+					$sub = Convert-Blocks ($block.Inner) $Ctx
+				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 				}
 			}
 			'figure' {
-				$svgM = [regex]::Match($block, '(?s)<svg\b.*?</svg>')
+				$svgM = [regex]::Match($block.Outer, '(?s)<svg\b.*?</svg>')
 				if ($svgM.Success) {
 					$info = Export-Svg -SvgHtml $svgM.Value -Ctx $Ctx
 					$out.Add(('![{0}](images/{1})' -f $info.Label, $info.FileName)) | Out-Null
 				}
-				$capM = [regex]::Match($block, '(?s)<figcaption\b[^>]*>(.*?)</figcaption>')
+				$capM = [regex]::Match($block.Outer, '(?s)<figcaption\b[^>]*>(.*?)</figcaption>')
 				if ($capM.Success) {
 					$cap = Convert-Inline -Html $capM.Groups[1].Value -Anchors $anchors
 					if ($cap) { $out.Add($cap) | Out-Null }
 				}
 			}
 			'svg' {
-				$info = Export-Svg -SvgHtml $block -Ctx $Ctx
+				$info = Export-Svg -SvgHtml $block.Outer -Ctx $Ctx
 				$out.Add(('![{0}](images/{1})' -f $info.Label, $info.FileName)) | Out-Null
 			}
 			'table' {
-				$t = Convert-Table -TableHtml $block -Anchors $anchors
+				$t = Convert-Table -TableHtml $block.Outer -Anchors $anchors
 				if ($t) { $out.Add($t) | Out-Null }
 			}
 			'h1' {
-				$text = Convert-Inline -Html (Get-InnerHtml $block 'h1') -Anchors $anchors
+				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 				if ($Ctx.InTitlebar) {
 					# タイトルバーの h1 は文書のタイトル
 					if ($text) { $out.Add('# ' + $text) | Out-Null }
@@ -824,30 +845,30 @@ function Convert-Blocks {
 				}
 			}
 			'h2' {
-				$text = Convert-Inline -Html (Get-InnerHtml $block 'h2') -Anchors $anchors
+				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 				if (-not $text) { break }
 				# 章の外にある h2（目次や索引の案内）は章と同じ深さにする
 				$mark = if ($Ctx.InSection) { Get-HeadingMark $Ctx 2 } else { Get-HeadingMark $Ctx 1 }
 				$out.Add($mark + $text) | Out-Null
 			}
 			'h3' {
-				$text = Convert-Inline -Html (Get-InnerHtml $block 'h3') -Anchors $anchors
+				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 				if ($text) { $out.Add((Get-HeadingMark $Ctx 3) + $text) | Out-Null }
 			}
 			'h4' {
-				$text = Convert-Inline -Html (Get-InnerHtml $block 'h4') -Anchors $anchors
+				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 				if ($text) { $out.Add((Get-HeadingMark $Ctx 4) + $text) | Out-Null }
 			}
 			'h5' {
-				$text = Convert-Inline -Html (Get-InnerHtml $block 'h5') -Anchors $anchors
+				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 				if ($text) { $out.Add((Get-HeadingMark $Ctx 5) + $text) | Out-Null }
 			}
 			'h6' {
-				$text = Convert-Inline -Html (Get-InnerHtml $block 'h6') -Anchors $anchors
+				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 				if ($text) { $out.Add((Get-HeadingMark $Ctx 6) + $text) | Out-Null }
 			}
 			'p' {
-				$text = Convert-Inline -Html (Get-InnerHtml $block 'p') -Anchors $anchors
+				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 				if (-not $text) { break }
 				# タイトルバー内の作成日・更新日は引用行にする
 				$isMeta = ($classes -contains 'meta') -or ($classes -contains 'date')
@@ -859,21 +880,21 @@ function Convert-Blocks {
 				}
 			}
 			'ul' {
-				$items = Convert-List -ListHtml $block -Tag 'ul' -Anchors $anchors
+				$items = Convert-List -ListHtml $block.Outer -Tag 'ul' -Anchors $anchors
 				if ($items) { $out.Add($items) | Out-Null }
 			}
 			'ol' {
 				if ($classes -contains 'toc') {
-					$items = Convert-Toc -TocHtml $block -Anchors $anchors
+					$items = Convert-Toc -TocHtml $block.Outer -Anchors $anchors
 					if ($items) { $out.Add($items) | Out-Null }
 				}
 				else {
-					$items = Convert-List -ListHtml $block -Tag 'ol' -Anchors $anchors
+					$items = Convert-List -ListHtml $block.Outer -Tag 'ol' -Anchors $anchors
 					if ($items) { $out.Add($items) | Out-Null }
 				}
 			}
 			'pre' {
-				$inner = Get-InnerHtml $block 'pre'
+				$inner = $block.Inner
 				$lang = ''
 				$codeM = [regex]::Match($inner, '(?s)<code\b([^>]*)>(.*?)</code>')
 				if ($codeM.Success) {
@@ -891,7 +912,7 @@ function Convert-Blocks {
 			}
 			'a' {
 				# 段落の外に単独で置かれたリンク（.doclink など）
-				$text = Convert-Inline -Html $block -Anchors $anchors
+				$text = Convert-Inline -Html $block.Outer -Anchors $anchors
 				if ($text) { $out.Add($text) | Out-Null }
 			}
 		}
@@ -911,11 +932,24 @@ function Get-AnchorMap {
 	)
 	$map = @{}
 	$no = 0
-	foreach ($m in [regex]::Matches($Body, '(?s)<section\b([^>]*)>(.*?)<h1\b[^>]*>(.*?)</h1>')) {
+	# section を 1 つずつ切り出して中の h1 を探す。
+	# 正規表現で <section>〜<h1> をまとめて拾うと、h1 を持たない
+	# <section class="toc"> が次の章の h1 まで飲み込み、
+	# 最初の章の id が登録されないまま章番号だけ進む。
+	$i = 0
+	while ($true) {
+		$m = [regex]::Match($Body.Substring($i), '<section\b')
+		if (-not $m.Success) { break }
+		$start = $i + $m.Index
+		$block = Get-Block $Body $start 'section'
+		$i = $start + $block.Outer.Length
+
+		$h1 = [regex]::Match($block.Outer, '(?s)<h1\b[^>]*>(.*?)</h1>')
+		if (-not $h1.Success) { continue }   # 目次など h1 を持たない section は章に数えない
 		$no++
-		$id = Get-Attr ('<section' + $m.Groups[1].Value + '>') 'id'
+		$id = Get-Attr (Get-OpenTag $block.Outer) 'id'
 		if (-not $id) { continue }
-		$title = Get-PlainText $m.Groups[3].Value
+		$title = Get-PlainText $h1.Groups[1].Value
 		$map[$id] = Get-Anchor ('{0}. {1}' -f $no, $title)
 	}
 	# h2 / h3 に id が振られている場合も拾う
@@ -969,7 +1003,7 @@ function Convert-HtmlFile {
 		Write       = $Write
 	}
 
-	$blocks = @(Convert-Blocks $body $ctx)
+	$blocks = Convert-Blocks $body $ctx
 	$md = ($blocks -join "`n`n")
 
 	# コードスパンを戻したあとで強調の記法を決める（前後の文字を見て判定するため）
@@ -1009,7 +1043,11 @@ function Test-MdLinks([object]$Result) {
 	}
 
 	$bad = @()
-	foreach ($m in [regex]::Matches($md, '!?\[[^\]]*\]\(([^)]+)\)')) {
+	# フェンスとコードスパンの中は対象にしない。
+	# 書き方を説明する文書では ![](images/xxx.svg) のような例がコードとして現れる
+	$body = [regex]::Replace($md, '(?s)```.*?```', '')
+	$body = [regex]::Replace($body, '`[^`\r\n]*`', '')
+	foreach ($m in [regex]::Matches($body, '!?\[[^\]]*\]\(([^)]+)\)')) {
 		$link = $m.Groups[1].Value
 		if ($link -match '^(https?:|mailto:|tel:)') { continue }
 		if ($link.StartsWith('#')) {
@@ -1045,23 +1083,35 @@ function Test-HtmlLinks([string]$HtmlPath) {
 	return , $bad
 }
 
-# Markdown の 1 行から、記法と色分けの代替記号を落として比較用の文字列にする
-function Get-CompareText([string]$Line) {
-	$s = $Line
-	$s = $s -replace '!\[[^\]]*\]\([^)]*\)', ''         # 画像は元が SVG なので本文に対応が無い
-	$s = $s -replace '\[([^\]]*)\]\([^)]*\)', '$1'      # リンクは表示文字だけ残す
+# 比較用に記号を落とす。Markdown 側と HTML 側に同じ処理をかけること。
+# 片方だけで落とすと、コード例に含まれる * や \ や <strong> が差分に見えて誤検出する。
+function Get-NormalizedText([string]$Text) {
+	$s = $Text
+	# 記法そのものがコード例として本文に現れることがあるので、両側で同じ扱いにする。
+	# 画像は元が SVG なら HTML の本文に対応が無いため、両側から落とす
+	$s = $s -replace '!\[[^\]]*\]\([^)]*\)', ''
+	$s = $s -replace '\[([^\]]*)\]\([^)]*\)', '$1'
+	# タグ名そのものがコード例として本文に現れることがある
 	$s = $s -replace '</?(strong|em|br)>', ''
-	$s = $s -replace '^\s*>\s*\[!\w+\]\s*$', ''
-	$s = $s -replace '^\s*>\s?', ''
-	$s = $s -replace '^\s*#{1,6}\s*', ''
-	$s = $s -replace '^\s*[-*+]\s+', ''
-	$s = $s -replace '^\s*\d+\.\s+', ''
 	$s = $s -replace '\\\|', '|'
-	$s = $s -replace '[*`|]', ''
+	# 記法の記号（* ` |）とパス区切りの \ は、どちらの側に現れても落とす
+	$s = $s -replace '[*`|\\]', ''
+	# 色分けの代替として認めた記号
 	$s = $s -replace '[✅❌⚠⬜✖―]', ''
 	$s = $s -replace '️', ''                       # 異体字セレクタ
 	$s = $s -replace '\s', ''
 	return $s
+}
+
+# Markdown の 1 行から、行頭の記法を落として比較用の文字列にする
+function Get-CompareText([string]$Line) {
+	$s = $Line
+	$s = $s -replace '^\s*>\s*\[!\w+\]\s*$', ''
+	$s = $s -replace '^\s*>\s?', ''
+	$s = $s -replace '^\s*#{1,6}\s*', ''
+	$s = $s -replace '^\s*[-+]\s+', ''
+	$s = $s -replace '^\s*\d+\.\s+', ''
+	return (Get-NormalizedText $s)
 }
 
 # Markdown 側にしか存在しない文言が無いか。
@@ -1077,17 +1127,17 @@ function Test-ExtraText([object]$Result) {
 	# aria-label は属性なのでタグ除去で消える。画像の alt と突き合わせるため足す
 	$labels = ''
 	foreach ($m in [regex]::Matches($html, 'aria-label="([^"]*)"')) { $labels += (Convert-Entity $m.Groups[1].Value) }
-	$plain = (Get-PlainText $html) + $labels
-	$plain = $plain -replace '[✅❌⚠⬜✖―]', ''
-	$plain = $plain -replace '️', ''
-	$plain = $plain -replace '\s', ''
+	$plain = Get-NormalizedText ((Get-PlainText $html) + $labels)
 
 	$extra = @()
 	$inFence = $false
 	$lineNo = 0
 	foreach ($line in ($Result.Markdown -split '\r?\n')) {
 		$lineNo++
-		if ($line.TrimStart().StartsWith('```')) { $inFence = -not $inFence; continue }
+		# callout の中のコードフェンスは "> ```" の形になる。
+		# 引用記号を外してから判定しないとフェンスの内外を取り違える
+		$head = ($line.TrimStart() -replace '^>\s?', '').TrimStart()
+		if ($head.StartsWith('```')) { $inFence = -not $inFence; continue }
 		if ($inFence) { continue }
 		if (-not $line.Trim()) { continue }
 		# 表の区切り行は記法そのもの
