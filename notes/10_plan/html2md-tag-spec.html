@@ -146,7 +146,7 @@
 	<div class="inner">
 		<h1>html2md タグ対応仕様</h1>
 		<p class="lead">html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-08-30</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-08-31</p>
 	</div>
 </div>
 
@@ -243,7 +243,7 @@
 	<table>
 		<thead><tr><th>タグ</th><th>Markdown の出力</th><th>備考</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>a</code></td><td><code>[文字](リンク先)</code></td><td>拡張子を <code>.md</code> に、<code>#chNN</code> を見出しアンカーに置き換える</td></tr>
+			<tr><td class="nowrap"><code>a</code></td><td><code>[文字](リンク先)</code></td><td>拡張子を <code>.md</code> に、<code>#chNN</code> を見出しアンカーに置き換える。<code>md-skip</code> のページへのリンクは <code>.html</code> のまま残す</td></tr>
 			<tr><td class="nowrap"><code>code</code></td><td><code>`コード`</code></td><td>中身は他の変換の対象にしない</td></tr>
 			<tr><td class="nowrap"><code>strong</code> <code>b</code></td><td><code>**太字**</code> または <code>&lt;strong&gt;</code></td><td>前後の文字で判定する</td></tr>
 			<tr><td class="nowrap"><code>em</code> <code>i</code></td><td><code>*斜体*</code> または <code>&lt;em&gt;</code></td><td>同上</td></tr>
@@ -353,6 +353,51 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 	<div class="callout">
 		<p>この修正で callout の中身が正しく取れるようになった結果、<strong>検査側の穴が露出した</strong>。callout 内のコードフェンスは <code>&gt; ```</code> の形になるが、検査は行頭の <code>```</code> しか見ていなかった。引用記号を外してから判定するよう直している。</p>
 	</div>
+
+	<h2>決着 3 — md-skip ページへのリンクは .html のまま残す <span class="badge b-ok">対処済み</span></h2>
+
+	<p><code>&lt;meta name="md-skip"&gt;</code> を付けたページは Markdown を生成しない。にもかかわらず、そのページを参照する側のリンクは <code>.md</code> に置き換えられていた。<strong>存在しないファイルを指すため、検査が必ずリンク切れを報告する。</strong>ai-chat-lite で 8 件が出た。</p>
+
+<pre><code class="language-text">★Markdown 側: リンク切れ: ../40_issues/issues.md
+★Markdown 側: リンク切れ: ../40_issues/issues.md#i260830-13</code></pre>
+
+	<p>置換は <code>HtmlUtil.ConvertLinkTarget</code> の 1 箇所で行うが、この関数は <code>href</code> の文字列だけを受け取る。<strong>リンク先が md-skip かどうかを知る手立てが無い</strong>のが原因だった。加えて md-skip のページは変換結果の一覧に入らないため、<code>--dry-run</code> のときに生成予定ファイルを実在扱いする仕組み（<code>expected</code>）にも入らない。</p>
+
+	<h3>採らなかった案</h3>
+
+	<p>リンクを外して文字だけ残す案もあった。404 にはならず、「HTML からは HTML、Markdown からは Markdown を参照する」という取り決めにも反しない。ただし<strong>読み手が Markdown 側から到達できなくなる</strong>。課題一覧のように参照される前提のページで、行き先を失うほうが困る。</p>
+
+	<h3>採った案</h3>
+
+	<p>md-skip のページへのリンクだけ <code>.html</code> のまま残す。到達できることを優先した。</p>
+
+<pre><code class="language-markdown">[課題](../40_issues/issues.html)</code></pre>
+
+	<div class="callout callout-important">
+		<p><strong>GitHub はリポジトリ内の <code>.html</code> をレンダリングしない。</strong>クリックするとソース表示になり、<code>details</code> の畳みは効かずタグが並んだ状態で読むことになる。それでも中身には到達できる。</p>
+	</div>
+
+	<div class="callout callout-warning">
+		<p>この案は<strong>「同じ種類同士でリンクし、混在させない」という取り決めの例外</strong>になる。Markdown 側から <code>.html</code> を指す形が正当な場合として残るため、取り決め側にも md-skip の例外を書き足す必要がある。</p>
+	</div>
+
+	<h3>実装</h3>
+
+	<p>変換の前に md-skip のページを洗い出し、その一覧を置換の判定に渡す。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>箇所</th><th>変更</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>Program.cs</code></td><td>変換前に全対象を先読みし、md-skip ページの絶対パスの集合を作る</td></tr>
+			<tr><td class="nowrap"><code>Converter</code></td><td>集合を受け取り、<code>InlineConverter</code> と基準ディレクトリを渡す</td></tr>
+			<tr><td class="nowrap"><code>HtmlUtil.ConvertLinkTarget</code></td><td>アンカーとクエリを分けてパスを解決し、集合に含まれるなら置換しない</td></tr>
+			<tr><td class="nowrap"><code>html2md.ps1</code></td><td>同じ処理を入れる。exe との出力一致をテストで見ているため</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>集合に無いリンクは従来どおり <code>.md</code> に置き換える。<code>Checks</code> 側は変更しない。<code>.html</code> は実在するファイルを指すため、そのままで検査を通る。</p>
 
 	<h2>論点 3 — 未対応タグをどうするか</h2>
 
