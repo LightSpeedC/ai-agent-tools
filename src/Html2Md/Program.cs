@@ -95,12 +95,25 @@ namespace Html2Md
 			Converter converter = new Converter();
 			List<ConvertResult> results = new List<ConvertResult>();
 
+			// head に <meta name="md-skip"> があるページは Markdown にしない。
+			// details で畳んだ課題一覧のように、変換すると構造が失われるものがある。
+			//
+			// 変換より先に洗い出すのは、リンクの置き換えがこの一覧を見るため。
+			// Markdown が生成されないページを .md で指すと必ずリンク切れになる
+			HashSet<string> mdSkipPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			foreach (string t in targets)
+			{
+				if (HtmlUtil.IsMdSkipPage(File.ReadAllText(t, Encoding.UTF8)))
+				{
+					mdSkipPages.Add(Path.GetFullPath(t));
+				}
+			}
+			converter.MdSkipPages = mdSkipPages;
+
 			Console.WriteLine();
 			foreach (string t in targets)
 			{
-				// head に <meta name="md-skip"> があるページは Markdown にしない。
-				// details で畳んだ課題一覧のように、変換すると構造が失われるものがある
-				if (HtmlUtil.IsMdSkipPage(File.ReadAllText(t, Encoding.UTF8)))
+				if (mdSkipPages.Contains(Path.GetFullPath(t)))
 				{
 					Console.WriteLine("[" + Rel(root, t) + "]");
 					Console.WriteLine("    -- md-skip の指定により変換しません");

@@ -24,9 +24,22 @@ namespace Html2Md
 		/// <summary>コードスパンの退避先。ファイル単位で作り直す。</summary>
 		private readonly List<string> codeSpans = new List<string>();
 
+		/// <summary>相対リンクを解決する基準。変換中の HTML があるフォルダ。</summary>
+		private string linkBaseDir = "";
+
+		/// <summary>md-skip のページ（絶対パス）。ここへのリンクは .html のまま残す。</summary>
+		private HashSet<string> mdSkipPages;
+
 		public void Reset()
 		{
 			codeSpans.Clear();
+		}
+
+		/// <summary>リンクの置き換えに使う基準フォルダと、Markdown を生成しないページの一覧。</summary>
+		public void SetLinkBase(string baseDir, HashSet<string> skipPages)
+		{
+			linkBaseDir = baseDir == null ? "" : baseDir;
+			mdSkipPages = skipPages;
 		}
 
 		private string StoreCodeSpan(string text)
@@ -137,7 +150,7 @@ namespace Html2Md
 				}
 				else
 				{
-					href = HtmlUtil.ConvertLinkTarget(href);
+					href = HtmlUtil.ConvertLinkTarget(href, linkBaseDir, mdSkipPages);
 				}
 				return "[" + text + "](" + href + ")";
 			});

@@ -177,10 +177,21 @@ function Get-Anchor([string]$Heading) {
 	return $a
 }
 
-# リンク先の拡張子を .md に差し替える。アンカーとクエリは保つ
+# リンク先の拡張子を .md に差し替える。アンカーとクエリは保つ。
+#
+# md-skip のページは Markdown が生成されないため、.md に置き換えると
+# 存在しないファイルを指す。そのページへのリンクだけ .html のまま残す。
 function Convert-LinkTarget([AllowEmptyString()][string]$Href) {
 	if ([string]::IsNullOrEmpty($Href)) { return '' }
 	if ($Href -match '^(https?:|mailto:|tel:|#)') { return $Href }
+	if ($script:MdSkipPages -and $script:MdSkipPages.Count -gt 0 -and $script:LinkBaseDir) {
+		$target = ($Href -split '#')[0]
+		if ($target) {
+			$full = $null
+			try { $full = [System.IO.Path]::GetFullPath((Join-Path $script:LinkBaseDir ($target -replace '/', '\'))) } catch { $full = $null }
+			if ($full -and $script:MdSkipPages.Contains($full)) { return $Href }
+		}
+	}
 	return ($Href -replace '\.html(?=$|[#?])', '.md')
 }
 
@@ -982,6 +993,7 @@ function Convert-HtmlFile {
 		[bool]$Write
 	)
 	$script:CodeSpans = New-Object System.Collections.ArrayList
+	$script:LinkBaseDir = Split-Path -Parent $HtmlPath
 
 	$html = [System.IO.File]::ReadAllText($HtmlPath, [System.Text.Encoding]::UTF8)
 
@@ -1218,13 +1230,24 @@ if ($targets.Count -eq 0) {
 }
 
 $results = @()
+
+# head に <meta name="md-skip"> があるページは Markdown にしない。
+# details で畳んだ課題一覧のように、変換すると構造が失われるものがある。
+#
+# 変換より先に洗い出すのは、リンクの置き換えがこの一覧を見るため。
+# Markdown が生成されないページを .md で指すと必ずリンク切れになる
+$script:MdSkipPages = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+foreach ($t in $targets) {
+	if (Test-MdSkipPage ([System.IO.File]::ReadAllText($t.FullName, [System.Text.Encoding]::UTF8))) {
+		[void]$script:MdSkipPages.Add([System.IO.Path]::GetFullPath($t.FullName))
+	}
+}
+
 Write-Host ''
 foreach ($t in $targets) {
 	$rel = $t.FullName.Substring($Root.Length).TrimStart('\')
 
-	# head に <meta name="md-skip"> があるページは Markdown にしない。
-	# details で畳んだ課題一覧のように、変換すると構造が失われるものがある
-	if (Test-MdSkipPage ([System.IO.File]::ReadAllText($t.FullName, [System.Text.Encoding]::UTF8))) {
+	if ($script:MdSkipPages.Contains([System.IO.Path]::GetFullPath($t.FullName))) {
 		Write-Host ('[{0}]' -f $rel)
 		Write-Host '    -- md-skip の指定により変換しません'
 		continue

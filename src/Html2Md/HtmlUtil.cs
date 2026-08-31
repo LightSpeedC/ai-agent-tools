@@ -96,11 +96,21 @@ namespace Html2Md
 			return a;
 		}
 
-		/// <summary>リンク先の拡張子を .md に差し替える。アンカーとクエリは保つ。</summary>
-		public static string ConvertLinkTarget(string href)
+		/// <summary>
+		/// リンク先の拡張子を .md に差し替える。アンカーとクエリは保つ。
+		///
+		/// md-skip のページは Markdown が生成されないため、.md に置き換えると
+		/// 存在しないファイルを指す。そのページへのリンクだけ .html のまま残す。
+		/// </summary>
+		public static string ConvertLinkTarget(string href, string baseDir, HashSet<string> mdSkipPages)
 		{
 			if (string.IsNullOrEmpty(href)) return "";
 			if (Regex.IsMatch(href, "^(https?:|mailto:|tel:|#)")) return href;
+			if (mdSkipPages != null && mdSkipPages.Count > 0 && !string.IsNullOrEmpty(baseDir))
+			{
+				string full = ResolveLink(baseDir, href);
+				if (full != null && mdSkipPages.Contains(full)) return href;
+			}
 			return Regex.Replace(href, "\\.html(?=$|[#?])", ".md");
 		}
 

@@ -50,6 +50,9 @@ namespace Html2Md
 		private readonly InlineConverter inline = new InlineConverter();
 		private readonly ListTableConverter listTable;
 
+		/// <summary>md-skip のページ（絶対パス）。ここへのリンクは .html のまま残す。</summary>
+		public HashSet<string> MdSkipPages;
+
 		public Converter()
 		{
 			listTable = new ListTableConverter(inline);
@@ -66,6 +69,7 @@ namespace Html2Md
 			bool hasMinibar = Regex.IsMatch(body, "<div\\b[^>]*class=\"[^\"]*\\bminibar\\b");
 			string dir = Path.GetDirectoryName(htmlPath);
 			string baseName = Path.GetFileNameWithoutExtension(htmlPath);
+			inline.SetLinkBase(dir, MdSkipPages);
 
 			ConvertContext ctx = new ConvertContext();
 			ctx.Anchors = BuildAnchorMap(body);
