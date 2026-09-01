@@ -43,8 +43,14 @@ param(
 	# 変換対象のプロジェクトフォルダ（既定: カレントフォルダ）
 	[string]$Root,
 
+	# 探索するフォルダ。複数指定できる（既定: notes）
+	[string[]]$Dir,
+
 	# 変換しないファイル名（既定: index.html）
 	[string[]]$Exclude,
+
+	# ルート直下の README.html を対象から外す
+	[switch]$NoReadme,
 
 	# ファイルを書き出さず、変換結果と検査結果だけを表示する
 	[switch]$DryRun
@@ -99,7 +105,15 @@ $SE = [char]0x02	# <strong> 終了
 $EB = [char]0x03	# <em> 開始
 $EE = [char]0x04	# <em> 終了
 $BR = [char]0x05	# <br>
-$CS = [char]0x07	# コードスパンの退避
+$DB = [char]0x06	# <del> 開始（~~ も ** と同じ前後判定を受ける）
+$DE = [char]0x08	# <del> 終了
+$CS = [char]0x07	# 退避した文字列の開始（コードスパン・タグのまま残すもの）
+# 退避した文字列の終了。開始と別の文字にする。
+# 両端を同じ文字にすると、あるキーの終了・本文の数字・次のキーの開始が並んだときに
+# 偽のキーができ、2<sup>10</sup> が別の退避内容に置き換わる。
+# センチネルに使えるのは \s にマッチしない制御文字だけ。本文は最後に空白をまとめるため、
+# \t \n \v \f \r（0x09〜0x0D）を使うとキーが空白に置き換わって壊れる。
+$CE = [char]0x0E
 
 # コードスパンの退避先（ファイル単位で作り直す）
 $script:CodeSpans = New-Object System.Collections.ArrayList
@@ -307,14 +321,40 @@ function Test-CanEmphasize {
 	return $true
 }
 
+# センチネルの文字から強調の種類を求める。開きと閉じで別に引く。
+#
+# switch を式として使うと、break を書かないかぎり後続の条件も評価され、
+# 一致した分岐すべての値が配列で返る。if の連鎖で書く
+function Get-EmphasisKind([char]$Ch, [bool]$IsBegin) {
+	if ($IsBegin) {
+		if ($Ch -ceq $script:SB) { return 'strong' }
+		if ($Ch -ceq $script:EB) { return 'em' }
+		if ($Ch -ceq $script:DB) { return 'del' }
+		return ''
+	}
+	if ($Ch -ceq $script:SE) { return 'strong' }
+	if ($Ch -ceq $script:EE) { return 'em' }
+	if ($Ch -ceq $script:DE) { return 'del' }
+	return ''
+}
+
+# 強調の種類から Markdown の記号を求める
+function Get-EmphasisMark([string]$Kind) {
+	if ($Kind -ceq 'strong') { return '**' }
+	if ($Kind -ceq 'em') { return '*' }
+	return '~~'
+}
+
 # センチネルで囲んだ強調を、内側から順に ** かタグに確定させる
 function Resolve-Emphasis([string]$Text) {
 	$t = $Text
-	$pat = "[$SB$EB]([^$SB$SE$EB$EE]*)[$SE$EE]"
+	$pat = "[$SB$EB$DB]([^$SB$SE$EB$EE$DB$DE]*)[$SE$EE$DE]"
 	while ($true) {
 		$m = [regex]::Match($t, $pat)
 		if (-not $m.Success) { break }
-		$isStrong = ($t[$m.Index] -eq $SB)
+		# 開きと閉じの種類が食い違うときは、記法にせずタグで出す
+		$openKind = Get-EmphasisKind $t[$m.Index] $true
+		$closeKind = Get-EmphasisKind $t[$m.Index + $m.Length - 1] $false
 		$inner = $m.Groups[1].Value.Trim()
 		$prefix = $t.Substring(0, $m.Index)
 		$suffix = $t.Substring($m.Index + $m.Length)
@@ -325,13 +365,14 @@ function Resolve-Emphasis([string]$Text) {
 		}
 		# 記号を挟まない状態で前後の文字を見る
 		$probe = $prefix + $inner + $suffix
-		if (Test-CanEmphasize -Text $probe -Start $prefix.Length -Length $inner.Length) {
-			$mark = if ($isStrong) { '**' } else { '*' }
+		$ok = ($openKind -ceq $closeKind) -and
+			(Test-CanEmphasize -Text $probe -Start $prefix.Length -Length $inner.Length)
+		if ($ok) {
+			$mark = Get-EmphasisMark $openKind
 			$rep = $mark + $inner + $mark
 		}
 		else {
-			$tag = if ($isStrong) { 'strong' } else { 'em' }
-			$rep = '<' + $tag + '>' + $inner + '</' + $tag + '>'
+			$rep = '<' + $openKind + '>' + $inner + '</' + $openKind + '>'
 		}
 		$t = $prefix + $rep + $suffix
 	}
@@ -344,13 +385,13 @@ function Resolve-Emphasis([string]$Text) {
 
 function Add-CodeSpan([string]$Text) {
 	$i = $script:CodeSpans.Add($Text)
-	return ([string]$script:CS + [string]$i + [string]$script:CS)
+	return ([string]$script:CS + [string]$i + [string]$script:CE)
 }
 
 function Restore-CodeSpan([string]$Text) {
 	$t = $Text
 	for ($i = $script:CodeSpans.Count - 1; $i -ge 0; $i--) {
-		$t = $t.Replace(([string]$script:CS + [string]$i + [string]$script:CS), $script:CodeSpans[$i])
+		$t = $t.Replace(([string]$script:CS + [string]$i + [string]$script:CE), $script:CodeSpans[$i])
 	}
 	return $t
 }
@@ -462,6 +503,26 @@ function Convert-Inline {
 		$inner = $m.Groups[2].Value
 		if (-not (Get-PlainText $inner)) { return '' }
 		return ([string]$script:EB + $inner + [string]$script:EE)
+	}))
+
+	# 取り消し線。GitHub は ~~ を解釈するが、** と同じ前後判定を受けるので
+	# 記法にするかタグにするかは最終段で決める
+	$s = [regex]::Replace($s, '(?s)<(del)\b[^>]*>(.*?)</\1>', (New-Evaluator {
+		param($m)
+		$inner = $m.Groups[2].Value
+		if (-not (Get-PlainText $inner)) { return '' }
+		return ([string]$script:DB + $inner + [string]$script:DE)
+	}))
+
+	# GitHub が解釈するインラインタグは、タグのまま残す。平文に落とすより情報が残る。
+	# 開きと閉じだけ退避し、中身は通常の変換を通す。
+	#
+	# ここに挙げるのは GitHub のレンダラで実際に生き残るものだけ。
+	# abbr・small・cite・time はサニタイズで除去され（中身のテキストは残る）、
+	# タグで出しても表示に効かないので平文に落とす
+	$s = [regex]::Replace($s, '</?(?:ins|sup|sub|mark|kbd|q)\b[^>]*>', (New-Evaluator {
+		param($m)
+		return (Add-CodeSpan $m.Value)
 	}))
 
 	# <br> はタグ除去で消えないよう退避する
@@ -735,6 +796,9 @@ function Get-HeadingMark {
 	)
 	$shift = if ($Ctx.HasMinibar) { 2 } else { 1 }
 	$level = $HtmlLevel + $shift
+	# 章の外の見出し（目次・索引の案内など）は章と同じ立場なので 1 段上げる。
+	# h2 だけを上げると h2 が ## で h3 が #### になり、### が抜ける
+	if ((-not $Ctx.InSection) -and $HtmlLevel -ge 2) { $level-- }
 	if ($level -gt 6) { $level = 6 }
 	return ('#' * $level) + ' '
 }
@@ -751,7 +815,8 @@ function Convert-Blocks {
 	$i = 0
 	while ($true) {
 		$m = [regex]::Match($Html.Substring($i),
-			'<(section|figure|footer|blockquote|div|nav|table|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\b')
+			('<(section|figure|footer|blockquote|div|nav|table|main|article|aside|header|address' +
+			 '|details|summary|dl|dt|dd|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\b'))
 		if (-not $m.Success) {
 			# 最後のブロックより後ろに残ったテキスト
 			$rest = Convert-Inline -Html $Html.Substring($i) -Anchors $anchors
@@ -783,6 +848,13 @@ function Convert-Blocks {
 				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 			}
 			'nav' {
+				$sub = Convert-Blocks ($block.Inner) $Ctx
+				foreach ($b in $sub) { $out.Add($b) | Out-Null }
+			}
+			# 文書構造のタグ（main article aside header address）と、
+			# Markdown に対応する記法が無いタグ（details summary dl dt dd）。
+			# 折りたたみや定義リストという構造は捨てて、中身のテキストを落とさないことを優先する
+			{ $_ -in @('main', 'article', 'aside', 'header', 'address', 'details', 'summary', 'dl', 'dt', 'dd') } {
 				$sub = Convert-Blocks ($block.Inner) $Ctx
 				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 			}
@@ -855,6 +927,12 @@ function Convert-Blocks {
 				$out.Add(('![{0}](images/{1})' -f $info.Label, $info.FileName)) | Out-Null
 			}
 			'table' {
+				# caption は表の見出し。Markdown に記法が無いので表の直前の段落にする
+				$tabCap = [regex]::Match($block.Outer, '(?s)<caption\b[^>]*>(.*?)</caption>')
+				if ($tabCap.Success) {
+					$cap = Convert-Inline -Html ($tabCap.Groups[1].Value) -Anchors $anchors
+					if ($cap) { $out.Add($cap) | Out-Null }
+				}
 				$t = Convert-Table -TableHtml $block.Outer -Anchors $anchors
 				if ($t) { $out.Add($t) | Out-Null }
 			}
@@ -872,9 +950,7 @@ function Convert-Blocks {
 			'h2' {
 				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
 				if (-not $text) { break }
-				# 章の外にある h2（目次や索引の案内）は章と同じ深さにする
-				$mark = if ($Ctx.InSection) { Get-HeadingMark $Ctx 2 } else { Get-HeadingMark $Ctx 1 }
-				$out.Add($mark + $text) | Out-Null
+				$out.Add((Get-HeadingMark $Ctx 2) + $text) | Out-Null
 			}
 			'h3' {
 				$text = Convert-Inline -Html ($block.Inner) -Anchors $anchors
@@ -1117,11 +1193,12 @@ function Get-NormalizedText([string]$Text) {
 	# 画像は元が SVG なら HTML の本文に対応が無いため、両側から落とす
 	$s = $s -replace '!\[[^\]]*\]\([^)]*\)', ''
 	$s = $s -replace '\[([^\]]*)\]\([^)]*\)', '$1'
-	# タグ名そのものがコード例として本文に現れることがある
-	$s = $s -replace '</?(strong|em|br)>', ''
+	# タグ名そのものがコード例として本文に現れることがある。
+	# タグのまま出すものは属性を持つことがあるので、開きタグは属性まで含めて落とす
+	$s = $s -replace '</?(?:strong|em|br|del|ins|sup|sub|mark|kbd|abbr|small|q|cite|time)\b[^>]*>', ''
 	$s = $s -replace '\\\|', '|'
-	# 記法の記号（* ` |）とパス区切りの \ は、どちらの側に現れても落とす
-	$s = $s -replace '[*`|\\]', ''
+	# 記法の記号（* ` | ~）とパス区切りの \ は、どちらの側に現れても落とす
+	$s = $s -replace '[*`|~\\]', ''
 	# 色分けの代替として認めた記号
 	$s = $s -replace '[✅❌⚠⬜✖―]', ''
 	$s = $s -replace '️', ''                       # 異体字セレクタ
@@ -1213,19 +1290,25 @@ Write-Host '=== HTML → Markdown 変換 ==='
 if ($DryRun) { Write-Host '（-DryRun: ファイルは書き出しません）' }
 Write-Host ('対象ルート: ' + $Root)
 
+$dirNames = if ($Dir) { $Dir } else { @('notes') }
+Write-Host ('探索フォルダ: ' + ($dirNames -join ' '))
+
 $targets = New-Object System.Collections.ArrayList
-$readme = Join-Path $Root 'README.html'
-if (Test-Path -LiteralPath $readme) { $targets.Add((Get-Item -LiteralPath $readme)) | Out-Null }
-$docs = Join-Path $Root 'docs'
-if (Test-Path -LiteralPath $docs) {
-	foreach ($f in (Get-ChildItem -LiteralPath $docs -Recurse -File -Filter '*.html' | Sort-Object FullName)) {
+if (-not $NoReadme) {
+	$readme = Join-Path $Root 'README.html'
+	if (Test-Path -LiteralPath $readme) { $targets.Add((Get-Item -LiteralPath $readme)) | Out-Null }
+}
+foreach ($d in $dirNames) {
+	$sub = Join-Path $Root $d
+	if (-not (Test-Path -LiteralPath $sub)) { continue }
+	foreach ($f in (Get-ChildItem -LiteralPath $sub -Recurse -File -Filter '*.html' | Sort-Object FullName)) {
 		$targets.Add($f) | Out-Null
 	}
 }
 $targets = @($targets | Where-Object { $ExcludeNames -notcontains $_.Name })
 
 if ($targets.Count -eq 0) {
-	Write-Host '変換対象の HTML が見つかりませんでした（README.html と docs\ 配下を探しています）。'
+	Write-Host ('変換対象の HTML が見つかりませんでした（README.html と ' + ($dirNames -join ' / ') + ' 配下を探しています）。')
 	exit 1
 }
 
