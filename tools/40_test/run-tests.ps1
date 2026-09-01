@@ -143,9 +143,16 @@ foreach ($c in $cases) {
 	}
 
 	# --- ps1 で変換して突き合わせる ---
+	#
+	# exe の出力は読み終わったら消す。残したままだと、ps1 が 1 つも生成しなかった場合に
+	# exe の出力をそのまま読んで「一致」と誤判定する
+	foreach ($f in @(Get-ChildItem -LiteralPath $work -Recurse -File -Filter '*.md')) {
+		Remove-Item -LiteralPath $f.FullName -Force
+	}
+
 	$ps1Err = $null
 	try {
-		& $Ps1 -Root $work *> (Join-Path $work 'ps1.log')
+		& $Ps1 -Root $work -Dir docs,notes *> (Join-Path $work 'ps1.log')
 	}
 	catch {
 		$ps1Err = $_.Exception.Message
@@ -157,10 +164,12 @@ foreach ($c in $cases) {
 	else {
 		foreach ($k in $exeOut.Keys) {
 			$path = $work + $k
-			if (-not (Test-Path -LiteralPath $path)) { continue }
+			if (-not (Test-Path -LiteralPath $path)) {
+				Write-Result '[NG]' ('ps1 が生成しませんでした: ' + $k)
+				$ok = $false
+				continue
+			}
 			$ps1Text = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
-			# ps1 は README.html と docs/ しか見ないため、notes/ 配下は比較しない
-			if ($k -like '\notes\*') { continue }
 			if ($ps1Text -cne $exeOut[$k]) {
 				$d = Compare-Object ($exeOut[$k] -split "`r?`n") ($ps1Text -split "`r?`n")
 				Write-Result '[NG]' ('exe と ps1 の出力が違います{0}（差分 {1} 行）' -f $k, $d.Count)
