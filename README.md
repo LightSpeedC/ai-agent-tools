@@ -1,22 +1,24 @@
 # html2md
 
-HTML と、そこから生成した Markdown を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。
+HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。
 
-> 📅 作成: 2026-08-27 / 更新: 2026-08-29
+> 📅 作成: 2026-08-27 / 更新: 2026-09-01
 
 ## 目次
 
 1. [このフォルダにあるもの](#1-このフォルダにあるもの)
-2. [check-markdown](#2-check-markdown)
-3. [check-contrast](#3-check-contrast)
+2. [html2md](#2-html2md)
+3. [check-markdown](#3-check-markdown)
+4. [check-contrast](#4-check-contrast)
 
 ## 1. このフォルダにあるもの
 
 | ツール | 何を確かめるか |
 |---|---|
+| `html2md.exe` | HTML から Markdown を生成する。**変換はこれを使う** |
+| `html2md.ps1` | 同じ処理の参照実装。exe の挙動を確かめるために残している |
 | `check-markdown.ps1` | Markdown が **GitHub 上で意図どおりに表示されるか** |
 | `check-contrast.ps1` | HTML の文字色と背景色が **読める組み合わせになっているか** |
-| `html2md.ps1` | HTML から Markdown を生成する |
 
 どちらの検証ツールも、**推測ではなく実物で判定する**。前者は GitHub のレンダラに投げ、後者はブラウザで実際に描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。
 
@@ -25,9 +27,95 @@ HTML と、そこから生成した Markdown を検証するツール置き場�
 | 文書 | 内容 |
 |---|---|
 | [html2md ツール共通化計画](notes/10_plan/html2md-plan.md) | 各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り |
+| [html2md タグ対応仕様](notes/10_plan/html2md-tag-spec.md) | どのタグをどう変換するか。実測した結果と、まだ決まっていない論点 |
 | [HTML クラス名の取り決め](notes/90_rules/html-class-rules.md) | html2md が読むクラス名。バッジ・callout・表・図の書き方 |
 
-## 2. check-markdown
+## 2. html2md
+
+### なぜ必要か
+
+ドキュメントは HTML で書き、GitHub で読むための Markdown をそこから生成する。<strong>HTML を正とし、Markdown は生成物として扱う。</strong>生成された `.md` を直接編集しても次回の実行で上書きされる。
+
+変換スクリプトは以前プロジェクトごとに置かれていた。同じ処理が 5 通りに分かれ、直しが片方にしか入らない状態になっていたため、ここに 1 本だけ置く形に変えた。
+
+### 使い方
+
+プロジェクトのフォルダで `html2md.exe` を呼ぶ。プロジェクト側には、これを呼ぶ `html2md.cmd` だけを `tools/30_html2md/` に置く。
+
+```powershell
+N:\2026\html2md\html2md.exe --root .
+N:\2026\html2md\html2md.exe --root . --dir docs --dir notes
+N:\2026\html2md\html2md.exe --root . --dry-run
+```
+
+| オプション | 既定 | 内容 |
+|---|---|---|
+| `--root <パス>` | カレントフォルダ | 対象のプロジェクトフォルダ |
+| `--dir <名前>` | `notes` | 探索するフォルダ。複数回指定できる |
+| `--exclude <名前>` | `index.html` | 変換しないファイル名。複数回指定できる |
+| `--no-readme` | — | ルート直下の `README.html` を対象から外す |
+| `--dry-run` | — | 書き出さず、変換結果と検査結果だけを表示する |
+| `--help` | — | 説明を表示する |
+
+終了コードは `0`＝指摘なし、`1`＝指摘あり、`2`＝引数や対象の誤り。
+
+> [!NOTE]
+> `--exclude` の既定で `index.html` を外しているのは、`README.html` へのリダイレクト専用ページで本文を持たないため。
+
+### 変換対象から外す
+
+外し方は 3 通りある。**何を外したいかで選ぶ。**
+
+| 外すもの | 書き方 |
+|---|---|
+| ページ全体 | `head` に `<meta name="md-skip">` を置く |
+| 要素だけ | その要素に `class="md-skip"` を付ける |
+| ファイル名で | `--exclude <名前>` を渡す |
+
+ページ全体を外すのは、変換すると構造が失われるものに使う。`details` で畳んだ課題一覧が該当する。Markdown に `details` の記法が無いため、畳みが解けて見出しも消える。
+
+#### md-skip のページへのリンク
+
+そのページを参照する側のリンクは、<strong>拡張子を置き換えず `.html` のまま残る。</strong>Markdown が生成されないため、`.md` にすると存在しないファイルを指すことになる。
+
+```markdown
+[課題](../40_issues/issues.html)
+```
+
+除外の判定は html2md が行うので、**書き手は常に `.html` と書けばよい。**
+
+> [!IMPORTANT]
+> GitHub はリポジトリ内の `.html` をレンダリングせず**ソース表示にする。**`details` の畳みは効かないが、中身には到達できる。
+
+### 仕組み
+
+正規表現だけで解析する。対象は自分たちで書いた整形済みの HTML に限る。**どのタグをどう変換するかは[タグ対応仕様](notes/10_plan/html2md-tag-spec.md)にまとめている。**
+
+#### タグのまま出すもの
+
+`ins` `sup` `sub` `mark` `kbd` `q` はタグのまま残す。**GitHub のレンダラで生き残ることを実測して選んだ。**`abbr` `small` `cite` `time` は除去されるため平文に落とす。
+
+`del` は `~~取り消し線~~` にする。ただし `~~` は `**` と同じ前後判定を受けるので、成立しない位置では `<del>` で出る。
+
+変換のあとに検査を行う。Markdown 側のリンク切れ・アンカー切れ、HTML 側が `.md` を参照していないか、HTML 側のリンク切れ、Markdown 側だけにある文言、更新日の古さを見る。**HTML 側も独立に検査するのは、Markdown 側だけ見ると変換で `.md` になった分と区別できず見逃すため。**
+
+#### 参照実装の ps1
+
+`html2md.ps1` は同じ処理を PowerShell で書いたもの。<strong>通常は exe を使う。</strong>ps1 は exe の挙動を読んで確かめるためと、csc.exe が使えない環境のために残している。`html2md_powershell.cmd` から実行できる。
+
+```powershell
+.\html2md.ps1 -Root . -Dir docs,notes -DryRun
+```
+
+引数は exe と対応する（`-Root` `-Dir` `-Exclude` `-NoReadme` `-DryRun`）。
+
+両者の出力が一致することを `tools/40_test/run-tests.cmd` で検査している。<strong>片方だけ直すと落ちる。</strong>テストは exe の出力を読んだあとに削除してから ps1 を走らせる。残したままにすると、ps1 が 1 つも生成しなかった場合に exe の出力を読んで「一致」と誤判定する。
+
+#### ビルド
+
+`build.cmd` を実行する。Roslyn の `csc.exe` があればそれを使い、無ければ .NET Framework 4.8 の `csc.exe` を使う。標準搭載版は C# 5 相当なので、文字列補間や `out var` は書けない。
+
+## 3. check-markdown
 
 ### なぜ必要か
 
@@ -83,7 +171,7 @@ Markdown を GitHub の Markdown API（`https://api.github.com/markdown`）に�
 
 判定は変換スクリプト側で機械的に行い、書き手には意識させない。
 
-## 3. check-contrast
+## 4. check-contrast
 
 ### なぜ必要か
 

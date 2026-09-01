@@ -167,7 +167,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-08-30</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-01</p>
 	</div>
 </div>
 
@@ -191,15 +191,16 @@
 	<p>タグ対応仕様の第 5 章に挙げた論点のうち、まだ決まっていないもの。実装を変えるときは先に方針を決める。</p>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-01</span>caption が出力されない</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-01</span>caption が出力されない</summary>
 		<div class="issue-body">
 			<p><code>&lt;table&gt;</code> の中にある <code>&lt;caption&gt;</code> が Markdown に出ない。表の処理が <code>thead</code> と <code>tbody</code> しか見ていないため、<code>caption</code> に到達しない。</p>
 			<p>36 ケースの実測で唯一残った欠落。Markdown のテーブルにキャプションの記法が無いので、表の直前か直後の段落にする必要がある。どちらに置くかを決める。</p>
+			<p><span class="badge b-ok">済</span>2026-09-01 に対処。<strong>表の直前の段落にした。</strong>見出しとして読めるのは前に置いたときなので、<code>figure</code> の <code>figcaption</code> と同じ形に揃えた。</p>
 		</div>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-02</span>ブロックとして扱っていないタグの構造が失われる</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">20260830-02</span>ブロックとして扱っていないタグの構造が失われる</summary>
 		<div class="issue-body">
 			<p>次のタグは <code>BlockTags</code> に無いため、中身が地の文として 1 つに連結される。テキストは消えないが構造は失われる。</p>
 			<div class="tablewrap">
@@ -214,11 +215,14 @@
 			</table>
 			</div>
 			<p><code>main</code> 系の 4 つは <code>BlockTags</code> に足すだけで済む。<code>dl</code> と <code>details</code> は落とし方を決める必要がある。</p>
+			<p><span class="badge b-ok">済</span>2026-09-01 に<strong>テキストを落とさない対処を入れた。</strong><code>hr</code> を除くすべてを走査の対象に加え、<code>dt</code> <code>dd</code> <code>summary</code> も個別に挙げて項目ごとの段落にした。<code>address</code> と <code>caption</code> も同時に対応した。</p>
+			<p><span class="badge b-none">未</span><strong>構造そのものは捨てたままにしている。</strong>定義リストを箇条書きか表に落とすか、<code>details</code> をタグのまま残すかは決めていない。テキストが読めるようになったので急がない。</p>
+			<p><span class="badge b-none">未</span><code>hr</code> は対象外。テキストを持たないため「中身を落とさない」の対象にならず、<code>---</code> を出すのは記号を足さない方針に触れる。</p>
 		</div>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-03</span>章の外で見出しの段が飛ぶ</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-03</span>章の外で見出しの段が飛ぶ</summary>
 		<div class="issue-body">
 			<p>章（<code>section</code>）の外に <code>h2</code> と <code>h3</code> を並べると <code>###</code> が抜ける。</p>
 			<div class="tablewrap">
@@ -231,14 +235,18 @@
 			</table>
 			</div>
 			<p><code>h2</code> だけが章の内外で段を変え、<code>h3</code> は変えていない。章の外の <code>h3</code> を <code>###</code> にするか、<code>h2</code> を章の中と同じ <code>###</code> に統一するかを決める。</p>
+			<p><span class="badge b-ok">済</span>2026-09-01 に対処。<strong>章の外の <code>h3</code> 以下も 1 段上げる形にした。</strong>章の外の見出しは章と同じ立場なので、<code>h2</code> を <code>##</code> にする判断を残し、同じ調整を <code>h3</code> 以下に通した。調整は 1 か所に寄せ、<code>h2</code> だけが持っていた分岐は消した。</p>
 		</div>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-04</span>意味を持つインラインタグが平文になる</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-04</span>意味を持つインラインタグが平文になる</summary>
 		<div class="issue-body">
 			<p><code>del</code> <code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>abbr</code> <code>small</code> <code>q</code> <code>cite</code> <code>time</code> はタグが消えて中身のテキストだけが残る。取り消し線や上付きの区別は Markdown に出ない。</p>
 			<p>GitHub は <code>~~取り消し線~~</code> を解釈するので <code>del</code> は記法にできる。<code>sup</code> <code>sub</code> <code>kbd</code> は HTML のまま残す手もある。どこまで対応するかを決める。</p>
+			<p><span class="badge b-ok">済</span>2026-09-01 に対処。<strong><code>del</code> は <code>~~</code>、GitHub で生き残るタグ（<code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>q</code>）はタグのまま残す。</strong><code>~~</code> も <code>**</code> と同じ前後判定を受けるため、強調と同じセンチネル方式に載せた。成立しない位置では <code>&lt;del&gt;</code> で出る。</p>
+			<p><strong>どのタグが残るかは実測で決めた。</strong>11 個すべてタグで出す実装にしたあと <code>api.github.com/markdown</code> へ投げたところ、<code>abbr</code> <code>small</code> <code>cite</code> <code>time</code> の 4 個は除去された（中身のテキストは残る）。表示に効かないため平文に落とすことにした。</p>
+			<p>この対応で<strong>退避の仕組みに潜んでいた欠陥が表面化した。</strong>キーの両端が同じ制御文字だったため、<code>2&lt;sup&gt;10&lt;/sup&gt;</code> のように数字が隣接すると偽のキーができ、別の退避内容に置き換わっていた。両端を別の文字にして直した。</p>
 		</div>
 	</details>
 </section>
@@ -263,6 +271,8 @@
 		<div class="issue-body">
 			<p>いまは相対リンクの <code>.html</code> をすべて <code>.md</code> に置き換えている。変換対象でない HTML へのリンクまで書き換わり、存在しないファイルを指す。</p>
 			<p>変換対象のファイル一覧は既に持っているので、その集合に含まれるものだけを書き換えるようにする。</p>
+			<p><span class="badge b-ok">済</span><code>md-skip</code> のページの分は 2026-09-01 に対処した。変換より先に md-skip のページを洗い出し、その一覧にあるリンクは <code>.html</code> のまま残す形にした。</p>
+			<p><span class="badge b-none">未</span><strong>探索フォルダの外にある HTML へのリンクは、今も <code>.md</code> に書き換わる。</strong><code>--dir</code> に含めていない <code>docs/</code> 等を参照した場合が該当する。残るのはこの分。</p>
 		</div>
 	</details>
 

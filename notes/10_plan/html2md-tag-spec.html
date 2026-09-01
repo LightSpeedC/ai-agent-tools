@@ -146,7 +146,7 @@
 	<div class="inner">
 		<h1>html2md タグ対応仕様</h1>
 		<p class="lead">html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-08-31</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-01</p>
 	</div>
 </div>
 
@@ -251,17 +251,20 @@
 			<tr><td class="nowrap"><code>span</code>（バッジ以外）</td><td>中身だけ残る</td><td>装飾目的とみなす</td></tr>
 			<tr><td class="nowrap"><code>img</code></td><td><code>![alt](src)</code></td><td></td></tr>
 			<tr><td class="nowrap"><code>br</code></td><td><code>&lt;br&gt;</code></td><td>表の中と外で同じ</td></tr>
+			<tr><td class="nowrap"><code>del</code></td><td><code>~~取り消し線~~</code> または <code>&lt;del&gt;</code></td><td><code>**</code> と同じ前後判定を受ける</td></tr>
+			<tr><td class="nowrap"><code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>q</code></td><td>タグのまま</td><td>GitHub で生き残ることを実測した</td></tr>
+			<tr><td class="nowrap"><code>abbr</code> <code>small</code> <code>cite</code> <code>time</code></td><td>中身だけ残る</td><td>GitHub が除去するため平文にする</td></tr>
 		</tbody>
 	</table>
 	</div>
 
-	<h2>タグが消えて中身だけ残るもの</h2>
+	<h2>タグのまま残すもの</h2>
 
-	<p>次のタグは記法に置き換えず、中身のテキストだけを残す。<strong>意味は失われる。</strong></p>
+	<p>次のタグは記法に置き換えず、<strong>タグのまま出す。</strong>GitHub のレンダラで生き残ることを実測で確かめたものだけを挙げている。</p>
 
-<pre><code>&lt;del&gt; &lt;ins&gt; &lt;sup&gt; &lt;sub&gt; &lt;mark&gt; &lt;kbd&gt; &lt;abbr&gt; &lt;small&gt; &lt;q&gt; &lt;cite&gt; &lt;time&gt;</code></pre>
+<pre><code class="language-text">ins sup sub mark kbd q</code></pre>
 
-	<p>取り消し線・上付き・キー表記といった区別は Markdown に出ない。GitHub は <code>~~取り消し線~~</code> を解釈するので <code>del</code> だけは記法にできるが、いまは対応していない。</p>
+	<p>開きタグと閉じタグだけを退避し、中身は通常の変換を通す。<code>del</code> は <code>~~取り消し線~~</code> にする（成立しない位置ではタグで出す）。<strong><code>abbr</code> <code>small</code> <code>cite</code> <code>time</code> は GitHub が除去するため平文に落とす。</strong>経緯は<a href="#ch05">決着 6</a>にある。</p>
 </section>
 
 <section class="ch04" id="ch04">
@@ -295,6 +298,10 @@
 
 	<h2>原因 2 — ブロックとして扱っていないタグ</h2>
 
+	<div class="callout callout-important">
+		<p><strong>この節は 2026-09-01 に対処済み。</strong><code>hr</code> を除くすべてを走査の対象に加えた。決着は<a href="#ch05">決着 4</a>にある。以下は何が起きていたかの記録。</p>
+	</div>
+
 	<p><code>BlockTags</code> に無いタグは走査の対象外なので、中身ごと飛ばされる。</p>
 
 	<div class="tablewrap">
@@ -313,6 +320,10 @@
 	</div>
 
 	<h2>見出しの段が飛ぶ</h2>
+
+	<div class="callout callout-important">
+		<p><strong>この節は 2026-09-01 に対処済み。</strong>決着は<a href="#ch05">決着 5</a>にある。以下は何が起きていたかの記録。</p>
+	</div>
 
 	<p>章の外に <code>h2</code> と <code>h3</code> を並べると、<code>##</code> の次が <code>####</code> になり <code>###</code> が抜ける。</p>
 
@@ -399,21 +410,88 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 
 	<p>集合に無いリンクは従来どおり <code>.md</code> に置き換える。<code>Checks</code> 側は変更しない。<code>.html</code> は実在するファイルを指すため、そのままで検査を通る。</p>
 
-	<h2>論点 3 — 未対応タグをどうするか</h2>
+	<h2>決着 4 — 未対応タグは中身のテキストを落とさない <span class="badge b-ok">対処済み</span></h2>
 
-	<p><code>main</code> <code>article</code> <code>aside</code> <code>header</code> は <code>div</code> と同じ「中身を処理する」扱いにすれば済む。<code>dl</code> と <code>details</code> は Markdown に対応する記法が無いため、落とし方を決める必要がある。</p>
+	<p>ブロックとして扱っていなかったタグを走査の対象に加えた。<strong>構造を保つことより、書いたテキストが消えないことを先にした。</strong></p>
 
-	<h2>論点 4 — 見出しの段飛び</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>タグ</th><th>扱い</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>main</code> <code>article</code> <code>aside</code> <code>header</code> <code>address</code></td><td>中身を処理する（<code>div</code> と同じ）</td></tr>
+			<tr><td class="nowrap"><code>details</code> <code>summary</code></td><td>畳みを解いて、中身を段落として出す</td></tr>
+			<tr><td class="nowrap"><code>dl</code> <code>dt</code> <code>dd</code></td><td>項目ごとの段落にする</td></tr>
+			<tr><td class="nowrap"><code>caption</code></td><td>表の直前の段落にする</td></tr>
+		</tbody>
+	</table>
+	</div>
 
-	<p>章の外の <code>h3</code> を <code>###</code> にするか、<code>h2</code> を章の中と同じ <code>###</code> に統一するか。</p>
+	<p><code>dt</code> <code>dd</code> <code>summary</code> を個別に挙げているのは、親（<code>dl</code> <code>details</code>）だけを挙げると<strong>中身がまとめて 1 段落になり、項目の境目が消えるため。</strong></p>
 
-	<h2>論点 5 — 意味を持つインラインタグ</h2>
+	<div class="callout">
+		<p><code>hr</code> は対象外。テキストを持たないため「中身を落とさない」の対象にならず、<code>---</code> を出すのは記号を足さない方針に触れる。</p>
+	</div>
 
-	<p><code>del</code> は <code>~~取り消し線~~</code> にできる。<code>sup</code> <code>sub</code> <code>kbd</code> は GitHub が HTML を解釈するのでタグのまま残す手もある。どこまで対応するかを決める。</p>
+	<h2>決着 5 — 章の外の見出しも段を詰める <span class="badge b-ok">対処済み</span></h2>
+
+	<p>章の外では <code>h2</code> だけが 1 段上がり、<code>h3</code> 以下は上がっていなかった。<code>##</code> の次が <code>####</code> になり <code>###</code> が抜ける。</p>
+
+	<p><strong>章の外の見出しは章と同じ立場</strong>（目次・関連文書など文書全体に対する見出し）なので、<code>h2</code> を <code>##</code> にする判断はそのまま残し、同じ調整を <code>h3</code> 以下にも通した。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>入力</th><th>章の中</th><th>章の外（旧）</th><th>章の外（新）</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>h2</code></td><td class="nowrap"><code>###</code></td><td class="nowrap"><code>##</code></td><td class="nowrap"><code>##</code></td></tr>
+			<tr><td class="nowrap"><code>h3</code></td><td class="nowrap"><code>####</code></td><td class="nowrap"><code>####</code></td><td class="nowrap"><code>###</code></td></tr>
+			<tr><td class="nowrap"><code>h4</code></td><td class="nowrap"><code>#####</code></td><td class="nowrap"><code>#####</code></td><td class="nowrap"><code>####</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>調整は <code>HeadingMark</code> の 1 か所に寄せ、<code>h2</code> だけが持っていた分岐は消した。</p>
+
+	<h2>決着 6 — 取り消し線は記法、他はタグで残す <span class="badge b-ok">対処済み</span></h2>
+
+	<p><code>del</code> は <code>~~取り消し線~~</code> にする。<strong>ただし <code>~~</code> も <code>**</code> と同じ前後判定を受ける。</strong>成立しない位置では <code>&lt;del&gt;</code> で出すため、強調と同じセンチネル方式に載せた。</p>
+
+<pre><code class="language-markdown">取り消し線は ~~この部分~~ が対象。
+閉じの直前が句読点だと記法が成立しない: &lt;del&gt;やめました。&lt;/del&gt;次の文へ続く。</code></pre>
+
+	<p>それ以外の意味を持つタグは、<strong>GitHub のレンダラで実際に生き残るものだけ</strong>タグのまま残す。開きタグと閉じタグだけを退避し、中身は通常の変換を通すので、<code>&lt;kbd&gt;&lt;strong&gt;Ctrl&lt;/strong&gt;&lt;/kbd&gt;</code> のような入れ子でも中身が変換される。</p>
+
+	<h3>どのタグが残るかは実測で決めた</h3>
+
+	<p>「GitHub は HTML を解釈するのでタグのまま残せる」という見込みで 11 個を並べたが、<strong>実際に <code>api.github.com/markdown</code> へ投げると 4 個は除去された。</strong></p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>タグ</th><th>GitHub</th><th>扱い</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>sup</code> <code>sub</code> <code>kbd</code> <code>mark</code> <code>ins</code> <code>q</code></td><td class="nowrap">残る</td><td>タグのまま出す</td></tr>
+			<tr><td class="nowrap"><code>abbr</code> <code>small</code> <code>cite</code> <code>time</code></td><td class="nowrap"><strong>除去される</strong></td><td>平文に落とす</td></tr>
+			<tr><td class="nowrap"><code>del</code></td><td class="nowrap">残る</td><td><code>~~</code> にする（前後判定で成立しないときはタグ）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>除去されるものは中身のテキストだけが残る。タグで出しても表示に効かないため、平文にした。</p>
+
+	<div class="callout callout-important">
+		<p><strong>タグが生き残るかを確かめる仕組みは無い。</strong><code>check-markdown</code> は <code>**</code> が記号のまま残っていないかだけを見ている。上の表は手で投げて確かめた結果で、GitHub 側のサニタイズが変われば古くなる。</p>
+	</div>
+
+	<div class="callout callout-important">
+		<p>この対応で<strong>退避の仕組みに潜んでいた欠陥が表面化した。</strong>キーが「制御文字＋連番＋同じ制御文字」の形だったため、<strong>あるキーの閉じ・本文の数字・次のキーの開きが並ぶと偽のキーができる。</strong><code>2&lt;sup&gt;10&lt;/sup&gt;</code> が別の退避内容に置き換わっていた。コードスパンだけを退避していた頃から潜んでいたもので、両端を別の文字にして直した。</p>
+	</div>
 
 	<div class="callout callout-warning">
-		<p><strong>論点 3 から 5 はまだ決まっていない。</strong>実装を変えるときは、先にここで方針を決めてから着手する。<code>caption</code> が出力されない件は論点 3 に含まれる。</p>
+		<p>センチネルに使えるのは <strong><code>\s</code> にマッチしない制御文字だけ。</strong>本文は最後に空白をまとめるため、<code>\t \n \v \f \r</code>（0x09〜0x0D）を使うとキーが空白に置き換わって壊れる。最初に選んだ <code>\v</code>（0x0B）でこれを踏んだ。</p>
 	</div>
+
+	<h2>残る論点</h2>
+
+	<p><code>del</code> 以外に取り消し線を表すタグ（<code>s</code> <code>strike</code>）は対象にしていない。<code>dl</code> を定義リストらしく（箇条書きか表に）落とすか、<code>details</code> をタグのまま残すかは、テキストが出るようになったので急がない。</p>
 </section>
 
 </div>

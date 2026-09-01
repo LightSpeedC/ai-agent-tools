@@ -11,10 +11,11 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
-	.ch03{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -125,8 +126,8 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>html2md</h1>
-		<p class="lead">HTML と、そこから生成した Markdown を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-08-29</p>
+		<p class="lead">HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-01</p>
 	</div>
 </div>
 
@@ -136,8 +137,9 @@
 	<h2>目次</h2>
 	<ol>
 		<li class="ch01"><a href="#ch01">このフォルダにあるもの</a></li>
-		<li class="ch02"><a href="#ch02">check-markdown</a></li>
-		<li class="ch03"><a href="#ch03">check-contrast</a></li>
+		<li class="ch02"><a href="#ch02">html2md</a></li>
+		<li class="ch03"><a href="#ch03">check-markdown</a></li>
+		<li class="ch04"><a href="#ch04">check-contrast</a></li>
 	</ol>
 </div>
 
@@ -148,9 +150,10 @@
 	<table>
 		<thead><tr><th>ツール</th><th>何を確かめるか</th></tr></thead>
 		<tbody>
+			<tr><td class="nowrap"><code>html2md.exe</code></td><td>HTML から Markdown を生成する。<strong>変換はこれを使う</strong></td></tr>
+			<tr><td class="nowrap"><code>html2md.ps1</code></td><td>同じ処理の参照実装。exe の挙動を確かめるために残している</td></tr>
 			<tr><td class="nowrap"><code>check-markdown.ps1</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
 			<tr><td class="nowrap"><code>check-contrast.ps1</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
-			<tr><td class="nowrap"><code>html2md.ps1</code></td><td>HTML から Markdown を生成する</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -164,6 +167,7 @@
 		<thead><tr><th>文書</th><th>内容</th></tr></thead>
 		<tbody>
 			<tr><td class="nowrap"><a href="notes/10_plan/html2md-plan.html">html2md ツール共通化計画</a></td><td>各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/html2md-tag-spec.html">html2md タグ対応仕様</a></td><td>どのタグをどう変換するか。実測した結果と、まだ決まっていない論点</td></tr>
 			<tr><td class="nowrap"><a href="notes/90_rules/html-class-rules.html">HTML クラス名の取り決め</a></td><td>html2md が読むクラス名。バッジ・callout・表・図の書き方</td></tr>
 		</tbody>
 	</table>
@@ -171,6 +175,99 @@
 </section>
 
 <section class="ch02" id="ch02">
+	<h1>html2md</h1>
+
+	<h2>なぜ必要か</h2>
+
+	<p>ドキュメントは HTML で書き、GitHub で読むための Markdown をそこから生成する。<strong>HTML を正とし、Markdown は生成物として扱う。</strong>生成された <code>.md</code> を直接編集しても次回の実行で上書きされる。</p>
+
+	<p>変換スクリプトは以前プロジェクトごとに置かれていた。同じ処理が 5 通りに分かれ、直しが片方にしか入らない状態になっていたため、ここに 1 本だけ置く形に変えた。</p>
+
+	<h2>使い方</h2>
+
+	<p>プロジェクトのフォルダで <code>html2md.exe</code> を呼ぶ。プロジェクト側には、これを呼ぶ <code>html2md.cmd</code> だけを <code>tools/30_html2md/</code> に置く。</p>
+
+<pre><code class="language-powershell">N:\2026\html2md\html2md.exe --root .
+N:\2026\html2md\html2md.exe --root . --dir docs --dir notes
+N:\2026\html2md\html2md.exe --root . --dry-run</code></pre>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>オプション</th><th>既定</th><th>内容</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>--root &lt;パス&gt;</code></td><td class="nowrap">カレントフォルダ</td><td>対象のプロジェクトフォルダ</td></tr>
+			<tr><td class="nowrap"><code>--dir &lt;名前&gt;</code></td><td class="nowrap"><code>notes</code></td><td>探索するフォルダ。複数回指定できる</td></tr>
+			<tr><td class="nowrap"><code>--exclude &lt;名前&gt;</code></td><td class="nowrap"><code>index.html</code></td><td>変換しないファイル名。複数回指定できる</td></tr>
+			<tr><td class="nowrap"><code>--no-readme</code></td><td class="nowrap">—</td><td>ルート直下の <code>README.html</code> を対象から外す</td></tr>
+			<tr><td class="nowrap"><code>--dry-run</code></td><td class="nowrap">—</td><td>書き出さず、変換結果と検査結果だけを表示する</td></tr>
+			<tr><td class="nowrap"><code>--help</code></td><td class="nowrap">—</td><td>説明を表示する</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>終了コードは <code>0</code>＝指摘なし、<code>1</code>＝指摘あり、<code>2</code>＝引数や対象の誤り。</p>
+
+	<div class="callout">
+		<p><code>--exclude</code> の既定で <code>index.html</code> を外しているのは、<code>README.html</code> へのリダイレクト専用ページで本文を持たないため。</p>
+	</div>
+
+	<h2>変換対象から外す</h2>
+
+	<p>外し方は 3 通りある。<strong>何を外したいかで選ぶ。</strong></p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>外すもの</th><th>書き方</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">ページ全体</td><td><code>head</code> に <code>&lt;meta name="md-skip"&gt;</code> を置く</td></tr>
+			<tr><td class="nowrap">要素だけ</td><td>その要素に <code>class="md-skip"</code> を付ける</td></tr>
+			<tr><td class="nowrap">ファイル名で</td><td><code>--exclude &lt;名前&gt;</code> を渡す</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>ページ全体を外すのは、変換すると構造が失われるものに使う。<code>details</code> で畳んだ課題一覧が該当する。Markdown に <code>details</code> の記法が無いため、畳みが解けて見出しも消える。</p>
+
+	<h3>md-skip のページへのリンク</h3>
+
+	<p>そのページを参照する側のリンクは、<strong>拡張子を置き換えず <code>.html</code> のまま残る。</strong>Markdown が生成されないため、<code>.md</code> にすると存在しないファイルを指すことになる。</p>
+
+<pre><code class="language-markdown">[課題](../40_issues/issues.html)</code></pre>
+
+	<p>除外の判定は html2md が行うので、<strong>書き手は常に <code>.html</code> と書けばよい。</strong></p>
+
+	<div class="callout callout-important">
+		<p>GitHub はリポジトリ内の <code>.html</code> をレンダリングせず<strong>ソース表示にする。</strong><code>details</code> の畳みは効かないが、中身には到達できる。</p>
+	</div>
+
+	<h2>仕組み</h2>
+
+	<p>正規表現だけで解析する。対象は自分たちで書いた整形済みの HTML に限る。<strong>どのタグをどう変換するかは<a href="notes/10_plan/html2md-tag-spec.html">タグ対応仕様</a>にまとめている。</strong></p>
+
+	<h3>タグのまま出すもの</h3>
+
+	<p><code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>q</code> はタグのまま残す。<strong>GitHub のレンダラで生き残ることを実測して選んだ。</strong><code>abbr</code> <code>small</code> <code>cite</code> <code>time</code> は除去されるため平文に落とす。</p>
+
+	<p><code>del</code> は <code>~~取り消し線~~</code> にする。ただし <code>~~</code> は <code>**</code> と同じ前後判定を受けるので、成立しない位置では <code>&lt;del&gt;</code> で出る。</p>
+
+	<p>変換のあとに検査を行う。Markdown 側のリンク切れ・アンカー切れ、HTML 側が <code>.md</code> を参照していないか、HTML 側のリンク切れ、Markdown 側だけにある文言、更新日の古さを見る。<strong>HTML 側も独立に検査するのは、Markdown 側だけ見ると変換で <code>.md</code> になった分と区別できず見逃すため。</strong></p>
+
+	<h3>参照実装の ps1</h3>
+
+	<p><code>html2md.ps1</code> は同じ処理を PowerShell で書いたもの。<strong>通常は exe を使う。</strong>ps1 は exe の挙動を読んで確かめるためと、csc.exe が使えない環境のために残している。<code>html2md_powershell.cmd</code> から実行できる。</p>
+
+<pre><code class="language-powershell">.\html2md.ps1 -Root . -Dir docs,notes -DryRun</code></pre>
+
+	<p>引数は exe と対応する（<code>-Root</code> <code>-Dir</code> <code>-Exclude</code> <code>-NoReadme</code> <code>-DryRun</code>）。</p>
+
+	<p>両者の出力が一致することを <code>tools/40_test/run-tests.cmd</code> で検査している。<strong>片方だけ直すと落ちる。</strong>テストは exe の出力を読んだあとに削除してから ps1 を走らせる。残したままにすると、ps1 が 1 つも生成しなかった場合に exe の出力を読んで「一致」と誤判定する。</p>
+
+	<h3>ビルド</h3>
+
+	<p><code>build.cmd</code> を実行する。Roslyn の <code>csc.exe</code> があればそれを使い、無ければ .NET Framework 4.8 の <code>csc.exe</code> を使う。標準搭載版は C# 5 相当なので、文字列補間や <code>out var</code> は書けない。</p>
+</section>
+
+<section class="ch03" id="ch03">
 	<h1>check-markdown</h1>
 
 	<h2>なぜ必要か</h2>
@@ -235,7 +332,7 @@
 	<p>判定は変換スクリプト側で機械的に行い、書き手には意識させない。</p>
 </section>
 
-<section class="ch03" id="ch03">
+<section class="ch04" id="ch04">
 	<h1>check-contrast</h1>
 
 	<h2>なぜ必要か</h2>
