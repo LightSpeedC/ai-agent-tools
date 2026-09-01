@@ -103,10 +103,11 @@ namespace Html2Md
 			// 画像は元が SVG なら HTML の本文に対応が無いため、両側から落とす
 			t = Regex.Replace(t, "!\\[[^\\]]*\\]\\([^)]*\\)", "");
 			t = Regex.Replace(t, "\\[([^\\]]*)\\]\\([^)]*\\)", "$1");
-			t = Regex.Replace(t, "</?(strong|em|br)>", "");
+			// タグのまま出すもの。属性を持つものがあるので開きタグは属性まで含めて落とす
+			t = Regex.Replace(t, "</?(?:strong|em|br|del|ins|sup|sub|mark|kbd|abbr|small|q|cite|time)\\b[^>]*>", "");
 			t = t.Replace("\\|", "|");
-			// 記法の記号（* ` |）とパス区切りの \ は、どちらの側に現れても落とす
-			t = Regex.Replace(t, "[*`|\\\\]", "");
+			// 記法の記号（* ` | ~）とパス区切りの \ は、どちらの側に現れても落とす
+			t = Regex.Replace(t, "[*`|~\\\\]", "");
 			// 色分けの代替として認めた記号
 			t = Regex.Replace(t, "[✅❌⚠⬜✖―]", "");
 			t = t.Replace("️", "");   // 異体字セレクタ

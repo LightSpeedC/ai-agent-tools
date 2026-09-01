@@ -43,9 +43,15 @@ namespace Html2Md
 			{ "callout-caution", "CAUTION" }
 		};
 
-		/// <summary>ブロックとして扱うタグ。</summary>
+		/// <summary>
+		/// ブロックとして扱うタグ。ここに無いタグは走査で飛ばされ、中身が地の文になる。
+		///
+		/// dt・dd・summary を個別に挙げているのは、親（dl・details）だけを挙げると
+		/// 中身がまとめて 1 段落になり、項目の境目が消えるため。
+		/// </summary>
 		private const string BlockTags =
-			"<(section|figure|footer|blockquote|div|nav|table|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\\b";
+			"<(section|figure|footer|blockquote|div|nav|table|main|article|aside|header|address"
+			+ "|details|summary|dl|dt|dd|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\\b";
 
 		private readonly InlineConverter inline = new InlineConverter();
 		private readonly ListTableConverter listTable;
@@ -143,11 +149,15 @@ namespace Html2Md
 		/// <summary>
 		/// 見出しの記号を決める。章（section 内の h1）は h2 相当に下げる。
 		/// ミニタイトルバーを使う構成では minibar が章の区切りになるので、配下をもう 1 段下げる。
+		///
+		/// 章の外の見出し（目次・索引の案内など）は章と同じ立場なので 1 段上げる。
+		/// h2 だけを上げると h2 が ## で h3 が #### になり、### が抜ける。
 		/// </summary>
 		private static string HeadingMark(ConvertContext ctx, int htmlLevel)
 		{
 			int shift = ctx.HasMinibar ? 2 : 1;
 			int level = htmlLevel + shift;
+			if (!ctx.InSection && htmlLevel >= 2) level--;
 			if (level > 6) level = 6;
 			return new string('#', level) + " ";
 		}
@@ -205,6 +215,19 @@ namespace Html2Md
 
 					case "footer":
 					case "nav":
+					// 文書構造のタグ。中身をそのまま処理する
+					case "main":
+					case "article":
+					case "aside":
+					case "header":
+					case "address":
+					// Markdown に対応する記法が無いタグ。まずは中身のテキストを落とさないことを優先し、
+					// 折りたたみや定義リストという構造は捨てて、項目ごとの段落として出す
+					case "details":
+					case "summary":
+					case "dl":
+					case "dt":
+					case "dd":
 						outBlocks.AddRange(ConvertBlocks(block.Inner, ctx));
 						break;
 
@@ -253,6 +276,13 @@ namespace Html2Md
 
 					case "table":
 						{
+							// caption は表の見出し。Markdown に記法が無いので表の直前の段落にする
+							Match tabCap = Regex.Match(block.Outer, "(?s)<caption\\b[^>]*>(.*?)</caption>");
+							if (tabCap.Success)
+							{
+								string cap = inline.Convert(tabCap.Groups[1].Value, anchors, false);
+								if (cap.Length > 0) outBlocks.Add(cap);
+							}
 							string t = listTable.ConvertTable(block.Outer, anchors);
 							if (t.Length > 0) outBlocks.Add(t);
 						}
@@ -278,9 +308,7 @@ namespace Html2Md
 						{
 							string text = inline.Convert(block.Inner, anchors, false);
 							if (text.Length == 0) break;
-							// 章の外にある h2（目次や索引の案内）は章と同じ深さにする
-							string mark = ctx.InSection ? HeadingMark(ctx, 2) : HeadingMark(ctx, 1);
-							outBlocks.Add(mark + text);
+							outBlocks.Add(HeadingMark(ctx, 2) + text);
 						}
 						break;
 

@@ -21,7 +21,10 @@ namespace Html2Md
 			{ "b-none", "" }
 		};
 
-		/// <summary>コードスパンの退避先。ファイル単位で作り直す。</summary>
+		/// <summary>
+		/// 以降の変換から外して最後に戻す文字列の退避先。ファイル単位で作り直す。
+		/// コードスパンと、タグのまま残すインラインタグが入る。
+		/// </summary>
 		private readonly List<string> codeSpans = new List<string>();
 
 		/// <summary>相対リンクを解決する基準。変換中の HTML があるフォルダ。</summary>
@@ -46,16 +49,16 @@ namespace Html2Md
 		{
 			int i = codeSpans.Count;
 			codeSpans.Add(text);
-			return Emphasis.CodeSpan.ToString() + i.ToString() + Emphasis.CodeSpan.ToString();
+			return Emphasis.CodeSpan.ToString() + i.ToString() + Emphasis.StoreEnd.ToString();
 		}
 
-		/// <summary>退避したコードスパンを本文に戻す。</summary>
+		/// <summary>退避した文字列を本文に戻す。</summary>
 		public string RestoreCodeSpans(string text)
 		{
 			string t = text;
 			for (int i = codeSpans.Count - 1; i >= 0; i--)
 			{
-				string key = Emphasis.CodeSpan.ToString() + i.ToString() + Emphasis.CodeSpan.ToString();
+				string key = Emphasis.CodeSpan.ToString() + i.ToString() + Emphasis.StoreEnd.ToString();
 				t = t.Replace(key, codeSpans[i]);
 			}
 			return t;
@@ -168,6 +171,24 @@ namespace Html2Md
 				if (HtmlUtil.GetPlainText(inner).Length == 0) return "";
 				return Emphasis.EmBegin + inner + Emphasis.EmEnd.ToString();
 			});
+
+			// 取り消し線。GitHub は ~~ を解釈するが、** と同じ前後判定を受けるので
+			// 記法にするかタグにするかは最終段で決める
+			s = Regex.Replace(s, "(?s)<(del)\\b[^>]*>(.*?)</\\1>", m =>
+			{
+				string inner = m.Groups[2].Value;
+				if (HtmlUtil.GetPlainText(inner).Length == 0) return "";
+				return Emphasis.DelBegin + inner + Emphasis.DelEnd.ToString();
+			});
+
+			// GitHub が解釈するインラインタグは、タグのまま残す。平文に落とすより情報が残る。
+			// 開きと閉じだけ退避し、中身は通常の変換を通す。
+			//
+			// ここに挙げるのは GitHub のレンダラで実際に生き残るものだけ。
+			// abbr・small・cite・time はサニタイズで除去され（中身のテキストは残る）、
+			// タグで出しても表示に効かないので平文に落とす
+			s = Regex.Replace(s, "</?(?:ins|sup|sub|mark|kbd|q)\\b[^>]*>",
+				m => StoreCodeSpan(m.Value));
 
 			// <br> はタグ除去で消えないよう退避する
 			s = Regex.Replace(s, "<br\\s*/?>", Emphasis.Break.ToString());
