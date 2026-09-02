@@ -167,7 +167,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-01</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-02</p>
 	</div>
 </div>
 
@@ -267,12 +267,12 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-06</span>.html → .md の書き換えを変換対象だけに絞る ［高］</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-06</span>.html → .md の書き換えを変換対象だけに絞る ［高］</summary>
 		<div class="issue-body">
 			<p>いまは相対リンクの <code>.html</code> をすべて <code>.md</code> に置き換えている。変換対象でない HTML へのリンクまで書き換わり、存在しないファイルを指す。</p>
 			<p>変換対象のファイル一覧は既に持っているので、その集合に含まれるものだけを書き換えるようにする。</p>
 			<p><span class="badge b-ok">済</span><code>md-skip</code> のページの分は 2026-09-01 に対処した。変換より先に md-skip のページを洗い出し、その一覧にあるリンクは <code>.html</code> のまま残す形にした。</p>
-			<p><span class="badge b-none">未</span><strong>探索フォルダの外にある HTML へのリンクは、今も <code>.md</code> に書き換わる。</strong><code>--dir</code> に含めていない <code>docs/</code> 等を参照した場合が該当する。残るのはこの分。</p>
+			<p><span class="badge b-ok">済</span>2026-09-02 に残りも対処した。<strong>判定を裏返して「この実行で <code>.md</code> ができるページの一覧」を持つ形にした。</strong>一覧にあるものだけ置き換え、無いものは <code>.html</code> のまま残す。md-skip のページも探索フォルダの外も、同じ 1 つの判定で片付く。</p>
 		</div>
 	</details>
 
@@ -316,7 +316,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-10</span>SVG 切り出し時に CSS 変数を解決する</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-10</span>SVG 切り出し時に CSS 変数を解決する</summary>
 		<div class="issue-body">
 			<p>デザインルールは <code>stop-color="var(--accent)"</code> の書き方を前提にしているが、SVG を単体ファイルに切り出すと変数が解決されず<strong>色が失われる</strong>。</p>
 <pre><code>&lt;section class="ch03"&gt;
@@ -328,6 +328,9 @@
 			<div class="callout callout-important">
 				<p><strong>ルールに従って書いた HTML ほどこの問題を踏む。</strong>この html2md 自身の図はリテラルの <code>hsl()</code> で書いていたため表面化していなかった。</p>
 			</div>
+			<p><span class="badge b-ok">済</span>2026-09-02 に対処。上の方針どおり実装した。<strong>定義も既定値も無いものは書き換えずに残す</strong>（消すと図が壊れるより、そのままのほうが気づける）。<code>@media</code> の中はブロックごと落としてから読む。</p>
+			<p>フォールバックの取り出しは括弧を数えている。<code>var(--x, hsl(280,78%,25%))</code> のように<strong>既定値の中に括弧が入ると <code>[^)]*</code> では途中で切れて壊れる。</strong></p>
+			<p>あわせて、テストが <code>.md</code> しか比べていなかったのを直し、<strong>切り出した <code>.svg</code> も exe と ps1 で突き合わせる</strong>ようにした。既存 6 プロジェクトの SVG に <code>var(</code> を含むものは無く、影響は出ていなかった。</p>
 		</div>
 	</details>
 </section>

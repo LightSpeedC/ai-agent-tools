@@ -110,8 +110,10 @@ foreach ($c in $cases) {
 		Write-Result '[NG]' ('exe が異常終了しました（終了コード {0}）' -f $exeCode)
 		$ok = $false
 	}
+	# 生成物は md と、切り出した svg。svg も比べるのは、SVG の中の CSS 変数を
+	# 解決する処理が入っており、片方だけ直すと気づけないため
 	$exeOut = @{}
-	foreach ($f in @(Get-ChildItem -LiteralPath $work -Recurse -File -Filter '*.md')) {
+	foreach ($f in @(Get-ChildItem -LiteralPath $work -Recurse -File | Where-Object { $_.Extension -eq '.md' -or $_.Extension -eq '.svg' })) {
 		$exeOut[$f.FullName.Substring($work.Length)] = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8)
 	}
 	if ($exeOut.Count -eq 0) {
@@ -146,7 +148,7 @@ foreach ($c in $cases) {
 	#
 	# exe の出力は読み終わったら消す。残したままだと、ps1 が 1 つも生成しなかった場合に
 	# exe の出力をそのまま読んで「一致」と誤判定する
-	foreach ($f in @(Get-ChildItem -LiteralPath $work -Recurse -File -Filter '*.md')) {
+	foreach ($f in @(Get-ChildItem -LiteralPath $work -Recurse -File | Where-Object { $_.Extension -eq '.md' -or $_.Extension -eq '.svg' })) {
 		Remove-Item -LiteralPath $f.FullName -Force
 	}
 
