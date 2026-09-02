@@ -193,19 +193,21 @@ function Get-Anchor([string]$Heading) {
 
 # リンク先の拡張子を .md に差し替える。アンカーとクエリは保つ。
 #
-# md-skip のページは Markdown が生成されないため、.md に置き換えると
-# 存在しないファイルを指す。そのページへのリンクだけ .html のまま残す。
+# 置き換えるのは、この実行で .md が生成されるページへのリンクだけ。
+# 探索フォルダの外にある HTML や md-skip のページを .md で指すと、
+# 存在しないファイルを指すことになる。
 function Convert-LinkTarget([AllowEmptyString()][string]$Href) {
 	if ([string]::IsNullOrEmpty($Href)) { return '' }
 	if ($Href -match '^(https?:|mailto:|tel:|#)') { return $Href }
-	if ($script:MdSkipPages -and $script:MdSkipPages.Count -gt 0 -and $script:LinkBaseDir) {
-		$target = ($Href -split '#')[0]
-		if ($target) {
-			$full = $null
-			try { $full = [System.IO.Path]::GetFullPath((Join-Path $script:LinkBaseDir ($target -replace '/', '\'))) } catch { $full = $null }
-			if ($full -and $script:MdSkipPages.Contains($full)) { return $Href }
-		}
+	# 対象が分からないときは従来どおり全部置き換える
+	if (-not $script:ConvertedPages -or -not $script:LinkBaseDir) {
+		return ($Href -replace '\.html(?=$|[#?])', '.md')
 	}
+	$target = ($Href -split '#')[0]
+	if (-not $target) { return $Href }
+	$full = $null
+	try { $full = [System.IO.Path]::GetFullPath((Join-Path $script:LinkBaseDir ($target -replace '/', '\'))) } catch { $full = $null }
+	if (-not $full -or -not $script:ConvertedPages.Contains($full)) { return $Href }
 	return ($Href -replace '\.html(?=$|[#?])', '.md')
 }
 
@@ -708,6 +710,123 @@ function Convert-Toc {
 # GitHub は Markdown 内のインライン SVG をサニタイズで除去するため、
 # images/ に独立ファイルとして書き出して画像参照にする。
 # ---------------------------------------------------------------------------
+# @media や @supports のブロックを中身ごと落とす。入れ子があるため括弧を数える
+function Remove-AtBlock([string]$Css) {
+	$sb = New-Object System.Text.StringBuilder
+	$i = 0
+	while ($true) {
+		$at = $Css.IndexOf('@', $i)
+		if ($at -lt 0) { [void]$sb.Append($Css.Substring($i)); break }
+		$brace = $Css.IndexOf('{', $at)
+		if ($brace -lt 0) { [void]$sb.Append($Css.Substring($i)); break }
+		[void]$sb.Append($Css.Substring($i, $at - $i))
+		$depth = 0
+		$end = -1
+		for ($q = $brace; $q -lt $Css.Length; $q++) {
+			if ($Css[$q] -eq '{') { $depth++ }
+			elseif ($Css[$q] -eq '}') { $depth--; if ($depth -eq 0) { $end = $q; break } }
+		}
+		if ($end -lt 0) { break }
+		$i = $end + 1
+	}
+	return $sb.ToString()
+}
+
+# style から CSS 変数を読む。「セレクタの鍵 → 変数名 → 値」の入れ子のハッシュ。
+# :root は空文字の鍵、章のクラスは chNN の鍵で持つ。
+#
+# SVG を単体ファイルに切り出すと var() が解決されず色が失われるため、
+# 切り出すときに静的に埋める。@media の中と JS による上書きは対象外。
+function Get-CssVars([string]$Html) {
+	$map = @{}
+	foreach ($st in [regex]::Matches($Html, '(?s)<style\b[^>]*>(.*?)</style>')) {
+		$css = [regex]::Replace($st.Groups[1].Value, '(?s)/\*.*?\*/', '')
+		$css = Remove-AtBlock $css
+		foreach ($rule in [regex]::Matches($css, '([^{}]+)\{([^{}]*)\}')) {
+			$decl = $rule.Groups[2].Value
+			if ($decl.IndexOf('--') -lt 0) { continue }
+
+			$keys = @()
+			foreach ($one in ($rule.Groups[1].Value -split ',')) {
+				$sel = $one.Trim()
+				if ($sel -ceq ':root') { $keys += '' }
+				elseif ($sel -cmatch '^\.(ch\d+)$') { $keys += $Matches[1] }
+			}
+			if ($keys.Count -eq 0) { continue }
+
+			foreach ($d in [regex]::Matches($decl, '(--[\w-]+)\s*:\s*([^;]+)')) {
+				$name = $d.Groups[1].Value
+				$val = $d.Groups[2].Value.Trim()
+				foreach ($key in $keys) {
+					if (-not $map.ContainsKey($key)) { $map[$key] = @{} }
+					$map[$key][$name] = $val
+				}
+			}
+		}
+	}
+	return $map
+}
+
+# var(--x) と var(--x, 既定値) を実際の値に置き換える。
+# 章のクラスの定義を先に見て、無ければ :root を見る。どちらにも無ければ
+# 既定値、それも無ければ元の記述を残す。
+#
+# 正規表現で括るとフォールバックに hsl(...) のような括弧が入ったときに
+# 途中で切れるため、括弧を数えて取り出す。
+function Resolve-CssVars([string]$Text, [hashtable]$Vars, [string]$ChapterClass) {
+	if (-not $Vars -or $Vars.Count -eq 0 -or -not $Text) { return $Text }
+	if ($Text.IndexOf('var(') -lt 0) { return $Text }
+
+	$sb = New-Object System.Text.StringBuilder
+	$i = 0
+	while ($true) {
+		$p = $Text.IndexOf('var(', $i)
+		if ($p -lt 0) { [void]$sb.Append($Text.Substring($i)); break }
+		[void]$sb.Append($Text.Substring($i, $p - $i))
+
+		$brace = $p + 3
+		$depth = 0
+		$end = -1
+		for ($q = $brace; $q -lt $Text.Length; $q++) {
+			if ($Text[$q] -eq '(') { $depth++ }
+			elseif ($Text[$q] -eq ')') { $depth--; if ($depth -eq 0) { $end = $q; break } }
+		}
+		if ($end -lt 0) { [void]$sb.Append($Text.Substring($p)); break }
+
+		$inner = $Text.Substring($brace + 1, $end - $brace - 1)
+		$original = $Text.Substring($p, $end - $p + 1)
+		[void]$sb.Append((Resolve-OneVar $inner $Vars $ChapterClass $original))
+		$i = $end + 1
+	}
+	return $sb.ToString()
+}
+
+function Resolve-OneVar([string]$Inner, [hashtable]$Vars, [string]$ChapterClass, [string]$Original) {
+	$comma = $Inner.IndexOf(',')
+	$name = if ($comma -lt 0) { $Inner.Trim() } else { $Inner.Substring(0, $comma).Trim() }
+	$fallback = if ($comma -lt 0) { '' } else { $Inner.Substring($comma + 1).Trim() }
+
+	$found = $null
+	if ($ChapterClass -and $Vars.ContainsKey($ChapterClass) -and $Vars[$ChapterClass].ContainsKey($name)) {
+		$found = $Vars[$ChapterClass][$name]
+	}
+	if ($null -eq $found -and $Vars.ContainsKey('') -and $Vars[''].ContainsKey($name)) {
+		$found = $Vars[''][$name]
+	}
+	if ($null -ne $found) { return (Resolve-CssVars $found $Vars $ChapterClass) }
+	if ($fallback) { return (Resolve-CssVars $fallback $Vars $ChapterClass) }
+	return $Original
+}
+
+# クラスの一覧から章のクラス（chNN）を返す。無ければ空文字
+function Get-ChapterClass([string[]]$Classes) {
+	if (-not $Classes) { return '' }
+	foreach ($c in $Classes) {
+		if ($c -cmatch '^ch\d+$') { return $c }
+	}
+	return ''
+}
+
 function Export-Svg {
 	param(
 		[string]$SvgHtml,
@@ -723,6 +842,10 @@ function Export-Svg {
 
 	$body = if ($open.Success) { $SvgHtml.Substring($open.Length) } else { $SvgHtml }
 	$body = [regex]::Replace($body, '(?s)</svg>\s*$', '')
+
+	# var(--accent) は切り出した先では解決されず、色が失われる。
+	# 章のクラスの定義を先に見て、無ければ :root を見て静的に埋める
+	$body = Resolve-CssVars $body $Ctx.CssVars $Ctx.ChapterClass
 
 	# 切り出したあとの id はファイル単位で一意ならよいので、短い名前に振り直す
 	$ids = @()
@@ -838,10 +961,16 @@ function Convert-Blocks {
 
 		switch ($tag) {
 			'section' {
+				# 章のクラスは配下の SVG が var() を解決するのに使う。
+				# 入れ子があっても壊れないよう、元の値に戻す
+				$prevClass = $Ctx.ChapterClass
+				$found = Get-ChapterClass $classes
+				if ($found) { $Ctx.ChapterClass = $found }
 				$Ctx.InSection = $true
 				$sub = Convert-Blocks ($block.Inner) $Ctx
 				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 				$Ctx.InSection = $false
+				$Ctx.ChapterClass = $prevClass
 			}
 			'footer' {
 				$sub = Convert-Blocks ($block.Inner) $Ctx
@@ -1073,6 +1202,9 @@ function Convert-HtmlFile {
 
 	$html = [System.IO.File]::ReadAllText($HtmlPath, [System.Text.Encoding]::UTF8)
 
+	# style は次で落ちるので、その前に CSS 変数を読む
+	$cssVars = Get-CssVars $html
+
 	# コメント・style・script・head を落とす
 	$html = [regex]::Replace($html, '(?s)<!--.*?-->', '')
 	$html = [regex]::Replace($html, '(?s)<style\b[^>]*>.*?</style>', '')
@@ -1103,6 +1235,8 @@ function Convert-HtmlFile {
 		HasMinibar  = $hasMinibar
 		ChapterNo   = 0
 		Write       = $Write
+		CssVars     = $cssVars
+		ChapterClass = ''
 	}
 
 	$blocks = Convert-Blocks $body $ctx
@@ -1317,12 +1451,18 @@ $results = @()
 # head に <meta name="md-skip"> があるページは Markdown にしない。
 # details で畳んだ課題一覧のように、変換すると構造が失われるものがある。
 #
-# 変換より先に洗い出すのは、リンクの置き換えがこの一覧を見るため。
-# Markdown が生成されないページを .md で指すと必ずリンク切れになる
+# 変換より先に、この実行で .md ができるページを確定させる。
+# リンクの置き換えがこの一覧を見て、載っていないものは .html のまま残す。
+# md-skip のページと、探索フォルダの外にある HTML がこれに当たる
 $script:MdSkipPages = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+$script:ConvertedPages = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
 foreach ($t in $targets) {
+	$full = [System.IO.Path]::GetFullPath($t.FullName)
 	if (Test-MdSkipPage ([System.IO.File]::ReadAllText($t.FullName, [System.Text.Encoding]::UTF8))) {
-		[void]$script:MdSkipPages.Add([System.IO.Path]::GetFullPath($t.FullName))
+		[void]$script:MdSkipPages.Add($full)
+	}
+	else {
+		[void]$script:ConvertedPages.Add($full)
 	}
 }
 
