@@ -386,10 +386,13 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-16</span>exe を git に含めるか</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-16</span>exe を git に含めるか</summary>
 		<div class="issue-body">
 			<p>いまは <code>.gitignore</code> の <code>*.exe</code> で除外している。<strong>ビルド後にサイズを測り、小さければ含める方向で再検討する</strong>と決めていた。</p>
 			<p>現在のサイズは 35 KB 程度。含めれば clone 直後にビルドせずに使える。含めなければ差分の読めないものが履歴に残らない。</p>
+			<p><span class="badge b-ok">済</span>2026-09-02 に<strong>含めないことに決めた。</strong><code>.gitignore</code> の <code>*.exe</code> をそのまま残す。</p>
+			<p>サイズは小さいまま（実測 40 KB）だが、<strong>変えるたびに差分の読めないものが履歴に積む。</strong><code>build.cmd</code> を 1 回実行すれば作れるので、clone 直後に使えないことの不便は小さい。</p>
+			<p>一度も追跡していないため、履歴の書き換えは要らない。<code>.gitignore</code> に書くだけでは追跡済みのファイルは外れないが、この exe は最初から対象外だった。</p>
 		</div>
 	</details>
 
