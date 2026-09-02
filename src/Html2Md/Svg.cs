@@ -33,6 +33,10 @@ namespace Html2Md
 			string body = open.Success ? svgHtml.Substring(open.Length) : svgHtml;
 			body = Regex.Replace(body, "(?s)</svg>\\s*$", "");
 
+			// var(--accent) は切り出した先では解決されず、色が失われる。
+			// 章のクラスの定義を先に見て、無ければ :root を見て静的に埋める
+			body = HtmlUtil.ResolveCssVars(body, ctx.CssVars, ctx.ChapterClass);
+
 			// 切り出したあとの id はファイル単位で一意ならよいので、短い名前に振り直す
 			List<string> ids = new List<string>();
 			foreach (Match m in Regex.Matches(body, "\\sid=\"([^\"]+)\""))

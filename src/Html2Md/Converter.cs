@@ -19,6 +19,10 @@ namespace Html2Md
 		public bool HasMinibar;
 		public int ChapterNo;
 		public bool Write;
+		/// <summary>style から読んだ CSS 変数。SVG の var() を解決するのに使う。</summary>
+		public Dictionary<string, Dictionary<string, string>> CssVars;
+		/// <summary>いま処理している章のクラス（chNN）。章の外では空文字。</summary>
+		public string ChapterClass = "";
 	}
 
 	/// <summary>変換した結果。</summary>
@@ -56,8 +60,8 @@ namespace Html2Md
 		private readonly InlineConverter inline = new InlineConverter();
 		private readonly ListTableConverter listTable;
 
-		/// <summary>md-skip のページ（絶対パス）。ここへのリンクは .html のまま残す。</summary>
-		public HashSet<string> MdSkipPages;
+		/// <summary>この実行で .md が生成されるページ（絶対パス）。ここへのリンクだけ .md にする。</summary>
+		public HashSet<string> ConvertedPages;
 
 		public Converter()
 		{
@@ -69,13 +73,15 @@ namespace Html2Md
 			inline.Reset();
 
 			string html = File.ReadAllText(htmlPath, Encoding.UTF8);
+			// style は次の行で落ちるので、その前に CSS 変数を読む
+			Dictionary<string, Dictionary<string, string>> cssVars = HtmlUtil.BuildCssVars(html);
 			html = HtmlUtil.StripNonContent(html);
 			string body = HtmlUtil.ExtractBody(html);
 
 			bool hasMinibar = Regex.IsMatch(body, "<div\\b[^>]*class=\"[^\"]*\\bminibar\\b");
 			string dir = Path.GetDirectoryName(htmlPath);
 			string baseName = Path.GetFileNameWithoutExtension(htmlPath);
-			inline.SetLinkBase(dir, MdSkipPages);
+			inline.SetLinkBase(dir, ConvertedPages);
 
 			ConvertContext ctx = new ConvertContext();
 			ctx.Anchors = BuildAnchorMap(body);
@@ -83,6 +89,7 @@ namespace Html2Md
 			ctx.BasePrefix = baseName;
 			ctx.HasMinibar = hasMinibar;
 			ctx.Write = write;
+			ctx.CssVars = cssVars;
 
 			List<string> blocks = ConvertBlocks(body, ctx);
 			string md = string.Join("\n\n", blocks.ToArray());
@@ -208,9 +215,17 @@ namespace Html2Md
 				switch (tag)
 				{
 					case "section":
-						ctx.InSection = true;
-						outBlocks.AddRange(ConvertBlocks(block.Inner, ctx));
-						ctx.InSection = false;
+						{
+							// 章のクラスは配下の SVG が var() を解決するのに使う。
+							// 入れ子があっても壊れないよう、元の値に戻す
+							string prevClass = ctx.ChapterClass;
+							string found = HtmlUtil.FindChapterClass(classes);
+							if (found.Length > 0) ctx.ChapterClass = found;
+							ctx.InSection = true;
+							outBlocks.AddRange(ConvertBlocks(block.Inner, ctx));
+							ctx.InSection = false;
+							ctx.ChapterClass = prevClass;
+						}
 						break;
 
 					case "footer":

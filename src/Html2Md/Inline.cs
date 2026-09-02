@@ -30,19 +30,19 @@ namespace Html2Md
 		/// <summary>相対リンクを解決する基準。変換中の HTML があるフォルダ。</summary>
 		private string linkBaseDir = "";
 
-		/// <summary>md-skip のページ（絶対パス）。ここへのリンクは .html のまま残す。</summary>
-		private HashSet<string> mdSkipPages;
+		/// <summary>この実行で .md が生成されるページ（絶対パス）。ここへのリンクだけ .md にする。</summary>
+		private HashSet<string> convertedPages;
 
 		public void Reset()
 		{
 			codeSpans.Clear();
 		}
 
-		/// <summary>リンクの置き換えに使う基準フォルダと、Markdown を生成しないページの一覧。</summary>
-		public void SetLinkBase(string baseDir, HashSet<string> skipPages)
+		/// <summary>リンクの置き換えに使う基準フォルダと、Markdown が生成されるページの一覧。</summary>
+		public void SetLinkBase(string baseDir, HashSet<string> pages)
 		{
 			linkBaseDir = baseDir == null ? "" : baseDir;
-			mdSkipPages = skipPages;
+			convertedPages = pages;
 		}
 
 		private string StoreCodeSpan(string text)
@@ -153,7 +153,7 @@ namespace Html2Md
 				}
 				else
 				{
-					href = HtmlUtil.ConvertLinkTarget(href, linkBaseDir, mdSkipPages);
+					href = HtmlUtil.ConvertLinkTarget(href, linkBaseDir, convertedPages);
 				}
 				return "[" + text + "](" + href + ")";
 			});
