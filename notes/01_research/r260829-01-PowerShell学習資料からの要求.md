@@ -20,7 +20,7 @@
 | HTML | 17 ファイル |
 | Markdown | 19 ファイル（`docs/rules/` の手書き 2 本を含む） |
 | 図 | 63 枚（すべて HTML 内のインライン SVG） |
-| 現行の変換器 | `N:\2026\PlayWright\projects\20260822-powershell-pwsh-learn\export-markdown.spec.ts`（Playwright + TypeScript） |
+| 現行の変換器 | `N:\PlayWright\projects\20260822-powershell-pwsh-learn\export-markdown.spec.ts`（Playwright + TypeScript） |
 
 現行はブラウザで HTML を描画し、DOM を辿って Markdown を組み立てている。図は同じブラウザで SVG 要素を撮影して PNG にしている（`capture-figures.spec.ts`、`deviceScaleFactor: 3`）。
 
