@@ -127,7 +127,7 @@
 	<div class="inner">
 		<h1>html2md</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-04</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-05</p>
 	</div>
 </div>
 
@@ -289,7 +289,7 @@ html2md --root . --dry-run</code></pre>
 	<h2>使い方</h2>
 
 <pre><code class="language-powershell"># フォルダ配下をまとめて
-check-markdown -Path N:/2026/myproject -Recurse
+check-markdown -Path . -Recurse
 
 # 1 ファイルだけ
 check-markdown -Path .\README.md
@@ -366,7 +366,7 @@ check-markdown -Path . -Recurse -Token ghp_xxxxx</code></pre>
 	<h2>使い方</h2>
 
 <pre><code class="language-powershell"># フォルダ配下をまとめて
-check-contrast -Path N:/2026/myproject -Recurse
+check-contrast -Path . -Recurse
 
 # 1 ファイルだけ
 check-contrast -Path .\README.html
@@ -376,7 +376,7 @@ check-contrast -Path . -Recurse -Min 2.0</code></pre>
 
 	<p><code>check-contrast.cmd</code> をダブルクリックしてもよい（カレントディレクトリが対象）。</p>
 
-	<p>ブラウザは <code>N:/2026/PlayWright</code> の共有環境のものを使う。場所が違う場合は <code>-PlaywrightRoot</code> で指定する。</p>
+	<p>ブラウザは PlayWright 共有環境のものを使う。場所が違う場合は <code>-PlaywrightRoot</code> で指定する。</p>
 
 	<div class="tablewrap">
 	<table>

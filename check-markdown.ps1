@@ -28,10 +28,10 @@
 	1 ファイルごとの待ち時間（ミリ秒）。既定 300。
 
 .EXAMPLE
-	.\check-markdown.ps1 -Path N:\2026\myproject -Recurse
+	check-markdown -Path . -Recurse
 
 .EXAMPLE
-	.\check-markdown.ps1 -Path .\README.md
+	check-markdown -Path .\README.md
 #>
 
 param(

@@ -11,7 +11,7 @@
  * 使い方（ps1 が呼ぶ）:
  *   node check-contrast.cjs <入力JSONのパス>
  *
- * 入力JSON: { "files": ["...html", ...], "min": 1.5, "playwrightRoot": "N:/2026/PlayWright" }
+ * 入力JSON: { "files": ["...html", ...], "min": 1.5, "playwrightRoot": "<Playwright共有環境のパス>" }
  * 出力    : 結果の JSON を標準出力へ
  */
 'use strict';

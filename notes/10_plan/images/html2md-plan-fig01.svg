@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" width="1000" height="330" role="img" aria-label="現状は 5 プロジェクトにそれぞれ実装があり、共通化後は共有実装 1 本を各プロジェクトのランチャーが呼ぶ" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" width="1000" height="330" role="img" aria-label="現状は 5 プロジェクトにそれぞれ実装があり、共通化後は共有実装 1 本を各プロジェクトから直接呼ぶ" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
 		<defs>
 			<linearGradient id="i1" x1="0" y1="1" x2="0" y2="0">
 				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
@@ -35,20 +35,20 @@
 
 		<text x="540" y="24" font-size="15" font-weight="700" fill="hsl(140,78%,22%)">共通化後: 実装は 1 本</text>
 		<rect x="540" y="40" width="430" height="52" rx="7" fill="url(#i2)"/>
-		<text x="556" y="62" font-size="13.5" fill="#fff">N:\2026\html2md\html2md.exe</text>
-		<text x="556" y="82" font-size="12" fill="#e8f7ee">唯一の実装。check-markdown.exe と並べて置く</text>
+		<text x="556" y="62" font-size="13.5" fill="#fff">html2md（PATH に入れた共有実装）</text>
+		<text x="556" y="82" font-size="12" fill="#e8f7ee">唯一の実装。check-markdown と並べて置く</text>
 
-		<line x1="755" y1="92" x2="755" y2="118" stroke="#4a5568" stroke-width="2" marker-start="url(#i4)"/>
+		<line x1="755" y1="118" x2="755" y2="92" stroke="#4a5568" stroke-width="2" marker-end="url(#i4)"/>
 
 		<rect x="540" y="122" width="430" height="30" rx="6" fill="url(#i3)"/>
-		<text x="556" y="142" font-size="12.5" fill="#fff">node-deno-bun-compare / tools\30_html2md\html2md.cmd</text>
+		<text x="556" y="142" font-size="12.5" fill="#fff">node-deno-bun-compare</text>
 		<rect x="540" y="158" width="430" height="30" rx="6" fill="url(#i3)"/>
-		<text x="556" y="178" font-size="12.5" fill="#fff">local-llm-llama-cp / tools\30_html2md\html2md.cmd</text>
+		<text x="556" y="178" font-size="12.5" fill="#fff">local-llm-llama-cp</text>
 		<rect x="540" y="194" width="430" height="30" rx="6" fill="url(#i3)"/>
-		<text x="556" y="214" font-size="12.5" fill="#fff">make-company / tools\30_html2md\html2md.cmd</text>
+		<text x="556" y="214" font-size="12.5" fill="#fff">make-company</text>
 		<rect x="540" y="230" width="430" height="30" rx="6" fill="url(#i3)"/>
-		<text x="556" y="250" font-size="12.5" fill="#fff">dos-command-learn / tools\30_html2md\html2md.cmd</text>
+		<text x="556" y="250" font-size="12.5" fill="#fff">dos-command-learn</text>
 		<rect x="540" y="266" width="430" height="30" rx="6" fill="url(#i3)"/>
-		<text x="556" y="286" font-size="12.5" fill="#fff">ai-pc / tools\30_html2md\html2md.cmd</text>
-		<text x="540" y="318" font-size="12.5" fill="#3a4252">プロジェクト側はランチャー 3 行だけ</text>
+		<text x="556" y="286" font-size="12.5" fill="#fff">ai-pc</text>
+		<text x="540" y="318" font-size="12.5" fill="#3a4252">プロジェクト側に置くものは無い</text>
 	</svg>

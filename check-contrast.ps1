@@ -13,7 +13,7 @@
 	判定は「読めない」箇所の検出に絞る。WCAG AA（4.5:1）で判定すると、文字が
 	1文字も乗っていないグラデーションの端まで拾い、誤検出で本当の問題が埋もれる。
 
-	ブラウザは N:\2026\PlayWright の共有環境のものを使う。
+	ブラウザは Playwright 共有環境のものを使う（既定パスは -PlaywrightRoot 参照）。
 
 .PARAMETER Path
 	対象のフォルダまたはファイル。省略時はカレントディレクトリ。
@@ -28,13 +28,13 @@
 	これを下回るコントラスト比を報告する。既定 1.5。
 
 .PARAMETER PlaywrightRoot
-	Playwright 共有環境のルート。既定 N:\2026\PlayWright。
+	Playwright 共有環境のルート。既定値は param ブロックを参照。
 
 .EXAMPLE
-	.\check-contrast.ps1 -Path N:\2026\myproject -Recurse
+	check-contrast -Path . -Recurse
 
 .EXAMPLE
-	.\check-contrast.ps1 -Path .\README.html
+	check-contrast -Path .\README.html
 #>
 
 param(
@@ -42,7 +42,7 @@ param(
 	[switch]$Recurse,
 	[string]$Exclude = '\\(tmp|etc|node_modules|\.git)\\',
 	[double]$Min = 1.5,
-	[string]$PlaywrightRoot = 'N:\2026\PlayWright'
+	[string]$PlaywrightRoot = 'N:\PlayWright'
 )
 
 $ErrorActionPreference = 'Stop'

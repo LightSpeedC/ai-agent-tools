@@ -151,8 +151,8 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>html2md ツール共通化計画</h1>
-		<p class="lead">5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、<code>N:\2026\html2md</code> の共通ツールに統合する。あわせて PowerShell スクリプトを <code>csc.exe</code> でビルドする C# の exe に置き換える。</p>
-		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-08-29</p>
+		<p class="lead">5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、このフォルダの共通ツールに統合する。あわせて PowerShell スクリプトを <code>csc.exe</code> でビルドする C# の exe に置き換える。</p>
+		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-09-05</p>
 	</div>
 </div>
 
@@ -253,9 +253,11 @@
 <section class="ch03" id="ch03">
 	<h1>共通化の形</h1>
 
-	<p>実装は <code>N:\2026\html2md</code> に 1 本だけ置き、各プロジェクトにはそれを呼ぶランチャーだけを置く。<code>check-markdown.ps1</code> をプロジェクトを問わず 1 箇所に置いているのと同じ扱いにする。</p>
+	<p>実装はこのフォルダに 1 本だけ置く。<code>check-markdown</code> をプロジェクトを問わず 1 箇所に置いているのと同じ扱いにする。</p>
 
-	<svg viewBox="0 0 1000 330" role="img" aria-label="現状は 5 プロジェクトにそれぞれ実装があり、共通化後は共有実装 1 本を各プロジェクトのランチャーが呼ぶ" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+	<p><strong>このフォルダは PATH に入れてある。</strong>プロジェクト側には何も置かず、どこからでも <code>html2md</code> で呼ぶ。使い方は<a href="../../USAGE-FOR-PROJECTS.html">他のプロジェクトから使う</a>にある。</p>
+
+	<svg viewBox="0 0 1000 330" role="img" aria-label="現状は 5 プロジェクトにそれぞれ実装があり、共通化後は共有実装 1 本を各プロジェクトから直接呼ぶ" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
 		<defs>
 			<linearGradient id="g-03-1a" x1="0" y1="1" x2="0" y2="0">
 				<stop offset="0" stop-color="hsl(0,78%,25%)"/>
@@ -291,32 +293,27 @@
 
 		<text x="540" y="24" font-size="15" font-weight="700" fill="hsl(140,78%,22%)">共通化後: 実装は 1 本</text>
 		<rect x="540" y="40" width="430" height="52" rx="7" fill="url(#g-03-1b)"/>
-		<text x="556" y="62" font-size="13.5" fill="#fff">N:\2026\html2md\html2md.exe</text>
-		<text x="556" y="82" font-size="12" fill="#e8f7ee">唯一の実装。check-markdown.exe と並べて置く</text>
+		<text x="556" y="62" font-size="13.5" fill="#fff">html2md（PATH に入れた共有実装）</text>
+		<text x="556" y="82" font-size="12" fill="#e8f7ee">唯一の実装。check-markdown と並べて置く</text>
 
-		<line x1="755" y1="92" x2="755" y2="118" stroke="#4a5568" stroke-width="2" marker-start="url(#m-03-1)"/>
+		<line x1="755" y1="118" x2="755" y2="92" stroke="#4a5568" stroke-width="2" marker-end="url(#m-03-1)"/>
 
 		<rect x="540" y="122" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
-		<text x="556" y="142" font-size="12.5" fill="#fff">node-deno-bun-compare / tools\30_html2md\html2md.cmd</text>
+		<text x="556" y="142" font-size="12.5" fill="#fff">node-deno-bun-compare</text>
 		<rect x="540" y="158" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
-		<text x="556" y="178" font-size="12.5" fill="#fff">local-llm-llama-cp / tools\30_html2md\html2md.cmd</text>
+		<text x="556" y="178" font-size="12.5" fill="#fff">local-llm-llama-cp</text>
 		<rect x="540" y="194" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
-		<text x="556" y="214" font-size="12.5" fill="#fff">make-company / tools\30_html2md\html2md.cmd</text>
+		<text x="556" y="214" font-size="12.5" fill="#fff">make-company</text>
 		<rect x="540" y="230" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
-		<text x="556" y="250" font-size="12.5" fill="#fff">dos-command-learn / tools\30_html2md\html2md.cmd</text>
+		<text x="556" y="250" font-size="12.5" fill="#fff">dos-command-learn</text>
 		<rect x="540" y="266" width="430" height="30" rx="6" fill="url(#g-03-1c)"/>
-		<text x="556" y="286" font-size="12.5" fill="#fff">ai-pc / tools\30_html2md\html2md.cmd</text>
-		<text x="540" y="318" font-size="12.5" fill="#3a4252">プロジェクト側はランチャー 3 行だけ</text>
+		<text x="556" y="286" font-size="12.5" fill="#fff">ai-pc</text>
+		<text x="540" y="318" font-size="12.5" fill="#3a4252">プロジェクト側に置くものは無い</text>
 	</svg>
 
 	<h2>プロジェクト側に置くもの</h2>
 
-	<p>ランチャーは共有実装にプロジェクトフォルダを渡すだけにする。置き場所は <code>tools/30_html2md/</code> になる（納品しないものは <code>tools/</code> に置く決まりのため）。このフォルダの <code>html2md.cmd</code> をダブルクリックする使い方は従来どおり。</p>
-
-<pre><code>@echo off
-rem 共通の html2md を、このプロジェクトを対象に呼ぶ
-"N:\2026\html2md\html2md.exe" --root "%~dp0..\..\.."
-pause</code></pre>
+	<p><strong>何も置かない。</strong>PATH に入れてあるので、プロジェクトのフォルダで <code>html2md --root .</code> と打てば足りる。</p>
 
 	<h2>この形の代償</h2>
 
@@ -325,8 +322,8 @@ pause</code></pre>
 		<thead><tr><th>項目</th><th>内容</th></tr></thead>
 		<tbody>
 			<tr><td class="nowrap">得るもの</td><td>修正が全プロジェクトに即座に反映される。実装が 1 本になるので、機能を足す場所も直す場所も 1 箇所で済む</td></tr>
-			<tr><td class="nowrap">失うもの</td><td><code>N:</code> ドライブに依存する。プロジェクトを git clone しただけでは変換できない。ランチャーは git 管理下に入るが、実体は入らない</td></tr>
-			<tr><td class="nowrap">判断</td><td>これらの HTML ドキュメントは手元で書いて手元で Markdown 化するもので、clone 先で変換をやり直す場面が無い。ドライブ依存は受け入れる</td></tr>
+			<tr><td class="nowrap">失うもの</td><td>この置き場に依存する。プロジェクトを git clone しただけでは変換できない</td></tr>
+			<tr><td class="nowrap">判断</td><td>これらの HTML ドキュメントは手元で書いて手元で Markdown 化するもので、clone 先で変換をやり直す場面が無い。置き場への依存は受け入れる</td></tr>
 		</tbody>
 	</table>
 	</div>

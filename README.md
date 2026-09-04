@@ -2,7 +2,7 @@
 
 HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。
 
-> 📅 作成: 2026-08-27 / 更新: 2026-09-04
+> 📅 作成: 2026-08-27 / 更新: 2026-09-05
 
 ## 目次
 
@@ -138,7 +138,7 @@ html2md-ps -Root . -Dir docs,notes -DryRun
 
 ```powershell
 # フォルダ配下をまとめて
-check-markdown -Path N:/2026/myproject -Recurse
+check-markdown -Path . -Recurse
 
 # 1 ファイルだけ
 check-markdown -Path .\README.md
@@ -201,7 +201,7 @@ CSS を読み返しても「白背景に白文字」は見つからない。**CS
 
 ```powershell
 # フォルダ配下をまとめて
-check-contrast -Path N:/2026/myproject -Recurse
+check-contrast -Path . -Recurse
 
 # 1 ファイルだけ
 check-contrast -Path .\README.html
@@ -212,7 +212,7 @@ check-contrast -Path . -Recurse -Min 2.0
 
 `check-contrast.cmd` をダブルクリックしてもよい（カレントディレクトリが対象）。
 
-ブラウザは `N:/2026/PlayWright` の共有環境のものを使う。場所が違う場合は `-PlaywrightRoot` で指定する。
+ブラウザは PlayWright 共有環境のものを使う。場所が違う場合は `-PlaywrightRoot` で指定する。
 
 | 終了コード | 意味 |
 |---:|---|
