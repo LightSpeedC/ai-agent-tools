@@ -1,18 +1,22 @@
 ﻿<#
-	html2md.ps1
+	html2md-ps.ps1
 
-	HTML ドキュメントから Markdown を生成する（プロジェクト共通版）。
+	HTML ドキュメントから Markdown を生成する（参照実装）。
+
+	通常は html2md（exe）を使う。こちらは exe の挙動を読んで確かめるためと、
+	csc.exe が使えない環境のために残している。出力が exe と一致することを
+	tools/40_test/run-tests.cmd で検査している。
 
 	HTML を正とし、Markdown はこのスクリプトの生成物として扱う。
 	内容を更新するときは HTML を直してこのスクリプトを再実行する。
 	生成された .md を直接編集しても次回実行で上書きされる。
 
 	使い方:
-	    html2md.ps1 -Root <プロジェクトフォルダ>
-	    html2md.ps1                     カレントフォルダを対象にする
-	    html2md.ps1 -Root . -DryRun     書き出さず、変換結果と検査だけを見る
+	    html2md-ps -Root <プロジェクトフォルダ>
+	    html2md-ps                     カレントフォルダを対象にする
+	    html2md-ps -Root . -DryRun     書き出さず、変換結果と検査だけを見る
 
-	変換対象: <Root>\README.html と <Root>\docs\ 配下の *.html（index.html は除く）
+	変換対象: <Root>\README.html と -Dir で渡したフォルダ配下の *.html（既定は notes。index.html は除く）
 
 	HTML 側の目印:
 	    <svg id="xxx">              images\xxx.svg として切り出す
@@ -48,6 +52,9 @@ param(
 
 	# 変換しないファイル名（既定: index.html）
 	[string[]]$Exclude,
+
+	# ルート直下の追加ファイル。複数指定できる
+	[string[]]$Extra,
 
 	# ルート直下の README.html を対象から外す
 	[switch]$NoReadme,
@@ -1427,10 +1434,16 @@ Write-Host ('対象ルート: ' + $Root)
 $dirNames = if ($Dir) { $Dir } else { @('notes') }
 Write-Host ('探索フォルダ: ' + ($dirNames -join ' '))
 
+# ルート直下を名指しにしているのは、作業用に置いた HTML まで拾わないため
 $targets = New-Object System.Collections.ArrayList
 if (-not $NoReadme) {
 	$readme = Join-Path $Root 'README.html'
 	if (Test-Path -LiteralPath $readme) { $targets.Add((Get-Item -LiteralPath $readme)) | Out-Null }
+}
+foreach ($name in @($Extra)) {
+	if (-not $name) { continue }
+	$extra = Join-Path $Root $name
+	if (Test-Path -LiteralPath $extra) { $targets.Add((Get-Item -LiteralPath $extra)) | Out-Null }
 }
 foreach ($d in $dirNames) {
 	$sub = Join-Path $Root $d

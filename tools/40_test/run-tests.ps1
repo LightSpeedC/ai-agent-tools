@@ -27,7 +27,7 @@ $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $CasesDir = Join-Path $Root 'tests\cases'
 $WorkRoot = Join-Path $Root 'tmp\test-run'
 $Exe = Join-Path $Root 'html2md.exe'
-$Ps1 = Join-Path $Root 'html2md.ps1'
+$Ps1 = Join-Path $Root 'html2md-ps.ps1'
 
 # ケースごとに「変換後の Markdown に出ているべき文字列」を並べる。
 # ここに書いたものが 1 つでも欠けたら失敗にする。
@@ -66,6 +66,17 @@ $Expect = @{
 		'2026-08-30 13:00:02.321',
 		'2026-08-30 13:01:12.100'
 	)
+	'extra' = @(
+		'EXTRAMARK',                        # --extra で指定したページは変換される
+		'[追加で指定したページ](../GUIDE.md)',   # 変換されるので .md になる
+		'[作業用のページ](../WORK.html)'         # 変換されないので .html のまま
+	)
+}
+
+# ケースごとに --extra で渡すルート直下のファイル。
+# exe と ps1 で引数の書き方が違うため、名前だけを持って両方に渡す。
+$ExtraFiles = @{
+	'extra' = @('GUIDE.html')
 }
 
 function Write-Result([string]$Mark, [string]$Text) {
@@ -104,7 +115,11 @@ foreach ($c in $cases) {
 	$ok = $true
 
 	# --- exe で変換 ---
-	& cmd /c "`"$Exe`" --root `"$work`" --dir docs --dir notes > `"$work\exe.log`" 2>&1"
+	$exeArgs = @('--root', $work, '--dir', 'docs', '--dir', 'notes')
+	if ($ExtraFiles.ContainsKey($c.Name)) {
+		foreach ($n in $ExtraFiles[$c.Name]) { $exeArgs += '--extra'; $exeArgs += $n }
+	}
+	& $Exe @exeArgs *> (Join-Path $work 'exe.log')
 	$exeCode = $LASTEXITCODE
 	if ($exeCode -gt 1) {
 		Write-Result '[NG]' ('exe が異常終了しました（終了コード {0}）' -f $exeCode)
@@ -121,8 +136,11 @@ foreach ($c in $cases) {
 		$ok = $false
 	}
 
-	# --- 出てはいけない文字列（md-skip の確認） ---
-	$forbidden = @{ 'md-skip' = @('SKIPMARK') }
+	# --- 出てはいけない文字列 ---
+	$forbidden = @{
+		'md-skip' = @('SKIPMARK')      # meta name="md-skip" のページ
+		'extra'   = @('WORKMARK')      # ルート直下でも --extra で名指ししていないページ
+	}
 
 	# --- 出ているべき文字列 ---
 	$all = ($exeOut.Values -join "`n")
@@ -154,7 +172,9 @@ foreach ($c in $cases) {
 
 	$ps1Err = $null
 	try {
-		& $Ps1 -Root $work -Dir docs,notes *> (Join-Path $work 'ps1.log')
+		$ps1Args = @{ Root = $work; Dir = @('docs', 'notes') }
+		if ($ExtraFiles.ContainsKey($c.Name)) { $ps1Args['Extra'] = $ExtraFiles[$c.Name] }
+		& $Ps1 @ps1Args *> (Join-Path $work 'ps1.log')
 	}
 	catch {
 		$ps1Err = $_.Exception.Message

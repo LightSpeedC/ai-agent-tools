@@ -22,6 +22,7 @@ namespace Html2Md
 			"    --root <パス>     対象のプロジェクトフォルダ（既定: カレントフォルダ）\n" +
 			"    --dir <名前>      探索するフォルダ。複数回指定できる（既定: notes）\n" +
 			"    --exclude <名前>  変換しないファイル名。複数回指定できる（既定: index.html）\n" +
+			"    --extra <名前>    ルート直下の追加ファイル。複数回指定できる\n" +
 			"    --no-readme       ルート直下の README.html を対象から外す\n" +
 			"    --dry-run         書き出さず、変換結果と検査結果だけを表示する\n" +
 			"    --help            この説明を表示する\n" +
@@ -35,6 +36,7 @@ namespace Html2Md
 			string root = null;
 			List<string> dirs = new List<string>();
 			List<string> excludes = new List<string>();
+			List<string> extras = new List<string>();
 			bool noReadme = false;
 			bool dryRun = false;
 
@@ -54,6 +56,10 @@ namespace Html2Md
 					case "--exclude":
 						if (i + 1 >= args.Length) return Fail("--exclude にファイル名を指定してください。");
 						excludes.Add(args[++i]);
+						break;
+					case "--extra":
+						if (i + 1 >= args.Length) return Fail("--extra にファイル名を指定してください。");
+						extras.Add(args[++i]);
 						break;
 					case "--no-readme":
 						noReadme = true;
@@ -84,7 +90,7 @@ namespace Html2Md
 			Console.WriteLine("対象ルート: " + root);
 			Console.WriteLine("探索フォルダ: " + string.Join(", ", dirs.ToArray()) + (noReadme ? "" : " と README.html"));
 
-			List<string> targets = CollectTargets(root, dirs, excludes, noReadme);
+			List<string> targets = CollectTargets(root, dirs, excludes, noReadme, extras);
 			if (targets.Count == 0)
 			{
 				Console.WriteLine();
@@ -227,14 +233,25 @@ namespace Html2Md
 			return 0;
 		}
 
-		/// <summary>変換対象を集める。ルート直下の README.html と、指定フォルダ配下の *.html。</summary>
-		private static List<string> CollectTargets(string root, List<string> dirs, List<string> excludes, bool noReadme)
+		/// <summary>
+		/// 変換対象を集める。ルート直下の README.html と --extra で挙げたファイル、
+		/// および指定フォルダ配下の *.html。
+		///
+		/// ルート直下を名指しにしているのは、作業用に置いた HTML まで拾わないため。
+		/// </summary>
+		private static List<string> CollectTargets(string root, List<string> dirs, List<string> excludes,
+			bool noReadme, List<string> extras)
 		{
 			List<string> targets = new List<string>();
 			if (!noReadme)
 			{
 				string readme = Path.Combine(root, "README.html");
 				if (File.Exists(readme)) targets.Add(readme);
+			}
+			foreach (string name in extras)
+			{
+				string extra = Path.Combine(root, name);
+				if (File.Exists(extra) && !targets.Contains(extra)) targets.Add(extra);
 			}
 			foreach (string d in dirs)
 			{
