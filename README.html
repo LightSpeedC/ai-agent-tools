@@ -127,7 +127,7 @@
 	<div class="inner">
 		<h1>html2md</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-01</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-04</p>
 	</div>
 </div>
 
@@ -150,10 +150,10 @@
 	<table>
 		<thead><tr><th>ツール</th><th>何を確かめるか</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>html2md.exe</code></td><td>HTML から Markdown を生成する。<strong>変換はこれを使う</strong></td></tr>
-			<tr><td class="nowrap"><code>html2md.ps1</code></td><td>同じ処理の参照実装。exe の挙動を確かめるために残している</td></tr>
-			<tr><td class="nowrap"><code>check-markdown.ps1</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
-			<tr><td class="nowrap"><code>check-contrast.ps1</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
+			<tr><td class="nowrap"><code>html2md</code></td><td>HTML から Markdown を生成する。<strong>変換はこれを使う</strong>（実体は <code>html2md.exe</code>）</td></tr>
+			<tr><td class="nowrap"><code>html2md-ps</code></td><td>同じ処理の参照実装。exe の挙動を確かめるために残している</td></tr>
+			<tr><td class="nowrap"><code>check-markdown</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
+			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -166,6 +166,7 @@
 	<table>
 		<thead><tr><th>文書</th><th>内容</th></tr></thead>
 		<tbody>
+			<tr><td class="nowrap"><a href="USAGE-FOR-PROJECTS.html">他のプロジェクトから使う</a></td><td>コマンド・オプション・変換対象の外し方・検査の読み方。<strong>使う側が読むのはこれ</strong></td></tr>
 			<tr><td class="nowrap"><a href="notes/10_plan/html2md-plan.html">html2md ツール共通化計画</a></td><td>各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り</td></tr>
 			<tr><td class="nowrap"><a href="notes/10_plan/html2md-tag-spec.html">html2md タグ対応仕様</a></td><td>どのタグをどう変換するか。実測した結果と、まだ決まっていない論点</td></tr>
 			<tr><td class="nowrap"><a href="notes/90_rules/html-class-rules.html">HTML クラス名の取り決め</a></td><td>html2md が読むクラス名。バッジ・callout・表・図の書き方</td></tr>
@@ -185,11 +186,15 @@
 
 	<h2>使い方</h2>
 
-	<p>プロジェクトのフォルダで <code>html2md.exe</code> を呼ぶ。プロジェクト側には、これを呼ぶ <code>html2md.cmd</code> だけを <code>tools/30_html2md/</code> に置く。</p>
+	<p><strong>このフォルダは PATH に入っているので、パスを書かずに <code>html2md</code> で呼べる。</strong>プロジェクト側にランチャーを置く必要はない。</p>
 
-<pre><code class="language-powershell">N:\2026\html2md\html2md.exe --root .
-N:\2026\html2md\html2md.exe --root . --dir docs --dir notes
-N:\2026\html2md\html2md.exe --root . --dry-run</code></pre>
+<pre><code class="language-powershell">html2md --root .
+html2md --root . --dir docs --dir notes
+html2md --root . --dry-run</code></pre>
+
+	<div class="callout callout-important">
+		<p><strong><code>html2md</code> は exe、<code>html2md-ps</code> は参照実装の ps1 に解決される。</strong>PowerShell は同名の <code>.ps1</code> を <code>.exe</code> より先に選ぶため、参照実装の名前を分けている。exe は ps1 の <strong>65 倍速い</strong>（実測 228 ms 対 14.9 秒）。</p>
+	</div>
 
 	<div class="tablewrap">
 	<table>
@@ -198,6 +203,7 @@ N:\2026\html2md\html2md.exe --root . --dry-run</code></pre>
 			<tr><td class="nowrap"><code>--root &lt;パス&gt;</code></td><td class="nowrap">カレントフォルダ</td><td>対象のプロジェクトフォルダ</td></tr>
 			<tr><td class="nowrap"><code>--dir &lt;名前&gt;</code></td><td class="nowrap"><code>notes</code></td><td>探索するフォルダ。複数回指定できる</td></tr>
 			<tr><td class="nowrap"><code>--exclude &lt;名前&gt;</code></td><td class="nowrap"><code>index.html</code></td><td>変換しないファイル名。複数回指定できる</td></tr>
+			<tr><td class="nowrap"><code>--extra &lt;名前&gt;</code></td><td class="nowrap">—</td><td>ルート直下の追加ファイル。複数回指定できる</td></tr>
 			<tr><td class="nowrap"><code>--no-readme</code></td><td class="nowrap">—</td><td>ルート直下の <code>README.html</code> を対象から外す</td></tr>
 			<tr><td class="nowrap"><code>--dry-run</code></td><td class="nowrap">—</td><td>書き出さず、変換結果と検査結果だけを表示する</td></tr>
 			<tr><td class="nowrap"><code>--help</code></td><td class="nowrap">—</td><td>説明を表示する</td></tr>
@@ -254,11 +260,11 @@ N:\2026\html2md\html2md.exe --root . --dry-run</code></pre>
 
 	<h3>参照実装の ps1</h3>
 
-	<p><code>html2md.ps1</code> は同じ処理を PowerShell で書いたもの。<strong>通常は exe を使う。</strong>ps1 は exe の挙動を読んで確かめるためと、csc.exe が使えない環境のために残している。<code>html2md_powershell.cmd</code> から実行できる。</p>
+	<p><code>html2md-ps</code> は同じ処理を PowerShell で書いたもの。<strong>通常は <code>html2md</code> を使う。</strong>ps1 は exe の挙動を読んで確かめるためと、csc.exe が使えない環境のために残している。</p>
 
-<pre><code class="language-powershell">.\html2md.ps1 -Root . -Dir docs,notes -DryRun</code></pre>
+<pre><code class="language-powershell">html2md-ps -Root . -Dir docs,notes -DryRun</code></pre>
 
-	<p>引数は exe と対応する（<code>-Root</code> <code>-Dir</code> <code>-Exclude</code> <code>-NoReadme</code> <code>-DryRun</code>）。</p>
+	<p>引数は exe と対応する（<code>-Root</code> <code>-Dir</code> <code>-Exclude</code> <code>-NoReadme</code> <code>-DryRun</code>）。ダブルクリックで実行する <code>html2md-ps.cmd</code> も同じフォルダにある。</p>
 
 	<p>両者の出力が一致することを <code>tools/40_test/run-tests.cmd</code> で検査している。<strong>片方だけ直すと落ちる。</strong>テストは exe の出力を読んだあとに削除してから ps1 を走らせる。残したままにすると、ps1 が 1 つも生成しなかった場合に exe の出力を読んで「一致」と誤判定する。</p>
 
@@ -283,13 +289,13 @@ N:\2026\html2md\html2md.exe --root . --dry-run</code></pre>
 	<h2>使い方</h2>
 
 <pre><code class="language-powershell"># フォルダ配下をまとめて
-.\check-markdown.ps1 -Path N:\2026\myproject -Recurse
+check-markdown -Path N:/2026/myproject -Recurse
 
 # 1 ファイルだけ
-.\check-markdown.ps1 -Path .\README.md
+check-markdown -Path .\README.md
 
 # レート制限を緩める（60 回/時 → 5000 回/時）
-.\check-markdown.ps1 -Path . -Recurse -Token ghp_xxxxx</code></pre>
+check-markdown -Path . -Recurse -Token ghp_xxxxx</code></pre>
 
 	<p><code>check-markdown.cmd</code> をダブルクリックしてもよい（カレントディレクトリが対象）。</p>
 
@@ -360,17 +366,17 @@ N:\2026\html2md\html2md.exe --root . --dry-run</code></pre>
 	<h2>使い方</h2>
 
 <pre><code class="language-powershell"># フォルダ配下をまとめて
-.\check-contrast.ps1 -Path N:\2026\myproject -Recurse
+check-contrast -Path N:/2026/myproject -Recurse
 
 # 1 ファイルだけ
-.\check-contrast.ps1 -Path .\README.html
+check-contrast -Path .\README.html
 
 # しきい値を変える（既定 1.5）
-.\check-contrast.ps1 -Path . -Recurse -Min 2.0</code></pre>
+check-contrast -Path . -Recurse -Min 2.0</code></pre>
 
 	<p><code>check-contrast.cmd</code> をダブルクリックしてもよい（カレントディレクトリが対象）。</p>
 
-	<p>ブラウザは <code>N:\2026\PlayWright</code> の共有環境のものを使う。場所が違う場合は <code>-PlaywrightRoot</code> で指定する。</p>
+	<p>ブラウザは <code>N:/2026/PlayWright</code> の共有環境のものを使う。場所が違う場合は <code>-PlaywrightRoot</code> で指定する。</p>
 
 	<div class="tablewrap">
 	<table>
@@ -408,7 +414,7 @@ N:\2026\html2md\html2md.exe --root . --dry-run</code></pre>
 
 	<p><strong>検査が壊れていないことを、故意に壊したページで確認してから使う。</strong></p>
 
-<pre><code class="language-powershell">.\check-contrast.ps1 -Path .\contrast\selftest.html</code></pre>
+<pre><code class="language-powershell">check-contrast -Path .\contrast\selftest.html</code></pre>
 
 	<p><code>contrast\selftest.html</code> には 7 ケースが入っている。4 件が検出され、3 件が検出されなければ正常。</p>
 

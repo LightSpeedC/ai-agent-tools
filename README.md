@@ -2,7 +2,7 @@
 
 HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。
 
-> 📅 作成: 2026-08-27 / 更新: 2026-09-01
+> 📅 作成: 2026-08-27 / 更新: 2026-09-04
 
 ## 目次
 
@@ -15,10 +15,10 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 
 | ツール | 何を確かめるか |
 |---|---|
-| `html2md.exe` | HTML から Markdown を生成する。**変換はこれを使う** |
-| `html2md.ps1` | 同じ処理の参照実装。exe の挙動を確かめるために残している |
-| `check-markdown.ps1` | Markdown が **GitHub 上で意図どおりに表示されるか** |
-| `check-contrast.ps1` | HTML の文字色と背景色が **読める組み合わせになっているか** |
+| `html2md` | HTML から Markdown を生成する。**変換はこれを使う**（実体は `html2md.exe`） |
+| `html2md-ps` | 同じ処理の参照実装。exe の挙動を確かめるために残している |
+| `check-markdown` | Markdown が **GitHub 上で意図どおりに表示されるか** |
+| `check-contrast` | HTML の文字色と背景色が **読める組み合わせになっているか** |
 
 どちらの検証ツールも、**推測ではなく実物で判定する**。前者は GitHub のレンダラに投げ、後者はブラウザで実際に描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。
 
@@ -26,6 +26,7 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 
 | 文書 | 内容 |
 |---|---|
+| [他のプロジェクトから使う](USAGE-FOR-PROJECTS.md) | コマンド・オプション・変換対象の外し方・検査の読み方。**使う側が読むのはこれ** |
 | [html2md ツール共通化計画](notes/10_plan/html2md-plan.md) | 各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り |
 | [html2md タグ対応仕様](notes/10_plan/html2md-tag-spec.md) | どのタグをどう変換するか。実測した結果と、まだ決まっていない論点 |
 | [HTML クラス名の取り決め](notes/90_rules/html-class-rules.md) | html2md が読むクラス名。バッジ・callout・表・図の書き方 |
@@ -40,19 +41,23 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 
 ### 使い方
 
-プロジェクトのフォルダで `html2md.exe` を呼ぶ。プロジェクト側には、これを呼ぶ `html2md.cmd` だけを `tools/30_html2md/` に置く。
+<strong>このフォルダは PATH に入っているので、パスを書かずに `html2md` で呼べる。</strong>プロジェクト側にランチャーを置く必要はない。
 
 ```powershell
-N:\2026\html2md\html2md.exe --root .
-N:\2026\html2md\html2md.exe --root . --dir docs --dir notes
-N:\2026\html2md\html2md.exe --root . --dry-run
+html2md --root .
+html2md --root . --dir docs --dir notes
+html2md --root . --dry-run
 ```
+
+> [!IMPORTANT]
+> <strong>`html2md` は exe、`html2md-ps` は参照実装の ps1 に解決される。</strong>PowerShell は同名の `.ps1` を `.exe` より先に選ぶため、参照実装の名前を分けている。exe は ps1 の **65 倍速い**（実測 228 ms 対 14.9 秒）。
 
 | オプション | 既定 | 内容 |
 |---|---|---|
 | `--root <パス>` | カレントフォルダ | 対象のプロジェクトフォルダ |
 | `--dir <名前>` | `notes` | 探索するフォルダ。複数回指定できる |
 | `--exclude <名前>` | `index.html` | 変換しないファイル名。複数回指定できる |
+| `--extra <名前>` | — | ルート直下の追加ファイル。複数回指定できる |
 | `--no-readme` | — | ルート直下の `README.html` を対象から外す |
 | `--dry-run` | — | 書き出さず、変換結果と検査結果だけを表示する |
 | `--help` | — | 説明を表示する |
@@ -101,13 +106,13 @@ N:\2026\html2md\html2md.exe --root . --dry-run
 
 #### 参照実装の ps1
 
-`html2md.ps1` は同じ処理を PowerShell で書いたもの。<strong>通常は exe を使う。</strong>ps1 は exe の挙動を読んで確かめるためと、csc.exe が使えない環境のために残している。`html2md_powershell.cmd` から実行できる。
+`html2md-ps` は同じ処理を PowerShell で書いたもの。<strong>通常は `html2md` を使う。</strong>ps1 は exe の挙動を読んで確かめるためと、csc.exe が使えない環境のために残している。
 
 ```powershell
-.\html2md.ps1 -Root . -Dir docs,notes -DryRun
+html2md-ps -Root . -Dir docs,notes -DryRun
 ```
 
-引数は exe と対応する（`-Root` `-Dir` `-Exclude` `-NoReadme` `-DryRun`）。
+引数は exe と対応する（`-Root` `-Dir` `-Exclude` `-NoReadme` `-DryRun`）。ダブルクリックで実行する `html2md-ps.cmd` も同じフォルダにある。
 
 両者の出力が一致することを `tools/40_test/run-tests.cmd` で検査している。<strong>片方だけ直すと落ちる。</strong>テストは exe の出力を読んだあとに削除してから ps1 を走らせる。残したままにすると、ps1 が 1 つも生成しなかった場合に exe の出力を読んで「一致」と誤判定する。
 
@@ -133,13 +138,13 @@ N:\2026\html2md\html2md.exe --root . --dry-run
 
 ```powershell
 # フォルダ配下をまとめて
-.\check-markdown.ps1 -Path N:\2026\myproject -Recurse
+check-markdown -Path N:/2026/myproject -Recurse
 
 # 1 ファイルだけ
-.\check-markdown.ps1 -Path .\README.md
+check-markdown -Path .\README.md
 
 # レート制限を緩める（60 回/時 → 5000 回/時）
-.\check-markdown.ps1 -Path . -Recurse -Token ghp_xxxxx
+check-markdown -Path . -Recurse -Token ghp_xxxxx
 ```
 
 `check-markdown.cmd` をダブルクリックしてもよい（カレントディレクトリが対象）。
@@ -196,18 +201,18 @@ CSS を読み返しても「白背景に白文字」は見つからない。**CS
 
 ```powershell
 # フォルダ配下をまとめて
-.\check-contrast.ps1 -Path N:\2026\myproject -Recurse
+check-contrast -Path N:/2026/myproject -Recurse
 
 # 1 ファイルだけ
-.\check-contrast.ps1 -Path .\README.html
+check-contrast -Path .\README.html
 
 # しきい値を変える（既定 1.5）
-.\check-contrast.ps1 -Path . -Recurse -Min 2.0
+check-contrast -Path . -Recurse -Min 2.0
 ```
 
 `check-contrast.cmd` をダブルクリックしてもよい（カレントディレクトリが対象）。
 
-ブラウザは `N:\2026\PlayWright` の共有環境のものを使う。場所が違う場合は `-PlaywrightRoot` で指定する。
+ブラウザは `N:/2026/PlayWright` の共有環境のものを使う。場所が違う場合は `-PlaywrightRoot` で指定する。
 
 | 終了コード | 意味 |
 |---:|---|
@@ -236,7 +241,7 @@ WCAG AA の 4.5:1 で判定すると、100deg のグラデーションでは**�
 **検査が壊れていないことを、故意に壊したページで確認してから使う。**
 
 ```powershell
-.\check-contrast.ps1 -Path .\contrast\selftest.html
+check-contrast -Path .\contrast\selftest.html
 ```
 
 `contrast\selftest.html` には 7 ケースが入っている。4 件が検出され、3 件が検出されなければ正常。

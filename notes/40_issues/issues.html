@@ -167,7 +167,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-02</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-04</p>
 	</div>
 </div>
 
@@ -350,10 +350,12 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-12</span>各プロジェクトへランチャーを配置</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-12</span>各プロジェクトへランチャーを配置</summary>
 		<div class="issue-body">
 			<p>各プロジェクトの <code>tools/30_html2md/</code> に <code>html2md.cmd</code> を置く。中身は CLAUDE.md の「HTML と Markdown の併存」に書いてある。</p>
 			<p><strong>ランチャーを置いて動作を確かめてから旧スクリプトを消す。</strong>先に消さない。旧スクリプトは <code>src/scripts/70_html2md/</code> にある。</p>
+			<p><span class="badge b-ok">済</span>2026-09-04 に<strong>配置そのものが不要になった。</strong>html2md のフォルダが PATH に入り、<code>html2md</code> だけでどこからでも呼べるようになったため。CLAUDE.md の「HTML と Markdown の併存」から、ランチャーを置く指示を外した。</p>
+			<p><span class="badge b-none">未</span><strong>旧スクリプトの削除は課題 14 に残る。</strong>ランチャーの有無とは無関係に不要だが、<strong>他プロジェクトのファイルなのでこちらからは触らない。</strong>そのプロジェクト側で消してもらう。</p>
 		</div>
 	</details>
 
@@ -369,7 +371,8 @@
 		<summary><span class="badge b-none">未</span><span class="no">20260830-14</span>旧 ps1 / mjs を削除</summary>
 		<div class="issue-body">
 			<p>各プロジェクトの <code>src/scripts/70_html2md/</code> にある 5 本（ps1 4 本、mjs 1 本）を削除する。ランチャーへの置き換えが済み、出力を確かめてから。</p>
-			<p>共通ツール側の <code>html2md.ps1</code> は参照実装として残す。テストで exe との一致を確かめている。</p>
+			<p>共通ツール側の <code>html2md-ps.ps1</code> は参照実装として残す。テストで exe との一致を確かめている。</p>
+			<p><strong>ランチャーへの置き換えという前提は無くなった</strong>（課題 12 参照）。<code>html2md</code> が PATH で呼べるので、各プロジェクトは旧スクリプトを消すだけでよい。<strong>他プロジェクトのファイルなのでこちらからは触らない。</strong></p>
 		</div>
 	</details>
 </section>
