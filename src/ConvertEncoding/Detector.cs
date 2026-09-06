@@ -6,8 +6,13 @@ namespace ConvertEncoding
 	internal static class Detector
 	{
 		/// <summary>
-		/// 判定の順序は BOM → UTF-8 → SJIS。
-		/// どれにも当たらなければ false を返し、呼び出し側は何も書き換えずに終える。
+		/// BOM を見たあと、UTF-8 と SJIS の両方で検査してから決める。
+		/// 片方だけ妥当ならそれに決める。両方妥当で非 ASCII を含むものは
+		/// 決められないので false を返し、呼び出し側は何も書き換えずに終える。
+		///
+		/// 先に UTF-8 を試して確定させると、半角カタカナ（例: C2 B1 は
+		/// UTF-8 で「±」、SJIS で「ﾂｱ」）が UTF-8 と誤認され、SJIS の
+		/// つもりで置いたファイルの文字が失われる。
 		/// </summary>
 		public static bool TryDetect(byte[] bytes, out EncodingKind kind)
 		{
@@ -17,12 +22,30 @@ namespace ConvertEncoding
 			if (StartsWith(bytes, 0xFF, 0xFE)) { kind = EncodingKind.Utf16Le; return true; }
 			if (StartsWith(bytes, 0xFE, 0xFF)) { kind = EncodingKind.Utf16Be; return true; }
 
-			// 純 ASCII はここで UTF-8 と判定される。SJIS として解釈しても
-			// 変換結果のバイト列は同じになるため、実害は無い
-			if (IsValidUtf8(bytes)) { kind = EncodingKind.Utf8; return true; }
-			if (IsValidSjis(bytes)) { kind = EncodingKind.Sjis; return true; }
+			bool u8 = IsValidUtf8(bytes);
+			bool sj = IsValidSjis(bytes);
+
+			if (u8 && sj)
+			{
+				// 純 ASCII はどちらに解釈しても変換結果のバイト列が同じ。
+				// UTF-8 で確定してよい。非 ASCII を含むなら決められない
+				if (IsAscii(bytes)) { kind = EncodingKind.Utf8; return true; }
+				return false;
+			}
+
+			if (u8) { kind = EncodingKind.Utf8; return true; }
+			if (sj) { kind = EncodingKind.Sjis; return true; }
 
 			return false;
+		}
+
+		private static bool IsAscii(byte[] b)
+		{
+			for (int i = 0; i < b.Length; i++)
+			{
+				if (b[i] > 0x7F) { return false; }
+			}
+			return true;
 		}
 
 		private static bool StartsWith(byte[] bytes, params byte[] prefix)

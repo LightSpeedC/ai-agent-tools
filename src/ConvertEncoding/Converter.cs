@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace ConvertEncoding
@@ -148,6 +149,43 @@ namespace ConvertEncoding
 			string s = text.Replace("\r\n", "\n").Replace("\r", "\n");
 			if (eol == EolKind.CrLf) { s = s.Replace("\n", "\r\n"); }
 			return s;
+		}
+
+		/// <summary>
+		/// バイト列のまま改行を揃える。UTF-8 と SJIS でだけ使う。
+		/// この 2 つは 0x0A / 0x0D が文字の途中に現れない（SJIS の 2 バイト目は
+		/// 0x40 以上、UTF-8 の続きバイトは 0x80 以上）ため、バイトを見て
+		/// 置き換えても文字を壊さない。デコードを通さないので、CP932 の
+		/// 重複文字が別のバイト列に化けることも起きない。
+		/// </summary>
+		public static byte[] NormalizeEolBytes(byte[] src, EolKind eol)
+		{
+			List<byte> outBytes = new List<byte>(src.Length);
+			bool crlf = (eol == EolKind.CrLf);
+
+			int i = 0;
+			while (i < src.Length)
+			{
+				byte b = src[i];
+				if (b == 0x0D)
+				{
+					// CR または CRLF。次が LF ならまとめて 1 つの改行として扱う
+					if (i + 1 < src.Length && src[i + 1] == 0x0A) { i++; }
+					i++;
+					if (crlf) { outBytes.Add(0x0D); outBytes.Add(0x0A); } else { outBytes.Add(0x0A); }
+				}
+				else if (b == 0x0A)
+				{
+					i++;
+					if (crlf) { outBytes.Add(0x0D); outBytes.Add(0x0A); } else { outBytes.Add(0x0A); }
+				}
+				else
+				{
+					outBytes.Add(b);
+					i++;
+				}
+			}
+			return outBytes.ToArray();
 		}
 
 		/// <summary>改行の数を数える。表示と判定に使う。</summary>

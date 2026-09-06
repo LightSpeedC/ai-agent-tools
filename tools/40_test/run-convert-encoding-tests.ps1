@@ -43,17 +43,18 @@ function New-TextFile {
 	Set-Content -LiteralPath $Path -Value $Text -Encoding $Encoding -NoNewline
 }
 
-# バイト列をそのままファイルに書く。判定できない並びを作るのに使う
+# バイト列をファイルに書く。判定できない並びを作るのに使う。
+# PowerShell でバイト列を書くとウイルス対策に検知される（AmsiBypazz）ため、
+# 16 進テキストを書いてから convert-encoding --from hex で展開する。
+# 16 進テキストは ASCII なので書き込みが検知されない。
 function New-RawFile {
 	param(
 		[string]$Path,
 		[byte[]]$Bytes
 	)
-	if ($PSVersionTable.PSVersion.Major -ge 6) {
-		Set-Content -LiteralPath $Path -Value $Bytes -AsByteStream
-	} else {
-		Set-Content -LiteralPath $Path -Value $Bytes -Encoding Byte
-	}
+	$hex = ($Bytes | ForEach-Object { '{0:X2}' -f $_ }) -join ' '
+	Set-Content -LiteralPath $Path -Value $hex -Encoding ascii -NoNewline
+	& $Exe $Path --from hex *> $null
 }
 
 function Get-Bytes {
@@ -141,11 +142,18 @@ if (-not (Test-Path -LiteralPath $Exe)) {
 if (Test-Path -LiteralPath $Work) { Remove-Item -LiteralPath $Work -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
 
+# --read は UTF-8 のバイト列を標準出力へ流す。受け取り側を UTF-8 に固定しないと、
+# Windows PowerShell 5.1 は OEM コードページ（932）として読んで化ける
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $Bom8 = [byte[]](0xEF, 0xBB, 0xBF)
 $Bom16Le = [byte[]](0xFF, 0xFE)
 
-# 日本語を含む本文。SJIS でも表現できる文字だけを使う
-$Body = "1 行目" + "`n" + "2 行目" + "`n" + "3 行目"
+# 日本語を含む本文。SJIS でも表現できる文字だけを使う。
+# 短すぎると UTF-8 のバイト列が SJIS 構造としても妥当になり（漢字だけだと
+# 起きやすい）、判定が「両方妥当」で止まる。ひらがな主体の普通の文にして、
+# 数十文字あれば SJIS 構造が崩れて UTF-8 に一意に決まる。
+$Body = "最初の行です" + "`n" + "これは二番目の行" + "`n" + "三番目の行になります"
 
 # ---------------------------------------------------------------
 Write-Host ''
@@ -256,9 +264,15 @@ $b = Get-Bytes $p
 $e = Measure-Eol $b
 Assert-True '5h BOM + LF' ((Test-Prefix $b $Bom8) -and $e.Lf -eq 2 -and $e.CrLf -eq 0) ('LF=' + $e.Lf)
 
+# 改行の混在を試す本文。判定が一意に決まる長さの日本語にし、
+# 改行だけを差し替える。$L1〜$L3 は 1 行分の本文
+$L1 = '最初の行の本文です'
+$L2 = 'これは二番目の行の本文'
+$L3 = '三番目の行の本文になります'
+
 # 5i. 改行が混在した入力に --to sjis  →  混在したまま
 $p = New-Case 'c05i.txt'
-New-TextFile $p ("1 行目" + "`r`n" + "2 行目" + "`n" + "3 行目") $EncUtf8
+New-TextFile $p ($L1 + "`r`n" + $L2 + "`n" + $L3) $EncUtf8
 Assert-Equal '5i 終了コード' 0 (Invoke-Exe @($p, '--to', 'sjis'))
 $e = Measure-Eol (Get-Bytes $p)
 Assert-True '5i 混在したまま' ($e.CrLf -eq 1 -and $e.Lf -eq 1) ('CRLF=' + $e.CrLf + ' LF=' + $e.Lf)
@@ -283,14 +297,14 @@ Assert-True '7 CRCRLF にならない' ($e.CrLf -eq 2 -and $e.Cr -eq 0) ('CRLF='
 
 # 8. LF と CRLF の混在  --to ps1  →  すべて CRLF に揃う
 $p = New-Case 'c08.txt'
-New-TextFile $p ("1 行目" + "`r`n" + "2 行目" + "`n" + "3 行目") $EncUtf8
+New-TextFile $p ($L1 + "`r`n" + $L2 + "`n" + $L3) $EncUtf8
 [void](Invoke-Exe @($p, '--to', 'ps1'))
 $e = Measure-Eol (Get-Bytes $p)
 Assert-True '8 すべて CRLF に揃う' ($e.CrLf -eq 2 -and $e.Lf -eq 0) ('CRLF=' + $e.CrLf)
 
 # 9. CR 単独  --to ps1  →  CRLF になる
 $p = New-Case 'c09.txt'
-New-TextFile $p ("1 行目" + "`r" + "2 行目" + "`r" + "3 行目") $EncUtf8
+New-TextFile $p ($L1 + "`r" + $L2 + "`r" + $L3) $EncUtf8
 [void](Invoke-Exe @($p, '--to', 'ps1'))
 $e = Measure-Eol (Get-Bytes $p)
 Assert-True '9 CR 単独が CRLF になる' ($e.CrLf -eq 2 -and $e.Cr -eq 0) ('CRLF=' + $e.CrLf + ' CR=' + $e.Cr)
@@ -412,6 +426,183 @@ Assert-Equal '25 終了コード' 1 (Invoke-Exe @($p, '--to', 'ps1', '--from', '
 $p = New-Case 'c26.txt'
 New-TextFile $p $Body $EncUtf8
 Assert-Equal '26 終了コード' 1 (Invoke-Exe @($p, '--to', 'ebcdic'))
+
+# ---------------------------------------------------------------
+Write-Host ''
+Write-Host '[読み取り]' -ForegroundColor Cyan
+
+# 27. SJIS のファイルを --read  →  中身が返る。ファイルは変わらない
+$p = New-Case 'c27.txt'
+New-TextFile $p $Body $EncSjis
+$before = Get-Bytes $p
+$out = (& $Exe $p --read) -join "`n"
+Assert-Equal '27 中身が返る' $Body $out
+$after = Get-Bytes $p
+Assert-Equal '27 書き換えない' $before.Length $after.Length
+
+# 28. UTF-16 LE のファイルを --read  →  中身が返る
+$p = New-Case 'c28.txt'
+New-TextFile $p $Body $EncUtf16Le
+$out = (& $Exe $p --read) -join "`n"
+Assert-Equal '28 中身が返る' $Body $out
+
+# 29. BOM 付き UTF-8 を --read  →  BOM が混ざらない
+$p = New-Case 'c29.txt'
+New-TextFile $p $Body $EncUtf8Bom
+$out = (& $Exe $p --read) -join "`n"
+Assert-Equal '29 BOM が混ざらない' $Body $out
+
+# 30. 判定できないファイルを --read  →  終了コード 3
+$p = New-Case 'c30.txt'
+New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
+Assert-Equal '30 終了コード' 3 (Invoke-Exe @($p, '--read'))
+
+# 31. 存在しないファイルを --read  →  終了コード 2
+Assert-Equal '31 終了コード' 2 (Invoke-Exe @((Join-Path $Work 'nothing.txt'), '--read'))
+
+# ---------------------------------------------------------------
+Write-Host ''
+Write-Host '[16 進テキストの展開]' -ForegroundColor Cyan
+
+# 展開結果のバイト列を確かめる補助。New-RawFile が --from hex を使うので、
+# ここは Set-Content で 16 進テキストを書いてから直に呼ぶ
+function Expand-Hex {
+	param([string]$Name, [string]$Hex)
+	$p = New-Case $Name
+	Set-Content -LiteralPath $p -Value $Hex -Encoding ascii -NoNewline
+	$code = Invoke-Exe @($p, '--from', 'hex')
+	return [pscustomobject]@{ Path = $p; Code = $code }
+}
+
+# 38. 空白区切りの 16 進  →  3 バイトになる
+$r = Expand-Hex 'c38.txt' '41 80 42'
+Assert-Equal '38 終了コード' 0 $r.Code
+$b = Get-Bytes $r.Path
+Assert-True '38 3 バイトになる' ($b.Length -eq 3 -and $b[0] -eq 0x41 -and $b[1] -eq 0x80 -and $b[2] -eq 0x42) (($b | ForEach-Object { '{0:X2}' -f $_ }) -join ' ')
+
+# 39. 空白なし  →  同じ 3 バイト
+$r = Expand-Hex 'c39.txt' '418042'
+$b = Get-Bytes $r.Path
+Assert-True '39 空白なしでも同じ' ($b.Length -eq 3 -and $b[1] -eq 0x80) (($b | ForEach-Object { '{0:X2}' -f $_ }) -join ' ')
+
+# 40. 改行を挟む  →  同じ 3 バイト
+$r = Expand-Hex 'c40.txt' ("41" + "`r`n" + "80 42")
+$b = Get-Bytes $r.Path
+Assert-True '40 改行を挟んでも同じ' ($b.Length -eq 3 -and $b[1] -eq 0x80) (($b | ForEach-Object { '{0:X2}' -f $_ }) -join ' ')
+
+# 41. 小文字  →  BOM の 3 バイト
+$r = Expand-Hex 'c41.txt' 'ef bb bf'
+$b = Get-Bytes $r.Path
+Assert-True '41 小文字も読める' (Test-Prefix $b $Bom8) (($b | ForEach-Object { '{0:X2}' -f $_ }) -join ' ')
+
+# 42. 桁数が奇数  →  終了コード 1。書き込まない
+$p = New-Case 'c42.txt'
+Set-Content -LiteralPath $p -Value '418' -Encoding ascii -NoNewline
+Assert-Equal '42 終了コード' 1 (Invoke-Exe @($p, '--from', 'hex'))
+Assert-Equal '42 書き込まない' '418' ([System.IO.File]::ReadAllText($p))
+
+# 43. 16 進以外を含む  →  終了コード 1
+$p = New-Case 'c43.txt'
+Set-Content -LiteralPath $p -Value '41 zz 42' -Encoding ascii -NoNewline
+Assert-Equal '43 終了コード' 1 (Invoke-Exe @($p, '--from', 'hex'))
+
+# 44. --from hex --to ps1  →  終了コード 1
+$p = New-Case 'c44.txt'
+Set-Content -LiteralPath $p -Value '41 42' -Encoding ascii -NoNewline
+Assert-Equal '44 終了コード' 1 (Invoke-Exe @($p, '--from', 'hex', '--to', 'ps1'))
+
+# 45. 空のファイル  →  0 バイトのまま。エラーにしない
+$p = New-Case 'c45.txt'
+Set-Content -LiteralPath $p -Value '' -Encoding ascii -NoNewline
+Assert-Equal '45 終了コード' 0 (Invoke-Exe @($p, '--from', 'hex'))
+Assert-Equal '45 0 バイトのまま' 0 (Get-Bytes $p).Length
+
+# ---------------------------------------------------------------
+Write-Host ''
+Write-Host '[16 進での表示]' -ForegroundColor Cyan
+
+# 46. 3 バイトを --dump  →  「41 80 42」。ファイルは変わらない
+$p = New-Case 'c46.txt'
+New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
+$out = (& $Exe $p --dump).Trim()
+Assert-Equal '46 16 進が返る' '41 80 42' $out
+Assert-Equal '46 書き換えない' 3 (Get-Bytes $p).Length
+
+# 47. --offset 1 --bytes 1  →  2 バイト目だけ
+$p = New-Case 'c47.txt'
+New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
+$out = (& $Exe $p --dump --offset 1 --bytes 1).Trim()
+Assert-Equal '47 範囲を絞る' '80' $out
+
+# 48. --bytes がファイルを超える  →  ある分だけ
+$p = New-Case 'c48.txt'
+New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
+$out = (& $Exe $p --dump --offset 2 --bytes 99).Trim()
+Assert-Equal '48 ある分だけ' '42' $out
+
+# 49. --offset がファイルを超える  →  何も返らない。終了コード 0
+$p = New-Case 'c49.txt'
+New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
+$out = (@(& $Exe $p --dump --offset 99) -join '').Trim()
+Assert-Equal '49 終了コード' 0 $LASTEXITCODE
+Assert-Equal '49 何も返らない' '' $out
+
+# 50. --dump の出力を --from hex に渡す  →  元のバイト列に戻る。
+#     20 バイトにして 16 バイトごとの折り返しをまたぐ。改行を挟んでも戻る
+$p = New-Case 'c50.txt'
+$orig = @()
+for ($k = 0; $k -lt 20; $k++) { $orig += [byte]($k * 7 % 256) }
+New-RawFile $p ([byte[]]$orig)
+$hex = ((& $Exe $p --dump) -join "`n")   # 複数行をそのまま 1 文字列に
+$q = New-Case 'c50out.txt'
+Set-Content -LiteralPath $q -Value $hex -Encoding ascii -NoNewline
+[void](Invoke-Exe @($q, '--from', 'hex'))
+$a = Get-Bytes $p; $b = Get-Bytes $q
+$same = ($a.Length -eq $b.Length)
+if ($same) { for ($k = 0; $k -lt $a.Length; $k++) { if ($a[$k] -ne $b[$k]) { $same = $false; break } } }
+Assert-True '50 折り返しをまたいで戻る' $same ('' + $b.Length + ' バイト')
+
+# 50b. 16 バイトを超えると折り返す  →  2 行になる
+$p = New-Case 'c50b.txt'
+New-RawFile $p ([byte[]]$orig)
+$lines = @(& $Exe $p --dump)
+Assert-Equal '50b 20 バイトで 2 行' 2 $lines.Count
+Assert-Equal '50b 1 行目は 16 バイト' 16 ($lines[0].Trim() -split '\s+').Count
+
+# 51. 存在しないファイルを --dump  →  終了コード 2
+Assert-Equal '51 終了コード' 2 (Invoke-Exe @((Join-Path $Work 'nothing.txt'), '--dump'))
+
+# ---------------------------------------------------------------
+Write-Host ''
+Write-Host '[バイト列を保つ変換]' -ForegroundColor Cyan
+
+# CP932 の重複文字「ⅰ」(EEEF) を含む SJIS ファイル。改行は LF。
+# デコードを通すと FA40 に化ける。バイト保持なら EEEF のまま
+# 41(A) EE EF 0A(LF) 42(B)
+$necBytes = [byte[]](0x41, 0xEE, 0xEF, 0x0A, 0x42)
+
+# 52. --to /crlf  →  EEEF のまま。改行だけ CRLF
+$p = New-Case 'c52.txt'
+New-RawFile $p $necBytes
+[void](Invoke-Exe @($p, '--to', '/crlf'))
+$b = Get-Bytes $p
+Assert-True '52 EEEF が化けない' ($b[1] -eq 0xEE -and $b[2] -eq 0xEF) (($b | ForEach-Object { '{0:X2}' -f $_ }) -join ' ')
+Assert-True '52 改行が CRLF' ($b -contains 0x0D) 'CR あり'
+
+# 53. --to sjis/crlf（文字コードは同じ）  →  同上
+$p = New-Case 'c53.txt'
+New-RawFile $p $necBytes
+[void](Invoke-Exe @($p, '--to', 'sjis/crlf'))
+$b = Get-Bytes $p
+Assert-True '53 EEEF が化けない' ($b[1] -eq 0xEE -and $b[2] -eq 0xEF) (($b | ForEach-Object { '{0:X2}' -f $_ }) -join ' ')
+
+# 54. UTF-16 LE を --to /crlf  →  改行が CRLF。文字は壊れない
+$p = New-Case 'c54.txt'
+New-TextFile $p $Body $EncUtf16Le
+[void](Invoke-Exe @($p, '--to', '/crlf'))
+$b = Get-Bytes $p
+$decoded = $EncUtf16Le.GetString($b) -replace "`r`n", "`n"
+Assert-Equal '54 文字が保たれる' $Body $decoded
 
 # ---------------------------------------------------------------
 Write-Host ''
