@@ -167,7 +167,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-05</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-06</p>
 	</div>
 </div>
 
@@ -191,7 +191,7 @@
 	<p>タグ対応仕様の第 5 章に挙げた論点のうち、まだ決まっていないもの。実装を変えるときは先に方針を決める。</p>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-01</span>caption が出力されない</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-01</span>caption が出力されない</summary>
 		<div class="issue-body">
 			<p><code>&lt;table&gt;</code> の中にある <code>&lt;caption&gt;</code> が Markdown に出ない。表の処理が <code>thead</code> と <code>tbody</code> しか見ていないため、<code>caption</code> に到達しない。</p>
 			<p>36 ケースの実測で唯一残った欠落。Markdown のテーブルにキャプションの記法が無いので、表の直前か直後の段落にする必要がある。どちらに置くかを決める。</p>
@@ -200,7 +200,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-02</span>ブロックとして扱っていないタグの構造が失われる</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-02</span>ブロックとして扱っていないタグの構造が失われる</summary>
 		<div class="issue-body">
 			<p>次のタグは <code>BlockTags</code> に無いため、中身が地の文として 1 つに連結される。テキストは消えないが構造は失われる。</p>
 			<div class="tablewrap">
@@ -222,7 +222,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-03</span>章の外で見出しの段が飛ぶ</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-03</span>章の外で見出しの段が飛ぶ</summary>
 		<div class="issue-body">
 			<p>章（<code>section</code>）の外に <code>h2</code> と <code>h3</code> を並べると <code>###</code> が抜ける。</p>
 			<div class="tablewrap">
@@ -240,7 +240,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-04</span>意味を持つインラインタグが平文になる</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-04</span>意味を持つインラインタグが平文になる</summary>
 		<div class="issue-body">
 			<p><code>del</code> <code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>abbr</code> <code>small</code> <code>q</code> <code>cite</code> <code>time</code> はタグが消えて中身のテキストだけが残る。取り消し線や上付きの区別は Markdown に出ない。</p>
 			<p>GitHub は <code>~~取り消し線~~</code> を解釈するので <code>del</code> は記法にできる。<code>sup</code> <code>sub</code> <code>kbd</code> は HTML のまま残す手もある。どこまで対応するかを決める。</p>
@@ -257,7 +257,7 @@
 	<p><code>20260822-powershell-pwsh-learn</code> からの要求。詳細は <code>notes/01_research/</code> に置いた要求 01 の文書にある（受け取った Markdown をそのまま残しているため、HTML 版は無い）。優先度は要求元が付けたもの。</p>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-05</span>章カード（.chapters）を表にする ［高］</summary>
+		<summary><span class="badge b-none">未</span><span class="no">i260830-05</span>章カード（.chapters）を表にする ［高］</summary>
 		<div class="issue-body">
 			<p><code>&lt;ul class="chapters"&gt;</code> の中の <code>span</code> 3 つが連結され、リンクのラベルが 1 本の長い文字列になる。</p>
 <pre><code>- [第1部 基礎編 01. PowerShell の生まれた経緯 DOS・Bash・Node.js と比較しながら、…](docs/01-背景.md)</code></pre>
@@ -267,7 +267,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-06</span>.html → .md の書き換えを変換対象だけに絞る ［高］</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-06</span>.html → .md の書き換えを変換対象だけに絞る ［高］</summary>
 		<div class="issue-body">
 			<p>いまは相対リンクの <code>.html</code> をすべて <code>.md</code> に置き換えている。変換対象でない HTML へのリンクまで書き換わり、存在しないファイルを指す。</p>
 			<p>変換対象のファイル一覧は既に持っているので、その集合に含まれるものだけを書き換えるようにする。</p>
@@ -277,7 +277,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-07</span>他ファイルへのアンカーをスラッグに変換 ［高］</summary>
+		<summary><span class="badge b-none">未</span><span class="no">i260830-07</span>他ファイルへのアンカーをスラッグに変換 ［高］</summary>
 		<div class="issue-body">
 			<p>同一ファイル内の <code>#chNN</code> は見出しアンカーに張り替えているが、<strong>他ファイルへのリンクのアンカー部分は変換していない</strong>。</p>
 <pre><code>[03.2 実行ポリシー](docs/03-実行環境.html#ch02)
@@ -290,7 +290,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-08</span>画像の相対パスを出力位置から計算 ［中］</summary>
+		<summary><span class="badge b-none">未</span><span class="no">i260830-08</span>画像の相対パスを出力位置から計算 ［中］</summary>
 		<div class="issue-body">
 			<p>いまは切り出した SVG を <code>images/</code> 固定で参照している。画像を 1 か所に集約する構成では、出力先の階層によって相対パスが変わる。</p>
 			<div class="tablewrap">
@@ -308,7 +308,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-09</span>章間ナビを冒頭にも出す ［中］</summary>
+		<summary><span class="badge b-none">未</span><span class="no">i260830-09</span>章間ナビを冒頭にも出す ［中］</summary>
 		<div class="issue-body">
 			<p><code>&lt;footer&gt;</code> の内容は末尾に出るが、冒頭には出ない。900 行を超える章があり、次の章へ行くのに末尾までスクロールすることになる。</p>
 			<p>ナビを持たないページ（README）には出さない判定が要る。要求元は「前章」「次章」「目次に戻る」を含むかで判定している。</p>
@@ -316,7 +316,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-10</span>SVG 切り出し時に CSS 変数を解決する</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-10</span>SVG 切り出し時に CSS 変数を解決する</summary>
 		<div class="issue-body">
 			<p>デザインルールは <code>stop-color="var(--accent)"</code> の書き方を前提にしているが、SVG を単体ファイルに切り出すと変数が解決されず<strong>色が失われる</strong>。</p>
 <pre><code>&lt;section class="ch03"&gt;
@@ -341,7 +341,7 @@
 	<p>共通化計画の第 7 章に挙げた 8 段階のうち、まだ終わっていないもの。</p>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-11</span>既存 HTML のクラス名を取り決めに合わせる</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-11</span>既存 HTML のクラス名を取り決めに合わせる</summary>
 		<div class="issue-body">
 			<p>クラス名の取り決めの第 8 章に移行表がある。<strong>書き換えはそのプロジェクトの側で行う</strong>。共通ツールのリポジトリから他のプロジェクトのファイルは触らない。</p>
 			<p>出力が壊れているのは <code>b-good</code> / <code>b-bad</code> だけ（記号が付かない）。残りは名前が違っても出力は同じなので急がない。</p>
@@ -351,7 +351,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-12</span>各プロジェクトへランチャーを配置</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-12</span>各プロジェクトへランチャーを配置</summary>
 		<div class="issue-body">
 			<p>各プロジェクトの <code>tools/30_html2md/</code> に <code>html2md.cmd</code> を置く。中身は CLAUDE.md の「HTML と Markdown の併存」に書いてある。</p>
 			<p><strong>ランチャーを置いて動作を確かめてから旧スクリプトを消す。</strong>先に消さない。旧スクリプトは <code>src/scripts/70_html2md/</code> にある。</p>
@@ -361,7 +361,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-13</span>check-markdown を C# 化</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-13</span>check-markdown を C# 化</summary>
 		<div class="issue-body">
 			<p>html2md は C# 化したが、<code>check-markdown.ps1</code> は PowerShell のまま。C# 化すると <code>ConvertTo-Json</code> の UTF-8 バイト列の扱いなど ps1 固有の注意が不要になる。</p>
 			<p>C# 化したら CLAUDE.md の「生成した Markdown は GitHub のレンダラで検証する」の記述も更新する。</p>
@@ -370,7 +370,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-14</span>旧 ps1 / mjs を削除</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-14</span>旧 ps1 / mjs を削除</summary>
 		<div class="issue-body">
 			<p>各プロジェクトの <code>src/scripts/70_html2md/</code> にある 5 本（ps1 4 本、mjs 1 本）を削除する。ランチャーへの置き換えが済み、出力を確かめてから。</p>
 			<p>共通ツール側の <code>html2md-ps.ps1</code> は参照実装として残す。テストで exe との一致を確かめている。</p>
@@ -384,7 +384,7 @@
 	<h1>保留中の判断</h1>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
 		<div class="issue-body">
 			<p><code>N:/PlayWright/projects/html2md/contrast.spec.ts</code> を作ったが、後から <code>check-contrast.ps1</code> が独自の実装（<code>contrast/check-contrast.cjs</code>）を持っていることが分かり<strong>重複している</strong>。</p>
 			<p>削除するか、将来別の検証を書くときの台として残すか。共有環境の規約どおりの使い方ではある。</p>
@@ -395,7 +395,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-16</span>exe を git に含めるか</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-16</span>exe を git に含めるか</summary>
 		<div class="issue-body">
 			<p>いまは <code>.gitignore</code> の <code>*.exe</code> で除外している。<strong>ビルド後にサイズを測り、小さければ含める方向で再検討する</strong>と決めていた。</p>
 			<p>現在のサイズは 35 KB 程度。含めれば clone 直後にビルドせずに使える。含めなければ差分の読めないものが履歴に残らない。</p>
@@ -406,7 +406,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-17</span>CLAUDE.md の重複を整理</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-17</span>CLAUDE.md の重複を整理</summary>
 		<div class="issue-body">
 			<p>クラス名の参照が 2 箇所にある。「# HTMLデザインルール」の「クラス名」と、「# HTML→Markdown 変換ルール」の「変換に使うクラス名は…に合わせる」。</p>
 			<p>重複と分かったうえで残している。後で CLAUDE.md 側をまとめて整理する予定。</p>
@@ -416,7 +416,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-ok">済</span><span class="no">20260830-18</span>PowerShell の配列の受け取り方をルールに追記</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-18</span>PowerShell の配列の受け取り方をルールに追記</summary>
 		<div class="issue-body">
 			<p>CLAUDE.md の「PowerShellの落とし穴」には「関数から配列を返すときは <code>return ,$array</code>」とあるが、<strong>受け取り側の書き方が規定されていない</strong>。そこで踏んだ。</p>
 <pre><code>// 誤り1: foreach に直接渡すと、配列そのものが 1 要素として来る
@@ -428,6 +428,17 @@ $blocks = @(Convert-Blocks $body $ctx)
 // 正しい: 代入だけにすると外側が外れる
 $sub = Convert-Blocks ...</code></pre>
 			<p>ps1 が出力 <code>System.Object[]</code> の 1 行だけになる、という形で表面化した。ルールに 1 行足す案を出したが、まだ提示していない。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260906-01</span>convert-encoding をこのプロジェクトに取り込むか</summary>
+		<div class="issue-body">
+			<p>2026-09-06 に <code>20260905-windows-pc-memory-inspection</code> から<strong>実装の依頼が来た。</strong>文字コードと改行を変換する CLI を、html2md と同じ作り（csproj なし、<code>build.cmd</code> から csc）で置きたい、という内容。</p>
+			<p>向こう側に仕様書と参考実装がある。C# 4 ファイルで、C# 5 の範囲でビルドと動作の確認が済んでいるとのこと。<strong>取り込みが済んだら向こう側は削除する</strong>と言っている。</p>
+			<p><span class="badge b-ok">済</span>2026-09-06 に<strong>引き受けて取り込んだ。</strong>参考実装 4 ファイルはそのまま使えた（C# 5 の範囲で書かれていた）。仕様書は <a href="../10_plan/p260906-01-convert-encoding.html">notes/10_plan/</a> へ写し、取り込み後の状態に合わせて直した。</p>
+			<p><span class="badge b-ok">済</span>テストは 62 件すべて成功。<strong>受け取った仕様書の 6 章に矛盾があった。</strong>ケース 3・4 が「<code>--to utf8</code> で LF のみ」を期待していたが、2 章の規則「改行を書かなければ、改行は変えない」と食い違う。ケース 5d・5f が規則側を裏付けているため、記述ミスと判断して期待値を規則に合わせた。</p>
+			<p><span class="badge b-none">未</span>共通ルールの「ツールごとの文字コードの扱い」にある PowerShell の変換手順を、<code>convert-encoding</code> を呼ぶ 1 行へ差し替える。<strong>ルールの変更は利用者の判断を待つ。</strong></p>
 		</div>
 	</details>
 </section>
