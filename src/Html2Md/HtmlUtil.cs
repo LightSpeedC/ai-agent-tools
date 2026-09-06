@@ -142,6 +142,10 @@ namespace Html2Md
 			int contentStart = html.IndexOf('>', start);
 			contentStart = (contentStart < 0) ? html.Length : contentStart + 1;
 
+			// 空要素は閉じタグを持たない。開きタグだけをブロックとする。
+			// 閉じタグを探させると見つからず、後ろが丸ごと 1 ブロックに飲み込まれる
+			if (IsVoidTag(tag)) return MakeBlock(html.Substring(start, contentStart - start), "");
+
 			int depth = 0;
 			int i = start;
 			while (i < html.Length)
@@ -168,6 +172,12 @@ namespace Html2Md
 				}
 			}
 			return MakeBlock(html.Substring(start), html.Substring(contentStart));
+		}
+
+		/// <summary>閉じタグを持たないタグ。ブロックとして走査するものだけを挙げる</summary>
+		private static bool IsVoidTag(string tag)
+		{
+			return tag == "hr";
 		}
 
 		private static Block MakeBlock(string outer, string inner)

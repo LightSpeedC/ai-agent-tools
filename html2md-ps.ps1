@@ -235,6 +235,12 @@ function Get-Block {
 	$contentStart = $Html.IndexOf('>', $Start)
 	$contentStart = if ($contentStart -lt 0) { $Html.Length } else { $contentStart + 1 }
 
+	# 空要素は閉じタグを持たない。開きタグだけをブロックとする。
+	# 閉じタグを探させると見つからず、後ろが丸ごと 1 ブロックに飲み込まれる
+	if ($Tag -eq 'hr') {
+		return [pscustomobject]@{ Outer = $Html.Substring($Start, $contentStart - $Start); Inner = '' }
+	}
+
 	$depth = 0
 	$i = $Start
 	while ($i -lt $Html.Length) {
@@ -933,6 +939,63 @@ function Get-HeadingMark {
 	return ('#' * $level) + ' '
 }
 
+# 定義リストを箇条書きにする。dt が項目、dd はその下に 4 字下げてぶら下げる。
+# Markdown に定義リストは無いため、足す記号が - だけで済む形を選んだ。
+# dt を太字にしない。** は HTML に無い装飾になる
+function Convert-DefList {
+	param(
+		[AllowEmptyString()][string]$Inner,
+		[hashtable]$Ctx
+	)
+	$lines = @()
+	$i = 0
+	while ($true) {
+		$m = [regex]::Match($Inner.Substring($i), '<(dt|dd)\b')
+		if (-not $m.Success) { break }
+		$start = $i + $m.Index
+		$tag = $m.Groups[1].Value.ToLowerInvariant()
+		$block = Get-Block $Inner $start $tag
+		$i = $start + $block.Outer.Length
+
+		$text = Convert-Inline -Html ($block.Inner) -Anchors ($Ctx.Anchors)
+		# 項目の中で改行すると箇条書きが切れる
+		$text = ([regex]::Replace($text, '\s*\r?\n\s*', ' ')).Trim()
+		if (-not $text) { continue }
+		$mark = if ($tag -eq 'dd') { '    - ' } else { '- ' }
+		$lines += ($mark + $text)
+	}
+	if ($lines.Count -eq 0) { return '' }
+	return ($lines -join "`n")
+}
+
+# 折りたたみはタグのまま出す。GitHub が解釈するため畳みが効く。
+# summary の後ろと閉じる前に空行を置く。空行が無いと中身が HTML として読まれ、
+# Markdown の記法が効かない
+function Convert-Details {
+	param(
+		[AllowEmptyString()][string]$Inner,
+		[hashtable]$Ctx
+	)
+	$summaryText = ''
+	$sm = [regex]::Match($Inner, '(?is)<summary\b[^>]*>(.*?)</summary>')
+	if ($sm.Success) {
+		$summaryText = Convert-Inline -Html ($sm.Groups[1].Value) -Anchors ($Ctx.Anchors)
+		$summaryText = ([regex]::Replace($summaryText, '\s*\r?\n\s*', ' ')).Trim()
+		$Inner = $Inner.Remove($sm.Index, $sm.Length)
+	}
+
+	$sub = Convert-Blocks $Inner $Ctx
+
+	$d = @('<details>', ('<summary>' + $summaryText + '</summary>'))
+	foreach ($b in $sub) {
+		$d += ''
+		$d += $b
+	}
+	$d += ''
+	$d += '</details>'
+	return ($d -join "`n")
+}
+
 function Convert-Blocks {
 	param(
 		[AllowEmptyString()][string]$Html,
@@ -946,7 +1009,7 @@ function Convert-Blocks {
 	while ($true) {
 		$m = [regex]::Match($Html.Substring($i),
 			('<(section|figure|footer|blockquote|div|nav|table|main|article|aside|header|address' +
-			 '|details|summary|dl|dt|dd|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\b'))
+			 '|details|summary|dl|dt|dd|hr|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\b'))
 		if (-not $m.Success) {
 			# 最後のブロックより後ろに残ったテキスト
 			$rest = Convert-Inline -Html $Html.Substring($i) -Anchors $anchors
@@ -988,11 +1051,20 @@ function Convert-Blocks {
 				foreach ($b in $sub) { $out.Add($b) | Out-Null }
 			}
 			# 文書構造のタグ（main article aside header address）と、
-			# Markdown に対応する記法が無いタグ（details summary dl dt dd）。
-			# 折りたたみや定義リストという構造は捨てて、中身のテキストを落とさないことを優先する
-			{ $_ -in @('main', 'article', 'aside', 'header', 'address', 'details', 'summary', 'dl', 'dt', 'dd') } {
+			# 親の外に単独で置かれた summary dt dd。中身を段落として出す
+			{ $_ -in @('main', 'article', 'aside', 'header', 'address', 'summary', 'dt', 'dd') } {
 				$sub = Convert-Blocks ($block.Inner) $Ctx
 				foreach ($b in $sub) { $out.Add($b) | Out-Null }
+			}
+			'hr' {
+				$out.Add('---') | Out-Null
+			}
+			'dl' {
+				$b = Convert-DefList ($block.Inner) $Ctx
+				if ($b) { $out.Add($b) | Out-Null }
+			}
+			'details' {
+				$out.Add((Convert-Details ($block.Inner) $Ctx)) | Out-Null
 			}
 			'blockquote' {
 				$sub = Convert-Blocks ($block.Inner) $Ctx

@@ -55,7 +55,7 @@ namespace Html2Md
 		/// </summary>
 		private const string BlockTags =
 			"<(section|figure|footer|blockquote|div|nav|table|main|article|aside|header|address"
-			+ "|details|summary|dl|dt|dd|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\\b";
+			+ "|details|summary|dl|dt|dd|hr|h1|h2|h3|h4|h5|h6|p|ul|ol|pre|svg|a)\\b";
 
 		private readonly InlineConverter inline = new InlineConverter();
 		private readonly ListTableConverter listTable;
@@ -183,6 +183,66 @@ namespace Html2Md
 			if (text.Length > 0) outBlocks.Add(text);
 		}
 
+		/// <summary>
+		/// 定義リストを箇条書きにする。dt が項目、dd はその下に 4 字下げてぶら下げる。
+		/// Markdown に定義リストは無いため、足す記号が - だけで済む形を選んだ。
+		/// dt を太字にしない。** は HTML に無い装飾になる。
+		/// </summary>
+		private void ConvertDefList(string inner, ConvertContext ctx, List<string> outBlocks)
+		{
+			List<string> lines = new List<string>();
+			int i = 0;
+
+			while (true)
+			{
+				Match m = Regex.Match(inner.Substring(i), "<(dt|dd)\\b");
+				if (!m.Success) break;
+				int start = i + m.Index;
+				string tag = m.Groups[1].Value.ToLowerInvariant();
+				HtmlUtil.Block block = HtmlUtil.GetBlock(inner, start, tag);
+				i = start + block.Outer.Length;
+
+				string text = inline.Convert(block.Inner, ctx.Anchors, false);
+				// 項目の中で改行すると箇条書きが切れる
+				text = Regex.Replace(text, "\\s*\\r?\\n\\s*", " ").Trim();
+				if (text.Length == 0) continue;
+				lines.Add((tag == "dd" ? "    - " : "- ") + text);
+			}
+
+			if (lines.Count > 0) outBlocks.Add(string.Join("\n", lines.ToArray()));
+		}
+
+		/// <summary>
+		/// 折りたたみはタグのまま出す。GitHub が解釈するため畳みが効く。
+		/// summary の後ろと閉じる前に空行を置く。空行が無いと中身が HTML として読まれ、
+		/// Markdown の記法が効かない。
+		/// </summary>
+		private void ConvertDetails(string inner, ConvertContext ctx, List<string> outBlocks)
+		{
+			string summaryText = "";
+			Match sm = Regex.Match(inner, "(?is)<summary\\b[^>]*>(.*?)</summary>");
+			if (sm.Success)
+			{
+				summaryText = inline.Convert(sm.Groups[1].Value, ctx.Anchors, false);
+				summaryText = Regex.Replace(summaryText, "\\s*\\r?\\n\\s*", " ").Trim();
+				inner = inner.Remove(sm.Index, sm.Length);
+			}
+
+			List<string> sub = ConvertBlocks(inner, ctx);
+
+			List<string> d = new List<string>();
+			d.Add("<details>");
+			d.Add("<summary>" + summaryText + "</summary>");
+			foreach (string b in sub)
+			{
+				d.Add("");
+				d.Add(b);
+			}
+			d.Add("");
+			d.Add("</details>");
+			outBlocks.Add(string.Join("\n", d.ToArray()));
+		}
+
 		private List<string> ConvertBlocks(string html, ConvertContext ctx)
 		{
 			List<string> outBlocks = new List<string>();
@@ -236,14 +296,24 @@ namespace Html2Md
 					case "aside":
 					case "header":
 					case "address":
-					// Markdown に対応する記法が無いタグ。まずは中身のテキストを落とさないことを優先し、
-					// 折りたたみや定義リストという構造は捨てて、項目ごとの段落として出す
-					case "details":
+					// details の外に単独で置かれた summary。中身を段落として出す
 					case "summary":
-					case "dl":
+					// dl の外に単独で置かれた dt・dd も同じ
 					case "dt":
 					case "dd":
 						outBlocks.AddRange(ConvertBlocks(block.Inner, ctx));
+						break;
+
+					case "hr":
+						outBlocks.Add("---");
+						break;
+
+					case "dl":
+						ConvertDefList(block.Inner, ctx, outBlocks);
+						break;
+
+					case "details":
+						ConvertDetails(block.Inner, ctx, outBlocks);
 						break;
 
 					case "blockquote":
