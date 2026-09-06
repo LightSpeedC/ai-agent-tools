@@ -306,7 +306,13 @@ convert-encoding foo.txt --to /crlf
 
 # いまの状態を見るだけ。書き込まない
 convert-encoding foo.cmd --info
+
+# 中身を UTF-8 で標準出力へ出す。書き込まない
+convert-encoding foo.cmd --read
 ```
+
+> [!IMPORTANT]
+> <strong>読み取りツールは SJIS のファイルを UTF-8 として読むため化ける。</strong>文字コードを指定する手段が無く、化けたまま推測で扱うことになる。`--read` はその逃げ道。スクリプトから使うときは `[Console]::OutputEncoding` を UTF-8 にしておく（5.1 は外部コマンドの出力を CP932 として読む）。
 
 用途名は `ps1` `cmd` `bat` `reg` `html`、文字コード名は `utf8` `utf8bom` `sjis` `utf16le` `utf16be`。改行は `lf` と `crlf`。
 

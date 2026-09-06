@@ -12,12 +12,13 @@
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
 	.ch01{--accent:hsl(280,78%,25%);--accent2:hsl(280,58%,55%);--soft:hsl(280,28%,95%);}
-	.ch02{--accent:hsl(233.3,78%,25%);--accent2:hsl(233.3,58%,55%);--soft:hsl(233.3,28%,95%);}
-	.ch03{--accent:hsl(186.7,78%,25%);--accent2:hsl(186.7,58%,55%);--soft:hsl(186.7,28%,95%);}
-	.ch04{--accent:hsl(140,78%,25%);--accent2:hsl(140,58%,55%);--soft:hsl(140,28%,95%);}
-	.ch05{--accent:hsl(93.3,78%,25%);--accent2:hsl(93.3,58%,55%);--soft:hsl(93.3,28%,95%);}
-	.ch06{--accent:hsl(46.7,78%,25%);--accent2:hsl(46.7,58%,55%);--soft:hsl(46.7,28%,95%);}
-	.ch07{--accent:hsl(0,78%,25%);--accent2:hsl(0,58%,55%);--soft:hsl(0,28%,95%);}
+	.ch02{--accent:hsl(240,78%,25%);--accent2:hsl(240,58%,55%);--soft:hsl(240,28%,95%);}
+	.ch03{--accent:hsl(200,78%,25%);--accent2:hsl(200,58%,55%);--soft:hsl(200,28%,95%);}
+	.ch04{--accent:hsl(160,78%,25%);--accent2:hsl(160,58%,55%);--soft:hsl(160,28%,95%);}
+	.ch05{--accent:hsl(120,78%,25%);--accent2:hsl(120,58%,55%);--soft:hsl(120,28%,95%);}
+	.ch06{--accent:hsl(80,78%,25%);--accent2:hsl(80,58%,55%);--soft:hsl(80,28%,95%);}
+	.ch07{--accent:hsl(40,78%,25%);--accent2:hsl(40,58%,55%);--soft:hsl(40,28%,95%);}
+	.ch08{--accent:hsl(0,78%,25%);--accent2:hsl(0,58%,55%);--soft:hsl(0,28%,95%);}
 
 	*{box-sizing:border-box;}
 	body{margin:0;background:#fff;color:#1c2330;
@@ -120,6 +121,7 @@
 <li class="ch05"><a href="#ch05">出力と終了コード</a></li>
 <li class="ch06"><a href="#ch06">テストケース</a></li>
 <li class="ch07"><a href="#ch07">ビルドと配置</a></li>
+<li class="ch08"><a href="#ch08">文字コードの知識</a></li>
 </ol>
 </nav>
 
@@ -187,6 +189,9 @@
 <h2>書式</h2>
 <pre><code class="language-text">convert-encoding &lt;path&gt; --to &lt;指定&gt;[/&lt;改行&gt;] [--from &lt;形式&gt;] [--force]
 convert-encoding &lt;path&gt; --info
+convert-encoding &lt;path&gt; --read
+convert-encoding &lt;path&gt; --from hex
+convert-encoding &lt;path&gt; --dump [--offset &lt;n&gt;] [--bytes &lt;m&gt;]
 convert-encoding --help</code></pre>
 
 <h2>引数</h2>
@@ -194,10 +199,15 @@ convert-encoding --help</code></pre>
 <thead><tr><th>引数</th><th>必須</th><th>内容</th></tr></thead>
 <tbody>
 <tr><td class="nowrap">&lt;path&gt;</td><td class="nowrap">はい</td><td>対象ファイル。1 つだけ受ける</td></tr>
-<tr><td class="nowrap">--to &lt;指定&gt;</td><td class="nowrap">はい<br>（--info 時は不要）</td><td>変換先。用途名または文字コード名。<code>/</code> の後ろで改行も指定できる</td></tr>
+<tr><td class="nowrap">--to &lt;指定&gt;</td><td class="nowrap">はい<br>（--info・--read 時は不要）</td><td>変換先。用途名または文字コード名。<code>/</code> の後ろで改行も指定できる</td></tr>
 <tr><td class="nowrap">--from &lt;形式&gt;</td><td class="nowrap">いいえ</td><td>変換元の文字コード。省略すると自動判定</td></tr>
 <tr><td class="nowrap">--force</td><td class="nowrap">いいえ</td><td>変換先で表現できない文字があっても続行する</td></tr>
 <tr><td class="nowrap">--info</td><td class="nowrap">いいえ</td><td>いまの状態を表示するだけ。書き込まない</td></tr>
+<tr><td class="nowrap">--read</td><td class="nowrap">いいえ</td><td>中身を UTF-8 で標準出力へ出す。書き込まない</td></tr>
+<tr><td class="nowrap">--from hex</td><td class="nowrap">いいえ</td><td>中身を 16 進テキストとみなし、バイト列に展開して書き戻す</td></tr>
+<tr><td class="nowrap">--dump</td><td class="nowrap">いいえ</td><td>中身を 16 進テキストで標準出力へ出す。書き込まない</td></tr>
+<tr><td class="nowrap">--offset &lt;n&gt;</td><td class="nowrap">いいえ</td><td>--dump の開始位置（バイト）。省略すると先頭から</td></tr>
+<tr><td class="nowrap">--bytes &lt;m&gt;</td><td class="nowrap">いいえ</td><td>--dump で出すバイト数。省略すると末尾まで</td></tr>
 </tbody>
 </table></div>
 
@@ -265,7 +275,85 @@ convert-encoding etc/setup.reg         --to reg
 convert-encoding notes/memo.html       --to utf8/lf
 convert-encoding foo.txt               --to /crlf
 convert-encoding legacy.txt            --to utf8 --from sjis
-convert-encoding foo.cmd               --info</code></pre>
+convert-encoding foo.cmd               --info
+convert-encoding foo.cmd               --read</code></pre>
+
+<h2>--from hex で 16 進テキストを展開する</h2>
+
+<p>ファイルの中身を 16 進テキストとして読み、<strong>バイト列に展開して書き戻す。</strong>テストデータを作るために用意した。</p>
+
+<pre><code class="language-powershell"># tmp/case.txt の中身が「41 80 42」というテキスト
+convert-encoding tmp/case.txt --from hex
+# → 中身が 3 バイト（0x41 0x80 0x42）になる</code></pre>
+
+<div class="callout callout-important">
+	<p><strong>PowerShell でバイト列を書くと、ウイルス対策に検知される。</strong>2026-09-06 に <code>Trojan:PowerShell/AmsiBypazz.D!MTB</code> として実際に止められた。バイト配列を組み立ててファイルへ書く形が、シェルコードを書き込むパターンとして拾われる。<strong>AMSI が見るのはスクリプトで、exe の内部処理は対象外。</strong>16 進テキストは ASCII だけなので、書き込みツールで安全に作れる。</p>
+</div>
+
+<div class="tablewrap"><table>
+<thead><tr><th>項目</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">受け付ける形</td><td><code>41 80 42</code> ／ <code>418042</code> ／ 改行区切り。空白と改行は無視する</td></tr>
+<tr><td class="nowrap">大文字小文字</td><td>どちらも受ける</td></tr>
+<tr><td class="nowrap">桁数が奇数</td><td>終了コード 1</td></tr>
+<tr><td class="nowrap">16 進以外の文字</td><td>終了コード 1。位置を示す</td></tr>
+<tr><td class="nowrap"><code>--to</code> との併用</td><td>終了コード 1。展開だけを行う</td></tr>
+<tr><td class="nowrap">書き込み</td><td>一時ファイルを経由する。変換と同じ</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout">
+	<p><strong>入力そのものは判定しない。</strong>16 進テキストは ASCII なので、文字コードの判定を通す意味が無い。展開した結果が妥当なバイト列である必要も無い（<strong>判定できないバイト列を作るのが用途のため</strong>）。</p>
+</div>
+
+<h2>--dump でバイト列を 16 進で見る</h2>
+
+<p><code>--from hex</code> の逆。<strong>中身を 16 進テキストで標準出力へ出す。</strong>ファイルは書き換えない。文字コードを判定できないファイルや、化けて見えるファイルの中身を、バイト単位で確かめるために使う。</p>
+
+<pre><code class="language-text">convert-encoding foo.cmd --dump
+40 65 63 68 6F 20 6F 66 66 0D 0A 73 65 74 6C 6F
+63 61 6C 20 65 6E 61 62 6C 65 64 65 6C 61 79 65
+64 65 78 70 61 6E 73 69 6F 6E</code></pre>
+
+<div class="tablewrap"><table>
+<thead><tr><th>項目</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">出力の形</td><td>2 桁の 16 進を空白区切り。大文字。<strong>16 バイトごとに改行。</strong>末尾にも改行 1 つ</td></tr>
+<tr><td class="nowrap">1 行の幅</td><td>16 バイト × 2 桁 ＋ 空白 15 個 ＝ <strong>47 文字。</strong>右に文字を併記しても 80 桁に収まる</td></tr>
+<tr><td class="nowrap">--offset</td><td>開始位置（バイト）。省略すると 0</td></tr>
+<tr><td class="nowrap">--bytes</td><td>出すバイト数。省略すると末尾まで</td></tr>
+<tr><td class="nowrap">範囲がファイルを超える</td><td>ある分だけ出す。エラーにしない</td></tr>
+<tr><td class="nowrap">offset がファイルを超える</td><td>何も出さない。終了コード 0</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout">
+	<p><strong>16 バイトごとに改行する。</strong>人が目で追いやすいように折り返す。16 バイトは hexdump などの慣例。<strong>出力はそのまま <code>--from hex</code> へ渡せる</strong>——展開は空白も改行も読み飛ばすため、折り返しがあっても元のバイト列に戻る。</p>
+</div>
+
+<h3>将来機能</h3>
+
+<div class="callout callout-important">
+	<p><strong>まだ実装しない。</strong>次の 2 つは要望として記録しておく。</p>
+</div>
+
+<ul>
+<li><strong><code>--format</code> で番地と文字を併記する。</strong><code>0000: 40 65 63 … @ec…</code> のように、行頭にオフセット（16 進）、右に文字を出す。hexdump の形。文字コードは <code>--from</code> で指定するか判定に従う。<strong>2 バイト文字が 16 バイトの境界で割れる扱いを決める必要がある</strong></li>
+</ul>
+
+<h2>--read で読む</h2>
+
+<p>中身を UTF-8 で標準出力へ出す。<strong>ファイルは書き換えない。</strong></p>
+
+<div class="callout callout-important">
+	<p><strong>読み取りツールは SJIS のファイルを UTF-8 として読むため化ける。</strong>文字コードを指定する手段が無く、化けたまま推測で扱うことになる。<code>--read</code> はその逃げ道として用意した。</p>
+</div>
+
+<p>変換元の判定は <code>--to</code> と同じ。<code>--from</code> も効く。判定できなければ終了コード 3 で、何も出さずに終える。</p>
+
+<div class="callout callout-warning">
+	<p><strong>受け取る側の文字コードを固定する。</strong>Windows PowerShell 5.1 は外部コマンドの出力を OEM コードページ（932）として読むため、UTF-8 のバイト列が化ける。スクリプトから使うときは <code>[Console]::OutputEncoding</code> を UTF-8 にしておく。pwsh 7 は既定で UTF-8 のため、そのままで読める。</p>
+</div>
 
 </section>
 
@@ -274,10 +362,10 @@ convert-encoding foo.cmd               --info</code></pre>
 <h1>文字コードの判定</h1>
 
 <h2>判定の順序</h2>
-<p><code>--from</code> が指定されていればそれに従い、判定しない。省略されたときだけ次の順で調べる。</p>
+<p><code>--from</code> が指定されていればそれに従い、判定しない。省略されたときだけ調べる。<strong>片方を先に試して確定させるのではなく、両方を検査してから決める。</strong></p>
 
 <div class="figure">
-<svg viewBox="0 0 1140 340" role="img" style="max-width:100%;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 1140 310" role="img" style="max-width:100%;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <defs>
 	<linearGradient id="g-03-1-a" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(280,78%,25%)"/><stop offset="1" stop-color="hsl(280,58%,55%)"/></linearGradient>
@@ -290,44 +378,55 @@ convert-encoding foo.cmd               --info</code></pre>
 	</marker>
 </defs>
 
-<rect x="20" y="30" width="210" height="52" rx="8" fill="url(#g-03-1-a)"/>
-<text x="125" y="52" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">1. BOM を見る</text>
-<text x="125" y="70" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">先頭 2〜3 バイト</text>
+<rect x="440" y="16" width="260" height="52" rx="8" fill="url(#g-03-1-a)"/>
+<text x="570" y="38" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">BOM を見る</text>
+<text x="570" y="56" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">あれば、そこで確定</text>
 
-<rect x="20" y="110" width="210" height="52" rx="8" fill="url(#g-03-1-b)"/>
-<text x="125" y="132" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">2. UTF-8 として検査</text>
-<text x="125" y="150" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">妥当なバイト列か</text>
+<rect x="440" y="96" width="260" height="52" rx="8" fill="url(#g-03-1-b)"/>
+<text x="570" y="118" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">両方で検査する</text>
+<text x="570" y="136" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">UTF-8 として／SJIS として</text>
 
-<rect x="20" y="190" width="210" height="52" rx="8" fill="url(#g-03-1-c)"/>
-<text x="125" y="212" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">3. SJIS として検査</text>
-<text x="125" y="230" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">妥当なバイト列か</text>
+<line x1="570" y1="72" x2="570" y2="92" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
+<line x1="570" y1="152" x2="570" y2="172" stroke="#4a5568" stroke-width="2"/>
+<line x1="150" y1="172" x2="990" y2="172" stroke="#4a5568" stroke-width="2"/>
+<line x1="150" y1="172" x2="150" y2="192" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
+<line x1="430" y1="172" x2="430" y2="192" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
+<line x1="710" y1="172" x2="710" y2="192" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
+<line x1="990" y1="172" x2="990" y2="192" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
 
-<rect x="20" y="270" width="210" height="52" rx="8" fill="url(#g-03-1-e)"/>
-<text x="125" y="292" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">4. 判定できない</text>
-<text x="125" y="310" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">何もせず終了</text>
+<rect x="20" y="196" width="260" height="72" rx="8" fill="url(#g-03-1-b)"/>
+<text x="150" y="220" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">UTF-8 だけ妥当</text>
+<text x="150" y="242" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="12" fill="#ffffff">UTF-8 に決める</text>
+<text x="150" y="260" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">漢字があればほぼここ</text>
 
-<line x1="125" y1="86" x2="125" y2="106" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
-<line x1="125" y1="166" x2="125" y2="186" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
-<line x1="125" y1="246" x2="125" y2="266" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
+<rect x="300" y="196" width="260" height="72" rx="8" fill="url(#g-03-1-c)"/>
+<text x="430" y="220" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">SJIS だけ妥当</text>
+<text x="430" y="242" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="12" fill="#ffffff">SJIS に決める</text>
+<text x="430" y="260" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">漢字があればほぼここ</text>
 
-<line x1="234" y1="56" x2="290" y2="56" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
-<line x1="234" y1="136" x2="290" y2="136" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
-<line x1="234" y1="216" x2="290" y2="216" stroke="#4a5568" stroke-width="2" marker-end="url(#g-03-1-arw)"/>
+<rect x="580" y="196" width="260" height="72" rx="8" fill="url(#g-03-1-d)"/>
+<text x="710" y="220" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">両方とも妥当</text>
+<text x="710" y="242" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="12" fill="#ffffff">純 ASCII なら UTF-8</text>
+<text x="710" y="260" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">そうでなければ止める</text>
 
-<text x="300" y="45" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">EF BB BF  →  UTF-8 BOM 付き</text>
-<text x="300" y="67" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">FF FE / FE FF  →  UTF-16 LE / BE</text>
+<rect x="860" y="196" width="260" height="72" rx="8" fill="url(#g-03-1-e)"/>
+<text x="990" y="220" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">どちらでもない</text>
+<text x="990" y="242" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="12" fill="#ffffff">止める</text>
+<text x="990" y="260" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">壊れたファイル</text>
 
-<text x="300" y="132" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">妥当  →  UTF-8 BOM なし</text>
-<text x="300" y="154" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">ASCII だけでもここで確定する</text>
-
-<text x="300" y="212" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">妥当  →  SJIS</text>
-<text x="300" y="234" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">UTF-8 として読めなかったものだけが来る</text>
-
-<text x="300" y="292" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">終了コード 3。--from の指定を促す</text>
-
-<text x="20" y="336" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="12" fill="#4a5568">--from が指定されていれば、この判定は行わない。</text>
+<text x="20" y="296" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="12" fill="#4a5568">止めるときは終了コード 3。何も書き込まず、--from の指定を促す。</text>
 </svg>
 </div>
+
+<div class="tablewrap"><table>
+<thead><tr><th>UTF-8 として</th><th>SJIS として</th><th>決まる文字コード</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">妥当</td><td class="nowrap">不正</td><td>UTF-8</td></tr>
+<tr><td class="nowrap">不正</td><td class="nowrap">妥当</td><td>SJIS</td></tr>
+<tr><td class="nowrap">妥当</td><td class="nowrap">妥当</td><td><strong>純 ASCII なら UTF-8。それ以外は判定できない</strong></td></tr>
+<tr><td class="nowrap">不正</td><td class="nowrap">不正</td><td>判定できない</td></tr>
+</tbody>
+</table></div>
 
 <h2>UTF-8 として妥当かの検査</h2>
 <p>バイト列を先頭からたどり、UTF-8 の並びとして成立するかを見る。</p>
@@ -344,7 +443,7 @@ convert-encoding foo.cmd               --info</code></pre>
 
 <p>続くバイトは <code>0x80〜0xBF</code> の範囲でなければならない。<strong>0xC0・0xC1・0xF5〜0xFF は UTF-8 に現れない</strong>ので、見つかった時点で UTF-8 ではない。</p>
 
-<div class="callout"><strong>過剰な長さの符号化（overlong encoding）は弾く。</strong><code>C0 80</code> のように、短く書けるものを長く書いた並びは不正とする。ここを通すと、SJIS のファイルが UTF-8 と誤判定される場面が増える。</div>
+<div class="callout"><strong>過剰な長さの符号化（overlong encoding）は弾く。</strong><code>C0 80</code> のように、短く書けるものを長く書いた並びは不正とする。ここを通すと UTF-8 として妥当と見なす範囲が広がり、<strong>両方とも妥当になって止まるファイルが増える。</strong>実際 <code>E0 80 81 41</code>（SJIS では「烙、」）はこの判定で弾かれ、SJIS に決まる。</div>
 
 <h2>SJIS として妥当かの検査</h2>
 <div class="tablewrap"><table>
@@ -362,7 +461,51 @@ convert-encoding foo.cmd               --info</code></pre>
 <p><strong>何も書き込まずに終了する。</strong>推測で変換すると、失敗したときに元へ戻せない。<code>--from</code> を指定するよう促すメッセージを出す。</p>
 
 <h3>純 ASCII のファイル</h3>
-<p>ASCII だけのファイルは UTF-8 とも SJIS とも解釈できる。<strong>UTF-8 と判定する</strong>（判定の順序による）。どちらに解釈しても変換結果のバイト列は同じになるため、実害は無い。</p>
+<p>ASCII だけのファイルは UTF-8 とも SJIS とも解釈できる。<strong>UTF-8 と判定する。</strong>どちらに解釈しても変換結果のバイト列は同じになるため、実害は無い。</p>
+
+<h3>両方とも妥当になる並び</h3>
+
+<p>非 ASCII を含みながら、UTF-8 としても SJIS としても成立するバイト列がある。<strong>半角カタカナがそれにあたる。</strong></p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>バイト列</th><th>UTF-8 として</th><th>SJIS として</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>C2 B1</code></td><td class="nowrap">「±」 U+00B1（1 文字）</td><td class="nowrap">「ﾂｱ」 U+FF82 U+FF71（2 文字）</td></tr>
+</tbody>
+</table></div>
+
+<p>SJIS の半角カタカナは <code>0xA1</code>〜<code>0xDF</code> の 1 バイトで、この範囲が<strong>UTF-8 の続きバイト（<code>0x80</code>〜<code>0xBF</code>）と 2 バイト文字の先頭（<code>0xC2</code>〜<code>0xDF</code>）にそのまま重なる。</strong>「ﾂ」〜「ﾝ」の直後に「｡」〜「ｿ」が来る並びは、UTF-8 の 2 バイト文字として完全に妥当になる。</p>
+
+<div class="callout callout-caution">
+	<p><strong>先に UTF-8 を試して確定させる作りだと、ここで半角カタカナが失われる。</strong>変換したあとでは元に戻せない。<strong>両方とも妥当なら止める</strong>のはこのため。</p>
+</div>
+
+<h3>実際には、ほとんど止まらない</h3>
+
+<p>このプロジェクトの 59 ファイル（cs・ps1・cmd・html・md・svg）で数えたところ、<strong>両方とも妥当になったものは 0 件だった。</strong></p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>分類</th><th class="num">件数</th></tr></thead>
+<tbody>
+<tr><td>純 ASCII（どちらに読んでも同じ）</td><td class="num">5</td></tr>
+<tr><td>UTF-8 だけ妥当</td><td class="num">51</td></tr>
+<tr><td>SJIS だけ妥当</td><td class="num">3</td></tr>
+<tr><td><strong>両方とも妥当</strong></td><td class="num"><strong>0</strong></td></tr>
+<tr><td>どちらでもない</td><td class="num">0</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout callout-important">
+	<p><strong>「漢字が 1 文字あれば決まる」ではない。</strong>UTF-8 の漢字（3 バイト）は、並びと偶奇が揃うと SJIS の 2 バイト文字として構造上妥当になる。<code>東京都渋谷区</code> や <code>1 行目</code> のような<strong>短い文は両方妥当になり、止まる。</strong>効くのは<strong>長さ</strong>で、1 文字でも SJIS 構造が崩れれば UTF-8 に確定するため、文が長いほど崩れる箇所が必ず現れる。</p>
+</div>
+
+<p>乱数で作った日本語文で両方妥当率を測ると、<strong>1 文字で 46 %、16 文字で 20 %、64 文字で 1 %、128 文字で 0 %</strong>と、長さに対して急速に下がる。ひらがなが混じる普通の文なら 20 文字ほどで一意に決まる（ひらがなは SJIS 構造を崩しやすい）。実ファイル 59 件が 0 件だったのは、どれも十分な長さがあったため。</p>
+
+<p>検査は先頭から走査し、不正なバイトを見つけた時点で打ち切る。<strong>最後まで読み切るのは「全部妥当だった」場合だけ。</strong></p>
+
+<div class="callout callout-warning">
+	<p><strong>テストデータを短い漢字だけの文にすると、この判定に引っかかって止まる。</strong>テストの本文は数十文字のひらがな混じりの日本語にする。<code>1 行目</code> のような短い作為的な文字列は、両方妥当になって判定の段階で終了コード 3 になる。</p>
+</div>
 
 </section>
 
@@ -380,6 +523,30 @@ convert-encoding foo.cmd               --info</code></pre>
 <li><strong>いまの内容と一致するなら書き込まずに終える</strong></li>
 <li>エンコードして書き込む</li>
 </ol>
+
+<h2>文字コードが変わらないときは、デコードを通さない</h2>
+
+<p>変換先の文字コードが変換元と同じなら（<code>--to /crlf</code> のように改行だけ変える、あるいは <code>--to sjis</code> で元も SJIS など）、<strong>デコードとエンコードを通さず、バイト列のまま改行だけ置き換える。</strong></p>
+
+<div class="callout callout-caution">
+	<p><strong>CP932 には同じ文字が 2 か所にある重複が 550 件ある。</strong>デコードして再エンコードすると、<code>ⅰ</code>（NEC選定 <code>EEEF</code>／IBM <code>FA40</code>）のような文字が別のバイト列に化ける。<strong>改行だけ変えたつもりでも中身のバイトが変わり、往復が保たれない。</strong>デコードを通さなければこれが起きない。</p>
+</div>
+
+<p>Shift_JIS の 2 バイト目は <code>40</code>〜<code>FC</code> で、<strong>改行コード（<code>0A</code> / <code>0D</code>）は絶対に現れない。</strong>UTF-8 も同じで、続きバイトは <code>80</code>〜<code>BF</code> だから <code>0A</code> / <code>0D</code> が文字の途中に現れない。<strong>この 2 つはバイト列のまま改行を探して置き換えても、文字を壊さない。</strong></p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>変換</th><th>扱い</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">文字コードが変わる（<code>--to utf8</code> で元は SJIS 等）</td><td>デコードして移す</td></tr>
+<tr><td class="nowrap">同じ文字コード（UTF-8・SJIS）で改行を変える</td><td><strong>バイト列のまま改行を置換</strong></td></tr>
+<tr><td class="nowrap">同じ文字コードで改行も変えない</td><td>変更なしで終える</td></tr>
+<tr><td class="nowrap">UTF-16</td><td>デコード経路に任せる。<strong>UTF-16 は符号化が一意でバイトが化けない</strong>ため、重複の問題が無い</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout"><strong>UTF-16 を対象にしないのは、改行が 2 バイトになりバイト単位の置換が複雑になるため。</strong>符号化に重複が無いので、デコードして再エンコードしてもバイトは保たれる。バイト列のまま置換する利点が無い。</div>
+
+<div class="callout"><strong>表現できない文字の検査も要らない。</strong>文字コードが変わらないなら、失われる文字は最初から無い。</div>
 
 <h2>改行の変換</h2>
 <p>改行の指定があるときだけ行う。いったんすべて LF に落としてから、変換先の改行へ置き換える。</p>
@@ -434,6 +601,9 @@ try {
 
 <h2>--info</h2>
 <pre><code class="language-text">foo.cmd  SJIS  CRLF=48  LF=0  CR=0  1,771 bytes</code></pre>
+
+<h2>--read</h2>
+<p>中身だけを出す。<strong>ファイル名や件数は付けない。</strong>そのまま別のコマンドへ渡せるようにするため。</p>
 
 <h2>終了コード</h2>
 <div class="tablewrap"><table>
@@ -542,12 +712,71 @@ try {
 </tbody>
 </table></div>
 
+<h2>16 進テキストの展開</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>内容</th><th>期待する結果</th></tr></thead>
+<tbody>
+<tr><td class="num">38</td><td><code>41 80 42</code> を <code>--from hex</code></td><td>3 バイトになる</td></tr>
+<tr><td class="num">39</td><td>空白なしの <code>418042</code></td><td>同じ 3 バイトになる</td></tr>
+<tr><td class="num">40</td><td>改行を挟んだ <code>41<br>80 42</code></td><td>同じ 3 バイトになる</td></tr>
+<tr><td class="num">41</td><td>小文字の <code>ef bb bf</code></td><td>BOM の 3 バイトになる</td></tr>
+<tr><td class="num">42</td><td>桁数が奇数の <code>418</code></td><td>終了コード 1。書き込まない</td></tr>
+<tr><td class="num">43</td><td>16 進以外を含む <code>41 zz 42</code></td><td>終了コード 1。位置を示す</td></tr>
+<tr><td class="num">44</td><td><code>--from hex --to ps1</code></td><td>終了コード 1</td></tr>
+<tr><td class="num">45</td><td>空のファイルを <code>--from hex</code></td><td>0 バイトのまま。エラーにしない</td></tr>
+</tbody>
+</table></div>
+
+<h2>16 進での表示</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>内容</th><th>期待する結果</th></tr></thead>
+<tbody>
+<tr><td class="num">46</td><td>3 バイトのファイルを <code>--dump</code></td><td><code>41 80 42</code> が返る。ファイルは変わらない</td></tr>
+<tr><td class="num">47</td><td><code>--dump --offset 1 --bytes 1</code></td><td>2 バイト目だけ返る</td></tr>
+<tr><td class="num">48</td><td><code>--bytes</code> がファイルを超える</td><td>ある分だけ返る。エラーにしない</td></tr>
+<tr><td class="num">49</td><td><code>--offset</code> がファイルを超える</td><td>何も返らない。終了コード 0</td></tr>
+<tr><td class="num">50</td><td><code>--dump</code> の出力を <code>--from hex</code> に渡す</td><td>元のバイト列に戻る</td></tr>
+<tr><td class="num">51</td><td>存在しないファイルを <code>--dump</code></td><td>終了コード 2</td></tr>
+</tbody>
+</table></div>
+
+<h2>バイト列を保つ変換</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>内容</th><th>期待する結果</th></tr></thead>
+<tbody>
+<tr><td class="num">52</td><td>CP932 の重複文字（<code>EEEF</code>）を含む SJIS を <code>--to /crlf</code></td><td><strong>その 2 バイトが <code>EEEF</code> のまま。</strong>改行だけ CRLF になる</td></tr>
+<tr><td class="num">53</td><td>同じファイルを <code>--to sjis/crlf</code>（文字コードは同じ）</td><td>同上。バイトが化けない</td></tr>
+<tr><td class="num">54</td><td>UTF-16 LE のファイルを <code>--to /crlf</code></td><td>改行が CRLF になる。文字は壊れない</td></tr>
+</tbody>
+</table></div>
+
+<h2>両方とも妥当になる並び</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>内容</th><th>期待する結果</th></tr></thead>
+<tbody>
+<tr><td class="num">32</td><td><code>C2 B1</code>（SJIS で「ﾂｱ」、UTF-8 で「±」）</td><td><strong>終了コード 3。書き込まない</strong></td></tr>
+<tr><td class="num">33</td><td>同上に <code>--from sjis</code></td><td>SJIS として変換される。半角カタカナが残る</td></tr>
+<tr><td class="num">34</td><td>同上に <code>--from utf8</code></td><td>UTF-8 として変換される</td></tr>
+<tr><td class="num">35</td><td>漢字を含む SJIS のファイル</td><td>SJIS に決まる。止まらない</td></tr>
+<tr><td class="num">36</td><td>漢字を含む UTF-8 のファイル</td><td>UTF-8 に決まる。止まらない</td></tr>
+<tr><td class="num">37</td><td>半角カタカナだけでも <code>ｱｲｳｴｵ</code>（<code>B1 B2 B3 B4 B5</code>）</td><td>SJIS に決まる。先頭バイトが続きバイトの範囲で UTF-8 として不正</td></tr>
+</tbody>
+</table></div>
+
+<h2>読み取り</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>内容</th><th>期待する結果</th></tr></thead>
+<tbody>
+<tr><td class="num">27</td><td>SJIS のファイルを <code>--read</code></td><td>中身が返る。<strong>ファイルを書き換えない</strong></td></tr>
+<tr><td class="num">28</td><td>UTF-16 LE のファイルを <code>--read</code></td><td>中身が返る</td></tr>
+<tr><td class="num">29</td><td>BOM 付き UTF-8 を <code>--read</code></td><td>BOM が混ざらない</td></tr>
+<tr><td class="num">30</td><td>判定できないバイト列を <code>--read</code></td><td>終了コード 3</td></tr>
+<tr><td class="num">31</td><td>存在しないファイルを <code>--read</code></td><td>終了コード 2</td></tr>
+</tbody>
+</table></div>
+
 <h2>実際のファイルでの確認</h2>
-<p>このプロジェクトの <code>tools/80_ops/</code> にある 4 ファイルで往復させ、バイト列が元に戻ることを確かめる。</p>
-<ul>
-<li><code>inspect-process-memory.cmd</code>（SJIS + CRLF、日本語コメントを含む）</li>
-<li><code>inspect-process-memory.ps1</code>（BOM 付き UTF-8 + CRLF、62 KB）</li>
-</ul>
+<p>実ファイルで往復させ、バイト列が元に戻ることを確かめる。このプロジェクトの <code>build.cmd</code>（SJIS + CRLF、日本語コメントを含む）と <code>html2md-ps.ps1</code>（BOM 付き UTF-8 + CRLF、64 KB）を使う。</p>
 
 </section>
 
@@ -579,7 +808,7 @@ try {
 <tr><td class="nowrap">src/ConvertEncoding/</td><td><code>Program.cs</code> <code>Spec.cs</code> <code>Detector.cs</code> <code>Converter.cs</code></td></tr>
 <tr><td class="nowrap">build-convert-encoding.cmd</td><td><code>build.cmd</code> と同じ構造。Roslyn を探し、無ければ Windows 標準の csc を使う</td></tr>
 <tr><td class="nowrap">convert-encoding.exe</td><td>root 直下。15,360 バイト</td></tr>
-<tr><td class="nowrap">tools/40_test/run-convert-encoding-tests.ps1</td><td>6 章のケースを実行する。<strong>62 件すべて成功</strong></td></tr>
+<tr><td class="nowrap">tools/40_test/run-convert-encoding-tests.ps1</td><td>6 章のケースを実行する。<strong>93 件すべて成功</strong></td></tr>
 </tbody>
 </table></div>
 
@@ -587,8 +816,167 @@ try {
 
 <div class="callout"><strong>作ったツールで自分自身を整えた。</strong>テストスクリプトの ps1 と cmd ランチャーの文字コードは、<code>convert-encoding</code> を通して決められた形にしてある。</div>
 
-<h2>残っていること</h2>
-<p>共通ルールの「ツールごとの文字コードの扱い」に書いてある PowerShell の変換手順を、<code>convert-encoding</code> を呼ぶ 1 行へ差し替える。<strong>ルールの変更は利用者の判断を待つ。</strong></p>
+<h2>共通ルールへの反映</h2>
+<p>2026-09-06 に反映した。変換手順は <code>convert-encoding</code> を呼ぶ形になり、<strong>覚える対象が「用途名だけ」に減った。</strong></p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>見出し</th><th>変わった点</th></tr></thead>
+<tbody>
+<tr><td>ツールごとの文字コードの扱い</td><td>PowerShell のコード片と注意 4 つを差し替え。SJIS の読み方も追加</td></tr>
+<tr><td>bat / cmd、ps1 の文字コード・改行コード</td><td>「確認を取らずに直す」の末尾に手段を追記</td></tr>
+<tr><td>ブロックされたら回避しない</td><td>自分でバイト列を触らない旨を追加</td></tr>
+<tr><td>文字コード変換は1回だけ行う</td><td>適用条件を追加（手で変換するときの話）</td></tr>
+</tbody>
+</table></div>
+
+<h2>将来機能</h2>
+<p>設計はせず、要望として残しているもの。</p>
+<ul>
+<li><strong><code>--dump --format</code> で番地付きの表示。</strong>2 章に書いた</li>
+<li><strong><code>--dump</code> に文字を併記する。</strong>2 章に書いた</li>
+<li><strong>IBM943C 対応。</strong><code>.NET</code> は CP943 を持たず、対応するなら自前のマッピング表が要る。CP943C を要求する場面が現れるまで保留する</li>
+</ul>
+
+</section>
+
+<!-- ============================================================ -->
+<section class="ch08" id="ch08">
+<h1>文字コードの知識</h1>
+
+<p>この章は、実装のために調べて分かったことをまとめる。仕様そのものではないが、<strong>次に文字コードを扱うときの土台になる。</strong></p>
+
+<h2>Shift_JIS のバイト構造</h2>
+
+<div class="tablewrap"><table>
+<thead><tr><th>バイト</th><th>範囲</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">1 バイト</td><td class="nowrap"><code>00</code>〜<code>7F</code></td><td>ASCII</td></tr>
+<tr><td class="nowrap">1 バイト</td><td class="nowrap"><code>A1</code>〜<code>DF</code></td><td>半角カタカナ</td></tr>
+<tr><td class="nowrap">2 バイト先頭</td><td class="nowrap"><code>81</code>〜<code>9F</code>, <code>E0</code>〜<code>FC</code></td><td>2 バイト文字の 1 バイト目</td></tr>
+<tr><td class="nowrap">2 バイト目</td><td class="nowrap"><code>40</code>〜<code>7E</code>, <code>80</code>〜<code>FC</code></td><td>2 バイト文字の 2 バイト目</td></tr>
+</tbody>
+</table></div>
+
+<p><strong>2 バイト目は <code>40</code> 以上。</strong>だから改行（<code>0A</code> / <code>0D</code>）やタブ、他の制御文字は 2 バイト文字の途中に絶対に現れない。この性質のおかげで、Shift_JIS のテキストでも改行をバイト単位で安全に探せる。</p>
+
+<h2>UTF-8 のバイト構造</h2>
+
+<div class="tablewrap"><table>
+<thead><tr><th>先頭バイト</th><th>続くバイト数</th><th>表す範囲</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>00</code>〜<code>7F</code></td><td class="num">0</td><td>ASCII</td></tr>
+<tr><td class="nowrap"><code>C2</code>〜<code>DF</code></td><td class="num">1</td><td>U+0080〜U+07FF</td></tr>
+<tr><td class="nowrap"><code>E0</code>〜<code>EF</code></td><td class="num">2</td><td>U+0800〜U+FFFF</td></tr>
+<tr><td class="nowrap"><code>F0</code>〜<code>F4</code></td><td class="num">3</td><td>U+10000〜U+10FFFF</td></tr>
+</tbody>
+</table></div>
+
+<p><strong>続くバイトは必ず <code>80</code>〜<code>BF</code>。</strong><code>C0</code> <code>C1</code> <code>F5</code>〜<code>FF</code> は UTF-8 に現れない。改行や ASCII が多バイト文字の途中に現れないのも Shift_JIS と同じ。</p>
+
+<h2>同じバイト列が両方で読めることがある</h2>
+
+<p>半角カタカナがその代表。SJIS の半角カタカナ <code>A1</code>〜<code>DF</code> が、UTF-8 の続きバイト <code>80</code>〜<code>BF</code> と 2 バイト先頭 <code>C2</code>〜<code>DF</code> に重なるため。</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>バイト列</th><th>UTF-8 として</th><th>SJIS として</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>C2 B1</code></td><td class="nowrap">「±」 U+00B1</td><td class="nowrap">「ﾂｱ」 U+FF82 U+FF71</td></tr>
+</tbody>
+</table></div>
+
+<p>漢字でも起きる。UTF-8 の漢字は 3 バイトで、並びと偶奇が揃うと SJIS の 2 バイト文字 2 つとして構造上妥当になる。<code>東京都渋谷区</code> はこれにあたり、SJIS として読むと別の漢字の羅列になるが構造は妥当。</p>
+
+<h2>両方妥当は、長さで決まる</h2>
+
+<p>1 文字が両方妥当になる確率を p とすると、n 文字すべてが妥当になる確率はおよそ p<sup>n</sup>。<strong>1 文字でも構造が崩れれば、そこで一方に確定する。</strong>乱数で作った日本語文で測った両方妥当率:</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th class="num">文字数</th><th class="num">両方妥当率</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td class="num">46 %</td></tr>
+<tr><td class="num">8</td><td class="num">35 %</td></tr>
+<tr><td class="num">16</td><td class="num">20 %</td></tr>
+<tr><td class="num">32</td><td class="num">7 %</td></tr>
+<tr><td class="num">64</td><td class="num">1 %</td></tr>
+<tr><td class="num">128</td><td class="num">0 %</td></tr>
+</tbody>
+</table></div>
+
+<p><strong>ひらがなは構造を崩しやすい。</strong>ひらがな混じりの普通の文なら 20 文字ほどで一意に決まる。純粋な漢字だけの短い文が、最も両方妥当になりやすい。</p>
+
+<div class="callout">
+	<p>この表は乱数の日本語文（漢字・ひらがな混在）を測ったもの。<strong>実は文字種ごとに法則が違う。</strong>次の節にまとめる。</p>
+</div>
+
+<h2>両方妥当の法則は、文字種で変わる</h2>
+
+<p>「長さで下がる」は大づかみには正しいが、<strong>文字種で挙動が 6 通りに分かれる。</strong>鍵は、その文字が UTF-8 と SJIS で<strong>それぞれ何バイトになるか</strong>と、<strong>どちら側の検査が効くか。</strong></p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>文字種</th><th class="nowrap">UTF-8 / SJIS</th><th>効く検査</th><th>偶奇</th><th>長さで</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">半角カナ</td><td class="nowrap">2 / 1</td><td>UTF-8 側</td><td><strong>奇数は必ず 0 %</strong></td><td>急減</td></tr>
+<tr><td class="nowrap">ギリシャ</td><td class="nowrap">2 / 2</td><td>SJIS 側</td><td>差なし</td><td>緩やかに減</td></tr>
+<tr><td class="nowrap">キリル</td><td class="nowrap">2 / 2</td><td>SJIS 側</td><td>差なし</td><td><strong>ほぼ一定（約 50 %）</strong></td></tr>
+<tr><td class="nowrap">ひらがな</td><td class="nowrap">3 / 2</td><td>SJIS 側</td><td><strong>偶数で跳ねる</strong></td><td>ジグザグ</td></tr>
+<tr><td class="nowrap">漢字</td><td class="nowrap">3 / 2</td><td>SJIS 側</td><td>弱い</td><td>単調減</td></tr>
+<tr><td class="nowrap">絵文字・拡張漢字</td><td class="nowrap">4 / 2</td><td>SJIS 側</td><td>差なし</td><td><strong>きれいに半減</strong></td></tr>
+</tbody>
+</table></div>
+
+<h3>効く検査が入れ替わる</h3>
+
+<p><strong>半角カナ</strong>は SJIS で 1 バイトなので SJIS 側は常に妥当。<strong>効くのは UTF-8 側だけ。</strong>UTF-8 の 2 バイト文字を作るには半角カナ 2 個が要る（先頭 <code>C2</code>〜<code>DF</code> ＋ 続き <code>A1</code>〜<code>BF</code>）ので<strong>必ず偶数。奇数は 0 %。</strong></p>
+
+<p><strong>それ以外</strong>（ギリシャ・キリル・ひらがな・漢字・絵文字）は正しい UTF-8 文字なので UTF-8 側は常に妥当。<strong>効くのは SJIS 側だけ。</strong></p>
+
+<h3>3 バイト文字は「2 バイト＋半角カナ」に割れる</h3>
+
+<p>UTF-8 の 3 バイト文字（ひらがな・漢字）は先頭が <code>E0</code>〜<code>EF</code>。SJIS ではこれが 2 バイト先頭になり、3 バイトが「<strong>2 バイト文字 ＋ 残り 1 バイト</strong>」に割れる。残り 1 バイト（＝ UTF-8 の 3 バイト目）が<strong>半角カナ範囲（<code>A1</code>〜<code>BF</code>）に当たると 1 バイト文字として消化され、次へ繋がる。</strong></p>
+
+<p>ひらがなは 3 バイト目が半角カナに当たる率が高く（<strong>37 %</strong>）、偶数文字で 6・12 バイトが SJIS の 2 バイト境界に乗ると<strong>跳ね上がる</strong>（2 文字で 74 %）。漢字は当たりにくく、ジグザグが平坦になる。</p>
+
+<h3>4 バイト文字は独立して半減する</h3>
+
+<p>絵文字・拡張漢字（UTF-8 4 バイト、先頭 <code>F0</code>〜<code>F4</code>）は、SJIS で「<strong>2 バイト＋2 バイト</strong>」に割れる。4 は偶数で端数が出ないため 1 文字でも 50 % が両方妥当。各文字が独立に効くので、<strong>1 個増えるごとに約半分</strong>（50 → 25 → 13 → 6 …）に下がる。</p>
+
+<div class="callout callout-important">
+	<p><strong>どの文字種でも、結論は同じ。</strong>両方妥当なら止めて <code>--from</code> で明示させる。文字種ごとの頻度は違っても、判定が「決められないものは決めない」で通っているので、実装は 1 つで足りる。</p>
+</div>
+
+<h2>CP932 と CP943C（IBM943C）</h2>
+
+<p>どちらも Shift_JIS だが、外字・拡張領域の割り当てが違う。<strong>バイト構造は同じ</strong>なので、判定（範囲チェック）には影響しない。違いはコードポイントの割り当てにある。</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>コードページ</th><th>.NET で使えるか</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">932（MS932）</td><td>使える（<code>shift_jis</code>）</td></tr>
+<tr><td class="nowrap">943（IBM943C）</td><td><strong>使えない。</strong>名前でも引けない</td></tr>
+</tbody>
+</table></div>
+
+<p>このツールは <strong>CP932 を使う。</strong>IBM943C を扱うなら自前のマッピング表が要る（将来機能）。</p>
+
+<h3>CP932 には同じ文字が 2 か所にある</h3>
+
+<p>NEC選定IBM拡張（<code>ED40</code>〜<code>EEFC</code>）と IBM拡張（<code>FA40</code>〜<code>FC4B</code>）に、同じ Unicode を指すバイト列が <strong>550 件</strong>ある。</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>文字</th><th>NEC選定IBM拡張</th><th>IBM拡張</th><th>CP932 がエンコードで選ぶ方</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">ⅰ (U+2170)</td><td class="nowrap"><code>EEEF</code></td><td class="nowrap"><code>FA40</code></td><td class="nowrap"><strong>FA40</strong></td></tr>
+<tr><td class="nowrap">纊 (U+7E8A)</td><td class="nowrap"><code>ED40</code></td><td class="nowrap"><code>FA5C</code></td><td class="nowrap"><strong>FA5C</strong></td></tr>
+</tbody>
+</table></div>
+
+<div class="callout callout-caution">
+	<p><strong>デコードして再エンコードすると、<code>EEEF</code> が <code>FA40</code> に化ける。</strong>CP932 はエンコードで IBM拡張側を選ぶため。改行だけ変えたいときにデコードを通すと中身のバイトが変わる。<strong>文字コードが変わらない変換ではデコードを通さない</strong>（4 章）のはこのため。IBM943C は NEC選定側を選ぶとされ、ここが両者の分かれ目でもある。</p>
+</div>
+
+<h2>純 ASCII はどちらでも同じ</h2>
+
+<p>ASCII だけのファイルは UTF-8 とも SJIS とも読めるが、<strong>どちらに解釈しても変換結果のバイト列が同じ</strong>になる（ASCII 部分は両者で一致）。実害が無いので UTF-8 と決めてよい。両方妥当で止めるのは、非 ASCII を含むときだけ。</p>
 
 </section>
 

@@ -140,14 +140,41 @@ convert-encoding foo.txt --to sjis        # 文字コードだけ変える
 convert-encoding foo.txt --to sjis/crlf   # 文字コードと改行
 convert-encoding foo.txt --to /crlf       # 改行だけ変える
 convert-encoding foo.txt --info           # いまの状態を見るだけ
+convert-encoding foo.cmd --read           # 中身を UTF-8 で出す
+convert-encoding foo.cmd --dump           # 中身を 16 進で出す
 ```
+
+### SJIS のファイルを読む
+
+<strong>読み取りツールは SJIS を UTF-8 として読むため化ける。</strong>文字コードを指定する手段が無いので、`--read` を通す。
+
+```powershell
+convert-encoding tools/80_ops/foo.cmd --read
+```
+
+> [!WARNING]
+> <strong>スクリプトから使うときは受け取る側を UTF-8 に固定する。</strong>Windows PowerShell 5.1 は外部コマンドの出力を OEM コードページ（932）として読むため化ける。`[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` を先に置く。pwsh 7 は既定で UTF-8。
+
+### バイト列を 16 進で見る
+
+**判定できないファイルや、化けて見えるファイルの中身をバイト単位で確かめる。**`--offset` と `--bytes` で範囲を絞れる。16 バイトごとに改行する。
+
+```powershell
+convert-encoding foo.cmd --dump                     # 全体
+convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト
+```
+
+出力はそのまま `--from hex` に渡せる。書き換えて戻す往復ができる。
 
 > [!IMPORTANT]
 > **改行を書かなければ、改行は変えない。**「指定しなかったものは変えない」で通している。用途名だけは例外で、種類ごとに改行まで決まる。
 
 ### 変換元は自動で判定する
 
-BOM → UTF-8 → SJIS の順に調べる。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると元へ戻せないため。`--from` で明示すると判定を飛ばす。
+BOM を見たあと、UTF-8 と SJIS の両方で検査して決める。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると元へ戻せないため。`--from` で明示すると判定を飛ばす。
+
+> [!NOTE]
+> <strong>半角カタカナだけの短いファイルは、UTF-8 とも SJIS とも読めて止まることがある。</strong>そのときは `--from sjis` のように明示する。ふつうの日本語文なら数十文字あれば一意に決まる。
 
 ### 失われる文字があれば止まる
 

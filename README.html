@@ -499,7 +499,14 @@ convert-encoding foo.txt --to sjis/crlf
 convert-encoding foo.txt --to /crlf
 
 # いまの状態を見るだけ。書き込まない
-convert-encoding foo.cmd --info</code></pre>
+convert-encoding foo.cmd --info
+
+# 中身を UTF-8 で標準出力へ出す。書き込まない
+convert-encoding foo.cmd --read</code></pre>
+
+	<div class="callout callout-important">
+		<p><strong>読み取りツールは SJIS のファイルを UTF-8 として読むため化ける。</strong>文字コードを指定する手段が無く、化けたまま推測で扱うことになる。<code>--read</code> はその逃げ道。スクリプトから使うときは <code>[Console]::OutputEncoding</code> を UTF-8 にしておく（5.1 は外部コマンドの出力を CP932 として読む）。</p>
+	</div>
 
 	<p>用途名は <code>ps1</code> <code>cmd</code> <code>bat</code> <code>reg</code> <code>html</code>、文字コード名は <code>utf8</code> <code>utf8bom</code> <code>sjis</code> <code>utf16le</code> <code>utf16be</code>。改行は <code>lf</code> と <code>crlf</code>。</p>
 

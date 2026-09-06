@@ -309,7 +309,28 @@ convert-encoding notes/memo.html      --to html</code></pre>
 <pre><code class="language-powershell">convert-encoding foo.txt --to sjis        # 文字コードだけ変える
 convert-encoding foo.txt --to sjis/crlf   # 文字コードと改行
 convert-encoding foo.txt --to /crlf       # 改行だけ変える
-convert-encoding foo.txt --info           # いまの状態を見るだけ</code></pre>
+convert-encoding foo.txt --info           # いまの状態を見るだけ
+convert-encoding foo.cmd --read           # 中身を UTF-8 で出す
+convert-encoding foo.cmd --dump           # 中身を 16 進で出す</code></pre>
+
+	<h2>SJIS のファイルを読む</h2>
+
+	<p><strong>読み取りツールは SJIS を UTF-8 として読むため化ける。</strong>文字コードを指定する手段が無いので、<code>--read</code> を通す。</p>
+
+<pre><code class="language-powershell">convert-encoding tools/80_ops/foo.cmd --read</code></pre>
+
+	<div class="callout callout-warning">
+		<p><strong>スクリプトから使うときは受け取る側を UTF-8 に固定する。</strong>Windows PowerShell 5.1 は外部コマンドの出力を OEM コードページ（932）として読むため化ける。<code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8</code> を先に置く。pwsh 7 は既定で UTF-8。</p>
+	</div>
+
+	<h2>バイト列を 16 進で見る</h2>
+
+	<p><strong>判定できないファイルや、化けて見えるファイルの中身をバイト単位で確かめる。</strong><code>--offset</code> と <code>--bytes</code> で範囲を絞れる。16 バイトごとに改行する。</p>
+
+<pre><code class="language-powershell">convert-encoding foo.cmd --dump                     # 全体
+convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</code></pre>
+
+	<p>出力はそのまま <code>--from hex</code> に渡せる。書き換えて戻す往復ができる。</p>
 
 	<div class="callout callout-important">
 		<p><strong>改行を書かなければ、改行は変えない。</strong>「指定しなかったものは変えない」で通している。用途名だけは例外で、種類ごとに改行まで決まる。</p>
@@ -317,7 +338,11 @@ convert-encoding foo.txt --info           # いまの状態を見るだけ</code
 
 	<h2>変換元は自動で判定する</h2>
 
-	<p>BOM → UTF-8 → SJIS の順に調べる。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると元へ戻せないため。<code>--from</code> で明示すると判定を飛ばす。</p>
+	<p>BOM を見たあと、UTF-8 と SJIS の両方で検査して決める。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると元へ戻せないため。<code>--from</code> で明示すると判定を飛ばす。</p>
+
+	<div class="callout">
+		<p><strong>半角カタカナだけの短いファイルは、UTF-8 とも SJIS とも読めて止まることがある。</strong>そのときは <code>--from sjis</code> のように明示する。ふつうの日本語文なら数十文字あれば一意に決まる。</p>
+	</div>
 
 	<h2>失われる文字があれば止まる</h2>
 

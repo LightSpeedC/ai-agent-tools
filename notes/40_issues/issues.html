@@ -437,7 +437,7 @@ $sub = Convert-Blocks ...</code></pre>
 			<p>2026-09-06 に <code>20260905-windows-pc-memory-inspection</code> から<strong>実装の依頼が来た。</strong>文字コードと改行を変換する CLI を、html2md と同じ作り（csproj なし、<code>build.cmd</code> から csc）で置きたい、という内容。</p>
 			<p>向こう側に仕様書と参考実装がある。C# 4 ファイルで、C# 5 の範囲でビルドと動作の確認が済んでいるとのこと。<strong>取り込みが済んだら向こう側は削除する</strong>と言っている。</p>
 			<p><span class="badge b-ok">済</span>2026-09-06 に<strong>引き受けて取り込んだ。</strong>参考実装 4 ファイルはそのまま使えた（C# 5 の範囲で書かれていた）。仕様書は <a href="../10_plan/p260906-01-convert-encoding.html">notes/10_plan/</a> へ写し、取り込み後の状態に合わせて直した。</p>
-			<p><span class="badge b-ok">済</span>テストは 62 件すべて成功。<strong>受け取った仕様書の 6 章に矛盾があった。</strong>ケース 3・4 が「<code>--to utf8</code> で LF のみ」を期待していたが、2 章の規則「改行を書かなければ、改行は変えない」と食い違う。ケース 5d・5f が規則側を裏付けているため、記述ミスと判断して期待値を規則に合わせた。</p>
+			<p><span class="badge b-ok">済</span>テストは 79 件すべて成功。<strong>受け取った仕様書の 6 章に矛盾があった。</strong>ケース 3・4 が「<code>--to utf8</code> で LF のみ」を期待していたが、2 章の規則「改行を書かなければ、改行は変えない」と食い違う。ケース 5d・5f が規則側を裏付けているため、記述ミスと判断して期待値を規則に合わせた。</p>
 			<p><span class="badge b-none">未</span>共通ルールの「ツールごとの文字コードの扱い」にある PowerShell の変換手順を、<code>convert-encoding</code> を呼ぶ 1 行へ差し替える。<strong>ルールの変更は利用者の判断を待つ。</strong></p>
 		</div>
 	</details>
