@@ -378,6 +378,16 @@
 			<p><span class="badge b-ok">済</span>2026-09-05 に閉じた。<strong>周知で「消せます」と伝えた時点でこちらの役目は終わり。</strong>削除は各プロジェクトが自分で行う。課題 11 と同じ扱い。</p>
 		</div>
 	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260907-01</span>html2md-ps.cmd に廃止された書き方が残っている</summary>
+		<div class="issue-body">
+			<p><code>html2md-ps.cmd</code> の実行行が <code>powershell.exe -NoProfile …</code> になっている。共通ルール「実行ファイル名に <code>.exe</code> を付けない」に反する。<code>powershell</code> にする。</p>
+			<p>ai-chat-lite の指摘（#557 / #570）で調べて見つけた。<strong>この cmd は SJIS なので Grep では 0 件になり見えなかった。</strong>Grep は SJIS / UTF-16 を読めず、日本語で検索すると黙って結果から抜ける。<code>convert-encoding --read</code> で中身を読んで確認した。</p>
+			<p>このプロジェクトの SJIS ファイルは 3 件（<code>build.cmd</code> <code>build-convert-encoding.cmd</code> <code>html2md-ps.cmd</code>）、UTF-16 は 0。<code>build</code> 系の <code>csc.exe</code> はファイルの場所を指す用途で、コマンド名の <code>.exe</code> ではないため対象外。</p>
+			<p><span class="badge b-ok">済</span>2026-09-07 に直した。<code>powershell.exe</code> → <code>powershell</code>。<strong>SJIS の cmd は Edit で壊れるため、Write で全文を書き直し <code>convert-encoding --to cmd</code> で SJIS ＋ CRLF に変換した。</strong></p>
+		</div>
+	</details>
 </section>
 
 <section class="ch04" id="ch04">
