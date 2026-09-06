@@ -146,7 +146,7 @@
 	<div class="inner">
 		<h1>html2md タグ対応仕様</h1>
 		<p class="lead">html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-02</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-05</p>
 	</div>
 </div>
 
@@ -429,7 +429,7 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 	<p><code>dt</code> <code>dd</code> <code>summary</code> を個別に挙げているのは、親（<code>dl</code> <code>details</code>）だけを挙げると<strong>中身がまとめて 1 段落になり、項目の境目が消えるため。</strong></p>
 
 	<div class="callout">
-		<p><code>hr</code> は対象外。テキストを持たないため「中身を落とさない」の対象にならず、<code>---</code> を出すのは記号を足さない方針に触れる。</p>
+		<p><code>hr</code> は対象外。テキストを持たないため「中身を落とさない」の対象にならず、<code>---</code> を出すのは記号を足さない方針に触れる。<strong>この判断は<a href="#ch05">決着 9</a>で改めた。</strong></p>
 	</div>
 
 	<h2>決着 5 — 章の外の見出しも段を詰める <span class="badge b-ok">対処済み</span></h2>
@@ -537,9 +537,53 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 
 	<p>既存 6 プロジェクトの SVG を調べたところ <code>var(</code> を含むものは無く、影響は出ていなかった。<strong>いずれもリテラルの <code>hsl()</code> で書かれていたため表面化していなかっただけで、取り決めに沿って書き直せば踏む。</strong></p>
 
+	<h2>決着 9 — dl は箇条書き、details はタグ、hr は区切り線 <span class="badge b-ok">対処済み</span></h2>
+
+	<p>決着 4 でテキストは落ちなくなったが、<strong>構造は捨てたままだった。</strong>3 つとも落とし先を決めた。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>タグ</th><th>出力</th><th>決めた理由</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>dl</code> <code>dt</code> <code>dd</code></td><td>箇条書き。<code>dt</code> が項目、<code>dd</code> は 4 字下げた入れ子</td><td>表にすると列の意味を書き手が決められない。箇条書きなら足す記号が <code>-</code> だけで済む</td></tr>
+			<tr><td class="nowrap"><code>details</code> <code>summary</code></td><td>タグのまま出す</td><td>GitHub が解釈する。畳みが効き、元の構造がそのまま残る</td></tr>
+			<tr><td class="nowrap"><code>hr</code></td><td><code>---</code></td><td>区切りという意味を持つ要素で、<code>---</code> はその記法の対応物</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h3>dl の出力</h3>
+
+<pre><code class="language-markdown">- 用語
+    - 説明
+    - 2 つ目の説明</code></pre>
+
+	<p>入れ子の字下げは <code>ul</code> <code>ol</code> と同じ 4 字にする。<strong><code>dt</code> を太字にしない。</strong><code>**</code> は HTML に無い装飾で、足すと文言の同一性から外れる。</p>
+
+	<h3>details の出力</h3>
+
+<pre><code class="language-markdown">&lt;details&gt;
+&lt;summary&gt;見出しの文&lt;/summary&gt;
+
+中身は Markdown に変換して入れる。
+
+&lt;/details&gt;</code></pre>
+
+	<div class="callout callout-important">
+		<p><strong><code>&lt;/summary&gt;</code> の後に空行を置く。</strong>空行が無いと GitHub は中身を HTML として読み、Markdown の記法が効かない。閉じる前にも空行を置く。</p>
+	</div>
+
+	<p><code>summary</code> の中身はインラインだけ変換する。<code>details</code> の外に単独で置かれた <code>summary</code> は、これまでどおり段落として出す。</p>
+
+	<h3>hr の実装</h3>
+
+	<div class="callout callout-warning">
+		<p><strong><code>hr</code> は閉じタグを持たない。</strong><code>GetBlock</code> は閉じタグを探して見つからなければ末尾までを 1 ブロックとするため、そのまま渡すと<strong><code>hr</code> より後ろが丸ごと飲み込まれる。</strong>空要素として開きタグだけを切り出す分岐を <code>GetBlock</code> に足す。</p>
+	</div>
+
 	<h2>残る論点</h2>
 
-	<p><code>del</code> 以外に取り消し線を表すタグ（<code>s</code> <code>strike</code>）は対象にしていない。<code>dl</code> を定義リストらしく（箇条書きか表に）落とすか、<code>details</code> をタグのまま残すかは、テキストが出るようになったので急がない。</p>
+	<p><code>del</code> 以外に取り消し線を表すタグ（<code>s</code> <code>strike</code>）は対象にしていない。</p>
 </section>
 
 </div>

@@ -200,7 +200,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-warn">着手</span><span class="no">20260830-02</span>ブロックとして扱っていないタグの構造が失われる</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-02</span>ブロックとして扱っていないタグの構造が失われる</summary>
 		<div class="issue-body">
 			<p>次のタグは <code>BlockTags</code> に無いため、中身が地の文として 1 つに連結される。テキストは消えないが構造は失われる。</p>
 			<div class="tablewrap">
@@ -216,8 +216,8 @@
 			</div>
 			<p><code>main</code> 系の 4 つは <code>BlockTags</code> に足すだけで済む。<code>dl</code> と <code>details</code> は落とし方を決める必要がある。</p>
 			<p><span class="badge b-ok">済</span>2026-09-01 に<strong>テキストを落とさない対処を入れた。</strong><code>hr</code> を除くすべてを走査の対象に加え、<code>dt</code> <code>dd</code> <code>summary</code> も個別に挙げて項目ごとの段落にした。<code>address</code> と <code>caption</code> も同時に対応した。</p>
-			<p><span class="badge b-none">未</span><strong>構造そのものは捨てたままにしている。</strong>定義リストを箇条書きか表に落とすか、<code>details</code> をタグのまま残すかは決めていない。テキストが読めるようになったので急がない。</p>
-			<p><span class="badge b-none">未</span><code>hr</code> は対象外。テキストを持たないため「中身を落とさない」の対象にならず、<code>---</code> を出すのは記号を足さない方針に触れる。</p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に<strong>構造の落とし先を 3 つとも決めて実装した。</strong><code>dl</code> は箇条書き（<code>dd</code> は 4 字下げ）、<code>details</code> はタグのまま出す、<code>hr</code> は <code>---</code>。決着は<a href="../10_plan/html2md-tag-spec.html">タグ対応仕様</a>の決着 9 にある。</p>
+			<p><span class="badge b-ok">済</span><code>hr</code> は閉じタグを持たないため、<strong>そのまま走査に加えると後ろが丸ごと飲み込まれる。</strong>空要素として開きタグだけを切り出す分岐を <code>GetBlock</code> に入れた。</p>
 		</div>
 	</details>
 
@@ -341,11 +341,12 @@
 	<p>共通化計画の第 7 章に挙げた 8 段階のうち、まだ終わっていないもの。</p>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-11</span>既存 HTML のクラス名を取り決めに合わせる</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-11</span>既存 HTML のクラス名を取り決めに合わせる</summary>
 		<div class="issue-body">
 			<p>クラス名の取り決めの第 8 章に移行表がある。<strong>書き換えはそのプロジェクトの側で行う</strong>。共通ツールのリポジトリから他のプロジェクトのファイルは触らない。</p>
 			<p>出力が壊れているのは <code>b-good</code> / <code>b-bad</code> だけ（記号が付かない）。残りは名前が違っても出力は同じなので急がない。</p>
 			<p>ai-pc は <code>b-good</code>→<code>b-ok</code>(43)、<code>b-bad</code>→<code>b-ng</code>(11) を適用済みだが<strong>未コミットのまま</strong>。ai-pc 側で内容を確認して判断してもらう。</p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に閉じた。<strong>こちらの作業は移行表を用意した時点で終わっている。</strong>書き換えは各プロジェクトが自分で行うため、進捗をこちらの課題として追うと閉じられない。</p>
 		</div>
 	</details>
 
@@ -360,19 +361,21 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-13</span>check-markdown を C# 化</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-13</span>check-markdown を C# 化</summary>
 		<div class="issue-body">
 			<p>html2md は C# 化したが、<code>check-markdown.ps1</code> は PowerShell のまま。C# 化すると <code>ConvertTo-Json</code> の UTF-8 バイト列の扱いなど ps1 固有の注意が不要になる。</p>
 			<p>C# 化したら CLAUDE.md の「生成した Markdown は GitHub のレンダラで検証する」の記述も更新する。</p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に<strong>やらないと決めて閉じた。</strong>ps1 のまま動いており、UTF-8 バイト列の扱いは既に片付いている。C# 化しても得るものが無い。</p>
 		</div>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-14</span>旧 ps1 / mjs を削除</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-14</span>旧 ps1 / mjs を削除</summary>
 		<div class="issue-body">
 			<p>各プロジェクトの <code>src/scripts/70_html2md/</code> にある 5 本（ps1 4 本、mjs 1 本）を削除する。ランチャーへの置き換えが済み、出力を確かめてから。</p>
 			<p>共通ツール側の <code>html2md-ps.ps1</code> は参照実装として残す。テストで exe との一致を確かめている。</p>
 			<p><strong>ランチャーへの置き換えという前提は無くなった</strong>（課題 12 参照）。<code>html2md</code> が PATH で呼べるので、各プロジェクトは旧スクリプトを消すだけでよい。<strong>他プロジェクトのファイルなのでこちらからは触らない。</strong></p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に閉じた。<strong>周知で「消せます」と伝えた時点でこちらの役目は終わり。</strong>削除は各プロジェクトが自分で行う。課題 11 と同じ扱い。</p>
 		</div>
 	</details>
 </section>
@@ -381,10 +384,13 @@
 	<h1>保留中の判断</h1>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-15</span>PlayWright の projects\html2md\ の扱い</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
 		<div class="issue-body">
 			<p><code>N:/PlayWright/projects/html2md/contrast.spec.ts</code> を作ったが、後から <code>check-contrast.ps1</code> が独自の実装（<code>contrast/check-contrast.cjs</code>）を持っていることが分かり<strong>重複している</strong>。</p>
 			<p>削除するか、将来別の検証を書くときの台として残すか。共有環境の規約どおりの使い方ではある。</p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に<strong>フォルダごと削除した。</strong>使っていないものを残さない。</p>
+			<p><code>projects/&lt;自分のフォルダ名&gt;/</code> は<strong>各プロジェクトが持つ自分専用の領域</strong>で、他プロジェクトのファイルではない。消すのは規約どおり。<strong>一度「共有環境なので触らない」と判断しかけたが、誤りだった。</strong>フォルダ規約は PlayWright の利用方法の文書にある。</p>
+			<p>消したのは本体 1 件と、出力・作業ファイル 4 件（レポート・実行結果・変換前の JSON）。<strong>git には 1 件も追跡されていなかった。</strong></p>
 		</div>
 	</details>
 
@@ -400,15 +406,17 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-17</span>CLAUDE.md の重複を整理</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-17</span>CLAUDE.md の重複を整理</summary>
 		<div class="issue-body">
 			<p>クラス名の参照が 2 箇所にある。「# HTMLデザインルール」の「クラス名」と、「# HTML→Markdown 変換ルール」の「変換に使うクラス名は…に合わせる」。</p>
 			<p>重複と分かったうえで残している。後で CLAUDE.md 側をまとめて整理する予定。</p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に対処。<strong>「HTML と Markdown の併存」側から参照先を外し、見出し名で参照する形にした。</strong>クラス名の一覧は「クラス名」にあり、そこから詳細へ飛べる。</p>
+			<p>あわせて共通ルールの絶対パスも減らした。html2md の場所を書くのは共有環境の一覧だけにし、ほかは名前で呼ぶ。<strong>置き場所が変わるたびに直す箇所が減る。</strong></p>
 		</div>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">20260830-18</span>PowerShell の配列の受け取り方をルールに追記</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">20260830-18</span>PowerShell の配列の受け取り方をルールに追記</summary>
 		<div class="issue-body">
 			<p>CLAUDE.md の「PowerShellの落とし穴」には「関数から配列を返すときは <code>return ,$array</code>」とあるが、<strong>受け取り側の書き方が規定されていない</strong>。そこで踏んだ。</p>
 <pre><code>// 誤り1: foreach に直接渡すと、配列そのものが 1 要素として来る
