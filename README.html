@@ -13,9 +13,10 @@
 	}
 	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
-	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
-	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%);   --accent2:hsl(210,58%,55%);   --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);    --accent2:hsl(70,58%,55%);    --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -127,7 +128,7 @@
 	<div class="inner">
 		<h1>html2md</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-05</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-06</p>
 	</div>
 </div>
 
@@ -140,6 +141,7 @@
 		<li class="ch02"><a href="#ch02">html2md</a></li>
 		<li class="ch03"><a href="#ch03">check-markdown</a></li>
 		<li class="ch04"><a href="#ch04">check-contrast</a></li>
+		<li class="ch05"><a href="#ch05">convert-encoding</a></li>
 	</ol>
 </div>
 
@@ -154,6 +156,7 @@
 			<tr><td class="nowrap"><code>html2md-ps</code></td><td>同じ処理の参照実装。exe の挙動を確かめるために残している</td></tr>
 			<tr><td class="nowrap"><code>check-markdown</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
 			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
+			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、決められた組み合わせへ変換する</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -169,6 +172,7 @@
 			<tr><td class="nowrap"><a href="USAGE-FOR-PROJECTS.html">他のプロジェクトから使う</a></td><td>コマンド・オプション・変換対象の外し方・検査の読み方。<strong>使う側が読むのはこれ</strong></td></tr>
 			<tr><td class="nowrap"><a href="notes/10_plan/html2md-plan.html">html2md ツール共通化計画</a></td><td>各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り</td></tr>
 			<tr><td class="nowrap"><a href="notes/10_plan/html2md-tag-spec.html">html2md タグ対応仕様</a></td><td>どのタグをどう変換するか。実測した結果と、まだ決まっていない論点</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260906-01-convert-encoding.html">convert-encoding 仕様書</a></td><td>文字コードの判定・変換の手順・終了コード・テストケース</td></tr>
 			<tr><td class="nowrap"><a href="notes/90_rules/html-class-rules.html">HTML クラス名の取り決め</a></td><td>html2md が読むクラス名。バッジ・callout・表・図の書き方</td></tr>
 		</tbody>
 	</table>
@@ -447,6 +451,91 @@ check-contrast -Path . -Recurse -Min 2.0</code></pre>
 	</div>
 
 	<p><code>color</code> を書く宣言ブロックには <code>background</code> も書く（逆も同じ）。例外は <code>body</code> のみ。</p>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>convert-encoding</h1>
+
+	<h2>なぜ必要か</h2>
+
+	<p>Windows で扱うファイルは種類ごとに求められる形式が違う。<strong>書き込みツールは BOM なし UTF-8 ＋ LF でしか書けない</strong>ため、書いたあとに毎回変換することになる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ファイル</th><th>求められる形式</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">ps1</td><td class="nowrap">BOM 付き UTF-8 ＋ CRLF</td></tr>
+			<tr><td class="nowrap">cmd・bat</td><td class="nowrap">SJIS（CP932）＋ CRLF</td></tr>
+			<tr><td class="nowrap">reg</td><td class="nowrap">UTF-16 LE ＋ BOM ＋ CRLF</td></tr>
+			<tr><td class="nowrap">html</td><td class="nowrap">BOM 付き UTF-8 ＋ LF</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>その変換を PowerShell で書くと、書き方がその場の判断に委ねられる。<strong>1 つのセッションで書き方が 3 回変わり、うち 1 回はウイルス対策に検知されて止まった。</strong>コマンド文字列は AMSI に読まれるため、書き方によって引っかかる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>観点</th><th>手で書く</th><th>このコマンド</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">手法</td><td>セッションごとに組み立てる</td><td>引数を渡すだけ。判断の余地が無い</td></tr>
+			<tr><td class="nowrap">ウイルス対策</td><td>コマンド文字列が読まれる</td><td>exe の内部処理は読まれない</td></tr>
+			<tr><td class="nowrap">正しさ</td><td>変換のたびに書き間違いの余地がある</td><td>テストで担保できる</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>使い方</h2>
+
+<pre><code class="language-powershell"># 用途名で指定する。文字コードと改行の両方が決まる
+convert-encoding tools/80_ops/foo.ps1 --to ps1
+convert-encoding tools/80_ops/foo.cmd --to cmd
+
+# 文字コード名でも書ける。改行は入力のまま
+convert-encoding foo.txt --to sjis
+
+# 改行も指定する。単独で書くと改行だけ変える
+convert-encoding foo.txt --to sjis/crlf
+convert-encoding foo.txt --to /crlf
+
+# いまの状態を見るだけ。書き込まない
+convert-encoding foo.cmd --info</code></pre>
+
+	<p>用途名は <code>ps1</code> <code>cmd</code> <code>bat</code> <code>reg</code> <code>html</code>、文字コード名は <code>utf8</code> <code>utf8bom</code> <code>sjis</code> <code>utf16le</code> <code>utf16be</code>。改行は <code>lf</code> と <code>crlf</code>。</p>
+
+	<div class="callout callout-important">
+		<p><strong>改行を書かなければ、改行は変えない。</strong>「指定しなかったものは変えない」で通している。文字コードごとに既定の改行を決めると、その対応を覚える必要が生じ、覚え違いが事故になる。用途名だけは例外で、種類ごとに改行まで決まる。</p>
+	</div>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>終了コード</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="num">0</td><td>成功（変更なしを含む）</td></tr>
+			<tr><td class="num">1</td><td>引数が正しくない</td></tr>
+			<tr><td class="num">2</td><td>ファイルが無い、または読めない</td></tr>
+			<tr><td class="num">3</td><td><strong>文字コードを判定できない</strong>。書き込まずに終える</td></tr>
+			<tr><td class="num">4</td><td><strong>変換先で表現できない文字がある</strong>。<code>--force</code> で回避できる</td></tr>
+			<tr><td class="num">5</td><td>書き込みに失敗した</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>仕組み</h2>
+
+	<p>変換元は BOM → UTF-8 → SJIS の順に調べる。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると、失敗したときに元へ戻せない。<code>--from</code> を指定すると判定を飛ばす。</p>
+
+	<p>UTF-8 の検査では<strong>過剰な長さの符号化を弾く</strong>。<code>C0 80</code> のように短く書けるものを長く書いた並びを通すと、SJIS のファイルが UTF-8 と誤判定される場面が増える。</p>
+
+	<div class="callout callout-warning">
+		<p><strong>SJIS へ変換すると文字が失われることがある。</strong>絵文字・ハングル・簡体字は CP932 に無く、既定の変換では <code>?</code> に置き換わって元に戻せない。変換の前に検査し、見つかれば<strong>書き換えずに終了コード 4 で終える。</strong>その文字と行番号を出すので、どこを直せばよいか分かる。</p>
+	</div>
+
+	<p>改行はいったんすべて LF に落としてから目的の改行へ置き換える。<strong>CR 単独（旧 Mac 形式）もこの順で拾える。</strong>1 段階で <code>\r?\n</code> を置き換える方法だと CR 単独が残る。</p>
+
+	<p>変換後のバイト列が元と同じならファイルに触らない。<strong>更新日時が変わらないので、何度実行しても同じ結果になる。</strong>書き込みは同じフォルダの一時ファイルを経由するため、途中で失敗しても元のファイルが壊れない。</p>
+
+	<p>判定・変換の詳細とテストケースは<a href="notes/10_plan/p260906-01-convert-encoding.html">仕様書</a>にある。</p>
 </section>
 
 </div>

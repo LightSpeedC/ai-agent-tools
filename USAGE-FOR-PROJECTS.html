@@ -13,9 +13,10 @@
 	}
 	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
-	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
-	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%);   --accent2:hsl(210,58%,55%);   --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);    --accent2:hsl(70,58%,55%);    --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -145,7 +146,7 @@
 	<div class="inner">
 		<h1>html2md を他のプロジェクトから使う</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-04</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-06</p>
 	</div>
 </div>
 
@@ -156,15 +157,16 @@
 <div class="toc">
 	<h2>目次</h2>
 	<ol>
-		<li class="ch01"><a href="#ch01">3 つのコマンド</a></li>
+		<li class="ch01"><a href="#ch01">4 つのコマンド</a></li>
 		<li class="ch02"><a href="#ch02">html2md で変換する</a></li>
 		<li class="ch03"><a href="#ch03">検証する</a></li>
-		<li class="ch04"><a href="#ch04">つまずきやすいところ</a></li>
+		<li class="ch04"><a href="#ch04">文字コードと改行を直す</a></li>
+		<li class="ch05"><a href="#ch05">つまずきやすいところ</a></li>
 	</ol>
 </div>
 
 <section class="ch01" id="ch01">
-	<h1>3 つのコマンド</h1>
+	<h1>4 つのコマンド</h1>
 
 	<p><strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。</p>
 
@@ -175,6 +177,7 @@
 			<tr><td class="nowrap"><code>html2md</code></td><td>HTML から Markdown を生成し、そのまま検査する</td></tr>
 			<tr><td class="nowrap"><code>check-markdown</code></td><td>生成した Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong>を実測する</td></tr>
 			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせか</strong>をブラウザで実測する</td></tr>
+			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、<strong>ファイルの種類ごとに決められた形へ</strong>変換する</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -277,6 +280,57 @@ html2md --root . --dry-run</code></pre>
 </section>
 
 <section class="ch04" id="ch04">
+	<h1>文字コードと改行を直す</h1>
+
+	<p>Windows で扱うファイルは種類ごとに求められる形式が違う。<strong>用途名を渡せば、文字コードと改行の組み合わせを覚えなくて済む。</strong></p>
+
+<pre><code class="language-powershell">convert-encoding tools/80_ops/foo.ps1 --to ps1
+convert-encoding tools/80_ops/foo.cmd --to cmd
+convert-encoding notes/memo.html      --to html</code></pre>
+
+	<h2>用途名</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>用途名</th><th>文字コード</th><th>改行</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>ps1</code></td><td class="nowrap">UTF-8 BOM 付き</td><td class="nowrap">CRLF</td></tr>
+			<tr><td class="nowrap"><code>cmd</code> <code>bat</code></td><td class="nowrap">SJIS（CP932）</td><td class="nowrap">CRLF</td></tr>
+			<tr><td class="nowrap"><code>reg</code></td><td class="nowrap">UTF-16 LE ＋ BOM</td><td class="nowrap">CRLF</td></tr>
+			<tr><td class="nowrap"><code>html</code></td><td class="nowrap">UTF-8 BOM 付き</td><td class="nowrap">LF</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>文字コード名でも書ける</h2>
+
+	<p>用途名の代わりに <code>utf8</code> <code>utf8bom</code> <code>sjis</code> <code>utf16le</code> <code>utf16be</code> を渡せる。<code>/</code> の後ろに <code>lf</code> か <code>crlf</code> を足すと改行も指定できる。</p>
+
+<pre><code class="language-powershell">convert-encoding foo.txt --to sjis        # 文字コードだけ変える
+convert-encoding foo.txt --to sjis/crlf   # 文字コードと改行
+convert-encoding foo.txt --to /crlf       # 改行だけ変える
+convert-encoding foo.txt --info           # いまの状態を見るだけ</code></pre>
+
+	<div class="callout callout-important">
+		<p><strong>改行を書かなければ、改行は変えない。</strong>「指定しなかったものは変えない」で通している。用途名だけは例外で、種類ごとに改行まで決まる。</p>
+	</div>
+
+	<h2>変換元は自動で判定する</h2>
+
+	<p>BOM → UTF-8 → SJIS の順に調べる。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると元へ戻せないため。<code>--from</code> で明示すると判定を飛ばす。</p>
+
+	<h2>失われる文字があれば止まる</h2>
+
+	<p>SJIS に無い文字（絵文字・ハングル・簡体字など）は <code>?</code> に置き換わって元に戻せない。<strong>変換の前に検査し、見つかれば書き換えずに終了コード 4 で終える。</strong>その文字と行番号を出すので、どこを直せばよいか分かる。承知のうえで進めるときは <code>--force</code> を付ける。</p>
+
+	<div class="callout">
+		<p><strong>変換後のバイト列が元と同じなら、ファイルに触らない。</strong>更新日時が変わらないので、何度実行しても同じ結果になる。</p>
+	</div>
+
+	<p>詳細は<a href="notes/10_plan/p260906-01-convert-encoding.html">仕様書</a>にある。</p>
+</section>
+
+<section class="ch05" id="ch05">
 	<h1>つまずきやすいところ</h1>
 
 	<h2>Markdown を直接編集しない</h2>

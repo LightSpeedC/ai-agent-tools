@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 340" width="1140" height="340" role="img">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+	<linearGradient id="i1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(280,78%,25%)"/><stop offset="1" stop-color="hsl(280,58%,55%)"/></linearGradient>
+	<linearGradient id="i2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(210,78%,25%)"/><stop offset="1" stop-color="hsl(210,58%,55%)"/></linearGradient>
+	<linearGradient id="i3" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(140,78%,25%)"/><stop offset="1" stop-color="hsl(140,58%,55%)"/></linearGradient>
+	<linearGradient id="i4" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(70,78%,25%)"/><stop offset="1" stop-color="hsl(70,58%,55%)"/></linearGradient>
+	<linearGradient id="i5" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(0,78%,25%)"/><stop offset="1" stop-color="hsl(0,58%,55%)"/></linearGradient>
+	<marker id="i6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+		<path d="M 0 0 L 10 5 L 0 10 z" fill="#4a5568"/>
+	</marker>
+</defs>
+	<rect width="100%" height="100%" fill="#ffffff"/>
+
+<rect x="20" y="30" width="210" height="52" rx="8" fill="url(#i1)"/>
+<text x="125" y="52" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">1. BOM を見る</text>
+<text x="125" y="70" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">先頭 2〜3 バイト</text>
+
+<rect x="20" y="110" width="210" height="52" rx="8" fill="url(#i2)"/>
+<text x="125" y="132" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">2. UTF-8 として検査</text>
+<text x="125" y="150" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">妥当なバイト列か</text>
+
+<rect x="20" y="190" width="210" height="52" rx="8" fill="url(#i3)"/>
+<text x="125" y="212" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">3. SJIS として検査</text>
+<text x="125" y="230" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">妥当なバイト列か</text>
+
+<rect x="20" y="270" width="210" height="52" rx="8" fill="url(#i5)"/>
+<text x="125" y="292" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" font-weight="700" fill="#ffffff">4. 判定できない</text>
+<text x="125" y="310" text-anchor="middle" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="11" fill="#ffffff">何もせず終了</text>
+
+<line x1="125" y1="86" x2="125" y2="106" stroke="#4a5568" stroke-width="2" marker-end="url(#i6)"/>
+<line x1="125" y1="166" x2="125" y2="186" stroke="#4a5568" stroke-width="2" marker-end="url(#i6)"/>
+<line x1="125" y1="246" x2="125" y2="266" stroke="#4a5568" stroke-width="2" marker-end="url(#i6)"/>
+
+<line x1="234" y1="56" x2="290" y2="56" stroke="#4a5568" stroke-width="2" marker-end="url(#i6)"/>
+<line x1="234" y1="136" x2="290" y2="136" stroke="#4a5568" stroke-width="2" marker-end="url(#i6)"/>
+<line x1="234" y1="216" x2="290" y2="216" stroke="#4a5568" stroke-width="2" marker-end="url(#i6)"/>
+
+<text x="300" y="45" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">EF BB BF  →  UTF-8 BOM 付き</text>
+<text x="300" y="67" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">FF FE / FE FF  →  UTF-16 LE / BE</text>
+
+<text x="300" y="132" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">妥当  →  UTF-8 BOM なし</text>
+<text x="300" y="154" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">ASCII だけでもここで確定する</text>
+
+<text x="300" y="212" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">妥当  →  SJIS</text>
+<text x="300" y="234" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">UTF-8 として読めなかったものだけが来る</text>
+
+<text x="300" y="292" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">終了コード 3。--from の指定を促す</text>
+
+<text x="20" y="336" font-family="Yu Gothic UI, Meiryo, sans-serif" font-size="12" fill="#4a5568">--from が指定されていれば、この判定は行わない。</text>
+</svg>

@@ -2,18 +2,19 @@
 
 HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-09-04
+> 📅 作成: 2026-09-04 / 更新: 2026-09-06
 
 [← html2md](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
 ## 目次
 
-1. [3 つのコマンド](#1-3-つのコマンド)
+1. [4 つのコマンド](#1-4-つのコマンド)
 2. [html2md で変換する](#2-html2md-で変換する)
 3. [検証する](#3-検証する)
-4. [つまずきやすいところ](#4-つまずきやすいところ)
+4. [文字コードと改行を直す](#4-文字コードと改行を直す)
+5. [つまずきやすいところ](#5-つまずきやすいところ)
 
-## 1. 3 つのコマンド
+## 1. 4 つのコマンド
 
 <strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。
 
@@ -22,6 +23,7 @@ HTML から Markdown を生成し、双方を検証する。自プロジェク�
 | `html2md` | HTML から Markdown を生成し、そのまま検査する |
 | `check-markdown` | 生成した Markdown が **GitHub 上で意図どおりに表示されるか**を実測する |
 | `check-contrast` | HTML の文字色と背景色が **読める組み合わせか**をブラウザで実測する |
+| `convert-encoding` | ファイルの文字コードと改行を、**ファイルの種類ごとに決められた形へ**変換する |
 
 どちらの検証ツールも<strong>推測せず実物で判定する。</strong>前者は GitHub のレンダラに投げ、後者はブラウザで描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。
 
@@ -110,7 +112,53 @@ check-contrast -Path . -Recurse
 
 ブラウザは PlayWright 共有環境を借りる。**自プロジェクトに Playwright を入れる必要はない。**
 
-## 4. つまずきやすいところ
+## 4. 文字コードと改行を直す
+
+Windows で扱うファイルは種類ごとに求められる形式が違う。**用途名を渡せば、文字コードと改行の組み合わせを覚えなくて済む。**
+
+```powershell
+convert-encoding tools/80_ops/foo.ps1 --to ps1
+convert-encoding tools/80_ops/foo.cmd --to cmd
+convert-encoding notes/memo.html      --to html
+```
+
+### 用途名
+
+| 用途名 | 文字コード | 改行 |
+|---|---|---|
+| `ps1` | UTF-8 BOM 付き | CRLF |
+| `cmd` `bat` | SJIS（CP932） | CRLF |
+| `reg` | UTF-16 LE ＋ BOM | CRLF |
+| `html` | UTF-8 BOM 付き | LF |
+
+### 文字コード名でも書ける
+
+用途名の代わりに `utf8` `utf8bom` `sjis` `utf16le` `utf16be` を渡せる。`/` の後ろに `lf` か `crlf` を足すと改行も指定できる。
+
+```powershell
+convert-encoding foo.txt --to sjis        # 文字コードだけ変える
+convert-encoding foo.txt --to sjis/crlf   # 文字コードと改行
+convert-encoding foo.txt --to /crlf       # 改行だけ変える
+convert-encoding foo.txt --info           # いまの状態を見るだけ
+```
+
+> [!IMPORTANT]
+> **改行を書かなければ、改行は変えない。**「指定しなかったものは変えない」で通している。用途名だけは例外で、種類ごとに改行まで決まる。
+
+### 変換元は自動で判定する
+
+BOM → UTF-8 → SJIS の順に調べる。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると元へ戻せないため。`--from` で明示すると判定を飛ばす。
+
+### 失われる文字があれば止まる
+
+SJIS に無い文字（絵文字・ハングル・簡体字など）は `?` に置き換わって元に戻せない。<strong>変換の前に検査し、見つかれば書き換えずに終了コード 4 で終える。</strong>その文字と行番号を出すので、どこを直せばよいか分かる。承知のうえで進めるときは `--force` を付ける。
+
+> [!NOTE]
+> <strong>変換後のバイト列が元と同じなら、ファイルに触らない。</strong>更新日時が変わらないので、何度実行しても同じ結果になる。
+
+詳細は[仕様書](notes/10_plan/p260906-01-convert-encoding.md)にある。
+
+## 5. つまずきやすいところ
 
 ### Markdown を直接編集しない
 
