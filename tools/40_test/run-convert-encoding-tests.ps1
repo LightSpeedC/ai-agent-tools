@@ -40,7 +40,9 @@ function New-TextFile {
 		[string]$Text,
 		[System.Text.Encoding]$Encoding
 	)
-	Set-Content -LiteralPath $Path -Value $Text -Encoding $Encoding -NoNewline
+	# Windows PowerShell 5.1 では -Encoding が Encoding オブジェクトを受けないため
+	# WriteAllText を使う（どの環境でもそのまま動く）。
+	[System.IO.File]::WriteAllText($Path, $Text, $Encoding)
 }
 
 # バイト列をファイルに書く。判定できない並びを作るのに使う。
@@ -91,8 +93,14 @@ function Measure-Eol {
 # exe を実行して終了コードを返す。出力は捨てる
 function Invoke-Exe {
 	param([string[]]$Arguments)
+	# 5.1 では ErrorActionPreference=Stop のとき native の stderr 出力が
+	# 停止エラーになる。想定内の [NG] 出力で落ちないよう一時的に Continue にする。
+	$old = $ErrorActionPreference
+	$ErrorActionPreference = 'Continue'
 	& $Exe @Arguments *> $null
-	return $LASTEXITCODE
+	$code = $LASTEXITCODE
+	$ErrorActionPreference = $old
+	return $code
 }
 
 function Write-Ok {

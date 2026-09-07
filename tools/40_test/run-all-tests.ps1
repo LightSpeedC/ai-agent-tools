@@ -14,7 +14,8 @@ $ErrorActionPreference = 'Stop'
 
 $Suites = @(
 	@{ Name = 'html2md'; Script = 'run-tests.ps1' },
-	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1' }
+	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1' },
+	@{ Name = 'text'; Script = 'run-text-tests.ps1' }
 )
 
 $failed = @()
