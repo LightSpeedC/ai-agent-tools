@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -13,10 +13,11 @@
 	}
 	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(210,78%,25%);   --accent2:hsl(210,58%,55%);   --soft:hsl(210,28%,95%); }
-	.ch03{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
-	.ch04{ --accent:hsl(70,78%,25%);    --accent2:hsl(70,58%,55%);    --soft:hsl(70,28%,95%); }
-	.ch05{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(224,78%,25%);   --accent2:hsl(224,58%,55%);   --soft:hsl(224,28%,95%); }
+	.ch03{ --accent:hsl(168,78%,25%);   --accent2:hsl(168,58%,55%);   --soft:hsl(168,28%,95%); }
+	.ch04{ --accent:hsl(112,78%,25%);   --accent2:hsl(112,58%,55%);   --soft:hsl(112,28%,95%); }
+	.ch05{ --accent:hsl(56,78%,25%);    --accent2:hsl(56,58%,55%);    --soft:hsl(56,28%,95%); }
+	.ch06{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -146,7 +147,7 @@
 	<div class="inner">
 		<h1>html2md を他のプロジェクトから使う</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-06</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-08</p>
 	</div>
 </div>
 
@@ -157,16 +158,17 @@
 <div class="toc">
 	<h2>目次</h2>
 	<ol>
-		<li class="ch01"><a href="#ch01">4 つのコマンド</a></li>
+		<li class="ch01"><a href="#ch01">5 つのコマンド</a></li>
 		<li class="ch02"><a href="#ch02">html2md で変換する</a></li>
 		<li class="ch03"><a href="#ch03">検証する</a></li>
 		<li class="ch04"><a href="#ch04">文字コードと改行を直す</a></li>
-		<li class="ch05"><a href="#ch05">つまずきやすいところ</a></li>
+		<li class="ch05"><a href="#ch05">文字コードを問わず読む・探す・書く（text）</a></li>
+		<li class="ch06"><a href="#ch06">つまずきやすいところ</a></li>
 	</ol>
 </div>
 
 <section class="ch01" id="ch01">
-	<h1>4 つのコマンド</h1>
+	<h1>5 つのコマンド</h1>
 
 	<p><strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。</p>
 
@@ -178,6 +180,7 @@
 			<tr><td class="nowrap"><code>check-markdown</code></td><td>生成した Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong>を実測する</td></tr>
 			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせか</strong>をブラウザで実測する</td></tr>
 			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、<strong>ファイルの種類ごとに決められた形へ</strong>変換する</td></tr>
+			<tr><td class="nowrap"><code>text</code></td><td>SJIS・UTF-16 でも壊さず<strong>読む・探す・編集する・書く</strong>（Read・Grep・Edit・Write の代わり）</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -313,6 +316,22 @@ convert-encoding foo.txt --info           # いまの状態を見るだけ
 convert-encoding foo.cmd --read           # 中身を UTF-8 で出す
 convert-encoding foo.cmd --dump           # 中身を 16 進で出す</code></pre>
 
+	<h2>cmd・bat を作る・直す・消す（Windows）</h2>
+
+	<p>SJIS の cmd・bat は、<strong>標準ツールで書く／編集して差分を見てから、SJIS 化する</strong>。編集は UTF-8 の状態で標準 Edit / Write に任せると、ハーネスのきれいな差分が得られる。</p>
+
+<pre><code class="language-powershell"># 作成: 標準 Write で書く → 変換
+convert-encoding foo.cmd --to cmd
+
+# 修正: UTF-8 化 → 標準 Edit（差分が出る）→ 戻す
+convert-encoding foo.cmd --to utf8
+#（標準 Edit で foo.cmd を編集）
+convert-encoding foo.cmd --to cmd</code></pre>
+
+	<div class="callout callout-warning">
+		<p><strong>編集中は <code>.cmd</code> が UTF-8 のまま。編集したらすぐ <code>--to cmd</code> で戻す</strong>（中断すると UTF-8 で残り、日本語入りは正しく動かない）。読むのは <code>text read</code>、消すのは <code>Remove-Item</code>（文字コード無関係）。手段の比較は html2md の <code>notes/10_plan/p260908-01-sjis-file-handling.html</code>。</p>
+	</div>
+
 	<h2>SJIS のファイルを読む</h2>
 
 	<p><strong>読み取りツールは SJIS を UTF-8 として読むため化ける。</strong>文字コードを指定する手段が無いので、<code>--read</code> を通す。</p>
@@ -356,6 +375,54 @@ convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</c
 </section>
 
 <section class="ch05" id="ch05">
+	<h1>文字コードを問わず読む・探す・書く（text）</h1>
+
+	<p><code>text</code> は 1 本の多機能コマンドで、<strong>SJIS（cmd・bat）・UTF-16（reg）・UTF-8BOM（html）でも壊さず</strong>読み・検索・編集・書き込みができる。標準の Read・Grep・Edit・Write がこれらで化ける・漏らす・破壊するのを避けるためのもの。<strong>文字コードと改行の「組」はツールが判定する</strong>ので、渡す前に知っている必要はない。</p>
+
+	<div class="callout callout-important">
+		<p><strong><code>text</code> の主役は <code>read</code>（読む）と <code>find</code>（探す）。</strong>cmd・bat の作成・修正は convert-encoding ＋標準ツールで足りる（差分も見える／前章）。<code>edit</code> / <code>write</code> は<strong>数百行以上の非 UTF-8 や reg など</strong>の補足。</p>
+	</div>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>サブコマンド</th><th>代わり</th><th>何をするか</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>text read</code></td><td class="nowrap">Read</td><td>何であろうと読み、UTF-8 で見せる</td></tr>
+			<tr><td class="nowrap"><code>text find</code></td><td class="nowrap">Grep</td><td>何であろうと探す（SJIS の日本語も当たる）</td></tr>
+			<tr><td class="nowrap"><code>text edit</code></td><td class="nowrap">Edit</td><td>部分置換して<strong>元の組のまま書き戻す</strong></td></tr>
+			<tr><td class="nowrap"><code>text write</code></td><td class="nowrap">Write</td><td>指定・または既存の組で全文を書く</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>読む・探す</h2>
+
+<pre><code class="language-powershell">text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダに組・digest）
+text read tools/80_ops/foo.cmd --lines 3-5  # 範囲を絞る（省トークン）
+text find 日本語 --path . --recurse --include "*.cmd,*.reg"</code></pre>
+
+	<p><code>find</code> は<strong>ファイルごとに ◆ 見出し＋一致行</strong>を出す（サクラエディタの grep 風）。<strong>複数の glob はダブルクォートで囲む</strong>（<code>"*.cmd,*.reg"</code>）。フォルダを外すのは <code>--exclude-dir</code>。</p>
+
+	<h2>編集する</h2>
+
+<pre><code class="language-powershell">text edit foo.cmd --old "powershell.exe" --new "powershell"     # 中身で指す
+text edit foo.cmd --lines 3-3 --digest 9f2a1c33 --new "..."     # 行範囲＋合言葉</code></pre>
+
+	<p><code>--digest</code> は <code>read</code> が返す合言葉（行範囲＋サイズ＋更新日時）。<strong>read してから edit する間に別の人が更新していれば、合言葉が合わずに止まる</strong>（競合検知）。<code>old_string</code> を書かずに済むぶんトークンも軽い。ファイルから中身を渡すときは <code>--old-file</code> / <code>--new-file</code>。</p>
+
+	<h2>書く</h2>
+
+<pre><code class="language-powershell">text write new.cmd --to cmd --in tmp/body.txt   # 用途名で組を決めて書く
+text write app.reg --keep --in tmp/body.txt     # 既存の組を保って書く</code></pre>
+
+	<div class="callout callout-important">
+		<p><strong>UTF-8 と分かっているファイルは標準の Edit のほうが快適</strong>（差分プレビュー・自動追跡）。<code>text</code> の出番は <strong>SJIS・UTF-16・UTF-8BOM</strong> のときと、大きな範囲を安く置換したいとき。<code>--from &lt;組&gt;</code> で判定を上書きできる（<code>convert-encoding --from</code> と同じ「入力側」の指定）。</p>
+	</div>
+
+	<p>詳しい仕様は html2md 側の <code>notes/10_plan/p260907-01-text-tools.html</code> にある。</p>
+</section>
+
+<section class="ch06" id="ch06">
 	<h1>つまずきやすいところ</h1>
 
 	<h2>Markdown を直接編集しない</h2>

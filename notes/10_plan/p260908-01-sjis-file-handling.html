@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SJIS ファイルの扱い方（作成・修正・削除）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	.ch01{--accent:hsl(280,78%,25%);--accent2:hsl(280,58%,55%);--soft:hsl(280,28%,95%);}
+	.ch02{--accent:hsl(186.7,78%,25%);--accent2:hsl(186.7,58%,55%);--soft:hsl(186.7,28%,95%);}
+	.ch03{--accent:hsl(93.3,78%,25%);--accent2:hsl(93.3,58%,55%);--soft:hsl(93.3,28%,95%);}
+	.ch04{--accent:hsl(0,78%,25%);--accent2:hsl(0,58%,55%);--soft:hsl(0,28%,95%);}
+
+	*{box-sizing:border-box;}
+	body{margin:0;background:#fff;color:#1c2330;
+		font-family:"Yu Gothic UI","Meiryo","Segoe UI",system-ui,sans-serif;
+		font-size:15.5px;line-height:1.85;}
+
+	.titlebar{background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));color:#fff;padding:34px 30px 30px;}
+	.titlebar .inner{max-width:1600px;margin:0 auto;}
+	.titlebar h1{font-size:1.9em;margin:0 0 8px;color:#fff;}
+	.titlebar .lead{font-size:.92em;color:#dde6f7;background:transparent;}
+	.titlebar .date{font-size:.88em;color:#c9d8f2;background:transparent;margin-top:6px;}
+
+	.wrap{max-width:1600px;margin:0 auto;padding:0 30px;}
+	a{color:var(--link,#1a4fa0);background:transparent;}
+	.backlink{margin:18px 0 0;font-size:.94em;}
+
+	.toc{margin:26px 0 0;}
+	.toc ol{list-style:none;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:12px 0 0;counter-reset:tocn;}
+	.toc li{counter-increment:tocn;}
+	.toc a{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+		text-overflow:ellipsis;white-space:normal;width:310px;max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:700;font-size:.92em;}
+	.toc a::before{content:counter(tocn) ". ";font-weight:700;}
+
+	section{background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8);border-radius:10px;padding:4px 26px 26px;margin:34px 0;}
+	section h1{background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff;padding:14px 20px;margin:26px 0 20px;border-radius:8px;
+		box-shadow:0 3px 10px rgba(18,34,77,.22);font-size:1.4em;}
+	h2{background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);color:var(--accent,#12224d);
+		border-left:6px solid var(--accent,#12224d);padding:6px 12px;margin:30px 0 12px;
+		font-size:1.12em;border-radius:0 6px 6px 0;}
+	h3{display:inline-block;color:var(--accent,#12224d);background:transparent;
+		border-bottom:2px dotted var(--accent2,#2f5fbf);padding-bottom:3px;margin:20px 0 8px;font-size:1em;}
+	p{background:transparent;color:var(--ink,#1c2330);}
+
+	.tablewrap{overflow-x:auto;margin:12px 0;}
+	table{border-collapse:collapse;width:100%;background:#fff;color:var(--ink,#1c2330);
+		border-radius:8px;overflow:hidden;box-shadow:0 2px 6px rgba(18,34,77,.10);font-size:.92em;
+		line-height:1.5;}
+	th{background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff;padding:6px 11px;text-align:left;white-space:nowrap;font-weight:700;}
+	td{padding:6px 11px;border-bottom:1px solid var(--line,#d9dfe8);vertical-align:top;
+		background:transparent;color:var(--ink,#1c2330);}
+	tr:nth-child(even) td{background:#fafbfe;color:var(--ink,#1c2330);}
+	td.num{text-align:right;white-space:nowrap;}
+	td.nowrap{white-space:nowrap;}
+
+	.badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.82em;font-weight:700;
+		white-space:nowrap;color:#fff;background:linear-gradient(100deg,#5a6472,#97a1ae);}
+	.b-ok{color:#fff;background:linear-gradient(100deg,#1d7a3c,#45b56c);}
+	.b-ng{color:#fff;background:linear-gradient(100deg,#a51f22,#e05a5c);}
+	.b-warn{color:#fff;background:linear-gradient(100deg,#b8620a,#f0a548);}
+	.b-none{color:#fff;background:linear-gradient(100deg,#5a6472,#97a1ae);}
+
+	.callout{border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0;padding:12px 16px;margin:16px 0;}
+	.callout strong{color:var(--accent,#12224d);background:transparent;}
+	.callout-caution{border-left-color:#a51f22;}
+	.callout-caution strong{color:#a51f22;}
+
+	code{background:var(--code-bg,#f4f6fa);border:1px solid var(--line,#d9dfe8);color:#17335f;
+		padding:1px 5px;border-radius:4px;font-size:.92em;
+		font-family:Consolas,"Courier New",monospace;}
+	pre{background:#fff;color:var(--ink,#1c2330);border:1px solid var(--line,#d9dfe8);
+		border-left:5px solid var(--accent2,#2f5fbf);border-radius:0 8px 8px 0;
+		padding:13px 16px;overflow-x:auto;font-size:.9em;line-height:1.6;
+		font-family:Consolas,"Courier New",monospace;}
+	pre code{background:transparent;border:none;color:var(--ink,#1c2330);padding:0;}
+
+	ul,ol{background:transparent;color:var(--ink,#1c2330);}
+
+	footer{max-width:1600px;margin:40px auto 0;padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);color:var(--ink-soft,#4a5568);
+		background:#fff;font-size:.88em;}
+</style>
+</head>
+<body>
+
+<div class="titlebar"><div class="inner">
+<h1>SJIS ファイルの扱い方（作成・修正・削除）</h1>
+<div class="lead">cmd・bat（SJIS）を壊さず、しかも差分を見ながら扱うための手段の比較と決定</div>
+<div class="date">📅 作成: 2026-09-08 / 更新: 2026-09-08</div>
+</div></div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="p260907-01-text-tools.html">text ツール仕様</a></p>
+
+<nav class="toc">
+<ol>
+<li class="ch01"><a href="#ch01">背景と結論</a></li>
+<li class="ch02"><a href="#ch02">手段の一覧と評価</a></li>
+<li class="ch03"><a href="#ch03">操作べつの手順（決定）</a></li>
+<li class="ch04"><a href="#ch04">量・速度・差分の知見</a></li>
+</ol>
+</nav>
+
+<!-- ============================================================ -->
+<section class="ch01" id="ch01">
+<h1>背景と結論</h1>
+
+<p>cmd・bat は SJIS＋CRLF、reg は UTF-16LE、html は UTF-8BOM。標準の Read・Grep・Edit・Write はこれらを化かす・漏らす・破壊する。壊さずに、しかも<strong>変更を差分で確認しながら</strong>扱う手段を比べ、操作べつに決めた。</p>
+
+<h2>結論（cmd・bat の場合）</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>操作</th><th>手順</th><th>差分</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><strong>作成</strong></td><td>標準 Write で書く → <code>convert-encoding &lt;path&gt; --to cmd</code></td><td>◎ Write が全内容</td></tr>
+<tr><td class="nowrap"><strong>修正</strong></td><td><code>convert-encoding &lt;path&gt; --to utf8</code> → 標準 Edit → <code>convert-encoding &lt;path&gt; --to cmd</code></td><td>◎ 標準 Edit</td></tr>
+<tr><td class="nowrap"><strong>削除</strong></td><td><code>Remove-Item</code>（文字コード無関係）</td><td>—</td></tr>
+<tr><td class="nowrap"><strong>読む</strong></td><td><code>text read</code>（または <code>convert-encoding --read</code>）</td><td>—</td></tr>
+<tr><td class="nowrap"><strong>探す</strong></td><td><code>text find</code></td><td>—</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout">
+<strong>要点は「標準ツールで書く・編集して差分を見る → 最後に SJIS 化」。</strong>編集は UTF-8 の状態で標準 Edit / Write に任せ、ハーネスのきれいな差分を得る。SJIS 化は <code>convert-encoding</code> の用途名 1 つで決まる。<strong>cmd・bat の作成・修正に <code>text edit</code> / <code>text write</code> は要らない</strong>。<code>text</code> は<strong>読む（read）・探す（find）</strong>が主役。
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch02" id="ch02">
+<h1>手段の一覧と評価</h1>
+
+<p>SJIS ファイルに対して取りうる手段と、その良し悪し。速度と差分表示も観点に入れる。</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>手段</th><th>主な用途</th><th>速度</th><th>差分表示</th><th>メリット</th><th>デメリット</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">標準 Edit</td><td>修正</td><td>速い</td><td>UTF-8 時のみ</td><td>手軽・許可 UI</td><td><span class="badge b-ng">不可</span> SJIS 破壊（U+FFFD）・成功が返る</td></tr>
+<tr><td class="nowrap">標準 Write</td><td>作成</td><td>速い</td><td>UTF-8 時のみ</td><td>手軽</td><td><span class="badge b-ng">単体不可</span> SJIS を書けない（UTF-8 BOM無し LF 固定）</td></tr>
+<tr><td class="nowrap">標準 Write ＋ convert</td><td>作成</td><td>速い</td><td>◎ Write が全内容</td><td>tmp 不要・対象に直接書ける</td><td>2 手・変換で全体エンコード</td></tr>
+<tr><td class="nowrap">convert 往復＋標準 Edit</td><td>修正</td><td>速い</td><td>◎ 標準 Edit</td><td>tmp 不要・作成と道具が揃う</td><td>編集中は UTF-8 のまま（中断注意）・全体エンコード 2 回</td></tr>
+<tr><td class="nowrap">tmp で UTF-8 作業</td><td>修正</td><td>中（多段）</td><td>◎ 標準 Edit</td><td>元は最後まで SJIS（中断に強い）</td><td>tmp の作成・後始末</td></tr>
+<tr><td class="nowrap"><code>text edit</code></td><td>修正</td><td>中</td><td><span class="badge b-none">なし</span></td><td>部分置換・元バイト保持・軽い・競合検知</td><td>差分が見えない・digest 持ち回り・<code>--all</code> 無し</td></tr>
+<tr><td class="nowrap"><code>text write</code></td><td>作成/全面</td><td>中</td><td>なし</td><td>1 手で組決定</td><td>中身は <code>--in</code>/stdin 主</td></tr>
+<tr><td class="nowrap"><code>text read</code></td><td>読む</td><td>中</td><td>—</td><td>SJIS/UTF-16 を正しく読む・範囲読み</td><td>—</td></tr>
+<tr><td class="nowrap"><code>text find</code></td><td>探す</td><td>中</td><td>—</td><td>SJIS の日本語も当たる</td><td>—</td></tr>
+<tr><td class="nowrap">PowerShell バイト置換</td><td>修正</td><td>速い</td><td>なし</td><td>—</td><td><span class="badge b-ng">禁止</span> AMSI 検知（<code>Trojan/FileFix</code>）</td></tr>
+<tr><td class="nowrap"><code>Remove-Item</code></td><td>削除</td><td>速い</td><td>—</td><td>標準・文字コード無関係</td><td>消す前の確認は別途（<code>text read</code>）</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout callout-caution">
+<strong>差分は SJIS では標準ツールでは見られない。</strong>標準 Edit / Write は SJIS の元バイトを正しく読めないため、SJIS のまま編集しても差分が化ける。<strong>だから「UTF-8 の状態で編集する」</strong>のが差分を得る唯一の道になる。最終バイトは <code>git diff</code> でも確認できる。
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch03" id="ch03">
+<h1>操作べつの手順（決定）</h1>
+
+<h2>作成 — 標準 Write → convert</h2>
+<pre><code># 対象に直接 UTF-8 で書き、その場で SJIS+CRLF に変換
+（標準 Write で foo.cmd を書く）
+convert-encoding foo.cmd --to cmd</code></pre>
+<p>新規は標準 Write が全内容を見せる（＝全部追加の差分）。tmp を挟まず対象に直接書ける。</p>
+
+<h2>修正 — convert 往復＋標準 Edit（決定＝この方法）</h2>
+<pre><code>convert-encoding foo.cmd --to utf8    # その場で UTF-8/LF 化
+（標準 Edit で foo.cmd を編集 … きれいな差分が出る）
+convert-encoding foo.cmd --to cmd     # SJIS+CRLF に戻す</code></pre>
+<div class="callout callout-caution">
+<strong>編集中は元ファイルが UTF-8 のまま。</strong>途中で中断すると <code>.cmd</code> が UTF-8 で残り、日本語入りは正しく動かない。<strong>編集したらすぐ <code>--to cmd</code> で戻す</strong>。中断に強くしたいときは tmp コピー版（作業を <code>tmp/</code> で行い、元は最後まで SJIS）を使う。
+</div>
+
+<h2>削除 — Remove-Item</h2>
+<p>削除自体は文字コードと無関係。<code>Remove-Item</code> を単独コマンド・絶対パスのリテラルで。<strong>消す前に中身を確認するなら <code>text read</code></strong>（標準 Read は SJIS を化かすため）。消してよいのは <code>tmp/</code> 配下と自分が作ったものだけ。</p>
+
+<h2>読む・探す — text</h2>
+<pre><code>text read foo.cmd              # SJIS を化けずに読む（範囲は --lines）
+text find 日本語 --path . --recurse --include "*.cmd,*.reg"</code></pre>
+
+<div class="callout">
+<strong><code>text edit</code> / <code>text write</code> は補足。</strong>cmd・bat では上の手順で足りる。これらが活きるのは、<strong>数百行以上の非 UTF-8</strong>、重複文字を含む恐れ、差分不要でバイトを厳密に保ちたいとき、reg のように往復編集より直接いじりたいとき。
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch04" id="ch04">
+<h1>量・速度・差分の知見</h1>
+
+<h2>text edit の利点は「行数」では決まらない</h2>
+<p>効き始める条件は利点ごとに違う。<strong>私たちの cmd（数十行・約 1 KB）では、いずれもほぼ効かない。</strong></p>
+<div class="tablewrap"><table>
+<thead><tr><th>利点</th><th>効き始める条件</th><th>今の cmd では</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">トークン節約</td><td>全文を読む／書き直すのが無駄になる規模（目安 数百行・数 KB 以上）</td><td>効かない</td></tr>
+<tr><td class="nowrap">バイト保持</td><td>CP932 の重複文字（550 字）を含むとき。<strong>行数は無関係</strong></td><td>効かない（普通の漢字・かな）</td></tr>
+<tr><td class="nowrap">速度</td><td>大きいファイルの再エンコードを避けたいとき</td><td>効かない（exe 起動ぶんの差だけ）</td></tr>
+</tbody>
+</table></div>
+<p>「20/30/50/100 行」で切り替わるわけではなく、<strong>「全部読む・書き直すのが重いほど大きいか」</strong>が本質。<code>build.cmd</code>・<code>build-text.cmd</code> とも約 40 行でしきい値のはるか下。</p>
+
+<h2>差分表示の知見</h2>
+<ul>
+<li><strong>ハーネスのきれいな差分は UTF-8 のファイルでしか成立しない。</strong>SJIS のまま標準 Edit で触ると差分が化ける</li>
+<li>だから「UTF-8 の状態で編集」してから SJIS 化する。最終バイトは <code>git diff</code>（バイト差分）で確認できる</li>
+<li><code>text edit</code> はバイト保持に優れるが差分が出ない。差分を見たい今回の方針では、UTF-8 経由の標準 Edit を選ぶ</li>
+</ul>
+
+<h2>速度の知見</h2>
+<ul>
+<li>標準 Edit / Write が最速（ハーネス内・プロセス起動なし）だが SJIS では使えない</li>
+<li>exe 系（text・convert-encoding）は .NET の起動ぶん数十〜百 ms。小さいファイルなら体感差は小さい</li>
+<li>UTF-8 往復は変換 2 回だが、cmd は小さいので実用上は速い</li>
+</ul>
+</section>
+
+</div>
+
+<footer>
+<p><a href="../../README.html">← html2md</a> ／ <a href="p260907-01-text-tools.html">text ツール仕様</a></p>
+</footer>
+
+</body>
+</html>

@@ -2,19 +2,20 @@
 
 HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-09-06
+> 📅 作成: 2026-09-04 / 更新: 2026-09-08
 
 [← html2md](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
 ## 目次
 
-1. [4 つのコマンド](#1-4-つのコマンド)
+1. [5 つのコマンド](#1-5-つのコマンド)
 2. [html2md で変換する](#2-html2md-で変換する)
 3. [検証する](#3-検証する)
 4. [文字コードと改行を直す](#4-文字コードと改行を直す)
-5. [つまずきやすいところ](#5-つまずきやすいところ)
+5. [文字コードを問わず読む・探す・書く（text）](#5-文字コードを問わず読む探す書くtext)
+6. [つまずきやすいところ](#6-つまずきやすいところ)
 
-## 1. 4 つのコマンド
+## 1. 5 つのコマンド
 
 <strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。
 
@@ -24,6 +25,7 @@ HTML から Markdown を生成し、双方を検証する。自プロジェク�
 | `check-markdown` | 生成した Markdown が **GitHub 上で意図どおりに表示されるか**を実測する |
 | `check-contrast` | HTML の文字色と背景色が **読める組み合わせか**をブラウザで実測する |
 | `convert-encoding` | ファイルの文字コードと改行を、**ファイルの種類ごとに決められた形へ**変換する |
+| `text` | SJIS・UTF-16 でも壊さず**読む・探す・編集する・書く**（Read・Grep・Edit・Write の代わり） |
 
 どちらの検証ツールも<strong>推測せず実物で判定する。</strong>前者は GitHub のレンダラに投げ、後者はブラウザで描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。
 
@@ -144,6 +146,23 @@ convert-encoding foo.cmd --read           # 中身を UTF-8 で出す
 convert-encoding foo.cmd --dump           # 中身を 16 進で出す
 ```
 
+### cmd・bat を作る・直す・消す（Windows）
+
+SJIS の cmd・bat は、**標準ツールで書く／編集して差分を見てから、SJIS 化する**。編集は UTF-8 の状態で標準 Edit / Write に任せると、ハーネスのきれいな差分が得られる。
+
+```powershell
+# 作成: 標準 Write で書く → 変換
+convert-encoding foo.cmd --to cmd
+
+# 修正: UTF-8 化 → 標準 Edit（差分が出る）→ 戻す
+convert-encoding foo.cmd --to utf8
+#（標準 Edit で foo.cmd を編集）
+convert-encoding foo.cmd --to cmd
+```
+
+> [!WARNING]
+> **編集中は `.cmd` が UTF-8 のまま。編集したらすぐ `--to cmd` で戻す**（中断すると UTF-8 で残り、日本語入りは正しく動かない）。読むのは `text read`、消すのは `Remove-Item`（文字コード無関係）。手段の比較は html2md の `notes/10_plan/p260908-01-sjis-file-handling.html`。
+
 ### SJIS のファイルを読む
 
 <strong>読み取りツールは SJIS を UTF-8 として読むため化ける。</strong>文字コードを指定する手段が無いので、`--read` を通す。
@@ -185,7 +204,52 @@ SJIS に無い文字（絵文字・ハングル・簡体字など）は `?` に�
 
 詳細は[仕様書](notes/10_plan/p260906-01-convert-encoding.md)にある。
 
-## 5. つまずきやすいところ
+## 5. 文字コードを問わず読む・探す・書く（text）
+
+`text` は 1 本の多機能コマンドで、**SJIS（cmd・bat）・UTF-16（reg）・UTF-8BOM（html）でも壊さず**読み・検索・編集・書き込みができる。標準の Read・Grep・Edit・Write がこれらで化ける・漏らす・破壊するのを避けるためのもの。**文字コードと改行の「組」はツールが判定する**ので、渡す前に知っている必要はない。
+
+> [!IMPORTANT]
+> <strong>`text` の主役は `read`（読む）と `find`（探す）。</strong>cmd・bat の作成・修正は convert-encoding ＋標準ツールで足りる（差分も見える／前章）。`edit` / `write` は**数百行以上の非 UTF-8 や reg など**の補足。
+
+| サブコマンド | 代わり | 何をするか |
+|---|---|---|
+| `text read` | Read | 何であろうと読み、UTF-8 で見せる |
+| `text find` | Grep | 何であろうと探す（SJIS の日本語も当たる） |
+| `text edit` | Edit | 部分置換して**元の組のまま書き戻す** |
+| `text write` | Write | 指定・または既存の組で全文を書く |
+
+### 読む・探す
+
+```powershell
+text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダに組・digest）
+text read tools/80_ops/foo.cmd --lines 3-5  # 範囲を絞る（省トークン）
+text find 日本語 --path . --recurse --include "*.cmd,*.reg"
+```
+
+`find` は**ファイルごとに ◆ 見出し＋一致行**を出す（サクラエディタの grep 風）。**複数の glob はダブルクォートで囲む**（`"*.cmd,*.reg"`）。フォルダを外すのは `--exclude-dir`。
+
+### 編集する
+
+```powershell
+text edit foo.cmd --old "powershell.exe" --new "powershell"     # 中身で指す
+text edit foo.cmd --lines 3-3 --digest 9f2a1c33 --new "..."     # 行範囲＋合言葉
+```
+
+`--digest` は `read` が返す合言葉（行範囲＋サイズ＋更新日時）。**read してから edit する間に別の人が更新していれば、合言葉が合わずに止まる**（競合検知）。`old_string` を書かずに済むぶんトークンも軽い。ファイルから中身を渡すときは `--old-file` / `--new-file`。
+
+### 書く
+
+```powershell
+text write new.cmd --to cmd --in tmp/body.txt   # 用途名で組を決めて書く
+text write app.reg --keep --in tmp/body.txt     # 既存の組を保って書く
+```
+
+> [!IMPORTANT]
+> **UTF-8 と分かっているファイルは標準の Edit のほうが快適**（差分プレビュー・自動追跡）。`text` の出番は **SJIS・UTF-16・UTF-8BOM** のときと、大きな範囲を安く置換したいとき。`--from <組>` で判定を上書きできる（`convert-encoding --from` と同じ「入力側」の指定）。
+
+詳しい仕様は html2md 側の `notes/10_plan/p260907-01-text-tools.html` にある。
+
+## 6. つまずきやすいところ
 
 ### Markdown を直接編集しない
 

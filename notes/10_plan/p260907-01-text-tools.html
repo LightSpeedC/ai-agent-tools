@@ -1,0 +1,503 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文字コード対応テキスト・ツール一式 仕様書</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	.ch01{--accent:hsl(280,78%,25%);--accent2:hsl(280,58%,55%);--soft:hsl(280,28%,95%);}
+	.ch02{--accent:hsl(233.3,78%,25%);--accent2:hsl(233.3,58%,55%);--soft:hsl(233.3,28%,95%);}
+	.ch03{--accent:hsl(186.7,78%,25%);--accent2:hsl(186.7,58%,55%);--soft:hsl(186.7,28%,95%);}
+	.ch04{--accent:hsl(140,78%,25%);--accent2:hsl(140,58%,55%);--soft:hsl(140,28%,95%);}
+	.ch05{--accent:hsl(93.3,78%,25%);--accent2:hsl(93.3,58%,55%);--soft:hsl(93.3,28%,95%);}
+	.ch06{--accent:hsl(46.7,78%,25%);--accent2:hsl(46.7,58%,55%);--soft:hsl(46.7,28%,95%);}
+	.ch07{--accent:hsl(0,78%,25%);--accent2:hsl(0,58%,55%);--soft:hsl(0,28%,95%);}
+
+	*{box-sizing:border-box;}
+	body{margin:0;background:#fff;color:#1c2330;
+		font-family:"Yu Gothic UI","Meiryo","Segoe UI",system-ui,sans-serif;
+		font-size:15.5px;line-height:1.85;}
+
+	.titlebar{background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));color:#fff;padding:34px 30px 30px;}
+	.titlebar .inner{max-width:1600px;margin:0 auto;}
+	.titlebar h1{font-size:1.9em;margin:0 0 8px;color:#fff;}
+	.titlebar .lead{font-size:.92em;color:#dde6f7;background:transparent;}
+	.titlebar .date{font-size:.88em;color:#c9d8f2;background:transparent;margin-top:6px;}
+
+	.wrap{max-width:1600px;margin:0 auto;padding:0 30px;}
+	a{color:var(--link,#1a4fa0);background:transparent;}
+	.backlink{margin:18px 0 0;font-size:.94em;}
+
+	.toc{margin:26px 0 0;}
+	.toc ol{list-style:none;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:12px 0 0;counter-reset:tocn;}
+	.toc li{counter-increment:tocn;}
+	.toc a{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+		text-overflow:ellipsis;white-space:normal;width:310px;max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:700;font-size:.92em;}
+	.toc a::before{content:counter(tocn) ". ";font-weight:700;}
+
+	section{background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8);border-radius:10px;padding:4px 26px 26px;margin:34px 0;}
+	section h1{background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff;padding:14px 20px;margin:26px 0 20px;border-radius:8px;
+		box-shadow:0 3px 10px rgba(18,34,77,.22);font-size:1.4em;}
+	h2{background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);color:var(--accent,#12224d);
+		border-left:6px solid var(--accent,#12224d);padding:6px 12px;margin:30px 0 12px;
+		font-size:1.12em;border-radius:0 6px 6px 0;}
+	h3{display:inline-block;color:var(--accent,#12224d);background:transparent;
+		border-bottom:2px dotted var(--accent2,#2f5fbf);padding-bottom:3px;margin:20px 0 8px;font-size:1em;}
+	p{background:transparent;color:var(--ink,#1c2330);}
+
+	.figure{background:#fff;color:var(--ink,#1c2330);border:1px solid var(--line,#d9dfe8);
+		border-radius:8px;padding:14px 16px;margin:12px 0 18px;overflow-x:auto;
+		box-shadow:0 2px 6px rgba(18,34,77,.08);}
+
+	.tablewrap{overflow-x:auto;margin:12px 0;}
+	table{border-collapse:collapse;width:100%;background:#fff;color:var(--ink,#1c2330);
+		border-radius:8px;overflow:hidden;box-shadow:0 2px 6px rgba(18,34,77,.10);font-size:.92em;
+		line-height:1.5;}
+	th{background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff;padding:6px 11px;text-align:left;white-space:nowrap;font-weight:700;}
+	td{padding:6px 11px;border-bottom:1px solid var(--line,#d9dfe8);vertical-align:top;
+		background:transparent;color:var(--ink,#1c2330);}
+	tr:nth-child(even) td{background:#fafbfe;color:var(--ink,#1c2330);}
+	td.num{text-align:right;white-space:nowrap;}
+	td.nowrap{white-space:nowrap;}
+
+	.badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.82em;font-weight:700;
+		white-space:nowrap;color:#fff;background:linear-gradient(100deg,#5a6472,#97a1ae);}
+	.b-ok{color:#fff;background:linear-gradient(100deg,#1d7a3c,#45b56c);}
+	.b-ng{color:#fff;background:linear-gradient(100deg,#a51f22,#e05a5c);}
+	.b-warn{color:#fff;background:linear-gradient(100deg,#b8620a,#f0a548);}
+	.b-none{color:#fff;background:linear-gradient(100deg,#5a6472,#97a1ae);}
+
+	.callout{border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0;padding:12px 16px;margin:16px 0;}
+	.callout strong{color:var(--accent,#12224d);background:transparent;}
+
+	code{background:var(--code-bg,#f4f6fa);border:1px solid var(--line,#d9dfe8);color:#17335f;
+		padding:1px 5px;border-radius:4px;font-size:.92em;
+		font-family:Consolas,"Courier New",monospace;}
+	pre{background:#fff;color:var(--ink,#1c2330);border:1px solid var(--line,#d9dfe8);
+		border-left:5px solid var(--accent2,#2f5fbf);border-radius:0 8px 8px 0;
+		padding:13px 16px;overflow-x:auto;font-size:.9em;line-height:1.6;
+		font-family:Consolas,"Courier New",monospace;}
+	pre code{background:transparent;border:none;color:var(--ink,#1c2330);padding:0;}
+
+	ul,ol{background:transparent;color:var(--ink,#1c2330);}
+
+	footer{max-width:1600px;margin:40px auto 0;padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);color:var(--ink-soft,#4a5568);
+		background:#fff;font-size:.88em;}
+</style>
+</head>
+<body>
+
+<div class="titlebar"><div class="inner">
+<h1>文字コード対応テキスト・ツール一式</h1>
+<div class="lead">SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。文字コードと改行の組を判定して、そのまま読み書きする</div>
+<div class="date">📅 作成: 2026-09-07 / 更新: 2026-09-08</div>
+</div></div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="../40_issues/issues.html">課題 i260907-02</a></p>
+
+<div class="callout">
+<strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド <code>text</code>（<code>text.exe</code>）1 本に <code>read</code>／<code>find</code>／<code>edit</code>／<code>write</code> を載せた（<code>src/Text/</code>、ビルド <code>build-text.cmd</code>、テスト <code>tools/40_test/run-text-tests.ps1</code> = 43 件成功）。<strong>本文の「決定」はすべて実装に反映済み。</strong><code>--col</code>・<code>--regex</code>・<code>--all</code>、および <code>write</code> の変換先で表現できない文字の検出（strict）は将来。
+</div>
+
+<nav class="toc">
+<ol>
+<li class="ch01"><a href="#ch01">目的と背景</a></li>
+<li class="ch02"><a href="#ch02">全体設計（1 エンジン＋4 動詞）</a></li>
+<li class="ch03"><a href="#ch03">文字コードと改行の判定</a></li>
+<li class="ch04"><a href="#ch04">text read（読む）</a></li>
+<li class="ch05"><a href="#ch05">text edit（部分置換・合言葉）</a></li>
+<li class="ch06"><a href="#ch06">text find・text write</a></li>
+<li class="ch07"><a href="#ch07">実装方針・ビルド・テスト</a></li>
+</ol>
+</nav>
+
+<!-- ============================================================ -->
+<section class="ch01" id="ch01">
+<h1>目的と背景</h1>
+
+<p>Claude Code の標準ツールは、UTF-8 以外のファイルで壊れる。SJIS（cmd・bat）、UTF-16LE（reg）、UTF-8BOM（html）で、読む・探す・編集する・書くのいずれもが化けるか破壊する。しかもエラーにならず<strong>成功が返る</strong>ことが多い。</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>標準ツール</th><th>壊れ方</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><strong>Read</strong></td><td>UTF-8 として読むので SJIS・UTF-16 が化ける</td></tr>
+<tr><td class="nowrap"><strong>Grep</strong></td><td>SJIS・UTF-16 を漏らす。0 件ではなく一部だけ返るので欠けに気づけない</td></tr>
+<tr><td class="nowrap"><strong>Edit</strong></td><td>読めないバイトを U+FFFD にして書き戻す。破壊し、成功が返る</td></tr>
+<tr><td class="nowrap"><strong>Write</strong></td><td>SJIS・UTF-16 を破壊。UTF-8BOM は BOM 消失・LF 化</td></tr>
+<tr><td class="nowrap">Bash / PowerShell のファイル操作</td><td><code>cat</code> <code>sed</code> <code>Get-Content</code> <code>Set-Content</code> も同じに壊れる（同じ decode の罠）</td></tr>
+</tbody>
+</table></div>
+
+<p><strong>これら「壊れるツール」の代わりを一式そろえる</strong>のがこの計画。<code>Glob</code>（名前だけで中身を読まない）と <code>SendUserFile</code>（バイトのまま渡す）は壊れないので対象外。</p>
+
+<h2>3 つの原則</h2>
+<p><strong>1. 文字コードと改行の「組」で扱う。</strong>文字コード単体ではなく、改行まで含めた組を判定し、書き戻すときはその組のまま保つ。</p>
+<div class="tablewrap"><table>
+<thead><tr><th>組</th><th>主な用途</th><th>convert-encoding の用途名</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>sjis/crlf</code></td><td>cmd・bat</td><td class="nowrap"><code>--to cmd</code></td></tr>
+<tr><td class="nowrap"><code>utf16le/crlf</code></td><td>reg</td><td class="nowrap">（新規）</td></tr>
+<tr><td class="nowrap"><code>utf8bom/crlf</code></td><td>ps1</td><td class="nowrap"><code>--to ps1</code></td></tr>
+<tr><td class="nowrap"><code>utf8bom/lf</code></td><td>html</td><td class="nowrap"><code>--to html</code></td></tr>
+<tr><td class="nowrap"><code>utf8/lf</code></td><td>md・その他</td><td class="nowrap">（既定）</td></tr>
+</tbody>
+</table></div>
+
+<p><strong>2. 文字コードで場合分けしない。</strong>UTF-8 は特別扱いの本線ではなく、判定結果のひとつ。SJIS を後付けの別対応にしない。<strong>どのファイルでも同じ 1 本を呼ぶ</strong>と、ツールが組を判定して正しく扱う。使う前に文字コードを知っている必要がなくなる（それが今の事故のもと）。</p>
+<p><strong>3. 最後は Linux・Mac にも展開する。</strong>Windows だけの前提を作り込まない。判定は BOM とバイト構造だけで決まるので OS に依存しない。引っかかるのは <strong>SJIS（CP932）が非 Windows の .NET では既定で使えない</strong>点（<code>CodePages</code> プロバイダの登録で解く）と、<strong>ビルド・実行の道具と実行ファイルの形</strong>が OS で変わる点。これらは 7 章で扱う。<strong>オプションは GNU 形（<code>--path</code>）に統一する</strong>（PowerShell 風は採らない。OS をまたいでも綴りが同じ）。</p>
+
+<div class="callout">
+<strong>標準ツールを透過的に差し替えることはできない。</strong>Read・Grep・Edit・Write はハーネス組み込みで、このツールを裏で使わせる仕組みはない。<strong>実現形は「壊れる相手のときは自分でこのコマンドを呼ぶ」という運用＋共通ルールでの明文化</strong>になる（いまの「ツールごとの文字コードの扱い」の表がその土台）。UTF-8 だけを触ると分かっているときは、差分表示・許可 UI が効く標準 Edit を使ってよい。
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch02" id="ch02">
+<h1>全体設計（1 エンジン＋4 動詞）</h1>
+
+<p>判定エンジンは 1 つ。その上に 4 つの動詞を載せる。</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>代わり</th><th>標準</th><th>役目</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>text read</code></td><td class="nowrap">Read</td><td>何であろうと読み、UTF-8 で見せる。edit 用にサイズ・更新日・範囲の合言葉も返す</td></tr>
+<tr><td class="nowrap"><code>text find</code></td><td class="nowrap">Grep</td><td>何であろうと探す。パス・行番号・行＋判定した組を出す</td></tr>
+<tr><td class="nowrap"><code>text edit</code></td><td class="nowrap">Edit</td><td>判定 → 部分置換 → 元の組のまま書き戻す。合言葉で競合を検知</td></tr>
+<tr><td class="nowrap"><code>text write</code></td><td class="nowrap">Write</td><td>指定した組（または元の組）で全文を書く</td></tr>
+</tbody>
+</table></div>
+
+<h2>コマンドの形（多機能コマンドに決定）</h2>
+<p><strong>1 つの多機能コマンド <code>text</code> に、動詞をサブコマンドで載せる。</strong><code>text read</code> / <code>text find</code> / <code>text edit</code> / <code>text write</code> の形。実行ファイルは <code>text</code>（Windows は <code>text.exe</code>）1 つで、PATH に置くのも 1 つで済む。判定エンジンを 4 つの動詞で共有する作りとも相性がよい。独立コマンドを 4 つ並べる案は採らない。</p>
+
+<h2>オプションの綴り（GNU 形に決定）</h2>
+<p><strong>GNU 形（<code>--path</code> <code>--recurse</code> <code>--lines</code> …）に統一する。</strong>PowerShell 風（<code>-Path</code>）は採らない。理由は 2 つ: <code>convert-encoding</code> と綴りが揃うこと、将来 Linux・Mac へ展開しても綴りが同じで済むこと。短縮形は grep 慣習の <code>-r</code>（recurse）・<code>-i</code>（ignore-case）だけ添える。以降の例はこの形で書く。</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch03" id="ch03">
+<h1>文字コードと改行の判定</h1>
+
+<p>ファイルごとに、まず文字コードを 1 回決める。「UTF-8 でやってみて、だめなら SJIS を足す」ではなく、<strong>先に組を決めてから、その組で読み書きする</strong>。全文字コードが対等。</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th class="num">順</th><th>条件</th><th>組の文字コード</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td>先頭 <code>EF BB BF</code></td><td><code>utf8bom</code>（UTF-8 BOM 付き）</td></tr>
+<tr><td class="num">2</td><td>先頭 <code>FF FE</code></td><td><code>utf16le</code></td></tr>
+<tr><td class="num">3</td><td>先頭 <code>FE FF</code></td><td><code>utf16be</code></td></tr>
+<tr><td class="num">4</td><td>BOM 無しで、全体が厳密な UTF-8 として妥当</td><td><code>utf8</code></td></tr>
+<tr><td class="num">5</td><td>BOM 無しで、UTF-8 として不正</td><td><code>sjis</code>（CP932）</td></tr>
+</tbody>
+</table></div>
+
+<p>改行は中身から見る。<code>CRLF</code> が主なら crlf、<code>LF</code> だけなら lf、<code>CR</code> だけなら cr。文字コードと合わせて<strong>組</strong>として持つ。</p>
+
+<h2>表記の約束</h2>
+<p>ツールが出す<strong>組は小文字</strong>で書く。文字コードは <code>sjis</code> / <code>utf8</code> / <code>utf8bom</code> / <code>utf16le</code> / <code>utf16be</code>、改行は <code>crlf</code> / <code>lf</code> / <code>cr</code>。組は <code>sjis/crlf</code> のように <code>/</code> でつなぐ。</p>
+<p><strong>日時（mtime）は <code>yymmdd-hhmmss-ccc</code></strong>（年 2 桁・月・日 ／ 時・分・秒 ／ ミリ秒 3 桁）。例: 2026-09-07 19:00:00.123 → <code>260907-190000-123</code>。短く、名前順が時刻順になり、合言葉の一部にも収まる。</p>
+
+<p>土台は <code>convert-encoding</code> の <code>Detector</code>。ただし<strong>「両方妥当」の倒し方が動詞で変わる</strong>。</p>
+<div class="tablewrap"><table>
+<thead><tr><th>動詞</th><th>UTF-8 と SJIS が両方妥当（非 ASCII）</th><th>理由</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>text read</code> / <code>text find</code></td><td>UTF-8 に倒す（読む・探すだけ）</td><td>止まると探せない。UTF-8 が既定で、実ファイルの両方妥当はまれ</td></tr>
+<tr><td class="nowrap"><code>text edit</code> / <code>text write</code></td><td><strong>拒否して止まる</strong>（終了 3）</td><td>書き戻すので取り違えは破壊になる。convert-encoding の既定の拒否がそのまま正しい</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout">
+<strong>UTF-16 は BOM で判定する。</strong>BOM 無し UTF-16 は当てにならないので追わない。要望の <code>reg</code> は UTF-16LE ＋ BOM なので足りる。バイナリ（UTF-16 でないのに NUL を含む）は黙って飛ばし、<code>exe</code>・画像を結果に混ぜない。
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch04" id="ch04">
+<h1>text read（読む）</h1>
+
+<p>Read の代わり。何であろうと読み、<strong>UTF-8 に起こして見せる</strong>。加えて、続く <code>text edit</code> のためのメタ（組・サイズ・更新日時・合言葉）をヘッダに出す。</p>
+
+<h2>オプション</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>オプション</th><th>既定</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>&lt;path&gt;</code></td><td class="nowrap">—</td><td>読むファイル（必須）</td></tr>
+<tr><td class="nowrap"><code>--from &lt;組&gt;</code></td><td class="nowrap">自動判定</td><td>元の組を明示して自動判定を上書き（例 <code>--from sjis</code>）。convert-encoding の <code>--from</code> と同じ「入力側」の指定</td></tr>
+<tr><td class="nowrap"><code>--lines A-B</code></td><td class="nowrap">全文</td><td>その行範囲だけ出す（1 始まり、両端含む）。省トークン</td></tr>
+<tr><td class="nowrap"><code>--no-number</code></td><td class="nowrap">番号付き</td><td>行番号を付けずに中身だけ出す（そのまま別処理へ渡すとき）</td></tr>
+</tbody>
+</table></div>
+
+<h2>表示のしかた</h2>
+<p><strong>1 行目は <code>◆</code> ファイルヘッダ</strong>（find と共通）、続いて<strong>行番号付きの中身</strong>。ヘッダは次の並び。パスは<strong>渡されたまま</strong>（read は単一ファイルなので相対化しない）、ダブルクォートで囲む（空白や <code>()</code> を含められる）。</p>
+<pre><code>◆"&lt;path&gt;" [&lt;組&gt;] size=&lt;バイト&gt; mtime=&lt;yymmdd-hhmmss-ccc&gt; [lines=A-B] digest=&lt;hex&gt;</code></pre>
+<p>中身の各行は <strong>行番号を 6 桁右寄せ、続けて <code>:</code> とタブ、そのあと本文</strong>（書式 <code>%6d:\t%s</code>）。標準 Read の <code>cat -n</code>（6 桁右寄せ＋タブ）に <code>:</code> を 1 つ足した形。下の例では見やすさのためタブを空白で表す（実際は <code>:</code> の後がタブ）。</p>
+<pre><code># 全文を読む
+text read build.cmd
+→ ◆"build.cmd" [sjis/crlf] size=164 mtime=260907-190000-123 digest=3c9f0b47
+     1:  @echo off
+     2:  rem 参照実装から呼ぶ
+     3:  powershell -NoProfile ...
+
+# 一部だけ読む（省トークン）。その範囲の合言葉を出す
+text read build.cmd --lines 3-3
+→ ◆"build.cmd" [sjis/crlf] size=164 mtime=260907-190000-123 lines=3-3 digest=9f2a1c33
+     3:  powershell -NoProfile ...
+
+# 判定を上書きして強制的に sjis で読む
+text read data.txt --from sjis</code></pre>
+<p><code>--lines A-B</code> を渡すと<strong>その範囲だけ</strong>を出し、その範囲の合言葉（<code>digest</code>）を返す。範囲を渡さなければ全文と全体の合言葉。狭く読めるので、Read で全文を読むより<strong>トークンが減る</strong>。</p>
+
+<h2>Claude Code 標準の Read との違い</h2>
+<p>標準の Read は <code>cat -n</code> と同じ「行番号（6 桁右寄せ）→ タブ → 中身」で、<strong>文字コードは UTF-8 決め打ち・メタは出ない</strong>。同じ SJIS の <code>build.cmd</code> を読むと差が出る（下の例のタブは空白で表す）。</p>
+<div class="tablewrap"><table>
+<thead><tr><th>標準 Read（6 桁右寄せ＋タブ）</th><th><code>text read</code>（<code>◆</code> ヘッダ＋<code>:</code>）</th></tr></thead>
+<tbody>
+<tr><td>
+<pre><code>     1  @echo off
+     2  rem �Q�Ǝ�������Ăԡ���  ← 化ける
+     3  powershell -NoProfile ...</code></pre>
+</td><td>
+<pre><code>◆"build.cmd" [sjis/crlf] size=164 mtime=260907-190000-123 digest=3c9f0b47
+     1:  @echo off
+     2:  rem 参照実装から呼ぶ  ← 正しい
+     3:  powershell -NoProfile ...</code></pre>
+</td></tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>SJIS・UTF-16 を正しく読む</strong>（標準は UTF-8 として読むので化ける）</li>
+<li><strong><code>◆</code> ヘッダで組・サイズ・更新日時・合言葉を返す</strong>（標準は本文だけ。編集の下ごしらえにならない）。ヘッダは find と共通の形</li>
+<li><strong>行番号のあとに <code>:</code> を足す</strong>（標準は 6 桁右寄せ＋タブ、text read は 6 桁右寄せ＋<code>:</code>＋タブ）。数字だけの列と本文の境目がはっきりする</li>
+</ul>
+
+<div class="callout">
+<strong>合言葉（digest）＝ 3 つをまとめた値（決定）。</strong><code>text edit</code> の競合検知は、<strong>行範囲のハッシュ ＋ ファイルサイズ ＋ 更新日時（ミリ秒精度）</strong>の 3 つで見る。read はこの 3 つを 1 つの短い <code>digest</code> にまとめて返し、edit はそれを渡すだけでよい。<br>
+ハッシュの対象は<strong>改行を LF に正規化した decode 後の文字列</strong>（文字コード・改行の違いに依存しない）。<code>size</code> と <code>mtime</code> は人にも見えるよう別に出すが、判定は 3 つまとめた <code>digest</code> の一致で行う。<strong><code>digest</code> は hex 8 桁固定（32 bit）</strong>（例 <code>9f2a1c33</code>）。これは read 時の 1 個と edit 時に計算し直す 1 個の<strong>1 対 1 の突き合わせ</strong>で、集合から探すわけではないため、誤一致は 1 回あたり ≈ 2⁻³² と実質ゼロ。<strong>暗号強度は不要で CRC32 でよい</strong>（改ざん対策ではなく“変わったか”の検知）。更新日時を含めるため、内容が同じでも <code>touch</code> 等で日時が動けば合言葉は変わる（安全側＝誤って上書きしない）。
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch05" id="ch05">
+<h1>text edit（部分置換・合言葉）</h1>
+
+<p>Edit の代わり。判定 → 部分置換 → <strong>元の組のまま書き戻す</strong>。置換対象の指し方は 2 通り。<strong>基本は行範囲＋合言葉</strong>（省トークン・競合検知）、標準 Edit と同じく<strong>中身（old）で指す</strong>やり方も選べる。置き換える中身はどちらも <code>--new</code>。</p>
+
+<h2>オプション</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>オプション</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>&lt;path&gt;</code></td><td>編集するファイル（必須）</td></tr>
+<tr><td class="nowrap"><code>--from &lt;組&gt;</code></td><td>元の組を明示して自動判定を上書き（read と同じ「入力側」の指定）</td></tr>
+<tr><td class="nowrap"><code>--lines A-B</code></td><td>置換する行範囲（合言葉方式）</td></tr>
+<tr><td class="nowrap"><code>--digest &lt;hex&gt;</code></td><td><strong>基本。</strong>read が返した合言葉。行範囲＋サイズ＋更新日時を照合して競合を検知</td></tr>
+<tr><td class="nowrap"><code>--old &lt;str&gt;</code></td><td>置換対象を中身で指す（標準 Edit 風）。一意であること</td></tr>
+<tr><td class="nowrap"><code>--old-file &lt;path&gt;</code></td><td>置換対象の中身をファイルから読む（長い・日本語で引数事故を避ける）</td></tr>
+<tr><td class="nowrap"><code>--new &lt;str&gt;</code></td><td>置き換える中身（インライン）</td></tr>
+<tr><td class="nowrap"><code>--new-file &lt;path&gt;</code></td><td>置き換える中身をファイルから読む</td></tr>
+</tbody>
+</table></div>
+<p>対象の指し方は排他ではない。<strong><code>--lines</code> は範囲（スコープ）、<code>--old</code> はその中身</strong>として、単独でも併用でもよい。</p>
+<div class="tablewrap"><table>
+<thead><tr><th>指定</th><th>動き</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>--lines A-B</code> のみ</td><td>その<strong>行範囲まるごと</strong>を置換</td></tr>
+<tr><td class="nowrap"><code>--old</code> のみ</td><td><strong>ファイル全体で一意</strong>な <code>--old</code> を探して置換（標準 Edit と同じ。重複するとエラー）</td></tr>
+<tr><td class="nowrap"><code>--lines A-B</code> ＋ <code>--old</code></td><td><strong>その範囲の中だけ</strong>で <code>--old</code> を探して置換。他所にも出る語を範囲で一意化できる</td></tr>
+</tbody>
+</table></div>
+<p>中身は <code>--new</code>／<code>--new-file</code> のどちらか。<code>--digest</code> はどの指し方にも付けられ、対象範囲が read 時から変わっていないかを照合する。<strong>ファイル入力は <code>--old-file</code>／<code>--new-file</code>（"from" は使わない。<code>--from</code> は組の指定に固定）。</strong></p>
+
+<h2>使い方</h2>
+<pre><code># 基本：行範囲＋合言葉（read が返した digest をそのまま渡す）
+text edit build.cmd --lines 3-3 --digest 9f2a1c33 --new "powershell -NoProfile ..."
+→ 合言葉が合えば置換／変わっていれば エラー（別の人が更新）
+
+# 中身で指す（標準 Edit 風）。長い置換はファイルから
+text edit README.html --old-file tmp/old.txt --new-file tmp/new.txt</code></pre>
+
+<h2>判定の順</h2>
+<ol>
+<li>ファイルの文字コードと改行の組を判定（両方妥当なら<strong>拒否</strong>）</li>
+<li>対象を特定。<code>--lines</code> があればまず範囲を絞り、<code>--old</code> があればその範囲内（無ければファイル全体）で一致箇所を探す。<code>--old</code> の一致が 0 / 複数なら<strong>エラー</strong></li>
+<li><code>--digest</code> があれば、<strong>行範囲ハッシュ ＋ サイズ ＋ 更新日時</strong>から合言葉を計算し、<strong>一致しなければエラー</strong>で止める（何も書かない）</li>
+<li>その範囲を <code>--new</code>／<code>--new-file</code> に差し替える</li>
+<li><strong>元の組のまま</strong>書き戻す。置換内容の改行は元の改行に揃える</li>
+<li>結果が元と同じならファイルに触らない</li>
+</ol>
+
+<div class="callout">
+<strong>合言葉が守る範囲（決定）。</strong>合言葉（<code>digest</code>）は<strong>行範囲のハッシュ ＋ ファイルサイズ ＋ 更新日時（ミリ秒精度）</strong>の 3 つをまとめた値。行範囲の中身に加え、ファイル全体のサイズと更新日時も見るので、対象範囲の外が変わっても・タイムスタンプだけ動いても検知する。read が返した <code>digest</code> をそのまま渡すだけでよい。
+</div>
+
+<div class="callout">
+<strong>AV に触れない作り。</strong>バイト列の読み書きは過去に検知された。<strong>バイト操作はすべて exe の中で完結</strong>させ、PowerShell でバイトを触らない（<code>convert-encoding</code> と同じ方針）。
+</div>
+
+<h2>Claude Code 標準の Edit との違い</h2>
+<p>標準 Edit は <code>old_string</code>（全文引用・一意必須）で指し、Read 済みかどうかをハーネスが追跡して競合を防ぐ。<code>text edit</code> は同じ穴（非 UTF-8 の破壊）を埋めつつ、競合検知を <code>--digest</code> で明示する。</p>
+<div class="tablewrap"><table>
+<thead><tr><th>観点</th><th>標準 Edit</th><th><code>text edit</code></th></tr></thead>
+<tbody>
+<tr><td class="nowrap">文字コード</td><td>UTF-8 のみ安全。SJIS/UTF-16 は U+FFFD で破壊</td><td><strong>全組を判定し、元の組（BOM・改行）で書き戻す</strong></td></tr>
+<tr><td class="nowrap">対象の指し方</td><td><code>old_string</code>（全文引用・一意必須）</td><td><code>--lines</code>＋<code>--digest</code>（範囲）／<code>--old</code>（<code>--lines</code> で範囲絞り可）</td></tr>
+<tr><td class="nowrap">一意性</td><td>一意でないと失敗 → 文脈を足す or <code>replace_all</code></td><td><code>--lines</code> で範囲を絞れば <code>--old</code> を一意化できる</td></tr>
+<tr><td class="nowrap">競合検知</td><td>Read 必須＋ハーネスが状態を追跡（会話内で変われば失敗）</td><td><strong><code>--digest</code> で明示。</strong>別セッション・別プロセスをまたいでも効く</td></tr>
+<tr><td class="nowrap">トークン</td><td><code>old_string</code> を全文引用（大ブロックは重い）</td><td><code>--lines</code>＋<code>--digest</code> なら <code>old</code> を書かない（軽い）</td></tr>
+<tr><td class="nowrap">全置換</td><td><code>replace_all</code> あり</td><td>現状 1 箇所（<code>--all</code> は将来）</td></tr>
+<tr><td class="nowrap">UI</td><td>差分プレビュー・許可 UI に統合</td><td>シェル出力（差分 UI は無い）</td></tr>
+</tbody>
+</table></div>
+<div class="callout">
+<strong>棲み分け。</strong>UTF-8 と分かっているファイルは、差分 UI と自動追跡がある<strong>標準 Edit の方が快適</strong>。<code>text edit</code> の主戦場は <strong>① 非 UTF-8（sjis/utf16le/utf8bom）</strong>、<strong>② 大きな範囲を安く置換したいとき</strong>、<strong>③ 別プロセスと競合しうる編集を明示的に守りたいとき</strong>。<code>--digest</code> を read→edit で持ち回る手間は、裏返せば<strong>可搬な競合検知</strong>という強みでもある。
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch06" id="ch06">
+<h1>text find・text write</h1>
+
+<h2>text find（Grep の代わり）</h2>
+<p>素の文字列（部分一致）で探す。パス・行番号・行に加え、read と同じく<strong>組・サイズ・更新日時</strong>もファイルごとに出す。正規表現は将来（<code>--regex</code>）。まず素の文字列で足りる、という要望に従う。</p>
+<pre><code>text find 日本語 --path . --recurse --include "*.cmd,*.reg" --exclude-dir node_modules</code></pre>
+<ul>
+<li>大文字小文字は既定で区別（<code>-i</code> / <code>--ignore-case</code> で無視）</li>
+<li>ファイル名で絞る <code>--include</code> / <code>--exclude</code>（glob）。フォルダで外す <code>--exclude-dir</code>（例 <code>node_modules</code>）</li>
+<li>各ファイルの組は自動判定。<code>--from &lt;組&gt;</code> で全ファイルの判定を上書きできる（read と同じ「入力側」の指定）</li>
+<li><strong>複数の glob はダブルクォートで囲む</strong>（<code>--include "*.cmd,*.reg"</code>）。囲まないと PowerShell がカンマで 2 引数に割る（共通ルールに沿う）。<code>--exclude-dir "node_modules,dist"</code> も同じ</li>
+<li>既定で外すのは <code>.git</code> と 先頭 <code>_</code> のフォルダの 2 つだけ。それ以上は <code>--exclude-dir</code> で足す（既定で外しすぎない）</li>
+</ul>
+
+<h3>出力形（決定）</h3>
+<p>サクラエディタの grep（ファイル毎）を参考にしつつ簡素にする。<strong>検索フォルダ（<code>◎</code>）→ サブフォルダー（<code>■</code>）→ ファイル（<code>◆</code>）→ 一致行</strong>の入れ子。フルパスは <code>◎ ＋ ■ ＋ ◆</code> に分かれ、<strong>一致行にパスが付かないので読みやすい</strong>。<code>◆</code> 行と一致行の書式は read と共通。<code>◎</code> <code>■</code> <code>◆</code> の値は<strong>ダブルクォートで囲む</strong>（空白や <code>()</code> を含められる）。</p>
+<pre><code>◎"N:/html2md"
+  検索="日本語"  対象="*.cmd,*.reg"  再帰
+■"."
+◆"build.cmd" [sjis/crlf] size=164 mtime=260907-190000-123
+     3:  rem 日本語コメント
+     7:  echo 日本語
+■"tools/50_run"
+◆"app.reg" [utf16le/crlf] size=88 mtime=260907-184500-902
+     5:  "名前"="日本語"</code></pre>
+<ul>
+<li><code>◎"検索フォルダ"</code>: <code>--path</code> の起点。<strong>先頭に 1 回だけ</strong>。次行にオプション（検索語・対象＝<code>--include</code>・再帰・大小区別など）を添える</li>
+<li><code>■"相対パス"</code>: 検索フォルダ起点の相対（<code>/</code> 区切り）。<strong>直下は <code>■"."</code></strong>。サブフォルダーごとにまとめる</li>
+<li><code>◆"ファイル名" [組] size=… mtime=…</code>: 名前だけ（フォルダは <code>◎</code>＋<code>■</code> にある）</li>
+<li>一致行は read と同じ <strong>行番号 6 桁右寄せ ＋ <code>:</code> ＋ タブ ＋ 本文</strong>（例はタブを空白で表す）</li>
+<li><strong>同じ行に複数マッチしても、既定ではその行を 1 回だけ出す</strong>（grep と同じ）</li>
+<li>純 grep 形（<code>パス:行番号:本文</code>）が要るときは <code>--bare</code></li>
+</ul>
+<div class="callout">
+<strong>桁（列）は既定で出さない。</strong>面倒（半角・全角やタブの数え方）を持ち込まないため。将来 <code>--col</code> を付けるなら、一致行を <code>&lt;行&gt;(&lt;桁&gt;):タブ本文</code> にする。<strong>桁はバイト数ではなく文字数</strong>（1 始まり。decode 後の文字位置。組でバイト長が違うため、バイトでは意味が揃わない）。桁を出すときだけ、<strong>同じ行の複数マッチはマッチごとに 1 行</strong>（同じ本文＋別の桁）にする。
+</div>
+<div class="callout">
+<strong>絶対パスを出さない（共通ルール）。</strong><code>◎</code> は <code>--path</code> の起点を出すので、<strong>相対の <code>--path</code> を渡す</strong>。<code>■</code>・<code>◆</code> は起点からの相対なので、利用者プロファイル配下の絶対パスは出ない。
+</div>
+
+<h2>text write（Write の代わり）</h2>
+<p>全文を書く。<strong>組を指定</strong>するか、<strong>既存ファイルの組を継承</strong>する。実質は「Write ＋ <code>convert-encoding --to</code>」を 1 手にしたもの。</p>
+<pre><code># 用途名で組を決めて新規に書く（convert-encoding と同じ --to 用途名）
+text write new.cmd --to cmd --in tmp/body.txt
+# 既存の組を保って全書き換え
+text write app.reg --keep --in tmp/body.txt</code></pre>
+<div class="tablewrap"><table>
+<thead><tr><th>オプション</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>&lt;path&gt;</code></td><td>書くファイル（必須）</td></tr>
+<tr><td class="nowrap"><code>--from &lt;組&gt;</code></td><td><code>--keep</code> のとき、既存ファイルの組の自動判定を上書きする（read と同じ「入力側」）</td></tr>
+<tr><td class="nowrap"><code>--to &lt;用途&gt;</code></td><td>書き出す組（<code>cmd|ps1|html|reg|utf8</code>）。<code>convert-encoding --to</code> と同じ用途名</td></tr>
+<tr><td class="nowrap"><code>--keep</code></td><td>既存ファイルの組を継承して書き戻す（<code>--to</code> の代わり）</td></tr>
+<tr><td class="nowrap"><code>--in &lt;path&gt;</code></td><td><strong>書き込む中身をファイルから</strong>（主）。標準入力（パイプ）も受ける。引数直書きは短い本文のときだけ</td></tr>
+</tbody>
+</table></div>
+<p><strong>中身の入力は <code>--in</code>（"from" ではない。<code>--from</code> は組の指定に固定）。</strong>大きな本文や日本語で、引数の長さ・エスケープ事故を避けるためファイル／パイプを主にする。</p>
+
+<h2>終了コード（共通）</h2>
+<div class="tablewrap"><table>
+<thead><tr><th class="num">コード</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td class="num">0</td><td>成功（text find は一致あり、text edit は置換した／変更なし）</td></tr>
+<tr><td class="num">1</td><td>text find で一致 0 件（正常）</td></tr>
+<tr><td class="num">2</td><td>エラー（対象が無い・引数が不正）</td></tr>
+<tr><td class="num">3</td><td>text edit / text write で組が両方妥当のため拒否</td></tr>
+<tr><td class="num">4</td><td>text edit で合言葉が不一致（別の人が更新）</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<!-- ============================================================ -->
+<section class="ch07" id="ch07">
+<h1>実装方針・ビルド・テスト</h1>
+
+<h2>作り</h2>
+<p><code>convert-encoding</code> と同じ作り。csproj を持たず <code>csc</code> でビルドする C# の CLI。<strong>実行ファイルは <code>text</code> の 1 つ</strong>で、<code>read</code>／<code>find</code>／<code>edit</code>／<code>write</code> のサブコマンドに振り分ける。<strong>判定エンジンは共有ライブラリに切り出す（決定）。</strong>4 つの動詞が同じ <code>Detector</code>・<code>Digest</code> を使うため、コピーではなく 1 か所に置く。</p>
+<div class="tablewrap"><table>
+<thead><tr><th>置き場</th><th>役目</th></tr></thead>
+<tbody>
+<tr><td class="nowrap"><code>src/Text/Program.cs</code></td><td>入口。第 1 引数（read/find/edit/write）でサブコマンドへ振り分ける</td></tr>
+<tr><td class="nowrap"><code>src/Text/Detector.cs</code></td><td>文字コードと改行の組の判定（両方妥当の倒し方は呼び手が指定）</td></tr>
+<tr><td class="nowrap"><code>src/Text/Digest.cs</code></td><td>合言葉（行範囲を LF 正規化 → ハッシュ ＋ サイズ ＋ 更新日時ミリ秒）</td></tr>
+<tr><td class="nowrap"><code>src/Text/Read.cs</code> ほか</td><td>4 つの動詞それぞれの処理。共有部分を参照する</td></tr>
+</tbody>
+</table></div>
+<p><code>convert-encoding</code> の <code>Detector</code>・<code>Converter</code> と重なる。<strong>将来 convert-encoding もこの共有部分に寄せて二重持ちを解消する</strong>のが理想だが、まずは新ツール側だけで完結させ、convert-encoding には手を入れない（動いているものを崩さない）。<strong>非 Windows のために起動時に <code>Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)</code> を呼ぶ</strong>（Windows でも無害）。</p>
+
+<h2>ビルドと配置</h2>
+<p>いまは <code>convert-encoding</code> と同じく <code>build-text.cmd</code>（SJIS ＋ CRLF）で <code>text.exe</code> をビルド。出力 exe はリポジトリ直下、<code>*.exe</code> は <code>.gitignore</code> のまま（課題 i260830-16）。PATH は既存ツールと同じ場所。exe が 1 つなので配置も 1 つで済む。</p>
+
+<h2>Linux・Mac への展開を見越して</h2>
+<p>最後は Linux・Mac にも展開する。<strong>コードは今から OS 非依存に書く</strong>が、道具立ては段階を踏む。</p>
+<div class="tablewrap"><table>
+<thead><tr><th>論点</th><th>Windows（いま）</th><th>Linux・Mac（あと）</th></tr></thead>
+<tbody>
+<tr><td class="nowrap">ビルド</td><td><code>csc</code>（.NET Framework）</td><td><code>csc</code> は無い。<strong>.NET SDK の <code>dotnet build</code></strong> に寄せる（csproj を 1 つ足す）。C# のコードはそのまま使える</td></tr>
+<tr><td class="nowrap">CP932（SJIS）</td><td>標準で使える</td><td><strong>既定では使えない</strong>。<code>System.Text.Encoding.CodePages</code> を参照し、起動時に <code>Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)</code> を呼ぶ。この登録は Windows でも無害</td></tr>
+<tr><td class="nowrap">実行ファイル</td><td><code>*.exe</code></td><td>拡張子なしの実行ファイル。<code>dotnet publish</code> の自己完結ビルド、または <code>dotnet &lt;dll&gt;</code></td></tr>
+<tr><td class="nowrap">パス区切り</td><td colspan="2"><code>/</code> で統一（共通ルールどおり）。<code>Path</code> API に任せ、文字列で <code>\</code> を組まない</td></tr>
+<tr><td class="nowrap">ランチャー</td><td><code>*.cmd</code></td><td>シェルスクリプト。テスト・ビルドのランチャーは OS ごとに用意</td></tr>
+</tbody>
+</table></div>
+<div class="callout">
+<strong>ビルド道具（決定）。</strong>いまは <code>csc</code> のまま作り、Linux・Mac へ出す段で <code>dotnet</code>（csproj）へ移す（既存ツールと足並みがそろう・今すぐ動く）。最初から <code>dotnet</code> にすると <code>convert-encoding</code> だけ <code>csc</code> のまま残り作りが割れるので採らない。<strong>A に決定。</strong>将来 <code>convert-encoding</code> ごと <code>dotnet</code> に寄せるのが筋で、そのとき一緒に移す。<code>RegisterProvider</code> と OS 非依存の書き方だけは今から入れておく。
+</div>
+
+<h2>テスト</h2>
+<p><code>tests/</code> に本体、<code>tools/40_test/run-text-tests.ps1</code>（＋ cmd）にランチャー。<code>run-all-tests.ps1</code> に足す。テスト用の SJIS・UTF-16 ファイルは <code>convert-encoding --from hex</code> で作る（バイト書きの誤検知を避ける）。確かめること:</p>
+<ul>
+<li>text read: <code>sjis</code>・<code>utf16le</code>・<code>utf16be</code>・<code>utf8bom</code> を UTF-8 として見せる。size・mtime・合言葉を返す。<code>--lines</code> で範囲を絞る</li>
+<li>text find: Grep が漏らす日本語が当たる。組を出す。<code>--include</code>/<code>--exclude</code>/<code>--recurse</code>。バイナリを飛ばす。終了 0/1/2</li>
+<li>text edit: 合言葉一致で置換、不一致でエラー（終了 4）。<strong>元の組を保つ</strong>（<code>sjis/crlf</code> が crlf のまま）。両方妥当で拒否（終了 3）。変更なしなら触らない</li>
+<li>text write: <code>--to</code> と <code>--keep</code> で組が決まる</li>
+</ul>
+
+<h2>済んだら</h2>
+<p>動作を確認したら、<strong>共通ルールの手作業の回避策を、この一式に差し替える</strong>案を出す（「ツールごとの文字コードの扱い」の表と、Read/Edit/Grep の注意書き）。<strong>ルールの変更は利用者の判断を待つ。</strong>差し替えたら ai-chat-lite に周知（見出し名と変わった点だけ）。<code>USAGE-FOR-PROJECTS</code> と <code>README</code> にも使い方を足す。</p>
+
+<h2>進め方（決定）</h2>
+<p>4 つの動詞を一度に作ると重い。<strong>穴の大きい順に、動詞ごとに区切って実装・確認する</strong>: <code>text find</code>（要望・独立）→ <code>text read</code>（合言葉の土台）→ <code>text edit</code>（合言葉の本命）→ <code>text write</code>。各段でテストを通してから次へ。</p>
+</section>
+
+</div>
+
+<footer>
+<p><a href="../../README.html">← html2md</a> ／ <a href="../40_issues/issues.html">課題 i260907-02</a></p>
+</footer>
+
+</body>
+</html>

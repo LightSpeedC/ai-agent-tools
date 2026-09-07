@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -167,7 +167,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-06</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-08</p>
 	</div>
 </div>
 
@@ -449,6 +449,26 @@ $sub = Convert-Blocks ...</code></pre>
 			<p><span class="badge b-ok">済</span>2026-09-06 に<strong>引き受けて取り込んだ。</strong>参考実装 4 ファイルはそのまま使えた（C# 5 の範囲で書かれていた）。仕様書は <a href="../10_plan/p260906-01-convert-encoding.html">notes/10_plan/</a> へ写し、取り込み後の状態に合わせて直した。</p>
 			<p><span class="badge b-ok">済</span>テストは 79 件すべて成功。<strong>受け取った仕様書の 6 章に矛盾があった。</strong>ケース 3・4 が「<code>--to utf8</code> で LF のみ」を期待していたが、2 章の規則「改行を書かなければ、改行は変えない」と食い違う。ケース 5d・5f が規則側を裏付けているため、記述ミスと判断して期待値を規則に合わせた。</p>
 			<p><span class="badge b-none">未</span>共通ルールの「ツールごとの文字コードの扱い」にある PowerShell の変換手順を、<code>convert-encoding</code> を呼ぶ 1 行へ差し替える。<strong>ルールの変更は利用者の判断を待つ。</strong></p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260907-02</span>文字コード対応テキスト・ツール一式（Read/Grep/Edit/Write の代わり）</summary>
+		<div class="issue-body">
+			<p>2026-09-07 に ai-chat-lite（#621）から<strong>要望が来た。</strong>Claude Code の Grep は SJIS・UTF-16 を漏らす。<strong>0 件ではなく一部だけが返る</strong>ため欠けに気づけず、一括置換のたびに bat・cmd・reg が取り残される。共通ルールにはいま<strong>手作業の回避策</strong>（bat・cmd を別に探す、<code>convert-encoding --read</code> で出して当たる）があるが、探すたびに人が覚えている必要がある形なので<strong>道具にしたい</strong>、という内容。</p>
+			<p>要望の形（案）。名前・オプションはこちらで決めてよいとのこと。</p>
+			<ul>
+				<li><code>find-text &lt;検索語&gt; -Path &lt;対象&gt; -Recurse</code> のように渡す。<strong>文字コードはツールが判定する</strong></li>
+				<li>出力は<strong>パス・行番号・行</strong>（Grep と同じ形）＋<strong>判定した文字コード</strong></li>
+				<li><code>-Include *.cmd,*.bat</code> のような絞り</li>
+				<li>正規表現は将来でよく、まず素の文字列で足りる</li>
+				<li>置き場は <code>convert-encoding</code>・<code>check-markdown</code>・<code>check-contrast</code> と同じ（PATH 通し、ランチャー不要）</li>
+			</ul>
+			<p>決まったら共通ルールの回避策をこの道具に差し替える、と向こうは言っている。</p>
+			<p><span class="badge b-warn">着手</span>2026-09-07 に<strong>実装を検討すると返信した。</strong>まず仕様を検討し、<strong>利用者の承認を得てから開発する。</strong></p>
+			<p><span class="badge b-warn">着手</span>利用者との相談で<strong>スコープが広がった。</strong>検索（find-text）だけでなく、<strong>UTF-8 以外で壊れるツール一式の代わり</strong>にする。対象は Read・Grep・Edit・Write の 4 つ（Glob・SendUserFile は壊れないので対象外）。文字コードだけでなく<strong>改行まで含めた「組」</strong>で扱い（SJIS/CRLF・UTF-16LE/CRLF・UTF-8BOM/LF など）、1 エンジン＋4 動詞（<code>read-text</code>・<code>find-text</code>・<code>edit-text</code>・<code>write-text</code>）にする。<code>edit-text</code> は行範囲＋合言葉（チェックサム）の楽観ロックで、省トークンと競合検知を兼ねる。仕様は<a href="../10_plan/p260907-01-text-tools.html">notes/10_plan/</a>。</p>
+			<p><span class="badge b-ok">済</span>2026-09-08 に<strong>実装した。</strong>多機能コマンド <code>text</code>（<code>text.exe</code>）1 本に <code>read</code>／<code>find</code>／<code>edit</code>／<code>write</code> を載せ、判定エンジンを共有（<code>src/Text/</code>、csc ビルド <code>build-text.cmd</code>）。<code>find</code> はサクラエディタの grep（ファイル毎）を参考にした ◎/■/◆ 形式、<code>read</code> は ◆ ヘッダ＋<code>行番号 6 桁:タブ</code>、<code>edit</code> は <code>--digest</code>（CRC32 8 hex ＝ 行範囲ハッシュ＋サイズ＋更新日時）で競合検知、<code>--from</code> は組の指定・中身入力は <code>--in</code>／<code>--old-file</code>／<code>--new-file</code>。<strong>テスト 43 件すべて成功</strong>（<code>tools/40_test/run-text-tests.ps1</code>、<code>run-all-tests</code> に組み込み）。<code>--col</code>・<code>--regex</code>・<code>--all</code> は将来。</p>
+			<p><span class="badge b-none">未</span>共通ルールの手作業の回避策を <code>text</code> に差し替える案の提示、および ai-chat-lite への周知は<strong>利用者の判断を待つ</strong>。</p>
 		</div>
 	</details>
 </section>
