@@ -95,7 +95,7 @@ namespace TextTool
 				return 0;
 			}
 
-			System.IO.File.WriteAllBytes(path, result);
+			Files.WriteAtomic(path, result);
 			Io.Out("置換しました: " + Files.Show(path) + " [" + combo.Name() + "]");
 			return 0;
 		}

@@ -201,6 +201,29 @@ namespace TextTool
 			return result;
 		}
 
+		/// <summary>
+		/// 一時ファイルに書いてから置き換える。途中で中断してもファイルが壊れない。
+		/// 新規ファイル（置換先が無い）にも対応する。
+		/// </summary>
+		public static void WriteAtomic(string path, byte[] bytes)
+		{
+			string full = Path.GetFullPath(path);
+			string dir = Path.GetDirectoryName(full);
+			string temp = Path.Combine(dir, Path.GetFileName(full) + "." + Guid.NewGuid().ToString("N") + ".tmp");
+			File.WriteAllBytes(temp, bytes);
+			try
+			{
+				if (File.Exists(path)) { File.Replace(temp, path, null); }
+				else { File.Move(temp, path); }
+			}
+			catch (PlatformNotSupportedException)
+			{
+				// FAT32 など File.Replace が使えない場合
+				File.Copy(temp, path, true);
+				File.Delete(temp);
+			}
+		}
+
 		/// <summary>更新日時（ローカル）を yymmdd-hhmmss-ccc で。</summary>
 		public static string Mtime(string path)
 		{

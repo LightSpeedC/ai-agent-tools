@@ -69,7 +69,7 @@ namespace TextTool
 				}
 			}
 
-			File.WriteAllBytes(path, result);
+			Files.WriteAtomic(path, result);
 			Io.Out("書きました: " + Files.Show(path) + " [" + Names.Enc(enc) + "/" + Names.Eol(eol) + "]");
 			return 0;
 		}
