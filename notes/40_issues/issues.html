@@ -496,8 +496,8 @@ $sub = Convert-Blocks ...</code></pre>
 	<details>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260908-02</span>medium（約 20 件・静かな誤動作）</summary>
 		<div class="issue-body">
-			<p><span class="badge b-ok">済</span>2026-09-08 に一部を修正: <code>--read</code>/<code>--info</code>＋<code>--from hex</code> の併用拒否／<code>text find &lt;語&gt; &lt;パス&gt;</code> の位置引数パス／<code>--lines</code> 無し digest の全文一致／<code>p260908-01</code> の <code>--to utf8</code> 注記／<code>.gitignore</code>・<code>.editorconfig</code>・<code>.gitattributes</code>・<code>.vscode/settings.json</code>。回帰テスト付き。</p>
-			<p><span class="badge b-none">未</span>残り（html2md 変換の figure/inline/details/svg/md-skip、exe と ps1 の乖離、SJIS 先頭バイト範囲の資料矛盾、パスのマスキング、issues の SJIS 件数、<code>--from utf8bom</code> の BOM 欠落〔--from 誤指定時の縁〕など）は未対応。</p>
+			<p><span class="badge b-ok">済</span>2026-09-08 に一部を修正: <code>--read</code>/<code>--info</code>＋<code>--from hex</code> の併用拒否／<code>text find &lt;語&gt; &lt;パス&gt;</code> の位置引数パス／<code>--lines</code> 無し digest の全文一致／<code>p260908-01</code> の <code>--to utf8</code> 注記／設定ファイル一式／<strong>検査の details・summary 誤検出</strong>／USAGE の text exit 5・README の text 整合・cmd の <code>powershell.exe</code>・issues の SJIS 件数。回帰テスト付き。</p>
+			<p><span class="badge b-none">未</span>残りは<strong>html2md 中核コンバータの改変や仕様判断を要するもの</strong>: <code>figure</code> の中身が消える（仕様表と決着 4 が食い違う＝<strong>仕様の決定が要る</strong>）／早期復号でリンク文字欠落／svg の id 衝突／<code>md-skip</code> が li・td・span に効かない／段落外 <code>a</code> が strong を落とす／exe と ps1 の乖離／SJIS 先頭バイト範囲の資料矛盾。回帰リスクが高いので個別に判断して進める。</p>
 			<p>以下は当初の一覧:</p>
 			<ul>
 				<li><strong>convert-encoding</strong>: <code>--read</code>/<code>--info</code> が <code>--from hex</code> と併用で元ファイルを上書き／<code>--from utf8bom</code> で BOM が付かないまま成功</li>
