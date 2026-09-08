@@ -79,6 +79,14 @@ namespace TextTool
 				throw new ToolError(2, "--lines か --old で置換対象を指定してください。");
 			}
 
+			string badCh; int badCp;
+			if (Codec.TryFindUnmappable(newText, combo.Enc, out badCh, out badCp))
+			{
+				throw new ToolError(5, string.Format(
+					"{0} で表現できない文字です: '{1}' (U+{2:X4})。置換内容を見直してください。",
+					Names.Enc(combo.Enc), badCh, badCp));
+			}
+
 			byte[] result = Files.Splice(bytes, text, combo.Enc, cs, ce, newText);
 
 			if (SameBytes(result, bytes))

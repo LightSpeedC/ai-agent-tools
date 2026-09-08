@@ -207,6 +207,23 @@ Assert-True 'write: reg は UTF-16LE BOM(FF FE)' (($b[0] -eq 0xFF) -and ($b[1] -
 $r = Run-Text @('write', $fW, '--keep', '--in', $fBody)
 Assert-Match 'write: --keep 2 回目は変更なし' $r.Out '変更なし'
 
+Write-Host ''
+Write-Host '=== レビュー #649 の回帰 ===' -ForegroundColor Cyan
+
+# high 3: 第 2 引数が標準入力より優先され、0 バイト上書きにならない
+$fH3 = Join-Path $Work 'h3.cmd'
+$r = Run-Text @('write', $fH3, '--to', 'cmd', '@echo off')
+Assert-True 'high3: 第 2 引数が空にならない（0 バイトでない）' ((Get-Item $fH3).Length -gt 0) '0 バイトになった'
+Assert-Match 'high3: 中身が第 2 引数になる' (Run-Text @('read', $fH3)).Out '@echo off'
+
+# high 4: 変換先で表現できない文字は exit 5 で止まる（黙って ? にしない）
+$r = Run-Text @('write', (Join-Path $Work 'h4.cmd'), '--to', 'cmd', '見出し😀')
+Assert-Equal 'high4: write の未対応文字は exit 5' 5 $r.Code
+$fH4e = Join-Path $Work 'h4e.cmd'
+New-TextFile $fH4e "rem 日本語`r`n@echo off`r`n" $EncSjis
+$r = Run-Text @('edit', $fH4e, '--old', '@echo off', '--new', '@echo off ✓')
+Assert-Equal 'high4: edit の未対応文字は exit 5' 5 $r.Code
+
 # ---------------------------------------------------------------
 Write-Host ''
 Write-Host ('結果: ' + $script:Pass + ' 件成功 / ' + $script:Fail + ' 件失敗')

@@ -101,13 +101,19 @@ namespace Html2Md
 			{
 				string code = HtmlUtil.DecodeEntities(Regex.Replace(m.Groups[1].Value, "<[^>]+>", ""));
 				code = Regex.Replace(code, "\\r?\\n", " ").Replace("`", "'");
-				return StoreCodeSpan("`" + code.Trim() + "`");
+				code = code.Trim();
+				// 表のセルでは、コードスパンの中でも | を \| にする（GFM はセル内の
+				// code の | も列区切りとして数える）。退避後に一括エスケープすると
+				// 中身が対象から外れて素通りするため、退避前にここで処理する。
+				if (inTable) { code = code.Replace("|", "\\|"); }
+				return StoreCodeSpan("`" + code + "`");
 			});
 
 			// コードスパンは退避する（中身を他の変換の対象から外すため）
 			s = Regex.Replace(s, "(?s)<code\\b[^>]*>(.*?)</code>", m =>
 			{
 				string code = HtmlUtil.DecodeEntities(Regex.Replace(m.Groups[1].Value, "<[^>]+>", ""));
+				if (inTable) { code = code.Replace("|", "\\|"); }
 				return StoreCodeSpan("`" + code + "`");
 			});
 

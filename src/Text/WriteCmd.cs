@@ -49,6 +49,14 @@ namespace TextTool
 				if (eolStr != "\n") { content = content.Replace("\n", eolStr); }
 			}
 
+			string badCh; int badCp;
+			if (Codec.TryFindUnmappable(content, enc, out badCh, out badCp))
+			{
+				throw new ToolError(5, string.Format(
+					"{0} で表現できない文字です: '{1}' (U+{2:X4})。書き込む中身を見直してください。",
+					Names.Enc(enc), badCh, badCp));
+			}
+
 			byte[] result = Codec.EncodeFull(content, enc);
 
 			if (File.Exists(path))
@@ -75,6 +83,9 @@ namespace TextTool
 				Combo c = Detector.Detect(b);
 				return Codec.Decode(b, c.Enc);
 			}
+			// 第 2 引数は標準入力より優先する。エージェントのシェルは stdin が
+			// 常にリダイレクト状態のため、引数を先に見ないと空の stdin で上書きしてしまう。
+			if (args.Positional.Count >= 2) { return args.Positional[1]; }
 			if (Console.IsInputRedirected)
 			{
 				using (Stream s = Console.OpenStandardInput())
@@ -84,12 +95,15 @@ namespace TextTool
 					int n;
 					while ((n = s.Read(buf, 0, buf.Length)) > 0) { ms.Write(buf, 0, n); }
 					byte[] all = ms.ToArray();
-					Combo c = Detector.Detect(all);
-					return Codec.Decode(all, c.Enc);
+					// 空の標準入力で 0 バイト上書きしない。中身があるときだけ採用する。
+					if (all.Length > 0)
+					{
+						Combo c = Detector.Detect(all);
+						return Codec.Decode(all, c.Enc);
+					}
 				}
 			}
-			if (args.Positional.Count >= 2) { return args.Positional[1]; }
-			throw new ToolError(2, "書き込む中身を --in <path> か標準入力、または第 2 引数で渡してください。");
+			throw new ToolError(2, "書き込む中身を --in <path>、第 2 引数、または（空でない）標準入力で渡してください。");
 		}
 
 		private static string EolStr(EolKind k)

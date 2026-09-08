@@ -286,6 +286,50 @@ namespace TextTool
 			return Raw(k).GetBytes(s);
 		}
 
+		/// <summary>表現できない文字があれば例外を投げる Encoding。</summary>
+		private static Encoding Strict(EncKind k)
+		{
+			EncoderFallback ef = EncoderFallback.ExceptionFallback;
+			DecoderFallback df = DecoderFallback.ExceptionFallback;
+			switch (k)
+			{
+				case EncKind.Utf8:
+				case EncKind.Utf8Bom: return Encoding.GetEncoding("utf-8", ef, df);
+				case EncKind.Sjis: return Encoding.GetEncoding(932, ef, df);
+				case EncKind.Utf16Le: return Encoding.GetEncoding("utf-16", ef, df);
+				case EncKind.Utf16Be: return Encoding.GetEncoding("unicodeFFFE", ef, df);
+				default: throw new ArgumentOutOfRangeException("k");
+			}
+		}
+
+		/// <summary>
+		/// 変換先で表現できない文字を 1 つ探す。見つかれば true。
+		/// 絵文字などサロゲートペアは CharUnknownHigh / Low に分かれて渡される。
+		/// </summary>
+		public static bool TryFindUnmappable(string text, EncKind kind, out string ch, out int codePoint)
+		{
+			ch = null; codePoint = 0;
+			try
+			{
+				Strict(kind).GetBytes(text);
+				return false;
+			}
+			catch (EncoderFallbackException e)
+			{
+				if (e.CharUnknownHigh != '\0')
+				{
+					codePoint = char.ConvertToUtf32(e.CharUnknownHigh, e.CharUnknownLow);
+					ch = char.ConvertFromUtf32(codePoint);
+				}
+				else
+				{
+					codePoint = e.CharUnknown;
+					ch = e.CharUnknown.ToString();
+				}
+				return true;
+			}
+		}
+
 		/// <summary>プリアンブル込みでエンコード（全書き用）。</summary>
 		public static byte[] EncodeFull(string s, EncKind k)
 		{

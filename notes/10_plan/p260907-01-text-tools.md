@@ -286,7 +286,7 @@ text write app.reg --keep --in tmp/body.txt
 |---|---|
 | `<path>` | 書くファイル（必須） |
 | `--from <組>` | `--keep` のとき、既存ファイルの組の自動判定を上書きする（read と同じ「入力側」） |
-| `--to <用途>` | 書き出す組（`cmd|ps1|html|reg|utf8`）。`convert-encoding --to` と同じ用途名 |
+| `--to <用途>` | 書き出す組（`cmd\|ps1\|html\|reg\|utf8`）。`convert-encoding --to` と同じ用途名 |
 | `--keep` | 既存ファイルの組を継承して書き戻す（`--to` の代わり） |
 | `--in <path>` | **書き込む中身をファイルから**（主）。標準入力（パイプ）も受ける。引数直書きは短い本文のときだけ |
 

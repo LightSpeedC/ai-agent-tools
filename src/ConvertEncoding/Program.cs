@@ -243,6 +243,22 @@ namespace ConvertEncoding
 				return ExitOk;
 			}
 
+			// ここに来るのは再エンコードする経路（バイト保持パスは上で return 済み）。
+			// 元の組として読めないバイトがあれば止める。best-fit で別の文字に化けたまま
+			// 書き戻されるのを防ぐ（デコード方向の保証）。
+			if (!force)
+			{
+				int undecodable;
+				if (Converter.TryFindUndecodable(source, fromKind, out undecodable))
+				{
+					Console.Error.WriteLine(string.Format(
+						"[NG] {0} として読めないバイトがあります（位置 {1}）",
+						Spec.NameOf(fromKind), undecodable));
+					Console.Error.WriteLine("     --from で組を指定するか、--force で ? として続行します");
+					return ExitUnmappable;
+				}
+			}
+
 			// 表現できない文字があれば、既定では何もせずに終える
 			if (!force)
 			{

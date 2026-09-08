@@ -90,6 +90,33 @@ namespace ConvertEncoding
 			return GetRaw(kind).GetString(bytes, offset, bytes.Length - offset);
 		}
 
+		/// <summary>
+		/// 元の組として読めないバイトがあれば true。best-fit で別の文字に化ける
+		/// のを防ぐため、書き込み前にデコード方向も検査する。
+		/// </summary>
+		public static bool TryFindUndecodable(byte[] bytes, EncodingKind kind, out int index)
+		{
+			index = -1;
+			int offset = 0;
+			if (kind == EncodingKind.Utf8 || kind == EncodingKind.Utf8Bom)
+			{ if (StartsWith(bytes, Utf8Preamble)) { offset = Utf8Preamble.Length; } }
+			else if (kind == EncodingKind.Utf16Le)
+			{ if (StartsWith(bytes, Utf16LePreamble)) { offset = Utf16LePreamble.Length; } }
+			else if (kind == EncodingKind.Utf16Be)
+			{ if (StartsWith(bytes, Utf16BePreamble)) { offset = Utf16BePreamble.Length; } }
+
+			try
+			{
+				GetStrict(kind).GetString(bytes, offset, bytes.Length - offset);
+				return false;
+			}
+			catch (DecoderFallbackException e)
+			{
+				index = offset + e.Index;
+				return true;
+			}
+		}
+
 		/// <summary>文字列をバイト列にする。必要なら BOM を先頭に付ける。</summary>
 		public static byte[] Encode(string text, EncodingKind kind)
 		{
