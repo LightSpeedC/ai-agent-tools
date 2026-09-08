@@ -132,6 +132,12 @@ namespace ConvertEncoding
 				{
 					return Fail(ExitBadArgs, "--from hex と --to は併用できません。展開だけを行います。");
 				}
+				if (read || info)
+				{
+					// --from hex は展開してファイルを書き換える操作。読むだけの --read/--info と
+					// 併用すると、読むつもりで元ファイルを上書きしてしまう。
+					return Fail(ExitBadArgs, "--from hex と --read/--info は併用できません（--from hex はファイルを書き換えます）。");
+				}
 
 				byte[] expanded;
 				string hexError;

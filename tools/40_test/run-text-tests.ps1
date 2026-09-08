@@ -224,6 +224,20 @@ New-TextFile $fH4e "rem 日本語`r`n@echo off`r`n" $EncSjis
 $r = Run-Text @('edit', $fH4e, '--old', '@echo off', '--new', '@echo off ✓')
 Assert-Equal 'high4: edit の未対応文字は exit 5' 5 $r.Code
 
+# medium: find <語> <パス>（grep と同じ書き方）で位置引数のパスを使う
+$r = Run-Text @('find', '日本語', $Work, '--recurse')
+Assert-Equal 'med: find の第 2 引数がパスとして効く（一致あり）' 0 $r.Code
+Assert-Match 'med: 位置引数のパスを探す' $r.Out 'a.cmd'
+
+# medium: --lines 無しの digest が全文で一致する（末尾改行のファイル）
+$fDg = Join-Path $Work 'dg.txt'
+New-TextFile $fDg "line1`nline2`n" $EncUtf8
+$hd = (Run-Text @('read', $fDg)).Out
+$dg2 = ''
+if ($hd -match 'digest=([0-9a-f]+)') { $dg2 = $Matches[1] }
+$r = Run-Text @('edit', $fDg, '--digest', $dg2, '--old', 'line1', '--new', 'LINE1')
+Assert-Equal 'med: --lines 無しの digest が一致（末尾改行）' 0 $r.Code
+
 # ---------------------------------------------------------------
 Write-Host ''
 Write-Host ('結果: ' + $script:Pass + ' 件成功 / ' + $script:Fail + ' 件失敗')

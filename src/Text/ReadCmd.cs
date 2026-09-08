@@ -26,7 +26,9 @@ namespace TextTool
 			if (hasLines) { ParseLines(args.Get("--lines"), lines.Count, out a1, out b1); }
 
 			int cs = lines[a1 - 1].Start;
-			int ce = lines[b1 - 1].ContentEnd;
+			// 全文（--lines 無し）は末尾改行も含めた全体をハッシュする。edit 側の
+			// 全文 digest（text 全体）と範囲を合わせるため（末尾改行の有無で不一致になるのを防ぐ）。
+			int ce = hasLines ? lines[b1 - 1].ContentEnd : text.Length;
 			string rangeText = text.Substring(cs, ce - cs);
 			string digest = Digest.Compute(rangeText, bytes.LongLength, Files.Mtime(path));
 

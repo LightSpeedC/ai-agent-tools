@@ -661,6 +661,13 @@ Assert-Equal 'high2 同一組はバイト保持で通る' 0 (Invoke-Exe @($p, '-
 # --force なら ? として続行できる
 Assert-Equal 'high2 --force なら続行' 0 (Invoke-Exe @($p, '--to', 'ps1', '--force'))
 
+# medium: --read/--info と --from hex の併用は拒否（読むつもりの上書きを防ぐ）
+$phx = New-Case 'hx.txt'
+New-TextFile $phx '41 42 43' $EncUtf8
+$before = [System.IO.File]::ReadAllText($phx)
+Assert-Equal 'med --read + --from hex は拒否' 1 (Invoke-Exe @($phx, '--read', '--from', 'hex'))
+Assert-Equal 'med 併用拒否で元ファイルは不変' $before ([System.IO.File]::ReadAllText($phx))
+
 # ---------------------------------------------------------------
 # 後片付けと結果
 # ---------------------------------------------------------------

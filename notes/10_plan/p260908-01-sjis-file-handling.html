@@ -177,7 +177,7 @@ convert-encoding foo.cmd --to cmd</code></pre>
 <p>新規は標準 Write が全内容を見せる（＝全部追加の差分）。tmp を挟まず対象に直接書ける。</p>
 
 <h2>修正 — convert 往復＋標準 Edit（決定＝この方法）</h2>
-<pre><code>convert-encoding foo.cmd --to utf8    # その場で UTF-8/LF 化
+<pre><code>convert-encoding foo.cmd --to utf8    # その場で UTF-8 化（改行は変えない。CRLF のまま）
 （標準 Edit で foo.cmd を編集 … きれいな差分が出る）
 convert-encoding foo.cmd --to cmd     # SJIS+CRLF に戻す</code></pre>
 <div class="callout callout-caution">

@@ -64,7 +64,7 @@ convert-encoding foo.cmd --to cmd
 ### 修正 — convert 往復＋標準 Edit（決定＝この方法）
 
 ```
-convert-encoding foo.cmd --to utf8    # その場で UTF-8/LF 化
+convert-encoding foo.cmd --to utf8    # その場で UTF-8 化（改行は変えない。CRLF のまま）
 （標準 Edit で foo.cmd を編集 … きれいな差分が出る）
 convert-encoding foo.cmd --to cmd     # SJIS+CRLF に戻す
 ```

@@ -29,6 +29,8 @@ namespace TextTool
 			if (keyword.Length == 0) { throw new ToolError(2, "検索語が空です。"); }
 
 			string basePath = args.Get("--path");
+			// grep と同じ書き方 text find <語> <パス> を受ける。第 2 位置引数をパスにする。
+			if (basePath == null && args.Positional.Count >= 2) { basePath = args.Positional[1]; }
 			if (basePath == null) { basePath = "."; }
 			bool recurse = args.Flag("-r", "--recurse");
 			bool ignoreCase = args.Flag("-i", "--ignore-case");
