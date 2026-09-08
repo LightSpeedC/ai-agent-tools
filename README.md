@@ -2,7 +2,7 @@
 
 HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。
 
-> 📅 作成: 2026-08-27 / 更新: 2026-09-06
+> 📅 作成: 2026-08-27 / 更新: 2026-09-08
 
 ## 目次
 
@@ -21,6 +21,7 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 | `check-markdown` | Markdown が **GitHub 上で意図どおりに表示されるか** |
 | `check-contrast` | HTML の文字色と背景色が **読める組み合わせになっているか** |
 | `convert-encoding` | ファイルの文字コードと改行を、決められた組み合わせへ変換する |
+| `text` | SJIS・UTF-16・UTF-8BOM でも壊さず**読む・探す・編集する・書く**（Read・Grep・Edit・Write の代わり。実体は `text.exe`） |
 
 どちらの検証ツールも、**推測ではなく実物で判定する**。前者は GitHub のレンダラに投げ、後者はブラウザで実際に描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。
 
@@ -32,6 +33,8 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 | [html2md ツール共通化計画](notes/10_plan/html2md-plan.md) | 各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り |
 | [html2md タグ対応仕様](notes/10_plan/html2md-tag-spec.md) | どのタグをどう変換するか。実測した結果と、まだ決まっていない論点 |
 | [convert-encoding 仕様書](notes/10_plan/p260906-01-convert-encoding.md) | 文字コードの判定・変換の手順・終了コード・テストケース |
+| [text ツール仕様書](notes/10_plan/p260907-01-text-tools.md) | read/find/edit/write の仕様。合言葉（digest）・組の判定・出力の形 |
+| [SJIS ファイルの扱い方](notes/10_plan/p260908-01-sjis-file-handling.md) | cmd・bat を壊さず、差分を見ながら作成・修正・削除する手順の比較 |
 | [HTML クラス名の取り決め](notes/90_rules/html-class-rules.md) | html2md が読むクラス名。バッジ・callout・表・図の書き方 |
 
 ## 2. html2md
@@ -122,6 +125,8 @@ html2md-ps -Root . -Dir docs,notes -DryRun
 #### ビルド
 
 `build.cmd` を実行する。Roslyn の `csc.exe` があればそれを使い、無ければ .NET Framework 4.8 の `csc.exe` を使う。標準搭載版は C# 5 相当なので、文字列補間や `out var` は書けない。
+
+**`build.cmd` が作るのは `html2md.exe` だけ。**`convert-encoding.exe` は `build-convert-encoding.cmd`、`text.exe` は `build-text.cmd` で個別に作る（いずれも同じ csc の探し方）。
 
 ## 3. check-markdown
 

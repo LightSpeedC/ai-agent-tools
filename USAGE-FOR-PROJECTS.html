@@ -377,7 +377,7 @@ convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</c
 <section class="ch05" id="ch05">
 	<h1>文字コードを問わず読む・探す・書く（text）</h1>
 
-	<p><code>text</code> は 1 本の多機能コマンドで、<strong>SJIS（cmd・bat）・UTF-16（reg）・UTF-8BOM（html）でも壊さず</strong>読み・検索・編集・書き込みができる。標準の Read・Grep・Edit・Write がこれらで化ける・漏らす・破壊するのを避けるためのもの。<strong>文字コードと改行の「組」はツールが判定する</strong>ので、渡す前に知っている必要はない。</p>
+	<p><code>text</code> は 1 本の多機能コマンドで、<strong>SJIS（cmd・bat）・UTF-16（reg）・UTF-8BOM（html）でも壊さず</strong>読み・検索・編集・書き込みができる。標準の Read・Grep・Edit・Write がこれらで化ける・漏らす・破壊するのを避けるためのもの。<strong>文字コードと改行の「組」はツールが判定する</strong>ので、渡す前に知っている必要はない。<strong>変換先で表現できない文字は、黙って <code>?</code> にせず書かずに止まる</strong>（下記）。</p>
 
 	<div class="callout callout-important">
 		<p><strong><code>text</code> の主役は <code>read</code>（読む）と <code>find</code>（探す）。</strong>cmd・bat の作成・修正は convert-encoding ＋標準ツールで足りる（差分も見える／前章）。<code>edit</code> / <code>write</code> は<strong>数百行以上の非 UTF-8 や reg など</strong>の補足。</p>
@@ -413,7 +413,12 @@ text edit foo.cmd --lines 3-3 --digest 9f2a1c33 --new "..."     # 行範囲＋�
 	<h2>書く</h2>
 
 <pre><code class="language-powershell">text write new.cmd --to cmd --in tmp/body.txt   # 用途名で組を決めて書く
-text write app.reg --keep --in tmp/body.txt     # 既存の組を保って書く</code></pre>
+text write app.reg --keep --in tmp/body.txt     # 既存の組を保って書く
+echo @echo off | text write new.cmd --to cmd    # 標準入力／第 2 引数でも渡せる</code></pre>
+
+	<div class="callout callout-warning">
+		<p><strong>変換先で表現できない文字は、書かずに <code>exit 5</code> で止まる</strong>（cmd＝SJIS に無い絵文字・ハングル・<code>✓</code> など）。黙って <code>?</code> にはしない。<code>edit</code> も同じ。中身は <code>--in &lt;path&gt;</code> か第 2 引数で渡す（空の標準入力では上書きしない）。</p>
+	</div>
 
 	<div class="callout callout-important">
 		<p><strong>UTF-8 と分かっているファイルは標準の Edit のほうが快適</strong>（差分プレビュー・自動追跡）。<code>text</code> の出番は <strong>SJIS・UTF-16・UTF-8BOM</strong> のときと、大きな範囲を安く置換したいとき。<code>--from &lt;組&gt;</code> で判定を上書きできる（<code>convert-encoding --from</code> と同じ「入力側」の指定）。</p>

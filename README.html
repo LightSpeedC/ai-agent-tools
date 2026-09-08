@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -128,7 +128,7 @@
 	<div class="inner">
 		<h1>html2md</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-06</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-08</p>
 	</div>
 </div>
 
@@ -157,6 +157,7 @@
 			<tr><td class="nowrap"><code>check-markdown</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
 			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
 			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、決められた組み合わせへ変換する</td></tr>
+			<tr><td class="nowrap"><code>text</code></td><td>SJIS・UTF-16・UTF-8BOM でも壊さず<strong>読む・探す・編集する・書く</strong>（Read・Grep・Edit・Write の代わり。実体は <code>text.exe</code>）</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -173,6 +174,8 @@
 			<tr><td class="nowrap"><a href="notes/10_plan/html2md-plan.html">html2md ツール共通化計画</a></td><td>各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り</td></tr>
 			<tr><td class="nowrap"><a href="notes/10_plan/html2md-tag-spec.html">html2md タグ対応仕様</a></td><td>どのタグをどう変換するか。実測した結果と、まだ決まっていない論点</td></tr>
 			<tr><td class="nowrap"><a href="notes/10_plan/p260906-01-convert-encoding.html">convert-encoding 仕様書</a></td><td>文字コードの判定・変換の手順・終了コード・テストケース</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260907-01-text-tools.html">text ツール仕様書</a></td><td>read/find/edit/write の仕様。合言葉（digest）・組の判定・出力の形</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260908-01-sjis-file-handling.html">SJIS ファイルの扱い方</a></td><td>cmd・bat を壊さず、差分を見ながら作成・修正・削除する手順の比較</td></tr>
 			<tr><td class="nowrap"><a href="notes/90_rules/html-class-rules.html">HTML クラス名の取り決め</a></td><td>html2md が読むクラス名。バッジ・callout・表・図の書き方</td></tr>
 		</tbody>
 	</table>
@@ -275,6 +278,8 @@ html2md --root . --dry-run</code></pre>
 	<h3>ビルド</h3>
 
 	<p><code>build.cmd</code> を実行する。Roslyn の <code>csc.exe</code> があればそれを使い、無ければ .NET Framework 4.8 の <code>csc.exe</code> を使う。標準搭載版は C# 5 相当なので、文字列補間や <code>out var</code> は書けない。</p>
+
+	<p><strong><code>build.cmd</code> が作るのは <code>html2md.exe</code> だけ。</strong><code>convert-encoding.exe</code> は <code>build-convert-encoding.cmd</code>、<code>text.exe</code> は <code>build-text.cmd</code> で個別に作る（いずれも同じ csc の探し方）。</p>
 </section>
 
 <section class="ch03" id="ch03">

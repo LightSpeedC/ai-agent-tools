@@ -206,7 +206,7 @@ SJIS に無い文字（絵文字・ハングル・簡体字など）は `?` に�
 
 ## 5. 文字コードを問わず読む・探す・書く（text）
 
-`text` は 1 本の多機能コマンドで、**SJIS（cmd・bat）・UTF-16（reg）・UTF-8BOM（html）でも壊さず**読み・検索・編集・書き込みができる。標準の Read・Grep・Edit・Write がこれらで化ける・漏らす・破壊するのを避けるためのもの。**文字コードと改行の「組」はツールが判定する**ので、渡す前に知っている必要はない。
+`text` は 1 本の多機能コマンドで、**SJIS（cmd・bat）・UTF-16（reg）・UTF-8BOM（html）でも壊さず**読み・検索・編集・書き込みができる。標準の Read・Grep・Edit・Write がこれらで化ける・漏らす・破壊するのを避けるためのもの。**文字コードと改行の「組」はツールが判定する**ので、渡す前に知っている必要はない。**変換先で表現できない文字は、黙って `?` にせず書かずに止まる**（下記）。
 
 > [!IMPORTANT]
 > <strong>`text` の主役は `read`（読む）と `find`（探す）。</strong>cmd・bat の作成・修正は convert-encoding ＋標準ツールで足りる（差分も見える／前章）。`edit` / `write` は**数百行以上の非 UTF-8 や reg など**の補足。
@@ -242,7 +242,11 @@ text edit foo.cmd --lines 3-3 --digest 9f2a1c33 --new "..."     # 行範囲＋�
 ```powershell
 text write new.cmd --to cmd --in tmp/body.txt   # 用途名で組を決めて書く
 text write app.reg --keep --in tmp/body.txt     # 既存の組を保って書く
+echo @echo off | text write new.cmd --to cmd    # 標準入力／第 2 引数でも渡せる
 ```
+
+> [!WARNING]
+> **変換先で表現できない文字は、書かずに `exit 5` で止まる**（cmd＝SJIS に無い絵文字・ハングル・`✓` など）。黙って `?` にはしない。`edit` も同じ。中身は `--in <path>` か第 2 引数で渡す（空の標準入力では上書きしない）。
 
 > [!IMPORTANT]
 > **UTF-8 と分かっているファイルは標準の Edit のほうが快適**（差分プレビュー・自動追跡）。`text` の出番は **SJIS・UTF-16・UTF-8BOM** のときと、大きな範囲を安く置換したいとき。`--from <組>` で判定を上書きできる（`convert-encoding --from` と同じ「入力側」の指定）。
