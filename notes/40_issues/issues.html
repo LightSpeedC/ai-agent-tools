@@ -475,11 +475,11 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260908-05</span>ascii の組を足すか ［低・最後に検討］</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260908-05</span>ascii の組を足すか ［低・最後に検討］</summary>
 		<div class="issue-body">
 			<p>0x20〜0x7e と改行だけで構成されるファイルは、自動判定で <code>utf8</code> になる（<code>sjis</code> にはならない）。純 ASCII は UTF-8・SJIS のどちらでもバイトが同じなので実害は無いが、<strong>cmd でも <code>sjis</code> と出ない</strong>のが直感に合わない場面がある。</p>
 			<p><strong>案</strong>: <code>ascii</code> の組を設け、純 ASCII のファイルは <code>ascii</code> と表示・扱う。read/find のヘッダ表記や、cmd 判定の分かりやすさが上がるか検討する。</p>
-			<p><strong>優先度は低い。最後の最後に検討する。</strong>純 ASCII は変換しても書き換えても結果が同じなので、急がない。</p>
+			<p><span class="badge b-ok">済</span>2026-09-08 に<strong>やらないと決めて閉じた。</strong>ascii は機能的に UTF-8・SJIS と等価なので、足しても読み・書き・編集の結果は変わらない。「cmd が sjis と出ない」問題も、内容だけからは解決できない（拡張子を見ない限り原理的に判定不能）。<strong>むしろ ascii を組として本格導入すると、ascii 判定のファイルに日本語を足す edit で exit 5 になる縁が増える</strong>。表示だけ ascii にする案（判定は utf8 のまま）も検討したが、得るのは表示の正直さだけで見送った。</p>
 		</div>
 	</details>
 </section>
