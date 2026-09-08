@@ -104,7 +104,7 @@ namespace Html2Md
 			t = Regex.Replace(t, "!\\[[^\\]]*\\]\\([^)]*\\)", "");
 			t = Regex.Replace(t, "\\[([^\\]]*)\\]\\([^)]*\\)", "$1");
 			// タグのまま出すもの。属性を持つものがあるので開きタグは属性まで含めて落とす
-			t = Regex.Replace(t, "</?(?:strong|em|br|del|ins|sup|sub|mark|kbd|abbr|small|q|cite|time)\\b[^>]*>", "");
+			t = Regex.Replace(t, "</?(?:strong|em|br|del|ins|sup|sub|mark|kbd|abbr|small|q|cite|time|details|summary)\\b[^>]*>", "");
 			t = t.Replace("\\|", "|");
 			// 記法の記号（* ` | ~）とパス区切りの \ は、どちらの側に現れても落とす
 			t = Regex.Replace(t, "[*`|~\\\\]", "");
