@@ -494,9 +494,11 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260908-02</span>medium（約 20 件・静かな誤動作）</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260908-02</span>medium（約 20 件・静かな誤動作）</summary>
 		<div class="issue-body">
-			<p><span class="badge b-none">未</span>確定済みだが未対応。主なもの:</p>
+			<p><span class="badge b-ok">済</span>2026-09-08 に一部を修正: <code>--read</code>/<code>--info</code>＋<code>--from hex</code> の併用拒否／<code>text find &lt;語&gt; &lt;パス&gt;</code> の位置引数パス／<code>--lines</code> 無し digest の全文一致／<code>p260908-01</code> の <code>--to utf8</code> 注記／<code>.gitignore</code>・<code>.editorconfig</code>・<code>.gitattributes</code>・<code>.vscode/settings.json</code>。回帰テスト付き。</p>
+			<p><span class="badge b-none">未</span>残り（html2md 変換の figure/inline/details/svg/md-skip、exe と ps1 の乖離、SJIS 先頭バイト範囲の資料矛盾、パスのマスキング、issues の SJIS 件数、<code>--from utf8bom</code> の BOM 欠落〔--from 誤指定時の縁〕など）は未対応。</p>
+			<p>以下は当初の一覧:</p>
 			<ul>
 				<li><strong>convert-encoding</strong>: <code>--read</code>/<code>--info</code> が <code>--from hex</code> と併用で元ファイルを上書き／<code>--from utf8bom</code> で BOM が付かないまま成功</li>
 				<li><strong>text</strong>: <code>find &lt;語&gt; &lt;パス&gt;</code> が位置引数のパスを捨て cwd を探す／<code>--lines</code> 無しの digest が末尾改行のファイルで必ず不一致／内容ファイル・stdin を組の曖昧さを無視して復号</li>
@@ -514,9 +516,11 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260908-04</span>未検証 47 件（要検証）</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260908-04</span>未検証 47 件（要検証）</summary>
 		<div class="issue-body">
-			<p><span class="badge b-none">未</span>reviewer が反証にかけていない下位の指摘。<strong>行番号も裏取り前</strong>なので、実物と突き合わせて成り立つものだけ拾う。変換エンジン 4・表/SVG/強調/検査 7・convert-encoding 4・text 5・ps1 乖離 3・CLI/資料 3・資料同士 6・構成 5・テスト 3・安全性 6・同期 1。全文はレビュー #649。</p>
+			<p><span class="badge b-ok">済</span>2026-09-08 に一部を検証・修正: <code>text read --no-number</code> の ◆ ヘッダ抑止／<code>convert-encoding --dump --bytes</code> の int オーバーフロー／<code>text find</code> の位置引数パス／<code>text edit</code>/<code>write</code> の原子的書き込み。<code>--lines</code> 範囲外は仕様上エラーで据え置き、<code>--force</code> のメッセージ文言は要精査（低）。</p>
+			<p><span class="badge b-none">未</span>残り（html2md 変換エンジン・表/SVG・ps1 乖離・資料同士の不一致など）は未検証。</p>
+			<p>reviewer が反証にかけていない下位の指摘。<strong>行番号も裏取り前</strong>なので、実物と突き合わせて成り立つものだけ拾う。変換エンジン 4・表/SVG/強調/検査 7・convert-encoding 4・text 5・ps1 乖離 3・CLI/資料 3・資料同士 6・構成 5・テスト 3・安全性 6・同期 1。全文はレビュー #649。</p>
 		</div>
 	</details>
 </section>
