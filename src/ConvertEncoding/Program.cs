@@ -411,8 +411,14 @@ namespace ConvertEncoding
 			const int PerLine = 16;
 
 			int start = (offset < source.Length) ? offset : source.Length;
-			int end = (count < 0) ? source.Length : start + count;
-			if (end > source.Length) { end = source.Length; }
+			// start + count は int オーバーフローで負になりうる（巨大な --bytes）。long で計算する。
+			int end;
+			if (count < 0) { end = source.Length; }
+			else
+			{
+				long e = (long)start + count;
+				end = (e > source.Length) ? source.Length : (int)e;
+			}
 
 			StringBuilder sb = new StringBuilder();
 			int col = 0;

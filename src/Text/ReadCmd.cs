@@ -38,15 +38,17 @@ namespace TextTool
 				.Append(" mtime=").Append(Files.Mtime(path));
 			if (hasLines) { head.Append(" lines=").Append(a1).Append("-").Append(b1); }
 			head.Append(" digest=").Append(digest);
-			Io.Out(head.ToString());
 
 			if (args.Flag("--no-number", "--no-number"))
 			{
+				// 中身だけを別処理へ渡す用途。◆ ヘッダは出さない。
 				int from = lines[a1 - 1].Start;
 				int to = lines[b1 - 1].FullEnd;
 				Io.OutRaw(text.Substring(from, to - from));
 				return 0;
 			}
+
+			Io.Out(head.ToString());
 
 			for (int i = a1; i <= b1; i++)
 			{
