@@ -15,9 +15,10 @@
 	}
 	/* グループのアクセント色（4 グループ / 色相 280 → 0 を 93.3 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
-	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
-	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%);   --accent2:hsl(210,58%,55%);   --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);    --accent2:hsl(70,58%,55%);    --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -182,6 +183,7 @@
 		<li class="ch02"><a href="#ch02">PowerShell 学習資料からの要求</a></li>
 		<li class="ch03"><a href="#ch03">共通化の残り段階</a></li>
 		<li class="ch04"><a href="#ch04">保留中の判断</a></li>
+		<li class="ch05"><a href="#ch05">レビュー #649 の指摘</a></li>
 	</ol>
 </div>
 
@@ -469,6 +471,52 @@ $sub = Convert-Blocks ...</code></pre>
 			<p><span class="badge b-warn">着手</span>利用者との相談で<strong>スコープが広がった。</strong>検索（find-text）だけでなく、<strong>UTF-8 以外で壊れるツール一式の代わり</strong>にする。対象は Read・Grep・Edit・Write の 4 つ（Glob・SendUserFile は壊れないので対象外）。文字コードだけでなく<strong>改行まで含めた「組」</strong>で扱い（SJIS/CRLF・UTF-16LE/CRLF・UTF-8BOM/LF など）、1 エンジン＋4 動詞（<code>read-text</code>・<code>find-text</code>・<code>edit-text</code>・<code>write-text</code>）にする。<code>edit-text</code> は行範囲＋合言葉（チェックサム）の楽観ロックで、省トークンと競合検知を兼ねる。仕様は<a href="../10_plan/p260907-01-text-tools.html">notes/10_plan/</a>。</p>
 			<p><span class="badge b-ok">済</span>2026-09-08 に<strong>実装した。</strong>多機能コマンド <code>text</code>（<code>text.exe</code>）1 本に <code>read</code>／<code>find</code>／<code>edit</code>／<code>write</code> を載せ、判定エンジンを共有（<code>src/Text/</code>、csc ビルド <code>build-text.cmd</code>）。<code>find</code> はサクラエディタの grep（ファイル毎）を参考にした ◎/■/◆ 形式、<code>read</code> は ◆ ヘッダ＋<code>行番号 6 桁:タブ</code>、<code>edit</code> は <code>--digest</code>（CRC32 8 hex ＝ 行範囲ハッシュ＋サイズ＋更新日時）で競合検知、<code>--from</code> は組の指定・中身入力は <code>--in</code>／<code>--old-file</code>／<code>--new-file</code>。<strong>テスト 43 件すべて成功</strong>（<code>tools/40_test/run-text-tests.ps1</code>、<code>run-all-tests</code> に組み込み）。<code>--col</code>・<code>--regex</code>・<code>--all</code> は将来。</p>
 			<p><span class="badge b-none">未</span>共通ルールの手作業の回避策を <code>text</code> に差し替える案の提示、および ai-chat-lite への周知は<strong>利用者の判断を待つ</strong>。</p>
+		</div>
+	</details>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>レビュー #649 の指摘</h1>
+
+	<p>2026-09-08 に ai-chat-lite-reviewer が html2md 全体を 11 観点でレビュー（読み取りのみ）。確定 46 件・要検証 47 件・棄却 9 件。「静かに間違った結果を返す」類が、新しい <code>text</code>・<code>convert-encoding</code> のデコード側に集中、との総評。</p>
+
+	<details open>
+		<summary><span class="badge b-ok">済</span><span class="no">i260908-01</span>high 4 件（重大）を修正</summary>
+		<div class="issue-body">
+			<p><span class="badge b-ok">済</span>2026-09-08 に 4 件とも修正し、回帰テストを追加（text 47 件・convert-encoding 96 件・html2md 10 件、すべて成功）。</p>
+			<ul>
+				<li><strong>high 3</strong>: <code>text write</code> の第 2 引数が標準入力より後で、空の stdin を採用して <strong>0 バイト上書き</strong>していた（<code>WriteCmd.cs</code>）→ 第 2 引数を優先し、空の stdin では止める</li>
+				<li><strong>high 4</strong>: <code>text edit</code>/<code>write</code> が CP932 で書けない文字を黙って <code>?</code> にしていた（<code>Engine.cs</code>）→ strict エンコード検査を足し、未対応文字で <strong>exit 5</strong></li>
+				<li><strong>high 2</strong>: <code>convert-encoding</code> がデコード側を検査せず、読めないバイトを best-fit で化かしていた（<code>Converter.cs</code>）→ 再エンコード経路にデコード検査を足し <strong>exit 4</strong>（バイト保持パス・<code>--force</code> は対象外）</li>
+				<li><strong>high 1</strong>: 表セル内 <code>&lt;code&gt;</code> の <code>|</code> が未エスケープで、生成済み <code>.md</code> の表が壊れていた（<code>Inline.cs</code>）→ 退避前にセル内でエスケープ。<code>p260907-01</code>・<code>html2md-plan</code> の <code>.md</code> を再生成して修復</li>
+			</ul>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">i260908-02</span>medium（約 20 件・静かな誤動作）</summary>
+		<div class="issue-body">
+			<p><span class="badge b-none">未</span>確定済みだが未対応。主なもの:</p>
+			<ul>
+				<li><strong>convert-encoding</strong>: <code>--read</code>/<code>--info</code> が <code>--from hex</code> と併用で元ファイルを上書き／<code>--from utf8bom</code> で BOM が付かないまま成功</li>
+				<li><strong>text</strong>: <code>find &lt;語&gt; &lt;パス&gt;</code> が位置引数のパスを捨て cwd を探す／<code>--lines</code> 無しの digest が末尾改行のファイルで必ず不一致／内容ファイル・stdin を組の曖昧さを無視して復号</li>
+				<li><strong>html2md</strong>: <code>figure</code> の img・2 つめ以降の svg・p・表が消える／リンク文字の <code>&amp;lt;p&amp;gt;</code> がタグ削除される／<code>details</code> を「HTML に無い文言」と誤検出／同 id の svg が別ページを上書き／<code>--dir docs</code> で <code>notes/</code> が対象外／exe と ps1 の乖離 3 件／検査が片方向／<code>md-skip</code> が li・td・span に効かない／段落外の <code>a</code> が strong を落とす</li>
+				<li><strong>資料・構成</strong>: <code>p260908-01</code> の <code>--to utf8 # UTF-8/LF 化</code> が誤り（改行は変わらない）／SJIS 先頭バイト範囲が資料内で矛盾／<code>.gitignore</code> が先頭 <code>_</code>・<code>.claude</code> 共有分を取りこぼす／<code>.editorconfig</code>・<code>.gitattributes</code>・<code>.vscode/settings.json</code> が無い／パスのマスキングが text だけ／<code>issues</code> の SJIS 一覧が 3 件のまま（実体 4 件）</li>
+			</ul>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">i260908-03</span>low（約 25 件・軽微）</summary>
+		<div class="issue-body">
+			<p><span class="badge b-none">未</span>README にツール表・text 一式・ビルド節の記載漏れ／閉じた課題 i260907-01 の <code>.exe</code> 表記が 3 本の cmd（<code>check-contrast.cmd</code>・<code>check-markdown.cmd</code>・<code>run-tests.cmd</code>）に残る／<code>check-contrast -Recurse</code> が自リポジトリで常に 4 件 exit 1／強調内の空白が Trim で落ちて語が繋がる、ほか。詳細はレビュー #649 の low 節。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">i260908-04</span>未検証 47 件（要検証）</summary>
+		<div class="issue-body">
+			<p><span class="badge b-none">未</span>reviewer が反証にかけていない下位の指摘。<strong>行番号も裏取り前</strong>なので、実物と突き合わせて成り立つものだけ拾う。変換エンジン 4・表/SVG/強調/検査 7・convert-encoding 4・text 5・ps1 乖離 3・CLI/資料 3・資料同士 6・構成 5・テスト 3・安全性 6・同期 1。全文はレビュー #649。</p>
 		</div>
 	</details>
 </section>
