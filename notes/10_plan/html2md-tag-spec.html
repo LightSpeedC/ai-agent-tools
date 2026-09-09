@@ -631,6 +631,38 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 
 	<p><span class="badge b-ok">済</span>2026-09-09 に実装した。<code>Table.cs</code>（<code>ListTableConverter.ConvertChapters</code>）と <code>html2md-ps.ps1</code>（<code>Convert-Chapters</code>）に両対応で追加し、<code>Checks.cs</code> の「HTML に無い文言」検査に <code>data-columns</code> を aria-label と同じ扱いで足した。テストケース <code>tests/cases/chapters</code> を新仕様に更新し、全テスト成功。<code>html-class-rules.html</code>・<code>USAGE-FOR-PROJECTS.html</code> は反映済み。<code>~/.claude/CLAUDE.md</code> への反映は利用者の判断を待つ。</p>
 
+	<h2>決着 11 — 他ファイルへのアンカーも見出しアンカーへ張り替える <span class="badge b-ok">対処済み</span></h2>
+
+	<p><a href="../40_issues/issues.html">課題 i260830-07</a>。同一ファイル内の <code>#chNN</code> は見出しアンカーに張り替えていたが、<strong>他ファイルへのリンクのアンカー部分は変換していなかった。</strong></p>
+
+<pre><code>[03.2 実行ポリシー](docs/03-実行環境.html#ch02)
+  ↓ いま
+[03.2 実行ポリシー](docs/03-実行環境.md#ch02)     ← 飛ばない
+  ↓ あるべき
+[03.2 実行ポリシー](docs/03-実行環境.md#032-実行ポリシー--なぜ動かないのか)</code></pre>
+
+	<h3>変換対象すべてのアンカーマップを先に作る</h3>
+
+	<p>いままではファイルごとに独立して変換していた。他ファイルのアンカーを解決するには、<strong>変換対象すべての見出しアンカーマップを先に作り、リンク先のファイルのマップを引く</strong>形にする必要がある。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>段階</th><th>やること</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">事前パス</td><td>変換対象のページごとに HTML を読み、<strong>本変換はせず見出しアンカーマップだけ</strong>作る（<code>id → 生成後のアンカー</code>）。絶対パスをキーにした辞書に集める</td></tr>
+			<tr><td class="nowrap">本変換</td><td>リンクの <code>href</code> が他ファイルを指し、変換対象に含まれるとき、<strong>アンカー部分だけ</strong>を対象ファイルのマップで引いて張り替える。無ければ元のアンカーのまま残す（同一ファイル内の張り替えと同じ落とし方）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>md-skip のページと探索フォルダの外にある HTML は、決着 7 と同じくアンカーも張り替えない（<code>.html</code> のまま残るため）。</p>
+
+	<div class="callout callout-important">
+		<p><strong>事前パスは、md-skip 判定のために既に読んでいる HTML をそのまま使う。</strong>同じファイルを 2 回読まない。</p>
+	</div>
+
+	<p><span class="badge b-ok">済</span>2026-09-09 に実装した。<code>HtmlUtil.ConvertLinkTarget</code> に対象ファイルごとのアンカーマップ（<code>crossAnchors</code>）を渡すよう拡張し、<code>Converter.BuildAnchorsFromHtml</code>（事前パス用の公開ラッパー）を追加。<code>Program.cs</code> の md-skip 判定ループで同時にマップを集める。<code>html2md-ps.ps1</code> にも同じ構造で実装（<code>Get-StrippedBody</code> を共通ヘルパーに切り出し）。テストケース <code>tests/cases/cross-anchor</code> を新設し、exe と ps1 の出力が一致することを確認。全テスト成功。</p>
+
 	<h2>残る論点</h2>
 
 	<p><code>del</code> 以外に取り消し線を表すタグ（<code>s</code> <code>strike</code>）は対象にしていない。</p>

@@ -33,16 +33,20 @@ namespace Html2Md
 		/// <summary>この実行で .md が生成されるページ（絶対パス）。ここへのリンクだけ .md にする。</summary>
 		private HashSet<string> convertedPages;
 
+		/// <summary>変換対象ページごとの見出しアンカーマップ（絶対パス → id → アンカー）。他ファイルへのアンカー付きリンクの張り替えに使う。</summary>
+		private Dictionary<string, Dictionary<string, string>> crossAnchors;
+
 		public void Reset()
 		{
 			codeSpans.Clear();
 		}
 
-		/// <summary>リンクの置き換えに使う基準フォルダと、Markdown が生成されるページの一覧。</summary>
-		public void SetLinkBase(string baseDir, HashSet<string> pages)
+		/// <summary>リンクの置き換えに使う基準フォルダと、Markdown が生成されるページの一覧・アンカーマップ。</summary>
+		public void SetLinkBase(string baseDir, HashSet<string> pages, Dictionary<string, Dictionary<string, string>> anchorsByFile)
 		{
 			linkBaseDir = baseDir == null ? "" : baseDir;
 			convertedPages = pages;
+			crossAnchors = anchorsByFile;
 		}
 
 		private string StoreCodeSpan(string text)
@@ -159,7 +163,7 @@ namespace Html2Md
 				}
 				else
 				{
-					href = HtmlUtil.ConvertLinkTarget(href, linkBaseDir, convertedPages);
+					href = HtmlUtil.ConvertLinkTarget(href, linkBaseDir, convertedPages, crossAnchors);
 				}
 				return "[" + text + "](" + href + ")";
 			});

@@ -109,13 +109,26 @@ namespace Html2Md
 			// md-skip のページと、探索フォルダの外にある HTML がこれに当たる
 			HashSet<string> mdSkipPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			HashSet<string> convertedPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			// 他ファイルへのアンカー付きリンクを、リンク先の見出しアンカーへ張り替えるための
+			// 事前パス。変換対象すべての見出しアンカーマップを先に作っておく
+			Dictionary<string, Dictionary<string, string>> crossAnchors =
+				new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 			foreach (string t in targets)
 			{
 				string full = Path.GetFullPath(t);
-				if (HtmlUtil.IsMdSkipPage(File.ReadAllText(t, Encoding.UTF8))) mdSkipPages.Add(full);
-				else convertedPages.Add(full);
+				string text = File.ReadAllText(t, Encoding.UTF8);
+				if (HtmlUtil.IsMdSkipPage(text))
+				{
+					mdSkipPages.Add(full);
+				}
+				else
+				{
+					convertedPages.Add(full);
+					crossAnchors[full] = Converter.BuildAnchorsFromHtml(text);
+				}
 			}
 			converter.ConvertedPages = convertedPages;
+			converter.CrossFileAnchors = crossAnchors;
 
 			Console.WriteLine();
 			foreach (string t in targets)

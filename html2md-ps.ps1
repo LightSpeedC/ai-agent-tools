@@ -198,7 +198,9 @@ function Get-Anchor([string]$Heading) {
 	return $a
 }
 
-# リンク先の拡張子を .md に差し替える。アンカーとクエリは保つ。
+# リンク先の拡張子を .md に差し替える。他ファイルへのアンカーは、リンク先ファイルの
+# 見出しアンカーマップ（$script:CrossAnchors）を引いて張り替える。見つからなければ
+# 元のアンカーのまま残す（同一ファイル内の張り替えと同じ落とし方）。
 #
 # 置き換えるのは、この実行で .md が生成されるページへのリンクだけ。
 # 探索フォルダの外にある HTML や md-skip のページを .md で指すと、
@@ -215,6 +217,15 @@ function Convert-LinkTarget([AllowEmptyString()][string]$Href) {
 	$full = $null
 	try { $full = [System.IO.Path]::GetFullPath((Join-Path $script:LinkBaseDir ($target -replace '/', '\'))) } catch { $full = $null }
 	if (-not $full -or -not $script:ConvertedPages.Contains($full)) { return $Href }
+
+	$hashIdx = $Href.IndexOf('#')
+	if ($hashIdx -ge 0 -and $script:CrossAnchors -and $script:CrossAnchors.ContainsKey($full)) {
+		$targetAnchors = $script:CrossAnchors[$full]
+		$id = $Href.Substring($hashIdx + 1)
+		if ($targetAnchors.ContainsKey($id)) {
+			$Href = $Href.Substring(0, $hashIdx) + '#' + $targetAnchors[$id]
+		}
+	}
 	return ($Href -replace '\.html(?=$|[#?])', '.md')
 }
 
@@ -724,12 +735,21 @@ function Get-SpanText {
 		[string]$ClassName,
 		[hashtable]$Anchors
 	)
+	$raw = Get-SpanRaw -Html $Html -ClassName $ClassName
+	if (-not $raw) { return '' }
+	$text = Convert-Inline -Html $raw -Anchors $Anchors -InTable $true
+	return ($text -replace '\s*\r?\n\s*', ' ')
+}
+
+# 指定クラスの span の中身を、変換せず生の HTML のまま返す
+function Get-SpanRaw {
+	param(
+		[string]$Html,
+		[string]$ClassName
+	)
 	foreach ($m in [regex]::Matches($Html, '(?s)<span\b([^>]*)>(.*?)</span>')) {
 		$spanClasses = Get-ClassList ('<span' + $m.Groups[1].Value + '>')
-		if ($spanClasses -contains $ClassName) {
-			$text = Convert-Inline -Html $m.Groups[2].Value -Anchors $Anchors -InTable $true
-			return ($text -replace '\s*\r?\n\s*', ' ')
-		}
+		if ($spanClasses -contains $ClassName) { return $m.Groups[2].Value }
 	}
 	return ''
 }
@@ -764,14 +784,19 @@ function Convert-Chapters {
 		$liInner = $block.Inner
 
 		$part = Get-SpanText -Html $liInner -ClassName 'part' -Anchors $Anchors
-		$ttl = Get-SpanText -Html $liInner -ClassName 'ttl' -Anchors $Anchors
 		$desc = Get-SpanText -Html $liInner -ClassName 'desc' -Anchors $Anchors
 
+		# ttl は生のまま取り出し、a で囲む href があれば合成 <a> にして Convert-Inline に
+		# 通す。ほかのリンクと同じ経路（.md 置換・他ファイルのアンカー張り替え）を通すため
+		$ttlRaw = Get-SpanRaw -Html $liInner -ClassName 'ttl'
 		$aTag = [regex]::Match($liInner, '(?s)<a\b([^>]*)>.*?</a>')
-		if ($aTag.Success -and $ttl) {
-			$href = Get-Attr ('<a' + $aTag.Groups[1].Value + '>') 'href'
-			if ($href) { $ttl = '[' + $ttl + '](' + $href + ')' }
+		$href = if ($aTag.Success) { Get-Attr ('<a' + $aTag.Groups[1].Value + '>') 'href' } else { '' }
+		$ttl = if ($href -and $ttlRaw) {
+			Convert-Inline -Html ('<a href="' + $href + '">' + $ttlRaw + '</a>') -Anchors $Anchors -InTable $true
+		} else {
+			Convert-Inline -Html $ttlRaw -Anchors $Anchors -InTable $true
 		}
+		$ttl = $ttl -replace '\s*\r?\n\s*', ' '
 
 		if (-not $part -and -not $ttl -and -not $desc) { continue }
 		$rows += , @($part, $ttl, $desc)
@@ -1308,6 +1333,24 @@ function Convert-Blocks {
 # ---------------------------------------------------------------------------
 
 # section の id → 生成後の見出しアンカーの対応表（目次のリンク張り替え用）
+# コメント・style・script・head を落として body の中身だけにする。
+# ConvertFile と、クロスファイルのアンカー事前パスの両方から呼ぶ
+function Get-StrippedBody([string]$Html) {
+	$s = [regex]::Replace($Html, '(?s)<!--.*?-->', '')
+	$s = [regex]::Replace($s, '(?s)<style\b[^>]*>.*?</style>', '')
+	$s = [regex]::Replace($s, '(?s)<script\b[^>]*>.*?</script>', '')
+	$s = [regex]::Replace($s, '(?s)<head\b[^>]*>.*?</head>', '')
+	$body = $s
+	$bs = $s.IndexOf('<body', [System.StringComparison]::OrdinalIgnoreCase)
+	if ($bs -ge 0) {
+		$bs = $s.IndexOf('>', $bs) + 1
+		$be = $s.IndexOf('</body>', [System.StringComparison]::OrdinalIgnoreCase)
+		if ($be -lt 0) { $be = $s.Length }
+		$body = $s.Substring($bs, $be - $bs)
+	}
+	return $body
+}
+
 function Get-AnchorMap {
 	param(
 		[string]$Body,
@@ -1615,13 +1658,18 @@ $results = @()
 # md-skip のページと、探索フォルダの外にある HTML がこれに当たる
 $script:MdSkipPages = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
 $script:ConvertedPages = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+# 他ファイルへのアンカー付きリンクを、リンク先の見出しアンカーへ張り替えるための
+# 事前パス。変換対象すべての見出しアンカーマップを先に作っておく
+$script:CrossAnchors = @{}
 foreach ($t in $targets) {
 	$full = [System.IO.Path]::GetFullPath($t.FullName)
-	if (Test-MdSkipPage ([System.IO.File]::ReadAllText($t.FullName, [System.Text.Encoding]::UTF8))) {
+	$text = [System.IO.File]::ReadAllText($t.FullName, [System.Text.Encoding]::UTF8)
+	if (Test-MdSkipPage $text) {
 		[void]$script:MdSkipPages.Add($full)
 	}
 	else {
 		[void]$script:ConvertedPages.Add($full)
+		$script:CrossAnchors[$full] = (Get-AnchorMap -Body (Get-StrippedBody $text) -HasMinibar $false)
 	}
 }
 

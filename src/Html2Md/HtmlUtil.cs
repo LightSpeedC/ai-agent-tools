@@ -98,13 +98,16 @@ namespace Html2Md
 		}
 
 		/// <summary>
-		/// リンク先の拡張子を .md に差し替える。アンカーとクエリは保つ。
+		/// リンク先の拡張子を .md に差し替える。他ファイルへのアンカーは、
+		/// リンク先ファイルの見出しアンカーマップ（crossAnchors）を引いて張り替える。
+		/// 見つからなければ元のアンカーのまま残す（同一ファイル内の張り替えと同じ落とし方）。
 		///
 		/// 置き換えるのは、この実行で .md が生成されるページへのリンクだけ。
 		/// 探索フォルダの外にある HTML や md-skip のページを .md で指すと、
 		/// 存在しないファイルを指すことになる。
 		/// </summary>
-		public static string ConvertLinkTarget(string href, string baseDir, HashSet<string> convertedPages)
+		public static string ConvertLinkTarget(string href, string baseDir, HashSet<string> convertedPages,
+			Dictionary<string, Dictionary<string, string>> crossAnchors)
 		{
 			if (string.IsNullOrEmpty(href)) return "";
 			if (Regex.IsMatch(href, "^(https?:|mailto:|tel:|#)")) return href;
@@ -115,6 +118,21 @@ namespace Html2Md
 			}
 			string full = ResolveLink(baseDir, href);
 			if (full == null || !convertedPages.Contains(full)) return href;
+
+			int hashIdx = href.IndexOf('#');
+			if (hashIdx >= 0 && crossAnchors != null)
+			{
+				Dictionary<string, string> targetAnchors;
+				if (crossAnchors.TryGetValue(full, out targetAnchors))
+				{
+					string id = href.Substring(hashIdx + 1);
+					string mapped;
+					if (targetAnchors.TryGetValue(id, out mapped))
+					{
+						href = href.Substring(0, hashIdx) + "#" + mapped;
+					}
+				}
+			}
 			return Regex.Replace(href, "\\.html(?=$|[#?])", ".md");
 		}
 

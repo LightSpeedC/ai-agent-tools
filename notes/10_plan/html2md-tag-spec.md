@@ -355,7 +355,7 @@ md-skip のページへのリンクだけ `.html` のまま残す。到達でき
 > [!WARNING]
 > **`hr` は閉じタグを持たない。**`GetBlock` は閉じタグを探して見つからなければ末尾までを 1 ブロックとするため、そのまま渡すと<strong>`hr` より後ろが丸ごと飲み込まれる。</strong>空要素として開きタグだけを切り出す分岐を `GetBlock` に足す。
 
-### 決着 10 — chapters は data-columns 付きの表にする ⚠ **対処中**
+### 決着 10 — chapters は data-columns 付きの表にする ✅ **対処済み**
 
 `20260822-powershell-pwsh-learn` からの要求（[課題 i260830-05](../40_issues/issues.html)）。`<ul class="chapters">` の中の `span` 3 つが連結され、リンクのラベルが 1 本の長い文字列になっていた。
 
@@ -399,6 +399,36 @@ md-skip のページへのリンクだけ `.html` のまま残す。到達でき
 #### 反映するルール文書
 
 実装後、次の 3 か所に反映する: `html-class-rules.html`（クラス名の正式追加）、`~/.claude/CLAUDE.md` のクラス名一覧、`USAGE-FOR-PROJECTS.html`（使い方）。反映後 ai-chat-lite で周知し、要求元プロジェクトに HTML の書き換え（`no`→`part`、`data-columns` の追加）を依頼する。
+
+✅ **済** 2026-09-09 に実装した。`Table.cs`（`ListTableConverter.ConvertChapters`）と `html2md-ps.ps1`（`Convert-Chapters`）に両対応で追加し、`Checks.cs` の「HTML に無い文言」検査に `data-columns` を aria-label と同じ扱いで足した。テストケース `tests/cases/chapters` を新仕様に更新し、全テスト成功。`html-class-rules.html`・`USAGE-FOR-PROJECTS.html` は反映済み。`~/.claude/CLAUDE.md` への反映は利用者の判断を待つ。
+
+### 決着 11 — 他ファイルへのアンカーも見出しアンカーへ張り替える ✅ **対処済み**
+
+[課題 i260830-07](../40_issues/issues.html)。同一ファイル内の `#chNN` は見出しアンカーに張り替えていたが、**他ファイルへのリンクのアンカー部分は変換していなかった。**
+
+```
+[03.2 実行ポリシー](docs/03-実行環境.html#ch02)
+  ↓ いま
+[03.2 実行ポリシー](docs/03-実行環境.md#ch02)     ← 飛ばない
+  ↓ あるべき
+[03.2 実行ポリシー](docs/03-実行環境.md#032-実行ポリシー--なぜ動かないのか)
+```
+
+#### 変換対象すべてのアンカーマップを先に作る
+
+いままではファイルごとに独立して変換していた。他ファイルのアンカーを解決するには、**変換対象すべての見出しアンカーマップを先に作り、リンク先のファイルのマップを引く**形にする必要がある。
+
+| 段階 | やること |
+|---|---|
+| 事前パス | 変換対象のページごとに HTML を読み、**本変換はせず見出しアンカーマップだけ**作る（`id → 生成後のアンカー`）。絶対パスをキーにした辞書に集める |
+| 本変換 | リンクの `href` が他ファイルを指し、変換対象に含まれるとき、**アンカー部分だけ**を対象ファイルのマップで引いて張り替える。無ければ元のアンカーのまま残す（同一ファイル内の張り替えと同じ落とし方） |
+
+md-skip のページと探索フォルダの外にある HTML は、決着 7 と同じくアンカーも張り替えない（`.html` のまま残るため）。
+
+> [!IMPORTANT]
+> <strong>事前パスは、md-skip 判定のために既に読んでいる HTML をそのまま使う。</strong>同じファイルを 2 回読まない。
+
+✅ **済** 2026-09-09 に実装した。`HtmlUtil.ConvertLinkTarget` に対象ファイルごとのアンカーマップ（`crossAnchors`）を渡すよう拡張し、`Converter.BuildAnchorsFromHtml`（事前パス用の公開ラッパー）を追加。`Program.cs` の md-skip 判定ループで同時にマップを集める。`html2md-ps.ps1` にも同じ構造で実装（`Get-StrippedBody` を共通ヘルパーに切り出し）。テストケース `tests/cases/cross-anchor` を新設し、exe と ps1 の出力が一致することを確認。全テスト成功。
 
 ### 残る論点
 

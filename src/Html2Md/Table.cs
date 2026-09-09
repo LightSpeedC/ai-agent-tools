@@ -251,16 +251,24 @@ namespace Html2Md
 				string liInner = block.Inner;
 
 				string part = ExtractSpanText(liInner, "part", anchors);
-				string ttl = ExtractSpanText(liInner, "ttl", anchors);
 				string desc = ExtractSpanText(liInner, "desc", anchors);
 
-				// ttl を囲む a の href をリンクにする。無ければ平文のまま
+				// ttl は生のまま取り出し、a で囲む href があれば合成 <a> にして inline.Convert に
+				// 通す。ほかのリンクと同じ経路（.md 置換・他ファイルのアンカー張り替え）を通すため。
+				// ここで自前に "[text](href)" を組み立てると、その経路を素通りしてしまう。
+				string ttlRaw = ExtractSpanRaw(liInner, "ttl");
+				string ttl;
 				Match aTag = Regex.Match(liInner, "(?s)<a\\b([^>]*)>.*?</a>");
-				if (aTag.Success && ttl.Length > 0)
+				string href = aTag.Success ? HtmlUtil.GetAttr("<a" + aTag.Groups[1].Value + ">", "href") : "";
+				if (href.Length > 0 && ttlRaw.Length > 0)
 				{
-					string href = HtmlUtil.GetAttr("<a" + aTag.Groups[1].Value + ">", "href");
-					if (href.Length > 0) ttl = "[" + ttl + "](" + href + ")";
+					ttl = inline.Convert("<a href=\"" + href + "\">" + ttlRaw + "</a>", anchors, true);
 				}
+				else
+				{
+					ttl = inline.Convert(ttlRaw, anchors, true);
+				}
+				ttl = Regex.Replace(ttl, "\\s*\\r?\\n\\s*", " ");
 
 				if (part.Length == 0 && ttl.Length == 0 && desc.Length == 0) continue;
 				rows.Add(new string[] { part, ttl, desc });
@@ -279,12 +287,20 @@ namespace Html2Md
 
 		private string ExtractSpanText(string html, string className, Dictionary<string, string> anchors)
 		{
+			string raw = ExtractSpanRaw(html, className);
+			if (raw.Length == 0) return "";
+			string text = inline.Convert(raw, anchors, true);
+			return Regex.Replace(text, "\\s*\\r?\\n\\s*", " ");
+		}
+
+		/// <summary>指定クラスの span の中身を、変換せず生の HTML のまま返す。</summary>
+		private string ExtractSpanRaw(string html, string className)
+		{
 			foreach (Match m in Regex.Matches(html, "(?s)<span\\b([^>]*)>(.*?)</span>"))
 			{
 				if (HtmlUtil.HasClass(HtmlUtil.GetClassList("<span" + m.Groups[1].Value + ">"), className))
 				{
-					string text = inline.Convert(m.Groups[2].Value, anchors, true);
-					return Regex.Replace(text, "\\s*\\r?\\n\\s*", " ");
+					return m.Groups[2].Value;
 				}
 			}
 			return "";

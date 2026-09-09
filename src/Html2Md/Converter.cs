@@ -63,6 +63,9 @@ namespace Html2Md
 		/// <summary>この実行で .md が生成されるページ（絶対パス）。ここへのリンクだけ .md にする。</summary>
 		public HashSet<string> ConvertedPages;
 
+		/// <summary>ページごとの見出しアンカーマップ（絶対パス → id → アンカー）。他ファイルへのアンカー付きリンクの張り替えに使う。</summary>
+		public Dictionary<string, Dictionary<string, string>> CrossFileAnchors;
+
 		public Converter()
 		{
 			listTable = new ListTableConverter(inline);
@@ -81,7 +84,7 @@ namespace Html2Md
 			bool hasMinibar = Regex.IsMatch(body, "<div\\b[^>]*class=\"[^\"]*\\bminibar\\b");
 			string dir = Path.GetDirectoryName(htmlPath);
 			string baseName = Path.GetFileNameWithoutExtension(htmlPath);
-			inline.SetLinkBase(dir, ConvertedPages);
+			inline.SetLinkBase(dir, ConvertedPages, CrossFileAnchors);
 
 			ConvertContext ctx = new ConvertContext();
 			ctx.Anchors = BuildAnchorMap(body);
@@ -112,6 +115,18 @@ namespace Html2Md
 			r.Markdown = md;
 			r.Images = ctx.Images;
 			return r;
+		}
+
+		/// <summary>
+		/// 他ファイルへのアンカー付きリンクを張り替えるための事前パス用。
+		/// 読み込み済みの HTML から、このファイルの見出しアンカーマップだけを作る
+		/// （本変換はしない。全対象ファイルぶんを先に集めてから ConvertFile に渡す）。
+		/// </summary>
+		public static Dictionary<string, string> BuildAnchorsFromHtml(string html)
+		{
+			html = HtmlUtil.StripNonContent(html);
+			string body = HtmlUtil.ExtractBody(html);
+			return BuildAnchorMap(body);
 		}
 
 		/// <summary>
