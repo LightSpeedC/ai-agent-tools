@@ -212,5 +212,82 @@ namespace Html2Md
 			}
 			return string.Join("\n", outLines.ToArray());
 		}
+
+		/// <summary>
+		/// class="chapters" のリストを、data-columns の 3 列見出しを持つ表にする。
+		/// タグ対応仕様の決着 10 を参照。data-columns が無い・列数が 3 でなければ
+		/// エラーで止める（黙って見出しの無い表を出さない）。
+		/// part / desc は行ごとに省略でき、その列は空セルになる。
+		/// </summary>
+		public string ConvertChapters(string ulHtml, Dictionary<string, string> anchors)
+		{
+			// ulHtml は開きタグから始まる（block.Outer）。開きタグ部分から属性を取る
+			int openEnd = ulHtml.IndexOf('>');
+			string openTag = (openEnd >= 0) ? ulHtml.Substring(0, openEnd + 1) : ulHtml;
+			string columnsAttr = HtmlUtil.GetAttr(openTag, "data-columns");
+			if (columnsAttr.Length == 0)
+			{
+				throw new InvalidOperationException(
+					"class=\"chapters\" には data-columns が必須です（例: data-columns=\"部,タイトル,内容\"）。" +
+					"表の見出しは HTML に書かれた文言しか使えません。");
+			}
+			string[] headers = columnsAttr.Split(',');
+			if (headers.Length != 3)
+			{
+				throw new InvalidOperationException(
+					"data-columns は 3 列で指定してください（part, ttl, desc に対応）: " + columnsAttr);
+			}
+
+			string inner = HtmlUtil.GetBlock(ulHtml, 0, "ul").Inner;
+			List<string[]> rows = new List<string[]>();
+			int i = 0;
+			while (true)
+			{
+				Match m = Regex.Match(inner.Substring(i), "<li\\b");
+				if (!m.Success) break;
+				int start = i + m.Index;
+				HtmlUtil.Block block = HtmlUtil.GetBlock(inner, start, "li");
+				i = start + block.Outer.Length;
+				string liInner = block.Inner;
+
+				string part = ExtractSpanText(liInner, "part", anchors);
+				string ttl = ExtractSpanText(liInner, "ttl", anchors);
+				string desc = ExtractSpanText(liInner, "desc", anchors);
+
+				// ttl を囲む a の href をリンクにする。無ければ平文のまま
+				Match aTag = Regex.Match(liInner, "(?s)<a\\b([^>]*)>.*?</a>");
+				if (aTag.Success && ttl.Length > 0)
+				{
+					string href = HtmlUtil.GetAttr("<a" + aTag.Groups[1].Value + ">", "href");
+					if (href.Length > 0) ttl = "[" + ttl + "](" + href + ")";
+				}
+
+				if (part.Length == 0 && ttl.Length == 0 && desc.Length == 0) continue;
+				rows.Add(new string[] { part, ttl, desc });
+			}
+			if (rows.Count == 0) return "";
+
+			List<string> lines = new List<string>();
+			lines.Add("| " + string.Join(" | ", headers) + " |");
+			lines.Add("|---|---|---|");
+			foreach (string[] row in rows)
+			{
+				lines.Add("| " + string.Join(" | ", row) + " |");
+			}
+			return string.Join("\n", lines.ToArray());
+		}
+
+		private string ExtractSpanText(string html, string className, Dictionary<string, string> anchors)
+		{
+			foreach (Match m in Regex.Matches(html, "(?s)<span\\b([^>]*)>(.*?)</span>"))
+			{
+				if (HtmlUtil.HasClass(HtmlUtil.GetClassList("<span" + m.Groups[1].Value + ">"), className))
+				{
+					string text = inline.Convert(m.Groups[2].Value, anchors, true);
+					return Regex.Replace(text, "\\s*\\r?\\n\\s*", " ");
+				}
+			}
+			return "";
+		}
 	}
 }

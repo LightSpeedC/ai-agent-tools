@@ -143,6 +143,12 @@ namespace Html2Md
 			{
 				labels.Append(HtmlUtil.DecodeEntities(m.Groups[1].Value));
 			}
+			// data-columns も属性。chapters の表見出しはここにしか無い文言なので同じく足す
+			// （カンマは Markdown 側の見出し行に出ないため、比較前に落としておく）
+			foreach (Match m in Regex.Matches(html, "data-columns=\"([^\"]*)\""))
+			{
+				labels.Append(HtmlUtil.DecodeEntities(m.Groups[1].Value).Replace(",", ""));
+			}
 			string plain = Normalize(HtmlUtil.GetPlainText(html) + labels.ToString());
 
 			List<string> extra = new List<string>();

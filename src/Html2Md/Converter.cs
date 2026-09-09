@@ -428,7 +428,9 @@ namespace Html2Md
 
 					case "ul":
 						{
-							string items = listTable.ConvertList(block.Outer, "ul", anchors, 0);
+							string items = HtmlUtil.HasClass(classes, "chapters")
+								? listTable.ConvertChapters(block.Outer, anchors)
+								: listTable.ConvertList(block.Outer, "ul", anchors, 0);
 							if (items.Length > 0) outBlocks.Add(items);
 						}
 						break;

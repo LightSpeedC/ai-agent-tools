@@ -717,6 +717,76 @@ function Convert-Toc {
 	return ($out -join "`n")
 }
 
+# span の中身をクラス名で拾う（part / ttl / desc）
+function Get-SpanText {
+	param(
+		[string]$Html,
+		[string]$ClassName,
+		[hashtable]$Anchors
+	)
+	foreach ($m in [regex]::Matches($Html, '(?s)<span\b([^>]*)>(.*?)</span>')) {
+		$spanClasses = Get-ClassList ('<span' + $m.Groups[1].Value + '>')
+		if ($spanClasses -contains $ClassName) {
+			$text = Convert-Inline -Html $m.Groups[2].Value -Anchors $Anchors -InTable $true
+			return ($text -replace '\s*\r?\n\s*', ' ')
+		}
+	}
+	return ''
+}
+
+# class="chapters" のリストを、data-columns の 3 列見出しを持つ表にする
+# （タグ対応仕様の決着 10）。data-columns が無い・列数が 3 でなければエラーで止める
+function Convert-Chapters {
+	param(
+		[string]$UlHtml,
+		[hashtable]$Anchors
+	)
+	$openEnd = $UlHtml.IndexOf('>')
+	$openTag = if ($openEnd -ge 0) { $UlHtml.Substring(0, $openEnd + 1) } else { $UlHtml }
+	$columnsAttr = Get-Attr $openTag 'data-columns'
+	if (-not $columnsAttr) {
+		throw 'class="chapters" には data-columns が必須です（例: data-columns="部,タイトル,内容"）。表の見出しは HTML に書かれた文言しか使えません。'
+	}
+	$headers = $columnsAttr -split ','
+	if ($headers.Count -ne 3) {
+		throw ('data-columns は 3 列で指定してください（part, ttl, desc に対応）: ' + $columnsAttr)
+	}
+
+	$inner = (Get-Block $UlHtml 0 'ul').Inner
+	$rows = @()
+	$i = 0
+	while ($true) {
+		$m = [regex]::Match($inner.Substring($i), '<li\b')
+		if (-not $m.Success) { break }
+		$start = $i + $m.Index
+		$block = Get-Block $inner $start 'li'
+		$i = $start + $block.Outer.Length
+		$liInner = $block.Inner
+
+		$part = Get-SpanText -Html $liInner -ClassName 'part' -Anchors $Anchors
+		$ttl = Get-SpanText -Html $liInner -ClassName 'ttl' -Anchors $Anchors
+		$desc = Get-SpanText -Html $liInner -ClassName 'desc' -Anchors $Anchors
+
+		$aTag = [regex]::Match($liInner, '(?s)<a\b([^>]*)>.*?</a>')
+		if ($aTag.Success -and $ttl) {
+			$href = Get-Attr ('<a' + $aTag.Groups[1].Value + '>') 'href'
+			if ($href) { $ttl = '[' + $ttl + '](' + $href + ')' }
+		}
+
+		if (-not $part -and -not $ttl -and -not $desc) { continue }
+		$rows += , @($part, $ttl, $desc)
+	}
+	if ($rows.Count -eq 0) { return '' }
+
+	$out = @()
+	$out += ('| ' + ($headers -join ' | ') + ' |')
+	$out += '|---|---|---|'
+	foreach ($row in $rows) {
+		$out += ('| ' + ($row -join ' | ') + ' |')
+	}
+	return ($out -join "`n")
+}
+
 # ---------------------------------------------------------------------------
 # インライン SVG の切り出し
 #
@@ -1189,7 +1259,11 @@ function Convert-Blocks {
 				}
 			}
 			'ul' {
-				$items = Convert-List -ListHtml $block.Outer -Tag 'ul' -Anchors $anchors
+				$items = if ($classes -contains 'chapters') {
+					Convert-Chapters -UlHtml $block.Outer -Anchors $anchors
+				} else {
+					Convert-List -ListHtml $block.Outer -Tag 'ul' -Anchors $anchors
+				}
 				if ($items) { $out.Add($items) | Out-Null }
 			}
 			'ol' {
