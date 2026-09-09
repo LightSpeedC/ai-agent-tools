@@ -402,6 +402,9 @@ md-skip のページへのリンクだけ `.html` のまま残す。到達でき
 
 ✅ **済** 2026-09-09 に実装した。`Table.cs`（`ListTableConverter.ConvertChapters`）と `html2md-ps.ps1`（`Convert-Chapters`）に両対応で追加し、`Checks.cs` の「HTML に無い文言」検査に `data-columns` を aria-label と同じ扱いで足した。テストケース `tests/cases/chapters` を新仕様に更新し、全テスト成功。`html-class-rules.html`・`USAGE-FOR-PROJECTS.html` は反映済み。`~/.claude/CLAUDE.md` への反映は利用者の判断を待つ。
 
+> [!CAUTION]
+> <strong>不具合（同日中に修正）。</strong>初回実装は `ttl` の `href` を自前で `"[text](href)"` と組み立てており、`.md` 置換・他ファイルのアンカー張り替えを行う共通経路を素通りしていた。要求元プロジェクトから ai-chat-lite（#699）で報告を受け、`ttl` の生の中身を合成 `<a>` に包んで `inline.Convert` に通す形に直した。テストケースに実在するリンク先ファイルを足し、`.md` 置換が効くことを確認する回帰を追加した。
+
 ### 決着 11 — 他ファイルへのアンカーも見出しアンカーへ張り替える ✅ **対処済み**
 
 [課題 i260830-07](../40_issues/issues.html)。同一ファイル内の `#chNN` は見出しアンカーに張り替えていたが、**他ファイルへのリンクのアンカー部分は変換していなかった。**

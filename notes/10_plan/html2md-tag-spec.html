@@ -631,6 +631,10 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 
 	<p><span class="badge b-ok">済</span>2026-09-09 に実装した。<code>Table.cs</code>（<code>ListTableConverter.ConvertChapters</code>）と <code>html2md-ps.ps1</code>（<code>Convert-Chapters</code>）に両対応で追加し、<code>Checks.cs</code> の「HTML に無い文言」検査に <code>data-columns</code> を aria-label と同じ扱いで足した。テストケース <code>tests/cases/chapters</code> を新仕様に更新し、全テスト成功。<code>html-class-rules.html</code>・<code>USAGE-FOR-PROJECTS.html</code> は反映済み。<code>~/.claude/CLAUDE.md</code> への反映は利用者の判断を待つ。</p>
 
+	<div class="callout callout-caution">
+		<p><strong>不具合（同日中に修正）。</strong>初回実装は <code>ttl</code> の <code>href</code> を自前で <code>"[text](href)"</code> と組み立てており、<code>.md</code> 置換・他ファイルのアンカー張り替えを行う共通経路を素通りしていた。要求元プロジェクトから ai-chat-lite（#699）で報告を受け、<code>ttl</code> の生の中身を合成 <code>&lt;a&gt;</code> に包んで <code>inline.Convert</code> に通す形に直した。テストケースに実在するリンク先ファイルを足し、<code>.md</code> 置換が効くことを確認する回帰を追加した。</p>
+	</div>
+
 	<h2>決着 11 — 他ファイルへのアンカーも見出しアンカーへ張り替える <span class="badge b-ok">対処済み</span></h2>
 
 	<p><a href="../40_issues/issues.html">課題 i260830-07</a>。同一ファイル内の <code>#chNN</code> は見出しアンカーに張り替えていたが、<strong>他ファイルへのリンクのアンカー部分は変換していなかった。</strong></p>
