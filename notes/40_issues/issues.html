@@ -168,7 +168,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-08</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-09</p>
 	</div>
 </div>
 
@@ -259,12 +259,13 @@
 	<p><code>20260822-powershell-pwsh-learn</code> からの要求。詳細は <code>notes/01_research/</code> に置いた要求 01 の文書にある（受け取った Markdown をそのまま残しているため、HTML 版は無い）。優先度は要求元が付けたもの。</p>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260830-05</span>章カード（.chapters）を表にする ［高］</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-05</span>章カード（.chapters）を表にする ［高］</summary>
 		<div class="issue-body">
 			<p><code>&lt;ul class="chapters"&gt;</code> の中の <code>span</code> 3 つが連結され、リンクのラベルが 1 本の長い文字列になる。</p>
 <pre><code>- [第1部 基礎編 01. PowerShell の生まれた経緯 DOS・Bash・Node.js と比較しながら、…](docs/01-背景.md)</code></pre>
 			<p>要求は 3 列の表にすること。<strong>ヘッダ行の「章」「タイトル」「内容」が HTML のどこにも無い</strong>のが論点で、そのまま実装すると html2md 自身の「HTML に無い文言」検査に毎回引っかかる。</p>
 			<p>案は 4 つある。HTML 側にヘッダを持たせる（<code>data-columns</code>）／ HTML 側を最初から表にして CSS でカード表示にする／表にせず区切りを入れた箇条書きにする／固定文言を足して検査の対象外にする。<strong>HTML 側を表にする案が最も筋が良い</strong>と考えている。変換器・検査・ルールのどれにも手を入れずに済むため。</p>
+			<p><span class="badge b-ok">済</span>2026-09-09 に、上記とは別の方向で<strong>html2md 側が chapters 構造を解釈する案（B）に決めて実装した。</strong>要求元プロジェクトが HTML を全面的に書き換える負担を避けるため。<code>no</code> は課題番号のクラスと衝突するため <code>part</code> に改名し、表の見出しは <code>data-columns</code> 属性（必須。無いとエラーで止まる）から取る。詳細は<a href="../10_plan/html2md-tag-spec.html">タグ対応仕様の決着 10</a>。<code>html-class-rules.html</code>・<code>USAGE-FOR-PROJECTS.html</code> は反映済み。要求元への周知と、<code>~/.claude/CLAUDE.md</code> のクラス名一覧への反映は<strong>利用者の判断を待つ</strong>。</p>
 		</div>
 	</details>
 

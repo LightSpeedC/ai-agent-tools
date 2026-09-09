@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -146,7 +146,7 @@
 	<div class="inner">
 		<h1>html2md タグ対応仕様</h1>
 		<p class="lead">html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-05</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-09</p>
 	</div>
 </div>
 
@@ -580,6 +580,56 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 	<div class="callout callout-warning">
 		<p><strong><code>hr</code> は閉じタグを持たない。</strong><code>GetBlock</code> は閉じタグを探して見つからなければ末尾までを 1 ブロックとするため、そのまま渡すと<strong><code>hr</code> より後ろが丸ごと飲み込まれる。</strong>空要素として開きタグだけを切り出す分岐を <code>GetBlock</code> に足す。</p>
 	</div>
+
+	<h2>決着 10 — chapters は data-columns 付きの表にする <span class="badge b-ok">対処済み</span></h2>
+
+	<p><code>20260822-powershell-pwsh-learn</code> からの要求（<a href="../40_issues/issues.html">課題 i260830-05</a>）。<code>&lt;ul class="chapters"&gt;</code> の中の <code>span</code> 3 つが連結され、リンクのラベルが 1 本の長い文字列になっていた。</p>
+
+	<p>要求元 HTML を <code>&lt;table&gt;</code> に書き換える案（各プロジェクトが手作業で書き換え、カード風の見た目を失う）と比べ、<strong>html2md が <code>chapters</code> 構造を解釈して表にする案を選んだ</strong>。要求元は既存の HTML 構造のまま、次回変換で自動的に表になる。</p>
+
+	<h3>クラス名</h3>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>クラス</th><th>意味</th><th>備考</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>chapters</code>（<code>ul</code>）</td><td>章一覧の入れ物</td><td><code>data-columns</code> が必須</td></tr>
+			<tr><td class="nowrap"><code>data-columns</code>（属性）</td><td>表のヘッダ 3 列をカンマ区切りで持つ（例 <code>"部,タイトル,内容"</code>）</td><td>HTML に無い文言を検査で拾わせないための持たせ方。<code>aria-label</code> と同じ扱いで、検査は属性値も「HTML にある文言」に含める</td></tr>
+			<tr><td class="nowrap"><code>part</code>（<code>span</code>）</td><td>部・グループ（1 列目）</td><td><strong><code>no</code> ではなく <code>part</code>。</strong><code>issues.html</code> は課題番号に <code>no</code> を使っており、章番号とは意味が違う同名クラスになるため改名した</td></tr>
+			<tr><td class="nowrap"><code>ttl</code>（<code>span</code>）</td><td>タイトル（2 列目）。<code>&lt;a href&gt;</code> の中にあれば、その href をリンクにして出す</td><td>—</td></tr>
+			<tr><td class="nowrap"><code>desc</code>（<code>span</code>）</td><td>内容（3 列目）</td><td>—</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h3>入力・出力</h3>
+
+<pre><code class="language-html">&lt;ul class="chapters" data-columns="部,タイトル,内容"&gt;
+  &lt;li&gt;&lt;a href="docs/01-背景.html"&gt;
+    &lt;span class="part"&gt;第1部 基礎編&lt;/span&gt;
+    &lt;span class="ttl"&gt;01. PowerShell の生まれた経緯&lt;/span&gt;
+    &lt;span class="desc"&gt;DOS・Bash・Node.js と比較しながら、何を解決する道具なのかを掴む&lt;/span&gt;
+  &lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+
+<pre><code class="language-markdown">| 部 | タイトル | 内容 |
+|---|---|---|
+| 第1部 基礎編 | [01. PowerShell の生まれた経緯](docs/01-背景.html) | DOS・Bash・Node.js と比較しながら、何を解決する道具なのかを掴む |</code></pre>
+
+	<h3>エラーにする条件</h3>
+
+	<ul>
+		<li><strong><code>data-columns</code> が無い <code>chapters</code> は変換を止める。</strong>黙って見出しの無い表を出さない。<code>convert-encoding</code> の「表現できない文字があれば書き換えずに止まる」と同じ考え方</li>
+		<li><code>data-columns</code> の列数は 3 固定（<code>part</code> / <code>ttl</code> / <code>desc</code> に対応）。3 以外ならエラー</li>
+	</ul>
+
+	<p><code>part</code>・<code>desc</code> は行ごとに省略してよい（空セルにする）。<code>li class="c01"</code> のような番号用クラスは表示側の飾りとして無視する。</p>
+
+	<h3>反映するルール文書</h3>
+
+	<p>実装後、次の 3 か所に反映する: <code>html-class-rules.html</code>（クラス名の正式追加）、<code>~/.claude/CLAUDE.md</code> のクラス名一覧、<code>USAGE-FOR-PROJECTS.html</code>（使い方）。反映後 ai-chat-lite で周知し、要求元プロジェクトに HTML の書き換え（<code>no</code>→<code>part</code>、<code>data-columns</code> の追加）を依頼する。</p>
+
+	<p><span class="badge b-ok">済</span>2026-09-09 に実装した。<code>Table.cs</code>（<code>ListTableConverter.ConvertChapters</code>）と <code>html2md-ps.ps1</code>（<code>Convert-Chapters</code>）に両対応で追加し、<code>Checks.cs</code> の「HTML に無い文言」検査に <code>data-columns</code> を aria-label と同じ扱いで足した。テストケース <code>tests/cases/chapters</code> を新仕様に更新し、全テスト成功。<code>html-class-rules.html</code>・<code>USAGE-FOR-PROJECTS.html</code> は反映済み。<code>~/.claude/CLAUDE.md</code> への反映は利用者の判断を待つ。</p>
 
 	<h2>残る論点</h2>
 

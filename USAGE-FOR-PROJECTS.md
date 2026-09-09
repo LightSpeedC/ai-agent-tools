@@ -2,7 +2,7 @@
 
 HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-09-08
+> 📅 作成: 2026-09-04 / 更新: 2026-09-09
 
 [← html2md](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -74,6 +74,22 @@ html2md --root . --extra USAGE-FOR-PROJECTS.html
 変換に使うクラス名は[クラス名の取り決め](notes/90_rules/html-class-rules.md)に合わせる。<strong>プロジェクトごとに違う名前を使わない。</strong>どのタグがどう変換されるかは[タグ対応仕様](notes/10_plan/html2md-tag-spec.md)にある。
 
 **リンクは常に `.html` と書く。**`.md` への置き換えは html2md が行う。HTML 側で先取りして `.md` と書くと、HTML のリンクが壊れたまま Markdown 側だけ正しくなり、気づきにくい。
+
+### 章一覧を表にする（chapters）
+
+カード風に並べた章一覧は、`ul` に `chapters` を付けると 3 列の表になる。<strong>`data-columns` は必須。</strong>表の見出し文言は HTML に書かれたものしか使えないため、無いと変換が止まる。
+
+```html
+<ul class="chapters" data-columns="部,タイトル,内容">
+	<li><a href="docs/01-背景.html">
+		<span class="part">第1部 基礎編</span>
+		<span class="ttl">01. PowerShell の生まれた経緯</span>
+		<span class="desc">DOS・Bash・Node.js と比較しながら、何を解決する道具なのかを掴む</span>
+	</a></li>
+</ul>
+```
+
+詳しいクラス名は[クラス名の取り決め](notes/90_rules/html-class-rules.md)を参照。
 
 ### 変換対象から外す
 

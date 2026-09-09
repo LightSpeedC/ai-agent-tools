@@ -2,7 +2,7 @@
 
 html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。
 
-> 📅 作成: 2026-08-30 / 更新: 2026-09-05
+> 📅 作成: 2026-08-30 / 更新: 2026-09-09
 
 [← html2md](../../README.md) ／ [html2md ツール共通化計画](html2md-plan.md) ／ [HTML クラス名の取り決め](../90_rules/html-class-rules.md)
 
@@ -354,6 +354,51 @@ md-skip のページへのリンクだけ `.html` のまま残す。到達でき
 
 > [!WARNING]
 > **`hr` は閉じタグを持たない。**`GetBlock` は閉じタグを探して見つからなければ末尾までを 1 ブロックとするため、そのまま渡すと<strong>`hr` より後ろが丸ごと飲み込まれる。</strong>空要素として開きタグだけを切り出す分岐を `GetBlock` に足す。
+
+### 決着 10 — chapters は data-columns 付きの表にする ⚠ **対処中**
+
+`20260822-powershell-pwsh-learn` からの要求（[課題 i260830-05](../40_issues/issues.html)）。`<ul class="chapters">` の中の `span` 3 つが連結され、リンクのラベルが 1 本の長い文字列になっていた。
+
+要求元 HTML を `<table>` に書き換える案（各プロジェクトが手作業で書き換え、カード風の見た目を失う）と比べ、**html2md が `chapters` 構造を解釈して表にする案を選んだ**。要求元は既存の HTML 構造のまま、次回変換で自動的に表になる。
+
+#### クラス名
+
+| クラス | 意味 | 備考 |
+|---|---|---|
+| `chapters`（`ul`） | 章一覧の入れ物 | `data-columns` が必須 |
+| `data-columns`（属性） | 表のヘッダ 3 列をカンマ区切りで持つ（例 `"部,タイトル,内容"`） | HTML に無い文言を検査で拾わせないための持たせ方。`aria-label` と同じ扱いで、検査は属性値も「HTML にある文言」に含める |
+| `part`（`span`） | 部・グループ（1 列目） | **`no` ではなく `part`。**`issues.html` は課題番号に `no` を使っており、章番号とは意味が違う同名クラスになるため改名した |
+| `ttl`（`span`） | タイトル（2 列目）。`<a href>` の中にあれば、その href をリンクにして出す | — |
+| `desc`（`span`） | 内容（3 列目） | — |
+
+#### 入力・出力
+
+```html
+<ul class="chapters" data-columns="部,タイトル,内容">
+  <li><a href="docs/01-背景.html">
+    <span class="part">第1部 基礎編</span>
+    <span class="ttl">01. PowerShell の生まれた経緯</span>
+    <span class="desc">DOS・Bash・Node.js と比較しながら、何を解決する道具なのかを掴む</span>
+  </a></li>
+</ul>
+```
+
+```markdown
+| 部 | タイトル | 内容 |
+|---|---|---|
+| 第1部 基礎編 | [01. PowerShell の生まれた経緯](docs/01-背景.html) | DOS・Bash・Node.js と比較しながら、何を解決する道具なのかを掴む |
+```
+
+#### エラーにする条件
+
+- <strong>`data-columns` が無い `chapters` は変換を止める。</strong>黙って見出しの無い表を出さない。`convert-encoding` の「表現できない文字があれば書き換えずに止まる」と同じ考え方
+- `data-columns` の列数は 3 固定（`part` / `ttl` / `desc` に対応）。3 以外ならエラー
+
+`part`・`desc` は行ごとに省略してよい（空セルにする）。`li class="c01"` のような番号用クラスは表示側の飾りとして無視する。
+
+#### 反映するルール文書
+
+実装後、次の 3 か所に反映する: `html-class-rules.html`（クラス名の正式追加）、`~/.claude/CLAUDE.md` のクラス名一覧、`USAGE-FOR-PROJECTS.html`（使い方）。反映後 ai-chat-lite で周知し、要求元プロジェクトに HTML の書き換え（`no`→`part`、`data-columns` の追加）を依頼する。
 
 ### 残る論点
 

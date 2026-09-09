@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -149,7 +149,7 @@
 	<div class="inner">
 		<h1>HTML クラス名の取り決め</h1>
 		<p class="lead">html2md が読むクラス名を 1 つに決める。変換側は設定を持たず、ここに書いた名前だけを見る。プロジェクトごとに違う名前を使わない。</p>
-		<p class="date">📅 作成: 2026-08-29 / 更新: 2026-08-29</p>
+		<p class="date">📅 作成: 2026-08-29 / 更新: 2026-09-09</p>
 	</div>
 </div>
 
@@ -416,6 +416,39 @@
 	</div>
 
 	<p><code>rowspan</code> と <code>colspan</code> は展開される。Markdown のテーブルにセル結合が無いため、結合元のセルに文字を置き、残りを空欄にする。セル内の <code>|</code> は <code>\|</code> にエスケープされ、<code>&lt;br&gt;</code> はそのまま残る。</p>
+
+	<h2>chapters（章一覧を表にする）</h2>
+
+	<p>カード風に並べた章一覧を、Markdown では 3 列の表にする。<code>ul</code> に <code>chapters</code>、各 <code>li</code>（<code>a</code> の中）に <code>part</code> <code>ttl</code> <code>desc</code> の <code>span</code> を置く。</p>
+
+<pre><code>&lt;ul class="chapters" data-columns="部,タイトル,内容"&gt;
+	&lt;li&gt;&lt;a href="docs/01-背景.html"&gt;
+		&lt;span class="part"&gt;第1部 基礎編&lt;/span&gt;
+		&lt;span class="ttl"&gt;01. PowerShell の生まれた経緯&lt;/span&gt;
+		&lt;span class="desc"&gt;DOS・Bash・Node.js と比較しながら、何を解決する道具なのかを掴む&lt;/span&gt;
+	&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+
+<pre><code class="language-markdown">| 部 | タイトル | 内容 |
+|---|---|---|
+| 第1部 基礎編 | [01. PowerShell の生まれた経緯](docs/01-背景.html) | DOS・Bash・Node.js と比較しながら、何を解決する道具なのかを掴む |</code></pre>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>クラス・属性</th><th>置き場所</th><th>役割</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>chapters</code></td><td><code>ul</code></td><td>章一覧の入れ物。表に変換する目印</td></tr>
+			<tr><td class="nowrap"><code>data-columns</code></td><td><code>ul</code> の属性</td><td>表のヘッダ 3 列をカンマ区切りで持つ。<strong>必須。無いと変換が止まる</strong>（表の見出しは HTML に書かれた文言しか使えないため）</td></tr>
+			<tr><td class="nowrap"><code>part</code></td><td><code>span</code></td><td>1 列目（部・グループ）。行ごとに省略できる</td></tr>
+			<tr><td class="nowrap"><code>ttl</code></td><td><code>span</code></td><td>2 列目（タイトル）。<code>a</code> の中にあれば、その <code>href</code> でリンクにする</td></tr>
+			<tr><td class="nowrap"><code>desc</code></td><td><code>span</code></td><td>3 列目（内容）。行ごとに省略できる</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-warning">
+		<p><strong><code>no</code> ではなく <code>part</code> を使う。</strong>課題一覧（<code>issues.html</code>）が課題番号に <code>no</code> を使っており、章番号と意味が違う同名クラスになるため避けている。</p>
+	</div>
 
 	<h2>コードブロック</h2>
 

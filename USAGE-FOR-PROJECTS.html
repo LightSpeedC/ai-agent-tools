@@ -147,7 +147,7 @@
 	<div class="inner">
 		<h1>html2md を他のプロジェクトから使う</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-08</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-09</p>
 	</div>
 </div>
 
@@ -237,6 +237,20 @@ html2md --root . --dry-run</code></pre>
 	<p>変換に使うクラス名は<a href="notes/90_rules/html-class-rules.html">クラス名の取り決め</a>に合わせる。<strong>プロジェクトごとに違う名前を使わない。</strong>どのタグがどう変換されるかは<a href="notes/10_plan/html2md-tag-spec.html">タグ対応仕様</a>にある。</p>
 
 	<p><strong>リンクは常に <code>.html</code> と書く。</strong><code>.md</code> への置き換えは html2md が行う。HTML 側で先取りして <code>.md</code> と書くと、HTML のリンクが壊れたまま Markdown 側だけ正しくなり、気づきにくい。</p>
+
+	<h2>章一覧を表にする（chapters）</h2>
+
+	<p>カード風に並べた章一覧は、<code>ul</code> に <code>chapters</code> を付けると 3 列の表になる。<strong><code>data-columns</code> は必須。</strong>表の見出し文言は HTML に書かれたものしか使えないため、無いと変換が止まる。</p>
+
+<pre><code class="language-html">&lt;ul class="chapters" data-columns="部,タイトル,内容"&gt;
+	&lt;li&gt;&lt;a href="docs/01-背景.html"&gt;
+		&lt;span class="part"&gt;第1部 基礎編&lt;/span&gt;
+		&lt;span class="ttl"&gt;01. PowerShell の生まれた経緯&lt;/span&gt;
+		&lt;span class="desc"&gt;DOS・Bash・Node.js と比較しながら、何を解決する道具なのかを掴む&lt;/span&gt;
+	&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+
+	<p>詳しいクラス名は<a href="notes/90_rules/html-class-rules.html">クラス名の取り決め</a>を参照。</p>
 
 	<h2>変換対象から外す</h2>
 
