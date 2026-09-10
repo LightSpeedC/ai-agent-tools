@@ -13,13 +13,14 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* グループのアクセント色（4 グループ / 色相 280 → 0 を 93.3 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(224,78%,25%);   --accent2:hsl(224,58%,55%);   --soft:hsl(224,28%,95%); }
-	.ch03{ --accent:hsl(168,78%,25%);   --accent2:hsl(168,58%,55%);   --soft:hsl(168,28%,95%); }
-	.ch04{ --accent:hsl(112,78%,25%);   --accent2:hsl(112,58%,55%);   --soft:hsl(112,28%,95%); }
-	.ch05{ --accent:hsl(56,78%,25%);    --accent2:hsl(56,58%,55%);    --soft:hsl(56,28%,95%); }
-	.ch06{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	/* グループのアクセント色（7 グループ / 色相 280 → 0 を 46.7 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);     --accent2:hsl(280,58%,55%);     --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(233.3,78%,25%);   --accent2:hsl(233.3,58%,55%);   --soft:hsl(233.3,28%,95%); }
+	.ch03{ --accent:hsl(186.7,78%,25%);   --accent2:hsl(186.7,58%,55%);   --soft:hsl(186.7,28%,95%); }
+	.ch04{ --accent:hsl(140,78%,25%);     --accent2:hsl(140,58%,55%);     --soft:hsl(140,28%,95%); }
+	.ch05{ --accent:hsl(93.3,78%,25%);    --accent2:hsl(93.3,58%,55%);    --soft:hsl(93.3,28%,95%); }
+	.ch06{ --accent:hsl(46.7,78%,25%);    --accent2:hsl(46.7,58%,55%);    --soft:hsl(46.7,28%,95%); }
+	.ch07{ --accent:hsl(0,78%,25%);       --accent2:hsl(0,58%,55%);       --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -169,7 +170,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-09</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-11</p>
 	</div>
 </div>
 
@@ -183,16 +184,17 @@
 		<li class="ch01"><a href="#ch01">変換仕様の未決事項</a></li>
 		<li class="ch02"><a href="#ch02">PowerShell 学習資料からの要求</a></li>
 		<li class="ch03"><a href="#ch03">共通化の残り段階</a></li>
-		<li class="ch04"><a href="#ch04">保留中の判断</a></li>
+		<li class="ch04"><a href="#ch04">運用・方針の決定事項</a></li>
 		<li class="ch05"><a href="#ch05">レビュー #649 の指摘</a></li>
 		<li class="ch06"><a href="#ch06">定期レビュー #1 の指摘</a></li>
+		<li class="ch07"><a href="#ch07">定期レビュー #2 の指摘</a></li>
 	</ol>
 </div>
 
 <section class="ch01" id="ch01">
 	<h1>変換仕様の未決事項</h1>
 
-	<p>タグ対応仕様の第 5 章に挙げた論点のうち、まだ決まっていないもの。実装を変えるときは先に方針を決める。</p>
+	<p>タグ対応仕様の第 5 章に挙げた論点。全 4 件解消済み。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-01</span>caption が出力されない</summary>
@@ -346,7 +348,7 @@
 <section class="ch03" id="ch03">
 	<h1>共通化の残り段階</h1>
 
-	<p>共通化計画の第 7 章に挙げた 8 段階のうち、まだ終わっていないもの。</p>
+	<p>共通化計画の第 7 章に挙げた 8 段階のうち、この章で扱う 5 件。全件解消済み。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-11</span>既存 HTML のクラス名を取り決めに合わせる</summary>
@@ -399,7 +401,9 @@
 </section>
 
 <section class="ch04" id="ch04">
-	<h1>保留中の判断</h1>
+	<h1>運用・方針の決定事項</h1>
+
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 7 件。全件解消済み。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
@@ -527,7 +531,7 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260908-03</span>low（約 25 件・軽微）</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260908-03</span>low（約 25 件・軽微）</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>個別に挙がっていた 4 件は解消済みと確認した（i260910-03 の5）。README のツール表・text 一式・ビルド節の記載漏れと、閉じた課題 i260907-01 の <code>.exe</code> 表記が 3 本の cmd に残る件は、62ab2e4 で直っていたことを現物確認。<code>check-contrast -Recurse</code> が自リポジトリで常に 4 件 exit 1 になる件は、自己診断用フィクスチャ <code>contrast/selftest.html</code>（意図してコントラスト不良を作ってある）を <code>-Recurse</code> の巻き込みだったため、既定の除外パターンに <code>contrast</code> を追加して直した（直接指定すれば従来どおり検出する）。強調内の空白が Trim で落ちて語が繋がる件は、<code>Emphasis.Resolve</code>（exe）・<code>Resolve-Emphasis</code>（ps1）で <code>&lt;strong&gt;a &lt;/strong&gt;b</code> のような内側末尾の空白が捨てられ <code>**a**b</code> になっていたのを確認し、前後の空白を記法の外側へ出すよう直した（回帰テスト追加）。</p>
 			<p><span class="badge b-none">未</span>残り約 21 件は未検証。詳細はレビュー #649 の low 節。</p>
@@ -550,11 +554,22 @@ $sub = Convert-Blocks ...</code></pre>
 	<p>2026-09-10、ai-chat-lite-reviewer が html2md を 12 時間ごとの定期レビュー対象に加えた 1 回目（<code>html2md</code> ルーム #732）。前回（#649）の high 4 件は解消を確認。今回は high 1・medium 13・low 9。あわせて <code>public</code> #715（20260822-powershell-pwsh-learn からの直接報告）が high 1 と同一の不具合。</p>
 
 	<details open>
-		<summary><span class="badge b-ok">済</span><span class="no">i260910-01</span>strong 直下のバッジが **** になる（high・#715 と同一）</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260910-01</span>strong 直下のバッジが **** になる（high・#715 と同一）</summary>
 		<div class="issue-body">
 			<p>報告（<code>public</code> #715）: <code>&lt;strong&gt;&lt;span class="badge b-ps51"&gt;5.1&lt;/span&gt; では …&lt;/strong&gt;</code> の変換結果が <code>****5.1** では …を必ず付けてください。**</code> になり、開きと閉じの数が合わない。7 箇所（PowerShell 学習資料）。</p>
 			<p>原因（<code>src/Html2Md/Inline.cs</code>・<code>Emphasis.cs</code>）: バッジの変換が中身を <code>Emphasis.StrongBegin</code>/<code>StrongEnd</code> で囲む。バッジが <code>strong</code> の直下にあると、外側の <code>strong</code> も同じセンチネルで囲むため、<strong>同じ種類の強調が二重に入れ子になる。</strong><code>Emphasis.Resolve</code> は内側から順に確定させるだけで、外側が同じ種類の未解決ペアであることを見ていなかった。</p>
 			<p><span class="badge b-ok">済</span>2026-09-10 に <code>Emphasis.Resolve</code>（exe）・<code>Resolve-Emphasis</code>（ps1）を直した。ペアの直前・直後に<strong>同じ種類の生のセンチネル文字</strong>が残っているかを見て、残っていればこのペアでは記法を確定させず中身だけを残す（外側が次の周でまとめて 1 組の記法にする）。生のセンチネルは HTML 由来の文字列に現れないので、文字列の中身（<code>**</code> など）を見る誤検出の心配がない。報告どおりの HTML で再現・修正を確認。テストケース <code>tests/cases/badge</code> を新設（strong 直下のバッジ／strong 外のバッジ／バッジ無しの通常強調の 3 パターン、<code>****</code> の禁止も検査）。全テスト成功（html2md 12・convert-encoding 98・text 50）。</p>
+			<p><span class="badge b-warn">着手</span>定期レビュー #2（<code>html2md</code> #742）で<strong>3 通りのうち 1 通りしか直っていない</strong>との指摘。実測で再現を確認した。<code>touchesOuterSameKind</code> は一致の直前・直後の 1 文字だけを見るが、<code>Inline.cs</code> のバッジ展開は記号の有無にかかわらず<strong>本文の後ろに空白 1 個</strong>を入れるため、閉じ側は外側 <code>strong</code> の閉じセンチネルと隣接しない。隣接が成立するのは「バッジが <code>strong</code> の先頭にあり、かつ記号なし」の場合だけ。</p>
+			<div class="tablewrap"><table>
+				<thead><tr><th>形</th><th>出力</th></tr></thead>
+				<tbody>
+					<tr><td><code>&lt;strong&gt;&lt;span class="badge b-ps51"&gt;5.1&lt;/span&gt; では …&lt;/strong&gt;</code>（先頭・記号なし）</td><td class="nowrap"><strong>直った</strong></td></tr>
+					<tr><td><code>&lt;strong&gt;本文 &lt;span class="badge b-ps51"&gt;5.1&lt;/span&gt;&lt;/strong&gt;</code>（末尾）</td><td class="nowrap"><code>**本文 **5.1****</code></td></tr>
+					<tr><td><code>&lt;strong&gt;… &lt;span class="badge"&gt;x&lt;/span&gt; …&lt;/strong&gt;</code>（中間）</td><td class="nowrap">同じく崩れる</td></tr>
+					<tr><td><code>&lt;strong&gt;&lt;span class="badge b-ok"&gt;完了&lt;/span&gt; 本文&lt;/strong&gt;</code>（記号あり）</td><td class="nowrap"><code>**✅ **完了** 本文**</code></td></tr>
+				</tbody>
+			</table></div>
+			<p><code>tests/cases/badge/README.html</code> の既存 4 行はこの 3 パターンを 1 件も踏んでおらず、テストが穴を見逃していた。<strong>直すには「バッジが本体の後ろに空白を足す」処理自体を、外側の未解決ペアの有無を見てから行うよう組み替える必要がある</strong>（touchesOuterSameKind の判定タイミングと、バッジの空白付与のタイミングの順序が絡む）。回帰リスクがあるため、次に着手する。</p>
 		</div>
 	</details>
 
@@ -593,6 +608,49 @@ $sub = Convert-Blocks ...</code></pre>
 				<li><strong><code>--dir</code> を既定（<code>notes</code>）へ足す形にしてほしい（または警告を出す）。</strong>いまは <code>--dir docs</code> だけを渡すと既定の <code>notes</code> が対象から外れ、<code>notes</code> 配下へのリンクが一括で <code>.html</code> に戻る。それでも「指摘なし」で完了する。</li>
 			</ol>
 			<p>どちらも<strong>いまの「変換はファイルごとに独立、対象集合は今回の実行で決める」という設計の前提に触れる</strong>変更で、判断が要る。1 はファイルシステムを都度確認する形に変える必要があり、生成済みとはいえ古い <code>.md</code> を指してしまう副作用も考えられる。2 は既定を変える後方互換の話になる。<strong>直すかどうかは利用者の判断を待つ。</strong></p>
+		</div>
+	</details>
+</section>
+
+<section class="ch07" id="ch07">
+	<h1>定期レビュー #2 の指摘</h1>
+
+	<p>2026-09-11、ai-chat-lite-reviewer による定期レビュー2回目（<code>html2md</code> ルーム #742）。前回（#732）の22件のうち18件の解消を確認、high 1 は一部解消（<span class="no">i260910-01</span> 側に記録）。新規 medium 13・low 7。追跡ファイル84件を7観点で並列に読み、指摘1件ごとに反証役を当てたとのこと。探索役1人あたり上限4件のため5番目以降（16件）を切ったと明記されており、「これで全部ではない」。</p>
+
+	<details open>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260911-01</span>medium 13 件</summary>
+		<div class="issue-body">
+			<p><span class="badge b-ok">済</span>1（md-skip の残り3経路）を直した。<code>b080950</code> で直した4経路（section等のブロック要素・li・td/th・span）の他に、<code>ConvertChapters</code> の li 走査（<code>Table.cs</code>・<code>html2md-ps.ps1</code>）、<code>ConvertToc</code> の li 走査、<code>ConvertDefList</code> の dt/dd が md-skip 判定を持っていなかった。exe/ps1 とも同じ形で追加。インライン位置（a・strong・em・del・code の中の md-skip）は判定そのものが無く、対応するとリンク・強調の入れ子構造を崩す可能性があるため<strong>今回は見送り、課題に残す</strong>。</p>
+			<p><span class="badge b-ok">済</span>3（HasCorrectPreamble が BOM 過剰側を見ていない）を直した。<code>33d5da4</code> は「--from utf8bom を強制したのに BOM が無い」方向だけを直しており、逆の「--from utf8 を強制したが実は BOM 付き」の場合は <code>GetPreamble</code> が Utf8 に対して空を返すため <code>HasCorrectPreamble</code> が無条件に true になり、BOM 付きファイルへ <code>--from utf8 --to utf8</code> を指定すると BOM が残ったまま「変更なし」になっていた。<code>HasCorrectPreamble</code> を「宣言した組にプリアンブルがあるなら一致を見る」だけでなく、<strong>BOM の有無そのものが一致しているか</strong>を見るよう直した（Utf8/Sjis 側もファイルの先頭が実際に BOM で始まっていないかを確認）。</p>
+			<p><span class="badge b-none">未</span>残り11件は設計判断・追加調査を要するか、記録の是正のみで済むため今回は見送る:</p>
+			<ul>
+				<li>2. text の <code>--from</code>/<code>--to</code> が「convert-encoding と同じ語彙」と資料に書くが、実装は文字コード名5語だけで用途名（<code>cmd</code> 等）を受けない。<code>--to utf8</code> の改行挙動も convert-encoding と違う。<strong>text 側に用途名を足すか、資料の説明を弱めるかの選択</strong></li>
+				<li>4. 終了コードの契約（0/1/2）が exe と ps1 で細部が揃っていない（対象0件・変換中の例外の扱い）。ps1 側の例外処理を作り込む範囲の判断が要る</li>
+				<li>5. <span class="no">i260910-03</span> の内訳に #732 の low 2 件（<code>run-all-tests.ps1</code> が check-contrast/check-markdown を含まない／issues.html の3行が共通ルールと食い違う）が入っていない。記録の是正</li>
+				<li>6. <code>--dry-run</code>/<code>-DryRun</code> で ps1 の <code>Test-MdLinks</code> がメモリ優先経路を持たず、exe とテスト範囲が揃っていない</li>
+				<li>7. <code>--exclude</code> の適用範囲が exe（README・--extra は素通り）と ps1（一覧全体に適用）で違う。どちらが正か資料に明記が無く、決める必要がある</li>
+				<li>8. <code>run-tests.ps1</code> の★行突き合わせが「HTML に無い文言」を件数でしか見ず、行の中身までは比較しない。▲（警告）は終了コード比較の対象外</li>
+				<li>9. check-contrast/check-markdown の既定除外（tmp/etc/node_modules/.git/contrast）が資料に記載が無く、除外で落ちた件数も画面に出ない</li>
+				<li>10. text のバイナリ判定（<code>LooksBinary</code>）が <code>find</code> にしか繋がっておらず、<code>edit</code>/<code>write</code> はバイナリでも Ambiguous（終了3）しか見ない。書き戻し経路にバイナリ拒否を足すかどうかの判断</li>
+				<li>11. 生成する .md・.svg を CRLF で書くが、.editorconfig・.gitattributes の宣言は LF。git 経由では正規化されるが、git を通さない配布経路では宣言と実態が食い違う。<strong>どちらに揃えるかは方針の変更になる</strong></li>
+				<li>12. <code>notes/10_plan/html2md-plan.html</code> が「check-markdown も exe 化する」と書くが、<span class="no">i260830-13</span> でその方針は「やらないと決めて閉じた」。計画書側が古いまま</li>
+				<li>13. バイト保持パスの条件（先頭バイト確認）が仕様書に書かれていない。<code>p260906-01-convert-encoding.html</code> の該当箇所とテストケース表に追記が要る</li>
+			</ul>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">i260911-02</span>low 7 件</summary>
+		<div class="issue-body">
+			<ol>
+				<li><code>p260906-01-convert-encoding.html</code> のテストケース表が54番で止まり、09-10 に足された55番（BOM付きの組を強制指定したときのプリアンブル回帰）が載っていない</li>
+				<li>README が参照実装 ps1 の引数を「5つ（-Root -Dir -Exclude -NoReadme -DryRun）」と書くが、実際は <code>-Extra</code> を含めて6つ</li>
+				<li><span class="no">i260908-03</span> のバッジが 未 のままだが、本文に62ab2e4・bddf60e・a16d22c等4件の解消が記録されている。状態は一部済のため 着手 が正しい</li>
+				<li>全件済になったグループ（ch01・ch03・ch04）の導入文が「まだ決まっていない」「保留中の判断」のまま。バッジを数え直すと3グループとも全件済</li>
+				<li>issues.html の更新日が2026-09-09のまま。09-10だけで13コミットが入っている（md-skip のため .md が無く、更新日一致の検査が効かない）</li>
+				<li>リンク検査のパス解決が exe（<code>Path.Combine</code>→<code>GetFullPath</code>、例外は握って null）と ps1（<code>Join-Path</code>+<code>Test-Path</code>、外す経路なし）で違う。先頭が <code>/</code> の href で2本が別の場所を見る可能性がある</li>
+				<li><code>run-convert-encoding-tests.ps1</code> 冒頭のコメントが「仕様書6章のケース3・4は…食い違う」と現在形で書くが、<code>p260906-01-convert-encoding.html</code> 側は既に過去形の callout に直っており、テストの期待値も既に一致している。コメントだけが古い</li>
+			</ol>
 		</div>
 	</details>
 </section>
