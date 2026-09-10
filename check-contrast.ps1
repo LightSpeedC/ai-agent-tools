@@ -22,7 +22,9 @@
 	サブフォルダも対象にする。
 
 .PARAMETER Exclude
-	除外するパスの正規表現。既定は tmp / etc / node_modules / .git。
+	除外するパスの正規表現。既定は tmp / etc / node_modules / .git / contrast
+	（contrast はこのツール自身の自己診断用フィクスチャの置き場で、意図して
+	コントラスト不良を作ってあるため）。
 
 .PARAMETER Min
 	これを下回るコントラスト比を報告する。既定 1.5。
@@ -40,7 +42,7 @@
 param(
 	[string]$Path = '.',
 	[switch]$Recurse,
-	[string]$Exclude = '\\(tmp|etc|node_modules|\.git)\\',
+	[string]$Exclude = '\\(tmp|etc|node_modules|\.git|contrast)\\',
 	[double]$Min = 1.5,
 	[string]$PlaywrightRoot = 'N:\PlayWright'
 )
