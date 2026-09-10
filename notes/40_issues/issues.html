@@ -444,7 +444,8 @@ $blocks = @(Convert-Blocks $body $ctx)
 
 // 正しい: 代入だけにすると外側が外れる
 $sub = Convert-Blocks ...</code></pre>
-			<p>ps1 が出力 <code>System.Object[]</code> の 1 行だけになる、という形で表面化した。ルールに 1 行足す案を出したが、まだ提示していない。</p>
+			<p>ps1 が出力 <code>System.Object[]</code> の 1 行だけになる、という形で表面化した。ルールに 1 行足す案を出した。</p>
+			<p><span class="badge b-ok">済</span>共通ルールの「PowerShellの落とし穴」に<strong>受け取り側の書き方</strong>として反映済み（「受け取るときは変数に代入する。<code>foreach</code> に直接渡す・<code>@()</code> で包む、はどちらも壊れる」）（i260910-03 の7）。</p>
 		</div>
 	</details>
 
@@ -455,7 +456,7 @@ $sub = Convert-Blocks ...</code></pre>
 			<p>向こう側に仕様書と参考実装がある。C# 4 ファイルで、C# 5 の範囲でビルドと動作の確認が済んでいるとのこと。<strong>取り込みが済んだら向こう側は削除する</strong>と言っている。</p>
 			<p><span class="badge b-ok">済</span>2026-09-06 に<strong>引き受けて取り込んだ。</strong>参考実装 4 ファイルはそのまま使えた（C# 5 の範囲で書かれていた）。仕様書は <a href="../10_plan/p260906-01-convert-encoding.html">notes/10_plan/</a> へ写し、取り込み後の状態に合わせて直した。</p>
 			<p><span class="badge b-ok">済</span>テストは 79 件すべて成功。<strong>受け取った仕様書の 6 章に矛盾があった。</strong>ケース 3・4 が「<code>--to utf8</code> で LF のみ」を期待していたが、2 章の規則「改行を書かなければ、改行は変えない」と食い違う。ケース 5d・5f が規則側を裏付けているため、記述ミスと判断して期待値を規則に合わせた。</p>
-			<p><span class="badge b-none">未</span>共通ルールの「ツールごとの文字コードの扱い」にある PowerShell の変換手順を、<code>convert-encoding</code> を呼ぶ 1 行へ差し替える。<strong>ルールの変更は利用者の判断を待つ。</strong></p>
+			<p><span class="badge b-ok">済</span>共通ルールの「ツールごとの文字コードの扱い」は、すでに <code>convert-encoding</code> を呼ぶ形に差し替わっている（i260910-03 の6）。</p>
 		</div>
 	</details>
 
@@ -475,7 +476,7 @@ $sub = Convert-Blocks ...</code></pre>
 			<p><span class="badge b-warn">着手</span>2026-09-07 に<strong>実装を検討すると返信した。</strong>まず仕様を検討し、<strong>利用者の承認を得てから開発する。</strong></p>
 			<p><span class="badge b-warn">着手</span>利用者との相談で<strong>スコープが広がった。</strong>検索（find-text）だけでなく、<strong>UTF-8 以外で壊れるツール一式の代わり</strong>にする。対象は Read・Grep・Edit・Write の 4 つ（Glob・SendUserFile は壊れないので対象外）。文字コードだけでなく<strong>改行まで含めた「組」</strong>で扱い（SJIS/CRLF・UTF-16LE/CRLF・UTF-8BOM/LF など）、1 エンジン＋4 動詞（<code>read-text</code>・<code>find-text</code>・<code>edit-text</code>・<code>write-text</code>）にする。<code>edit-text</code> は行範囲＋合言葉（チェックサム）の楽観ロックで、省トークンと競合検知を兼ねる。仕様は<a href="../10_plan/p260907-01-text-tools.html">notes/10_plan/</a>。</p>
 			<p><span class="badge b-ok">済</span>2026-09-08 に<strong>実装した。</strong>多機能コマンド <code>text</code>（<code>text.exe</code>）1 本に <code>read</code>／<code>find</code>／<code>edit</code>／<code>write</code> を載せ、判定エンジンを共有（<code>src/Text/</code>、csc ビルド <code>build-text.cmd</code>）。<code>find</code> はサクラエディタの grep（ファイル毎）を参考にした ◎/■/◆ 形式、<code>read</code> は ◆ ヘッダ＋<code>行番号 6 桁:タブ</code>、<code>edit</code> は <code>--digest</code>（CRC32 8 hex ＝ 行範囲ハッシュ＋サイズ＋更新日時）で競合検知、<code>--from</code> は組の指定・中身入力は <code>--in</code>／<code>--old-file</code>／<code>--new-file</code>。<strong>テスト 43 件すべて成功</strong>（<code>tools/40_test/run-text-tests.ps1</code>、<code>run-all-tests</code> に組み込み）。<code>--col</code>・<code>--regex</code>・<code>--all</code> は将来。</p>
-			<p><span class="badge b-none">未</span>共通ルールの手作業の回避策を <code>text</code> に差し替える案の提示、および ai-chat-lite への周知は<strong>利用者の判断を待つ</strong>。</p>
+			<p><span class="badge b-ok">済</span>共通ルールの「ツールごとの文字コードの扱い」は、すでに <code>text read</code>／<code>text find</code> を使う形に差し替わっている（i260910-03 の6）。ai-chat-lite への周知は別途確認する。</p>
 		</div>
 	</details>
 
@@ -525,7 +526,8 @@ $sub = Convert-Blocks ...</code></pre>
 	<details>
 		<summary><span class="badge b-none">未</span><span class="no">i260908-03</span>low（約 25 件・軽微）</summary>
 		<div class="issue-body">
-			<p><span class="badge b-none">未</span>README にツール表・text 一式・ビルド節の記載漏れ／閉じた課題 i260907-01 の <code>.exe</code> 表記が 3 本の cmd（<code>check-contrast.cmd</code>・<code>check-markdown.cmd</code>・<code>run-tests.cmd</code>）に残る／<code>check-contrast -Recurse</code> が自リポジトリで常に 4 件 exit 1／強調内の空白が Trim で落ちて語が繋がる、ほか。詳細はレビュー #649 の low 節。</p>
+			<p><span class="badge b-ok">済</span>個別に挙がっていた 4 件は解消済みと確認した（i260910-03 の5）。README のツール表・text 一式・ビルド節の記載漏れと、閉じた課題 i260907-01 の <code>.exe</code> 表記が 3 本の cmd に残る件は、62ab2e4 で直っていたことを現物確認。<code>check-contrast -Recurse</code> が自リポジトリで常に 4 件 exit 1 になる件は、自己診断用フィクスチャ <code>contrast/selftest.html</code>（意図してコントラスト不良を作ってある）を <code>-Recurse</code> の巻き込みだったため、既定の除外パターンに <code>contrast</code> を追加して直した（直接指定すれば従来どおり検出する）。強調内の空白が Trim で落ちて語が繋がる件は、<code>Emphasis.Resolve</code>（exe）・<code>Resolve-Emphasis</code>（ps1）で <code>&lt;strong&gt;a &lt;/strong&gt;b</code> のような内側末尾の空白が捨てられ <code>**a**b</code> になっていたのを確認し、前後の空白を記法の外側へ出すよう直した（回帰テスト追加）。</p>
+			<p><span class="badge b-none">未</span>残り約 21 件は未検証。詳細はレビュー #649 の low 節。</p>
 		</div>
 	</details>
 
@@ -571,15 +573,10 @@ $sub = Convert-Blocks ...</code></pre>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260910-03</span>low 9 件</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>2026-09-10 に 1 件目（details/summary の ps1 未反映）を直した。<code>Get-NormalizedText</code> の除去一覧に <code>details</code>・<code>summary</code> を追加し、<code>tests/cases/tags</code>・<code>untagged</code> の <code>details</code> を含むケースで exe/ps1 の検査結果が一致することを確認（i260910-02 のテスト強化で検出された）。</p>
+			<p><span class="badge b-ok">済</span>3・4・5・6・7 も直した。<code>check-markdown.ps1</code> の対象パス不在を <code>check-contrast.ps1</code> と同じ終了2に揃えた（3）。chapters の ttl リンク化を、ttl を実際に囲む a だけから href を取るように直した（4、テスト追加）。i260908-03・i260906-01・i260907-02・i260830-18 の記録を現状に合わせた（5〜7、詳細は各課題を参照）。text-tools 仕様書の記述も実装に合わせた（1、テスト件数含む）。</p>
 			<ul>
-				<li>text-tools 仕様書の「strict は将来」「対象は write」が実装（write・edit 両方に既に実装済み）と食い違う。テスト件数の記載も 43 件 vs 47 件で食い違う</li>
-				<li>バッジ・callout の解釈語彙が exe と ps1 で違う（ps1 は ok/good/done 等の別名も受け、callout は前方一致で拾う）</li>
-				<li><code>check-markdown.ps1</code> と <code>check-contrast.ps1</code> で、対象パス不在時の終了コードが 1 と 2 で不揃い</li>
-				<li>chapters の ttl リンク化が、資料の「a の中にあれば」という条件を見ず、li 内の最初の a を無条件に使う（ttl が a の外で desc 側だけにリンクがあると誤ってリンク化される）</li>
-				<li>i260908-03 の未 4 件のうち少なくとも 2 件は 62ab2e4 で修正済み（残件数を数え直していない）</li>
-				<li>i260906-01・i260907-02 の「共通ルールへの反映は利用者の判断を待つ」が、共通ルール側は既に反映済みなのに課題側の未が消えていない</li>
-				<li>i260830-18 は済バッジだが本文が「まだ提示していない」で終わっている（共通ルール側には該当の 1 行が既にある）</li>
-				<li>絶対パスのマスキングが 3 本で不揃い（text は伏せるが html2md・convert-encoding は生のパスを出す）</li>
+				<li>バッジ・callout の解釈語彙が exe と ps1 で違う（ps1 は ok/good/done 等の別名も受け、callout は前方一致で拾う）。html-class-rules.html は「b-ok/b-ng/b-warn/b-none の4つだけが予約語」と定めており、ps1 の別名受け入れはこの仕様とは食い違う。ただし ps1 側のコメントに「既存プロジェクトの命名をまとめて受けられるようにしている」とあり、他プロジェクトの実コンテンツが依存している可能性がある。<strong>ps1 を仕様どおりに絞るかどうかは、既存コンテンツへの影響を含めて利用者の判断を待つ（要判断）</strong></li>
+				<li>絶対パスのマスキングが 3 本で不揃い（text は伏せるが html2md・convert-encoding は生のパスを出す）。<strong>出力仕様の変更に当たるため利用者の判断を待つ（要判断）</strong></li>
 			</ul>
 		</div>
 	</details>
