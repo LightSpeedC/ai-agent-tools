@@ -811,10 +811,18 @@ function Convert-Chapters {
 		$desc = Get-SpanText -Html $liInner -ClassName 'desc' -Anchors $Anchors
 
 		# ttl は生のまま取り出し、a で囲む href があれば合成 <a> にして Convert-Inline に
-		# 通す。ほかのリンクと同じ経路（.md 置換・他ファイルのアンカー張り替え）を通すため
+		# 通す。ほかのリンクと同じ経路（.md 置換・他ファイルのアンカー張り替え）を通すため。
+		#
+		# href は「ttl を囲む a」からだけ取る。li 内の最初の a を無条件に使うと、
+		# desc 側だけにリンクがあるケースでも ttl が誤ってリンク化される
 		$ttlRaw = Get-SpanRaw -Html $liInner -ClassName 'ttl'
-		$aTag = [regex]::Match($liInner, '(?s)<a\b([^>]*)>.*?</a>')
-		$href = if ($aTag.Success) { Get-Attr ('<a' + $aTag.Groups[1].Value + '>') 'href' } else { '' }
+		$href = ''
+		foreach ($aTag in [regex]::Matches($liInner, '(?s)<a\b([^>]*)>.*?</a>')) {
+			if ($aTag.Value -match 'class\s*=\s*"[^"]*\bttl\b[^"]*"') {
+				$href = Get-Attr ('<a' + $aTag.Groups[1].Value + '>') 'href'
+				break
+			}
+		}
 		$ttl = if ($href -and $ttlRaw) {
 			Convert-Inline -Html ('<a href="' + $href + '">' + $ttlRaw + '</a>') -Anchors $Anchors -InTable $true
 		} else {

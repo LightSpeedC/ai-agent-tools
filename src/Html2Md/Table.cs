@@ -256,10 +256,20 @@ namespace Html2Md
 				// ttl は生のまま取り出し、a で囲む href があれば合成 <a> にして inline.Convert に
 				// 通す。ほかのリンクと同じ経路（.md 置換・他ファイルのアンカー張り替え）を通すため。
 				// ここで自前に "[text](href)" を組み立てると、その経路を素通りしてしまう。
+				//
+				// href は「ttl を囲む a」からだけ取る。li 内の最初の a を無条件に使うと、
+				// desc 側だけにリンクがあるケースでも ttl が誤ってリンク化される
 				string ttlRaw = ExtractSpanRaw(liInner, "ttl");
 				string ttl;
-				Match aTag = Regex.Match(liInner, "(?s)<a\\b([^>]*)>.*?</a>");
-				string href = aTag.Success ? HtmlUtil.GetAttr("<a" + aTag.Groups[1].Value + ">", "href") : "";
+				string href = "";
+				foreach (Match aTag in Regex.Matches(liInner, "(?s)<a\\b([^>]*)>.*?</a>"))
+				{
+					if (Regex.IsMatch(aTag.Value, "class\\s*=\\s*\"[^\"]*\\bttl\\b[^\"]*\""))
+					{
+						href = HtmlUtil.GetAttr("<a" + aTag.Groups[1].Value + ">", "href");
+						break;
+					}
+				}
 				if (href.Length > 0 && ttlRaw.Length > 0)
 				{
 					ttl = inline.Convert("<a href=\"" + href + "\">" + ttlRaw + "</a>", anchors, true);
