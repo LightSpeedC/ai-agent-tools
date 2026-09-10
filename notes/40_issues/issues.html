@@ -511,7 +511,7 @@ $sub = Convert-Blocks ...</code></pre>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260908-02</span>medium（約 20 件・静かな誤動作）</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>2026-09-08 に一部を修正: <code>--read</code>/<code>--info</code>＋<code>--from hex</code> の併用拒否／<code>text find &lt;語&gt; &lt;パス&gt;</code> の位置引数パス／<code>--lines</code> 無し digest の全文一致／<code>p260908-01</code> の <code>--to utf8</code> 注記／設定ファイル一式／<strong>検査の details・summary 誤検出</strong>／USAGE の text exit 5・README の text 整合・cmd の <code>powershell.exe</code>・issues の SJIS 件数。回帰テスト付き。</p>
-			<p><span class="badge b-none">未</span>残りは<strong>html2md 中核コンバータの改変や仕様判断を要するもの</strong>: <code>figure</code> の中身が消える（仕様表と決着 4 が食い違う＝<strong>仕様の決定が要る</strong>）／早期復号でリンク文字欠落／svg の id 衝突／<code>md-skip</code> が li・td・span に効かない／段落外 <code>a</code> が strong を落とす／exe と ps1 の乖離／SJIS 先頭バイト範囲の資料矛盾。回帰リスクが高いので個別に判断して進める。</p>
+			<p><span class="badge b-ok">済</span>2026-09-10 に当初一覧の残り 5 件を突き合わせ直した（i260910-02 の13）。<code>--from utf8bom</code> の BOM 欠落と、内容ファイル・stdin の組の曖昧さ無視の 2 件は現物でも再現を確認し、その場で直した。<code>convert-encoding</code> の <code>Program.cs</code> にバイト保持パスへ入る前の先頭バイト確認（<code>HasCorrectPreamble</code>）を追加し、<code>--from</code> で組を強制指定しても実際の BOM が無ければバイト保持パスへ入らないようにした。<code>text</code> の <code>EditCmd.ReadContent</code>（<code>--old-file</code>/<code>--new-file</code>）・<code>WriteCmd.ReadContent</code>（<code>--in</code>・標準入力）に、対象ファイルと同じ <code>Ambiguous</code> 判定を追加し、両方妥当なときは黙って UTF-8 に倒さず拒否（終了 3）するようにした。回帰テストを追加（convert-encoding 98→100・text 50→53）。残り 3 件は現物を確認したところ、<code>.gitignore</code> の先頭 <code>_</code>・<code>.claude</code> 共有分の取りこぼしと <code>.editorconfig</code>・<code>.gitattributes</code>・<code>.vscode/settings.json</code> の不在はすでに解消済み（前段の「設定ファイル一式」に含まれていた）。<code>--dir docs</code> で <code>notes/</code> が対象外になる件は <span class="no">i260910-04</span> の2番目の要望と同一の不具合で、そちらに一本化した。</p>
 			<p>以下は当初の一覧:</p>
 			<ul>
 				<li><strong>convert-encoding</strong>: <code>--read</code>/<code>--info</code> が <code>--from hex</code> と併用で元ファイルを上書き／<code>--from utf8bom</code> で BOM が付かないまま成功</li>
@@ -554,7 +554,7 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-warn">着手</span><span class="no">i260910-02</span>medium 13 件（exe/ps1 乖離が中心）</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260910-02</span>medium 13 件（exe/ps1 乖離が中心）</summary>
 		<div class="issue-body">
 			<p>前回の修正の多くが <strong>exe 側だけに入り、参照実装 <code>html2md-ps.ps1</code> に反映されていない。</strong>「片方だけ直すと落ちる」という README の前提が、対応する入力ケースが無いため検査で検出されていない。</p>
 			<p><span class="badge b-ok">済</span>2026-09-10 に、まずテスト構造そのものを直した（7・8・9）。<code>run-tests.ps1</code> に<strong>終了コードの厳格化</strong>（既定 0、許す場合だけ <code>$ExpectedExitCode</code> で名指し）、<strong>exe と ps1 の終了コード比較</strong>、<strong>検査結果（★ 行）の突き合わせ</strong>、<strong>ps1 だけの余分な生成物の検出</strong>（片方向→双方向）を追加。<code>tests/cases/link</code> の実在しない <code>favicon.ico</code> 参照、<code>tests/cases/tags</code> の実在しないダミーリンクも直し、全ケースが期待どおり終了コード 0 になるようにした。</p>
@@ -563,9 +563,7 @@ $sub = Convert-Blocks ...</code></pre>
 			<p><span class="badge b-ok">済</span>4（他ファイルへのアンカー検査）も直した。<code>Checks.cs</code>（exe）・<code>html2md-ps.ps1</code>（ps1）の <code>TestMdLinks</code> を拡張し、他ファイルへのアンカー付きリンクも<strong>リンク先の見出しから実在を確かめる</strong>ようにした。<code>--dry-run</code> でも正しく動くよう、ディスクではなくこの実行で変換済みの Markdown（メモリ上）を先に見て、この実行に含まれないページだけディスクから読む。テストケース <code>tests/cases/cross-anchor-bad</code> を新設（存在しないアンカーを検出できることを確認、終了コード 1 を期待値に登録）。全テスト成功（html2md 13・convert-encoding 98・text 50）。</p>
 			<p><span class="badge b-ok">済</span>6（ps1 の HTML 側リンク検査が pre/code とコメントを除外しない）も直した。<code>html2md-ps.ps1</code> の <code>Test-HtmlLinks</code> に、exe の <code>Checks.cs</code>（<code>StripCodeAreas</code>＋コメント除去）と同じ正規表現による除外を追加。<code>tests/cases/tags</code> の <code>&lt;pre&gt;&lt;code&gt;</code> に実在しない <code>href</code> を含む例を足し、除外前の ps1 では「リンク切れ」を誤検出する（終了コードが exe と食い違う）ことを確認したうえで直した。</p>
 			<p><span class="badge b-ok">済</span>10・11（テストの期待値の穴）も直した。<code>chapters</code> の <code>$Expect</code> に見出し行（<code>| 部 | タイトル | 内容 |</code>）と区切り行（<code>|---|---|---|</code>）を追加し、表になる前の旧挙動では通らないようにした（10）。<code>outside</code>・<code>svgvar</code> の <code>$Expect</code> が空だった点は、実際の生成結果を確認したうえで埋めた。<code>outside</code> は探索フォルダの内外でリンクの拡張子が変わること、<code>svgvar</code> は章スコープの CSS 変数（<code>--accent</code> が章ごとに違う値になる）・フォールバック値の優先順位（<code>:root</code> の定義があればそちらを使い、無ければフォールバック文字列を使う）・未解決の <code>var()</code> がそのまま残ることを固定した（11）。全ケース成功を確認。</p>
-			<ul>
-				<li>13. i260908-02 の当初一覧にあった medium 5 件が、済にも残りにも入っていない（少なくとも <code>--from utf8bom</code> の BOM 欠落は現物で未修正）</li>
-			</ul>
+			<p><span class="badge b-ok">済</span>13（i260908-02 の当初一覧との突き合わせ）も直した。当初一覧にあった medium 5 件のうち、<code>--from utf8bom</code> の BOM 欠落と内容ファイル・stdin の組の曖昧さ無視の 2 件は現物で再現を確認して修正、残り 3 件は現物確認で解消済み（2 件）・<span class="no">i260910-04</span> へ一本化（1 件）した。詳細は <span class="no">i260908-02</span> 側に記載。13 件すべて解消し、この課題を締める。</p>
 		</div>
 	</details>
 
