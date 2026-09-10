@@ -41,7 +41,8 @@ $Expect = @{
 		'T34 テキスト',            # ブロックと混在した地の文（前）
 		'T36 末尾テキスト',        # 同上（後ろ）
 		'| T16 th |',              # 表のヘッダ
-		'| T17 td |'               # 表のデータ行
+		'| T17 td |',              # 表のデータ行
+		'`T17b\|code`'             # 表セル内 code の | がエスケープされる（medium#1 の回帰）
 	)
 	'div' = @(
 		'ケース1: テキストだけの div',
@@ -103,6 +104,11 @@ $ExtraFiles = @{
 	'extra' = @('GUIDE.html')
 }
 
+# ケースごとに期待する終了コード。書かなければ 0（指摘なし）を期待する。
+# 意図して指摘あり（1）を確かめたいケースだけ、ここに名指しする
+$ExpectedExitCode = @{
+}
+
 function Write-Result([string]$Mark, [string]$Text) {
 	Write-Host ('  {0} {1}' -f $Mark, $Text)
 }
@@ -145,8 +151,11 @@ foreach ($c in $cases) {
 	}
 	& $Exe @exeArgs *> (Join-Path $work 'exe.log')
 	$exeCode = $LASTEXITCODE
-	if ($exeCode -gt 1) {
-		Write-Result '[NG]' ('exe が異常終了しました（終了コード {0}）' -f $exeCode)
+	# 既定は 0（指摘なし）。1（指摘あり）を許すケースは $ExpectedExitCode に名指しする。
+	# 素通りにすると、フィクスチャ側の意図しないリンク切れ等が「成功」のまま埋もれる
+	$expectExit = if ($ExpectedExitCode.ContainsKey($c.Name)) { $ExpectedExitCode[$c.Name] } else { 0 }
+	if ($exeCode -ne $expectExit) {
+		Write-Result '[NG]' ('exe の終了コードが {0} ではありません（実際 {1}）' -f $expectExit, $exeCode)
 		$ok = $false
 	}
 	# 生成物は md と、切り出した svg。svg も比べるのは、SVG の中の CSS 変数を
@@ -196,10 +205,12 @@ foreach ($c in $cases) {
 	}
 
 	$ps1Err = $null
+	$ps1Code = $null
 	try {
 		$ps1Args = @{ Root = $work; Dir = @('docs', 'notes') }
 		if ($ExtraFiles.ContainsKey($c.Name)) { $ps1Args['Extra'] = $ExtraFiles[$c.Name] }
 		& $Ps1 @ps1Args *> (Join-Path $work 'ps1.log')
+		$ps1Code = $LASTEXITCODE
 	}
 	catch {
 		$ps1Err = $_.Exception.Message
@@ -209,6 +220,12 @@ foreach ($c in $cases) {
 		$ok = $false
 	}
 	else {
+		if ($ps1Code -ne $exeCode) {
+			Write-Result '[NG]' ('exe と ps1 で終了コードが違います（exe {0} / ps1 {1}）' -f $exeCode, $ps1Code)
+			$ok = $false
+		}
+
+		# exe が生成したファイルを、ps1 も同じ中身で生成しているか（exe → ps1 方向）
 		foreach ($k in $exeOut.Keys) {
 			$path = $work + $k
 			if (-not (Test-Path -LiteralPath $path)) {
@@ -226,6 +243,31 @@ foreach ($c in $cases) {
 				}
 				$ok = $false
 			}
+		}
+
+		# ps1 だけが余分に生成したファイルが無いか（ps1 → exe 方向。md-skip の
+		# 変換忘れ・余分な SVG 切り出しなど、逆向きの乖離はここでしか捕まえられない）
+		$ps1Files = @(Get-ChildItem -LiteralPath $work -Recurse -File | Where-Object { $_.Extension -eq '.md' -or $_.Extension -eq '.svg' })
+		foreach ($f in $ps1Files) {
+			$k = $f.FullName.Substring($work.Length)
+			if (-not $exeOut.ContainsKey($k)) {
+				Write-Result '[NG]' ('ps1 だけが生成しました: ' + $k)
+				$ok = $false
+			}
+		}
+
+		# 検査結果（★ で始まる行）を exe と ps1 で突き合わせる。本文が一致していても、
+		# 検査の指摘内容そのものが食い違っていれば見逃さない
+		$exeProblems = @(Get-Content -LiteralPath (Join-Path $work 'exe.log') -Encoding UTF8 | Where-Object { $_ -match '★' } | ForEach-Object { $_.Trim() } | Sort-Object)
+		$ps1Problems = @(Get-Content -LiteralPath (Join-Path $work 'ps1.log') -Encoding UTF8 | Where-Object { $_ -match '★' } | ForEach-Object { $_.Trim() } | Sort-Object)
+		$pd = Compare-Object $exeProblems $ps1Problems
+		if ($pd) {
+			Write-Result '[NG]' ('exe と ps1 で検査の指摘が違います（差分 {0} 件）' -f $pd.Count)
+			$pd | Select-Object -First 6 | ForEach-Object {
+				$side = if ($_.SideIndicator -eq '<=') { 'exe' } else { 'ps1' }
+				Write-Host ('        {0}: {1}' -f $side, $_.InputObject)
+			}
+			$ok = $false
 		}
 	}
 

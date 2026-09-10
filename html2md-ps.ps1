@@ -479,13 +479,19 @@ function Convert-Inline {
 		param($m)
 		$code = Convert-Entity ($m.Groups[1].Value -replace '<[^>]+>', '')
 		$code = ($code -replace '\r?\n', ' ') -replace '`', "'"
-		return (Add-CodeSpan ('`' + $code.Trim() + '`'))
+		$code = $code.Trim()
+		# 表のセルでは、コードスパンの中でも | を \| にする（GFM はセル内の
+		# code の | も列区切りとして数える）。退避後に一括エスケープすると
+		# 中身が対象から外れて素通りするため、退避前にここで処理する
+		if ($InTable) { $code = $code -replace '\|', '\|' }
+		return (Add-CodeSpan ('`' + $code + '`'))
 	}))
 
 	# コードスパンは退避する（中身を他の変換の対象から外すため）
 	$s = [regex]::Replace($s, '(?s)<code\b[^>]*>(.*?)</code>', (New-Evaluator {
 		param($m)
 		$code = Convert-Entity ($m.Groups[1].Value -replace '<[^>]+>', '')
+		if ($InTable) { $code = $code -replace '\|', '\|' }
 		return (Add-CodeSpan ('`' + $code + '`'))
 	}))
 
@@ -1543,7 +1549,7 @@ function Get-NormalizedText([string]$Text) {
 	$s = $s -replace '\[([^\]]*)\]\([^)]*\)', '$1'
 	# タグ名そのものがコード例として本文に現れることがある。
 	# タグのまま出すものは属性を持つことがあるので、開きタグは属性まで含めて落とす
-	$s = $s -replace '</?(?:strong|em|br|del|ins|sup|sub|mark|kbd|abbr|small|q|cite|time)\b[^>]*>', ''
+	$s = $s -replace '</?(?:strong|em|br|del|ins|sup|sub|mark|kbd|abbr|small|q|cite|time|details|summary)\b[^>]*>', ''
 	$s = $s -replace '\\\|', '|'
 	# 記法の記号（* ` | ~）とパス区切りの \ は、どちらの側に現れても落とす
 	$s = $s -replace '[*`|~\\]', ''
@@ -1578,6 +1584,9 @@ function Test-ExtraText([object]$Result) {
 	# aria-label は属性なのでタグ除去で消える。画像の alt と突き合わせるため足す
 	$labels = ''
 	foreach ($m in [regex]::Matches($html, 'aria-label="([^"]*)"')) { $labels += (Convert-Entity $m.Groups[1].Value) }
+	# data-columns も属性。chapters の表見出しはここにしか無い文言なので同じく足す
+	# （カンマは Markdown 側の見出し行に出ないため、比較前に落としておく）
+	foreach ($m in [regex]::Matches($html, 'data-columns="([^"]*)"')) { $labels += ((Convert-Entity $m.Groups[1].Value) -replace ',', '') }
 	$plain = Get-NormalizedText ((Get-PlainText $html) + $labels)
 
 	$extra = @()

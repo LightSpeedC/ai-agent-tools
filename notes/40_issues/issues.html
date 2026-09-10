@@ -554,19 +554,16 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260910-02</span>medium 13 件（exe/ps1 乖離が中心）</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260910-02</span>medium 13 件（exe/ps1 乖離が中心）</summary>
 		<div class="issue-body">
 			<p>前回の修正の多くが <strong>exe 側だけに入り、参照実装 <code>html2md-ps.ps1</code> に反映されていない。</strong>「片方だけ直すと落ちる」という README の前提が、対応する入力ケースが無いため検査で検出されていない。</p>
+			<p><span class="badge b-ok">済</span>2026-09-10 に、まずテスト構造そのものを直した（7・8・9）。<code>run-tests.ps1</code> に<strong>終了コードの厳格化</strong>（既定 0、許す場合だけ <code>$ExpectedExitCode</code> で名指し）、<strong>exe と ps1 の終了コード比較</strong>、<strong>検査結果（★ 行）の突き合わせ</strong>、<strong>ps1 だけの余分な生成物の検出</strong>（片方向→双方向）を追加。<code>tests/cases/link</code> の実在しない <code>favicon.ico</code> 参照、<code>tests/cases/tags</code> の実在しないダミーリンクも直し、全ケースが期待どおり終了コード 0 になるようにした。</p>
+			<p><span class="badge b-ok">済</span>強化したテストが実際に <strong>1・5 の乖離を検出した</strong>ため、あわせて直した。ps1 の <code>Convert-Inline</code> に表セル内 code の <code>|</code> エスケープ（1）、<code>Test-ExtraText</code> に <code>data-columns</code> の文言プール追加（5）。<code>tests/cases/tags</code> に code 内 <code>|</code> のケースを追加し回帰を固定。全テスト成功（html2md 12・convert-encoding 98・text 50）。</p>
 			<ul>
-				<li>1. high1（表セル内 code の <code>|</code>）の修正が exe だけ。ps1 の <code>Restore-CodeSpan</code> は退避前のエスケープを行わない</li>
 				<li>2. text の <code>exit 5</code> が仕様書・<code>Program.cs</code> 冒頭コメントに未反映（終了コード表が 0〜4 のまま）</li>
 				<li>3. convert-encoding のデコード側 <code>exit 4</code>（読めないバイト）が README・USAGE・仕様書のどこにも書かれていない。既存の <code>exit 4</code>（変換先で表現できない文字）と原因が違う</li>
 				<li>4. 他ファイルへのアンカー張り替えの失敗を検査が検出しない（<code>Checks.cs</code> の <code>TestMdLinks</code> がフラグメントを見ない）。同一ファイル内は検出できるのに非対称</li>
-				<li>5. <code>data-columns</code> を「HTML にある文言」に足す修正が exe だけ。ps1 で chapters を使うと偽の指摘が出て exit 1 になる</li>
 				<li>6. ps1 の HTML 側リンク検査が pre/code とコメントを除外しない（exe は除外）。<code>html2md-tag-spec.html</code> 自身で偽陽性が出る</li>
-				<li>7. テストが exe の出力しか突き合わせず、両者の検査結果（★HTML側・★Markdown側・★HTML に無い文言・終了コード）を比較しない</li>
-				<li>8. exe と ps1 の突き合わせが片方向（exe が出したファイルしか比べない）。ps1 だけの余分な生成物に気づけない</li>
-				<li>9. html2md の <code>exit 1</code>（指摘あり）をテストランチャーが成功として扱う（<code>$exeCode -gt 1</code> のみ NG）</li>
 				<li>10. chapters の期待値が、表になる前の旧挙動でもそのまま通ってしまう（見出し行・区切り行・data-columns の 3 語を固定していない）</li>
 				<li>11. 「tests/cases で固定してある」と資料に書くが、期待値ゼロのケースが 2 件ある（<code>outside</code>・<code>svgvar</code>）</li>
 				<li>12. chapters の Markdown 出力例（タグ対応仕様・クラス名の取り決め）が #699 修正前の <code>.html</code> のままの例になっている</li>
@@ -576,10 +573,10 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260910-03</span>low 9 件</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260910-03</span>low 9 件</summary>
 		<div class="issue-body">
+			<p><span class="badge b-ok">済</span>2026-09-10 に 1 件目（details/summary の ps1 未反映）を直した。<code>Get-NormalizedText</code> の除去一覧に <code>details</code>・<code>summary</code> を追加し、<code>tests/cases/tags</code>・<code>untagged</code> の <code>details</code> を含むケースで exe/ps1 の検査結果が一致することを確認（i260910-02 のテスト強化で検出された）。</p>
 			<ul>
-				<li>details/summary 誤検出の修正（24aedd2）も exe だけ。ps1 の除去一覧に details・summary が無い</li>
 				<li>text-tools 仕様書の「strict は将来」「対象は write」が実装（write・edit 両方に既に実装済み）と食い違う。テスト件数の記載も 43 件 vs 47 件で食い違う</li>
 				<li>バッジ・callout の解釈語彙が exe と ps1 で違う（ps1 は ok/good/done 等の別名も受け、callout は前方一致で拾う）</li>
 				<li><code>check-markdown.ps1</code> と <code>check-contrast.ps1</code> で、対象パス不在時の終了コードが 1 と 2 で不揃い</li>
