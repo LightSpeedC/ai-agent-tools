@@ -77,7 +77,11 @@ $Expect = @{
 		'(docs/target.md#2-実行ポリシー-なぜ動かないのか)'  # 他ファイルへのアンカーがリンク先の見出しアンカーへ張り替わる
 	)
 	'md-skip' = @(
-		'KEEPMARK'                 # meta が無いページは変換される
+		'KEEPMARK',                # meta が無いページは変換される
+		'ELEMKEEP1',               # class="md-skip" が無い li は残る（i260908-02）
+		'ELEMKEEP2',
+		'ELEMKEEP td',             # class="md-skip" が無い td は残る
+		'ELEMKEEP span'            # span の md-skip は中身だけ消え、外側の地の文は残る
 	)
 	'log-test' = @(
 		# 閉じていない div。最後の 1 行まで出ること
@@ -193,7 +197,7 @@ foreach ($c in $cases) {
 
 	# --- 出てはいけない文字列 ---
 	$forbidden = @{
-		'md-skip' = @('SKIPMARK')      # meta name="md-skip" のページ
+		'md-skip' = @('SKIPMARK', 'ELEMSKIP')      # meta name="md-skip" のページ／要素単位の md-skip の中身（i260908-02）
 		'extra'   = @('WORKMARK')      # ルート直下でも --extra で名指ししていないページ
 		'badge'   = @('****', 'BADGEWSTRONG**続きです')   # 二重の **（#715）／strong 内末尾の空白を Trim で捨てて語が繋がる（i260910-03）
 		'outside'  = @('OUTSIDEMARK')   # 探索フォルダの外のページは変換されない

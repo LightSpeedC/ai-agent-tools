@@ -126,6 +126,7 @@ namespace Html2Md
 			s = Regex.Replace(s, "(?s)<span\\b([^>]*)>(.*?)</span>", m =>
 			{
 				string[] classes = HtmlUtil.GetClassList("<span" + m.Groups[1].Value + ">");
+				if (HtmlUtil.HasClass(classes, "md-skip")) return "";
 				string inner = m.Groups[2].Value;
 				string mark = GetBadgeMark(classes);
 				if (mark == null) return inner;

@@ -521,6 +521,7 @@ function Convert-Inline {
 	$s = [regex]::Replace($s, '(?s)<span\b([^>]*)>(.*?)</span>', (New-Evaluator {
 		param($m)
 		$classes = Get-ClassList ('<span' + $m.Groups[1].Value + '>')
+		if ($classes -contains 'md-skip') { return '' }
 		$inner = $m.Groups[2].Value
 		$mark = Get-BadgeMark $classes
 		if ($null -eq $mark) { return $inner }
@@ -632,15 +633,19 @@ function Convert-Table {
 		$cells = @()
 		foreach ($cm in [regex]::Matches($rm.Groups[1].Value, '(?s)<(t[hd])\b([^>]*)>(.*?)</\1>')) {
 			$attrs = '<td' + $cm.Groups[2].Value + '>'
+			$cellClasses = Get-ClassList $attrs
 			$colspan = 1
 			$rowspan = 1
 			if ($cm.Groups[2].Value -match 'colspan="(\d+)"') { $colspan = [int]$Matches[1] }
 			if ($cm.Groups[2].Value -match 'rowspan="(\d+)"') { $rowspan = [int]$Matches[1] }
+			# md-skip のセルは空セルにする（part/desc の省略時と同じ落とし方）。
+			# colspan/rowspan の展開は列数がずれると崩れるため、行・列ごと削らない
+			$cellText = if ($cellClasses -contains 'md-skip') { '' } else { Convert-Inline -Html $cm.Groups[3].Value -Anchors $Anchors -InTable }
 			$cells += [pscustomobject]@{
-				Text    = (Convert-Inline -Html $cm.Groups[3].Value -Anchors $Anchors -InTable)
+				Text    = $cellText
 				ColSpan = $colspan
 				RowSpan = $rowspan
-				IsNum   = ((Get-ClassList $attrs) -contains 'num')
+				IsNum   = ($cellClasses -contains 'num')
 				IsHead  = ($isHead -or $cm.Groups[1].Value -eq 'th')
 			}
 		}
@@ -724,6 +729,10 @@ function Convert-List {
 		$start = $i + $m.Index
 		$block = Get-Block $inner $start 'li'
 		$i = $start + $block.Outer.Length
+
+		$liClasses = Get-ClassList (Get-OpenTag $block.Outer)
+		if ($liClasses -contains 'md-skip') { continue }
+
 		$liInner = $block.Inner
 
 		# 入れ子のリストを取り出してから、残りを 1 行のテキストにする

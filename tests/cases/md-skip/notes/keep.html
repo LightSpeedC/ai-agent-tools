@@ -3,5 +3,9 @@
 <div class="titlebar"><div class="inner"><h1>変換するページ</h1></div></div>
 <div class="wrap"><p>KEEPMARK この文は md に出る</p>
 <p>md-skip のページへのリンクは .html のまま残る: <a href="skip.html">変換しないページ</a> ／ <a href="skip.html#ch01">アンカー付き</a></p>
-<p>変換するページへのリンクは .md になる: <a href="keep.html">このページ</a></p></div>
+<p>変換するページへのリンクは .md になる: <a href="keep.html">このページ</a></p>
+<ul><li>ELEMKEEP1</li><li class="md-skip">ELEMSKIP li</li><li>ELEMKEEP2</li></ul>
+<table><thead><tr><th>A</th><th>B</th></tr></thead>
+<tbody><tr><td>ELEMKEEP td</td><td class="md-skip">ELEMSKIP td</td></tr></tbody></table>
+<p>ELEMKEEP span<span class="md-skip">ELEMSKIP span</span></p></div>
 </body></html>

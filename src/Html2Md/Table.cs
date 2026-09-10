@@ -44,11 +44,14 @@ namespace Html2Md
 				foreach (Match cm in Regex.Matches(rm.Groups[1].Value, "(?s)<(t[hd])\\b([^>]*)>(.*?)</\\1>"))
 				{
 					string attrs = cm.Groups[2].Value;
+					string[] cellClasses = HtmlUtil.GetClassList("<td" + attrs + ">");
 					Cell c = new Cell();
-					c.Text = inline.Convert(cm.Groups[3].Value, anchors, true);
+					// md-skip のセルは空セルにする（part/desc の省略時と同じ落とし方）。
+					// colspan/rowspan の展開は列数がずれると崩れるため、行・列ごと削らない
+					c.Text = HtmlUtil.HasClass(cellClasses, "md-skip") ? "" : inline.Convert(cm.Groups[3].Value, anchors, true);
 					c.ColSpan = ParseSpan(attrs, "colspan");
 					c.RowSpan = ParseSpan(attrs, "rowspan");
-					c.IsNum = HtmlUtil.HasClass(HtmlUtil.GetClassList("<td" + attrs + ">"), "num");
+					c.IsNum = HtmlUtil.HasClass(cellClasses, "num");
 					c.IsHead = isHeadRow || string.Equals(cm.Groups[1].Value, "th", StringComparison.OrdinalIgnoreCase);
 					cells.Add(c);
 				}
@@ -158,6 +161,10 @@ namespace Html2Md
 				int start = i + m.Index;
 				HtmlUtil.Block block = HtmlUtil.GetBlock(inner, start, "li");
 				i = start + block.Outer.Length;
+
+				string[] liClasses = HtmlUtil.GetClassList(HtmlUtil.GetOpenTag(block.Outer));
+				if (HtmlUtil.HasClass(liClasses, "md-skip")) continue;
+
 				string liInner = block.Inner;
 
 				// 入れ子のリストを取り出してから、残りを 1 行のテキストにする
