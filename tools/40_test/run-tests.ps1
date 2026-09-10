@@ -107,6 +107,7 @@ $ExtraFiles = @{
 # ケースごとに期待する終了コード。書かなければ 0（指摘なし）を期待する。
 # 意図して指摘あり（1）を確かめたいケースだけ、ここに名指しする
 $ExpectedExitCode = @{
+	'cross-anchor-bad' = 1   # 存在しない他ファイルのアンカーを検出できるかの確認用
 }
 
 function Write-Result([string]$Mark, [string]$Text) {

@@ -168,9 +168,14 @@ namespace Html2Md
 			// この実行で生成するファイル。--dry-run では書き出さないので、
 			// これを実在扱いにしないと相互リンクと画像が全部リンク切れになる
 			HashSet<string> expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			// 他ファイルへのアンカー付きリンクの検査用。--dry-run でも読めるよう、
+			// 書き出す前の Markdown をメモリ上に持っておく
+			Dictionary<string, string> markdownByPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 			foreach (ConvertResult r in results)
 			{
-				expected.Add(Path.GetFullPath(r.MdPath));
+				string full = Path.GetFullPath(r.MdPath);
+				expected.Add(full);
+				markdownByPath[full] = r.Markdown;
 				string imgDir = Path.Combine(Path.GetDirectoryName(r.MdPath), "images");
 				foreach (string img in r.Images) expected.Add(Path.GetFullPath(Path.Combine(imgDir, img)));
 			}
@@ -195,7 +200,7 @@ namespace Html2Md
 					Console.WriteLine("    HTML 側のリンク: すべて .html で参照先も実在");
 				}
 
-				List<string> mdBad = Checks.TestMdLinks(r, expected);
+				List<string> mdBad = Checks.TestMdLinks(r, expected, markdownByPath);
 				if (mdBad.Count > 0)
 				{
 					problems += mdBad.Count;

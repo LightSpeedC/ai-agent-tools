@@ -1489,14 +1489,20 @@ function Convert-HtmlFile {
 # ---------------------------------------------------------------------------
 
 # Markdown 側のリンク切れ・アンカー切れ
+# Markdown の見出し行から、GitHub のアンカーの一覧を作る
+function Get-HeadingAnchors([string]$Markdown) {
+	$heads = @()
+	foreach ($m in [regex]::Matches($Markdown, '(?m)^#{1,6}\s+(.+)$')) {
+		$heads += Get-Anchor (($m.Groups[1].Value -replace '<[^>]+>', '') -replace '[*`]', '')
+	}
+	return , $heads
+}
+
 function Test-MdLinks([object]$Result) {
 	$dir = Split-Path -Parent $Result.MdPath
 	$md = $Result.Markdown
 
-	$heads = @()
-	foreach ($m in [regex]::Matches($md, '(?m)^#{1,6}\s+(.+)$')) {
-		$heads += Get-Anchor (($m.Groups[1].Value -replace '<[^>]+>', '') -replace '[*`]', '')
-	}
+	$heads = Get-HeadingAnchors $md
 
 	$bad = @()
 	# フェンスとコードスパンの中は対象にしない。
@@ -1513,7 +1519,21 @@ function Test-MdLinks([object]$Result) {
 		$target = ($link -split '#')[0]
 		if (-not $target) { continue }
 		$full = Join-Path $dir ($target -replace '/', '\')
-		if (-not (Test-Path -LiteralPath $full)) { $bad += ('リンク切れ: ' + $link) }
+		if (-not (Test-Path -LiteralPath $full)) {
+			$bad += ('リンク切れ: ' + $link)
+			continue
+		}
+
+		# 他ファイルへのアンカーも、リンク先の見出しから実在を確かめる
+		$hashIdx = $link.IndexOf('#')
+		if ($hashIdx -ge 0 -and ([System.IO.Path]::GetExtension($full) -ieq '.md')) {
+			$anchor = $link.Substring($hashIdx + 1)
+			$targetMd = [System.IO.File]::ReadAllText($full, [System.Text.Encoding]::UTF8)
+			$targetHeads = Get-HeadingAnchors $targetMd
+			if ($targetHeads -notcontains $anchor) {
+				$bad += ('他ファイルのアンカー先なし: ' + $link)
+			}
+		}
 	}
 	return , $bad
 }

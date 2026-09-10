@@ -29,18 +29,32 @@ namespace Html2Md
 		/// expected には、この実行で生成する（または生成するはずだった）ファイルの絶対パスを渡す。
 		/// --dry-run では実際には書き出さないため、これを実在扱いにしないと全部リンク切れになる。
 		/// </summary>
-		public static List<string> TestMdLinks(ConvertResult result, HashSet<string> expected)
+		/// <summary>Markdown の見出し行から、GitHub のアンカーの一覧を作る。</summary>
+		private static List<string> GetHeadingAnchors(string markdown)
 		{
-			string dir = Path.GetDirectoryName(result.MdPath);
-			string md = result.Markdown;
-
 			List<string> heads = new List<string>();
-			foreach (Match m in Regex.Matches(md, "(?m)^#{1,6}\\s+(.+)$"))
+			foreach (Match m in Regex.Matches(markdown, "(?m)^#{1,6}\\s+(.+)$"))
 			{
 				string h = Regex.Replace(m.Groups[1].Value, "<[^>]+>", "");
 				h = Regex.Replace(h, "[*`]", "");
 				heads.Add(HtmlUtil.GetAnchor(h));
 			}
+			return heads;
+		}
+
+		/// <summary>
+		/// markdownByPath は、この実行で変換した他ページの Markdown（絶対パス → 本文）。
+		/// 他ファイルへのアンカー付きリンクは、そのページの見出しから実在を確かめる。
+		/// --dry-run では書き出さないため、ディスクではなくメモリ上の内容を使う。
+		/// この実行に含まれないページ（既存の .md）はディスクから読む。
+		/// </summary>
+		public static List<string> TestMdLinks(ConvertResult result, HashSet<string> expected,
+			Dictionary<string, string> markdownByPath)
+		{
+			string dir = Path.GetDirectoryName(result.MdPath);
+			string md = result.Markdown;
+
+			List<string> heads = GetHeadingAnchors(md);
 
 			List<string> bad = new List<string>();
 			// フェンスとコードスパンの中は対象にしない。
@@ -58,8 +72,29 @@ namespace Html2Md
 				}
 				string full = HtmlUtil.ResolveLink(dir, link);
 				if (full == null) continue;
-				if (expected != null && expected.Contains(full)) continue;
-				if (!File.Exists(full) && !Directory.Exists(full)) bad.Add("リンク切れ: " + link);
+
+				bool inExpected = expected != null && expected.Contains(full);
+				if (!inExpected && !File.Exists(full) && !Directory.Exists(full))
+				{
+					bad.Add("リンク切れ: " + link);
+					continue;
+				}
+
+				// 他ファイルへのアンカーも、リンク先の見出しから実在を確かめる
+				int hashIdx = link.IndexOf('#');
+				if (hashIdx >= 0 && string.Equals(Path.GetExtension(full), ".md", StringComparison.OrdinalIgnoreCase))
+				{
+					string anchor = link.Substring(hashIdx + 1);
+					string targetMd;
+					if (markdownByPath == null || !markdownByPath.TryGetValue(full, out targetMd))
+					{
+						targetMd = File.Exists(full) ? File.ReadAllText(full, Encoding.UTF8) : null;
+					}
+					if (targetMd != null && !GetHeadingAnchors(targetMd).Contains(anchor))
+					{
+						bad.Add("他ファイルのアンカー先なし: " + link);
+					}
+				}
 			}
 			return bad;
 		}
