@@ -1542,6 +1542,11 @@ function Test-MdLinks([object]$Result) {
 # Markdown 側だけを検査すると、変換で .md になった分と区別できず見逃す。
 function Test-HtmlLinks([string]$HtmlPath) {
 	$html = [System.IO.File]::ReadAllText($HtmlPath, [System.Text.Encoding]::UTF8)
+	# コメントと pre/code の中身は検査対象から除く。サンプルの href="..." を
+	# リンク切れと誤検出しないため（html2md-tag-spec.html 自身が実例で踏んだ）
+	$html = [regex]::Replace($html, '(?s)<!--.*?-->', '')
+	$html = [regex]::Replace($html, '(?s)<pre\b.*?</pre>', '')
+	$html = [regex]::Replace($html, '(?s)<code\b[^>]*>.*?</code>', '')
 	$dir = Split-Path -Parent $HtmlPath
 	$bad = @()
 	foreach ($m in [regex]::Matches($html, 'href="([^"]+)"')) {
