@@ -614,6 +614,20 @@ Assert-Equal '54 文字が保たれる' $Body $decoded
 
 # ---------------------------------------------------------------
 Write-Host ''
+Write-Host '[BOM を伴う組の強制指定]' -ForegroundColor Cyan
+
+# 55. BOM の無い UTF-8 に --from utf8bom --to utf8bom を強制すると、
+#     以前は「同じ組だから」とバイト保持パスに入り、BOM が付かないまま
+#     「変更なし」で終わっていた（i260908-02。実際の先頭バイトを見ずに
+#     --from の申告を信じていたのが原因）
+$p = New-Case 'c55.txt'
+New-TextFile $p $Body $EncUtf8   # BOM 無し UTF-8
+Assert-Equal '55 終了コード' 0 (Invoke-Exe @($p, '--from', 'utf8bom', '--to', 'utf8bom'))
+$b = Get-Bytes $p
+Assert-True '55 BOM が付く' (Test-Prefix $b $Bom8) '先頭 EF BB BF'
+
+# ---------------------------------------------------------------
+Write-Host ''
 Write-Host '[実際のファイルでの往復]' -ForegroundColor Cyan
 
 # このプロジェクトの実ファイルを複製し、往復させてバイト列が戻ることを見る

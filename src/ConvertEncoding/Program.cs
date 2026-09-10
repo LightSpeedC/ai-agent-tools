@@ -219,7 +219,7 @@ namespace ConvertEncoding
 			// 文字コードが変わらず、単バイト安全な UTF-8 / SJIS のときは、
 			// デコードを通さずバイト列のまま改行だけ置き換える。
 			// CP932 の重複文字がデコード・エンコードで別のバイト列に化けるのを防ぐ
-			if (toKind == fromKind && IsByteSafeForEol(toKind))
+			if (toKind == fromKind && IsByteSafeForEol(toKind) && HasCorrectPreamble(source, toKind))
 			{
 				byte[] kept = spec.Eol.HasValue
 					? Converter.NormalizeEolBytes(source, spec.Eol.Value)
@@ -398,6 +398,24 @@ namespace ConvertEncoding
 			return kind == EncodingKind.Utf8
 				|| kind == EncodingKind.Utf8Bom
 				|| kind == EncodingKind.Sjis;
+		}
+
+		/// <summary>
+		/// バイト保持パスに入る前提が正しいかの確認。--from で組を強制指定した場合、
+		/// 実際の先頭バイトが BOM の形になっていないことがある（BOM なしの UTF-8 に
+		/// --from utf8bom を指定する等）。その状態のまま素通りさせると、
+		/// BOM が付かないまま「変更なし」で終わってしまう。
+		/// </summary>
+		private static bool HasCorrectPreamble(byte[] source, EncodingKind kind)
+		{
+			byte[] pre = Converter.GetPreamble(kind);
+			if (pre.Length == 0) return true;
+			if (source.Length < pre.Length) return false;
+			for (int i = 0; i < pre.Length; i++)
+			{
+				if (source[i] != pre[i]) return false;
+			}
+			return true;
 		}
 
 		/// <summary>
