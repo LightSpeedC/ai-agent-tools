@@ -128,7 +128,7 @@
 	<div class="inner">
 		<h1>html2md</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-08</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-10</p>
 	</div>
 </div>
 
@@ -527,7 +527,7 @@ convert-encoding foo.cmd --read</code></pre>
 			<tr><td class="num">1</td><td>引数が正しくない</td></tr>
 			<tr><td class="num">2</td><td>ファイルが無い、または読めない</td></tr>
 			<tr><td class="num">3</td><td><strong>文字コードを判定できない</strong>。書き込まずに終える</td></tr>
-			<tr><td class="num">4</td><td><strong>変換先で表現できない文字がある</strong>。<code>--force</code> で回避できる</td></tr>
+			<tr><td class="num">4</td><td><strong>変換先で表現できない文字がある</strong>、または<strong>変換元として読めないバイトがある</strong>。前者は <code>--force</code> で回避できる</td></tr>
 			<tr><td class="num">5</td><td>書き込みに失敗した</td></tr>
 		</tbody>
 	</table>
@@ -541,6 +541,10 @@ convert-encoding foo.cmd --read</code></pre>
 
 	<div class="callout callout-warning">
 		<p><strong>SJIS へ変換すると文字が失われることがある。</strong>絵文字・ハングル・簡体字は CP932 に無く、既定の変換では <code>?</code> に置き換わって元に戻せない。変換の前に検査し、見つかれば<strong>書き換えずに終了コード 4 で終える。</strong>その文字と行番号を出すので、どこを直せばよいか分かる。</p>
+	</div>
+
+	<div class="callout callout-warning">
+		<p><strong>元のバイト列が、指定した組として読めないこともある。</strong>SJIS の未割当バイトなどを best-fit で別の文字に化けさせたまま書き戻さないよう、<strong>同一組へのバイト保持を除き</strong>、再エンコードする前にデコード方向も検査する。読めなければ<strong>書き換えずに終了コード 4 で終える</strong>（変換先の文字が表現できない場合と同じコードだが、原因は逆）。<code>--from</code> で組を明示すれば読み方を変えられる。</p>
 	</div>
 
 	<p>改行はいったんすべて LF に落としてから目的の改行へ置き換える。<strong>CR 単独（旧 Mac 形式）もこの順で拾える。</strong>1 段階で <code>\r?\n</code> を置き換える方法だと CR 単独が残る。</p>

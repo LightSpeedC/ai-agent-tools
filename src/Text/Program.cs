@@ -8,7 +8,7 @@ namespace TextTool
 	/// <summary>
 	/// text — 文字コード対応テキスト・ツール一式。
 	/// text read | find | edit | write のサブコマンドに振り分ける。
-	/// 終了コード: 0 成功 / 1 find 一致なし / 2 エラー / 3 両方妥当で拒否 / 4 合言葉不一致。
+	/// 終了コード: 0 成功 / 1 find 一致なし / 2 エラー / 3 両方妥当で拒否 / 4 合言葉不一致 / 5 変換先で表現できない文字。
 	/// </summary>
 	internal static class Program
 	{

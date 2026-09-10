@@ -2,7 +2,7 @@
 
 SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。文字コードと改行の組を判定して、そのまま読み書きする
 
-> 📅 作成: 2026-09-07 / 更新: 2026-09-08
+> 📅 作成: 2026-09-07 / 更新: 2026-09-10
 
 [← html2md](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)
 
@@ -301,6 +301,7 @@ text write app.reg --keep --in tmp/body.txt
 | 2 | エラー（対象が無い・引数が不正） |
 | 3 | text edit / text write で組が両方妥当のため拒否 |
 | 4 | text edit で合言葉が不一致（別の人が更新） |
+| 5 | text edit / text write で変換先が表現できない文字がある |
 
 ## 7. 実装方針・ビルド・テスト
 
