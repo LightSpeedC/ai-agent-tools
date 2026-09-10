@@ -7,7 +7,7 @@ SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。
 [← html2md](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)
 
 > [!NOTE]
-> <strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド `text`（`text.exe`）1 本に `read`／`find`／`edit`／`write` を載せた（`src/Text/`、ビルド `build-text.cmd`、テスト `tools/40_test/run-text-tests.ps1` = 43 件成功）。**本文の「決定」はすべて実装に反映済み。**`--col`・`--regex`・`--all`、および `write` の変換先で表現できない文字の検出（strict）は将来。
+> <strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド `text`（`text.exe`）1 本に `read`／`find`／`edit`／`write` を載せた（`src/Text/`、ビルド `build-text.cmd`、テスト `tools/40_test/run-text-tests.ps1` = 53 件成功）。**本文の「決定」はすべて実装に反映済み。**`--col`・`--regex`・`--all` は将来。`write`・`edit` の変換先で表現できない文字の検出は実装済み（終了 5 で止まる。convert-encoding の `--force` のような ? への置き換えは無い）。
 
 1. [目的と背景](#1-目的と背景)
 2. [全体設計（1 エンジン＋4 動詞）](#2-全体設計1-エンジン4-動詞)
