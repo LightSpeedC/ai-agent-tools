@@ -49,7 +49,7 @@ Write-Host '=== Markdown の表示チェック（GitHub のレンダラ） ===' 
 # ---- 対象を集める ----
 if (-not (Test-Path -LiteralPath $Path)) {
 	Write-Host "パスが見つかりません: $Path" -ForegroundColor Red
-	exit 1
+	exit 2
 }
 
 $item = Get-Item -LiteralPath $Path
