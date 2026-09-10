@@ -128,7 +128,7 @@
 	<div class="inner">
 		<h1>html2md</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-10</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-11</p>
 	</div>
 </div>
 
@@ -271,7 +271,7 @@ html2md --root . --dry-run</code></pre>
 
 <pre><code class="language-powershell">html2md-ps -Root . -Dir docs,notes -DryRun</code></pre>
 
-	<p>引数は exe と対応する（<code>-Root</code> <code>-Dir</code> <code>-Exclude</code> <code>-NoReadme</code> <code>-DryRun</code>）。ダブルクリックで実行する <code>html2md-ps.cmd</code> も同じフォルダにある。</p>
+	<p>引数は exe と対応する（<code>-Root</code> <code>-Dir</code> <code>-Extra</code> <code>-Exclude</code> <code>-NoReadme</code> <code>-DryRun</code>）。ダブルクリックで実行する <code>html2md-ps.cmd</code> も同じフォルダにある。</p>
 
 	<p>両者の出力が一致することを <code>tools/40_test/run-tests.cmd</code> で検査している。<strong>片方だけ直すと落ちる。</strong>テストは exe の出力を読んだあとに削除してから ps1 を走らせる。残したままにすると、ps1 が 1 つも生成しなかった場合に exe の出力を読んで「一致」と誤判定する。</p>
 

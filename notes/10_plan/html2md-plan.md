@@ -2,7 +2,7 @@
 
 5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、このフォルダの共通ツールに統合する。あわせて PowerShell スクリプトを `csc.exe` でビルドする C# の exe に置き換える。
 
-> 📅 作成: 2026-08-28 / 更新: 2026-09-05
+> 📅 作成: 2026-08-28 / 更新: 2026-09-11
 
 [← html2md](../../README.md) ／ [HTML クラス名の取り決め](../90_rules/html-class-rules.md)
 
@@ -75,7 +75,7 @@
 
 実装はこのフォルダに 1 本だけ置く。`check-markdown` をプロジェクトを問わず 1 箇所に置いているのと同じ扱いにする。
 
-<strong>このフォルダは PATH に入れてある。</strong>プロジェクト側には何も置かず、どこからでも `html2md` で呼ぶ。使い方は[他のプロジェクトから使う](../../USAGE-FOR-PROJECTS.md)にある。
+<strong>このフォルダは PATH に入れてある。</strong>プロジェクト側には何も置かず、どこからでも `html2md` で呼ぶ。使い方は[他のプロジェクトから使う](../../USAGE-FOR-PROJECTS.html)にある。
 
 ![現状は 5 プロジェクトにそれぞれ実装があり、共通化後は共有実装 1 本を各プロジェクトから直接呼ぶ](images/html2md-plan-fig01.svg)
 
@@ -93,7 +93,7 @@
 
 ## 4. exe にする理由と作り方
 
-共通実装は PowerShell スクリプトではなく、`csc.exe` でビルドする C# の exe にする。`check-markdown.ps1` も同じく exe に置き換える。
+共通実装は PowerShell スクリプトではなく、`csc.exe` でビルドする C# の exe にする。`check-markdown.ps1` も当初は同じく exe に置き換える計画だったが、2026-09-05 に**やらないと決めて閉じた**（[課題 i260830-13](../40_issues/issues.html)）。ps1 のまま動いており、C# 化しても得るものが無いと判断したため、`check-markdown.ps1`・`check-contrast.ps1` は ps1 のまま残す。
 
 ### なぜ exe か
 
@@ -120,9 +120,8 @@
 | ファイル | 役割 |
 |---|---|
 | `src\Html2Md\*.cs` | 変換と検査の実装 |
-| `src\CheckMarkdown\*.cs` | GitHub の Markdown API で表示を確かめる実装 |
-| `build.cmd` | `csc.exe` を探して 2 本の exe をビルドする |
-| `html2md.exe` / `check-markdown.exe` | ビルド成果物。各プロジェクトのランチャーが呼ぶ |
+| `build.cmd` | `csc.exe` を探して `html2md.exe` をビルドする |
+| `html2md.exe` | ビルド成果物。各プロジェクトのランチャーが呼ぶ |
 
 ## 5. 日本語の強調が壊れる問題
 
@@ -194,7 +193,7 @@ CommonMark は `**` の前後にある文字を見て、それが開き記号と
 | 4 | 各プロジェクトの HTML のクラス名を取り決めに合わせる | 1 プロジェクトずつ、見た目を確かめてから次に移る |
 | 5 | 各プロジェクトの `tools/30_html2md` にランチャーを置き、旧 `src/scripts/70_html2md` の ps1 / mjs を退避する | ダブルクリックで従来どおり動くこと |
 | 6 | 生成した Markdown を `check-markdown` にかける | `**` の残りが 0 件になること |
-| 7 | `check-markdown` を C# に移す | ps1 版と同じ判定結果になること |
+| 7 | `check-markdown` を C# に移す（2026-09-05 にやらないと決めて閉じた。[課題 i260830-13](../40_issues/issues.html)） | — |
 | 8 | 旧 ps1 / mjs を削除する | 削除対象を提示して確認を取ってから実施 |
 
 段階 3 が要になる。5 本はそれぞれ別の HTML を相手にしてきたので、共通版が同じ HTML から同じ内容を出せるかは実際に流してみないと分からない。差分が出た箇所は、共通版の不足か、旧版の不具合か、意図した仕様変更かを 1 件ずつ判断する。

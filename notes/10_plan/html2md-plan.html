@@ -152,7 +152,7 @@
 	<div class="inner">
 		<h1>html2md ツール共通化計画</h1>
 		<p class="lead">5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、このフォルダの共通ツールに統合する。あわせて PowerShell スクリプトを <code>csc.exe</code> でビルドする C# の exe に置き換える。</p>
-		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-09-05</p>
+		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-09-11</p>
 	</div>
 </div>
 
@@ -332,7 +332,7 @@
 <section class="ch04" id="ch04">
 	<h1>exe にする理由と作り方</h1>
 
-	<p>共通実装は PowerShell スクリプトではなく、<code>csc.exe</code> でビルドする C# の exe にする。<code>check-markdown.ps1</code> も同じく exe に置き換える。</p>
+	<p>共通実装は PowerShell スクリプトではなく、<code>csc.exe</code> でビルドする C# の exe にする。<code>check-markdown.ps1</code> も当初は同じく exe に置き換える計画だったが、2026-09-05 に<strong>やらないと決めて閉じた</strong>（<a href="../40_issues/issues.html">課題 i260830-13</a>）。ps1 のまま動いており、C# 化しても得るものが無いと判断したため、<code>check-markdown.ps1</code>・<code>check-contrast.ps1</code> は ps1 のまま残す。</p>
 
 	<h2>なぜ exe か</h2>
 	<ul>
@@ -382,9 +382,8 @@
 		<thead><tr><th>ファイル</th><th>役割</th></tr></thead>
 		<tbody>
 			<tr><td class="nowrap"><code>src\Html2Md\*.cs</code></td><td>変換と検査の実装</td></tr>
-			<tr><td class="nowrap"><code>src\CheckMarkdown\*.cs</code></td><td>GitHub の Markdown API で表示を確かめる実装</td></tr>
-			<tr><td class="nowrap"><code>build.cmd</code></td><td><code>csc.exe</code> を探して 2 本の exe をビルドする</td></tr>
-			<tr><td class="nowrap"><code>html2md.exe</code> / <code>check-markdown.exe</code></td><td>ビルド成果物。各プロジェクトのランチャーが呼ぶ</td></tr>
+			<tr><td class="nowrap"><code>build.cmd</code></td><td><code>csc.exe</code> を探して <code>html2md.exe</code> をビルドする</td></tr>
+			<tr><td class="nowrap"><code>html2md.exe</code></td><td>ビルド成果物。各プロジェクトのランチャーが呼ぶ</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -541,8 +540,8 @@
 			</tr>
 			<tr>
 				<td class="nowrap">7</td>
-				<td><code>check-markdown</code> を C# に移す</td>
-				<td>ps1 版と同じ判定結果になること</td>
+				<td><code>check-markdown</code> を C# に移す（2026-09-05 にやらないと決めて閉じた。<a href="../40_issues/issues.html">課題 i260830-13</a>）</td>
+				<td>&#8212;</td>
 			</tr>
 			<tr>
 				<td class="nowrap">8</td>

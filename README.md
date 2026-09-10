@@ -2,7 +2,7 @@
 
 HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。
 
-> 📅 作成: 2026-08-27 / 更新: 2026-09-10
+> 📅 作成: 2026-08-27 / 更新: 2026-09-11
 
 ## 目次
 
@@ -29,7 +29,7 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 
 | 文書 | 内容 |
 |---|---|
-| [他のプロジェクトから使う](USAGE-FOR-PROJECTS.md) | コマンド・オプション・変換対象の外し方・検査の読み方。**使う側が読むのはこれ** |
+| [他のプロジェクトから使う](USAGE-FOR-PROJECTS.html) | コマンド・オプション・変換対象の外し方・検査の読み方。**使う側が読むのはこれ** |
 | [html2md ツール共通化計画](notes/10_plan/html2md-plan.md) | 各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り |
 | [html2md タグ対応仕様](notes/10_plan/html2md-tag-spec.md) | どのタグをどう変換するか。実測した結果と、まだ決まっていない論点 |
 | [convert-encoding 仕様書](notes/10_plan/p260906-01-convert-encoding.md) | 文字コードの判定・変換の手順・終了コード・テストケース |
@@ -118,7 +118,7 @@ html2md --root . --dry-run
 html2md-ps -Root . -Dir docs,notes -DryRun
 ```
 
-引数は exe と対応する（`-Root` `-Dir` `-Exclude` `-NoReadme` `-DryRun`）。ダブルクリックで実行する `html2md-ps.cmd` も同じフォルダにある。
+引数は exe と対応する（`-Root` `-Dir` `-Extra` `-Exclude` `-NoReadme` `-DryRun`）。ダブルクリックで実行する `html2md-ps.cmd` も同じフォルダにある。
 
 両者の出力が一致することを `tools/40_test/run-tests.cmd` で検査している。<strong>片方だけ直すと落ちる。</strong>テストは exe の出力を読んだあとに削除してから ps1 を走らせる。残したままにすると、ps1 が 1 つも生成しなかった場合に exe の出力を読んで「一致」と誤判定する。
 
