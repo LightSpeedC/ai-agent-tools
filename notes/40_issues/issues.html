@@ -297,7 +297,7 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260830-08</span>画像の相対パスを出力位置から計算 ［中］</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-08</span>画像の相対パスを出力位置から計算 ［中］</summary>
 		<div class="issue-body">
 			<p>いまは切り出した SVG を <code>images/</code> 固定で参照している。画像を 1 か所に集約する構成では、出力先の階層によって相対パスが変わる。</p>
 			<div class="tablewrap">
@@ -311,6 +311,7 @@
 			</table>
 			</div>
 			<p>要求元は「ルート直下か否か」の 2 分岐で書いて 3 階層目で壊れた経験がある。出力先からの相対パスを毎回計算する。</p>
+			<p><span class="badge b-ok">済</span>2026-09-10 に実装を確認したところ、この問題自体が起きない設計になっていた。画像を「1 か所に集約」せず、<strong>各ページと同じフォルダに <code>images/</code> を作る</strong>（<code>docs/plan/構成案.md</code> の画像は <code>docs/plan/images/構成案-fig01.svg</code>）。参照は常に <code>images/xxx.svg</code> の固定形で、階層の深さに関わらず相対パスの計算が要らない。3 階層下（<code>notes/plan/構成案.html</code>）で実測し、期待どおり崩れないことを確認した。</p>
 		</div>
 	</details>
 
