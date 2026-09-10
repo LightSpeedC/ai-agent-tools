@@ -389,16 +389,34 @@ function Resolve-Emphasis([string]$Text) {
 			$t = $prefix + $suffix
 			continue
 		}
-		# 記号を挟まない状態で前後の文字を見る
-		$probe = $prefix + $inner + $suffix
-		$ok = ($openKind -ceq $closeKind) -and
-			(Test-CanEmphasize -Text $probe -Start $prefix.Length -Length $inner.Length)
-		if ($ok) {
-			$mark = Get-EmphasisMark $openKind
-			$rep = $mark + $inner + $mark
+
+		# 同じ種類の強調がそのまま入れ子になっている場合（バッジが strong の
+		# 先頭に来るときなど）。直前・直後に同じ種類の生のセンチネルがまだ
+		# 残っているなら、ここでは記法を確定させず中身だけを残す。外側の
+		# ペアが次の周で解決するとき、まとめて 1 組の記法になる。
+		#
+		# 生のセンチネル文字は HTML 由来の文字列に現れないので、この判定は
+		# 文字列の中身（** など）を見る必要がなく誤検出しない。
+		$prevKind = if ($m.Index -gt 0) { Get-EmphasisKind $t[$m.Index - 1] $true } else { '' }
+		$nextKind = if ($m.Index + $m.Length -lt $t.Length) { Get-EmphasisKind $t[$m.Index + $m.Length] $false } else { '' }
+		$touchesOuterSameKind = ($prevKind -ceq $openKind -and $prevKind) -or ($nextKind -ceq $closeKind -and $nextKind)
+
+		if ($openKind -cne $closeKind) {
+			# 開きと閉じの種類が食い違うときは、記法にせずタグで出す
+			$rep = '<' + $openKind + '>' + $inner + '</' + $openKind + '>'
+		}
+		elseif ($touchesOuterSameKind) {
+			$rep = $inner
 		}
 		else {
-			$rep = '<' + $openKind + '>' + $inner + '</' + $openKind + '>'
+			$probe = $prefix + $inner + $suffix
+			if (Test-CanEmphasize -Text $probe -Start $prefix.Length -Length $inner.Length) {
+				$mark = Get-EmphasisMark $openKind
+				$rep = $mark + $inner + $mark
+			}
+			else {
+				$rep = '<' + $openKind + '>' + $inner + '</' + $openKind + '>'
+			}
 		}
 		$t = $prefix + $rep + $suffix
 	}

@@ -143,13 +143,32 @@ namespace Html2Md
 					continue;
 				}
 
-				// 記号を挟まない状態で前後の文字を見る。
-				// 開きと閉じの種類が食い違うときは、記法にせずタグで出す。
-				bool ok = (openKind == closeKind)
-					&& CanEmphasize(prefix + inner + suffix, prefix.Length, inner.Length);
+				// 同じ種類の強調がそのまま入れ子になっている場合（バッジが strong の
+				// 先頭に来るときなど）。直前・直後に同じ種類の生のセンチネルがまだ
+				// 残っているなら、ここでは記法を確定させず中身だけを残す。外側の
+				// ペアが次の周で解決するとき、まとめて 1 組の記法になる。
+				//
+				// 生のセンチネル文字（\x01 等）は HTML 由来の文字列に現れないので、
+				// この判定は文字列の中身（** など）を見る必要がなく誤検出しない。
+				// 直前の文字が同じ種類の開きセンチネルなら、そのペアはこの一致の
+				// 外側を囲む未解決のペアに限られる（もし内側で閉じていれば、正規表現は
+				// そちらを先に最左の一致として拾っているはず）。
+				bool touchesOuterSameKind =
+					(m.Index > 0 && KindOfBegin(t[m.Index - 1]) == openKind) ||
+					(m.Index + m.Length < t.Length && KindOfEnd(t[m.Index + m.Length]) == closeKind);
 
 				string rep;
-				if (ok)
+				if (openKind != closeKind)
+				{
+					// 開きと閉じの種類が食い違うときは、記法にせずタグで出す
+					string tag = TagOf(openKind);
+					rep = "<" + tag + ">" + inner + "</" + tag + ">";
+				}
+				else if (touchesOuterSameKind)
+				{
+					rep = inner;
+				}
+				else if (CanEmphasize(prefix + inner + suffix, prefix.Length, inner.Length))
 				{
 					string mark = MarkOf(openKind);
 					rep = mark + inner + mark;

@@ -58,6 +58,11 @@ $Expect = @{
 		'外部CSSのテスト',
 		'本文'
 	)
+	'badge' = @(
+		'**5.1 では BADGESTRONG を必ず付けてください。**',   # strong 直下のバッジ。二重の ** にならない
+		'**完了** BADGEPLAIN',                                   # strong の外のバッジは従来どおり
+		'**BADGENOSPAN のような、バッジを含まない通常の強調。**'
+	)
 	'cross-anchor' = @(
 		'(#1-この文書の概要)',                              # 同一ファイル内のアンカー張り替え（従来どおり）
 		'(docs/target.md#2-実行ポリシー-なぜ動かないのか)'  # 他ファイルへのアンカーがリンク先の見出しアンカーへ張り替わる
@@ -159,6 +164,7 @@ foreach ($c in $cases) {
 	$forbidden = @{
 		'md-skip' = @('SKIPMARK')      # meta name="md-skip" のページ
 		'extra'   = @('WORKMARK')      # ルート直下でも --extra で名指ししていないページ
+		'badge'   = @('****')          # strong 直下のバッジが二重の ** にならない（#715 の回帰）
 	}
 
 	# --- 出ているべき文字列 ---
