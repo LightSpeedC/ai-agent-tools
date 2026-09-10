@@ -562,9 +562,8 @@ $sub = Convert-Blocks ...</code></pre>
 			<p><span class="badge b-ok">済</span>2・3・12（資料の据え置き）も直した。text の終了コード表・<code>Program.cs</code> 冒頭コメントに <code>exit 5</code> を追記（2）。README・USAGE・convert-encoding 仕様書に、デコード側の <code>exit 4</code>（読めないバイト。既存の変換先 <code>exit 4</code> とは原因が逆）を追記（3）。タグ対応仕様・クラス名の取り決めの chapters 出力例を <code>.md</code> に直した（12）。</p>
 			<p><span class="badge b-ok">済</span>4（他ファイルへのアンカー検査）も直した。<code>Checks.cs</code>（exe）・<code>html2md-ps.ps1</code>（ps1）の <code>TestMdLinks</code> を拡張し、他ファイルへのアンカー付きリンクも<strong>リンク先の見出しから実在を確かめる</strong>ようにした。<code>--dry-run</code> でも正しく動くよう、ディスクではなくこの実行で変換済みの Markdown（メモリ上）を先に見て、この実行に含まれないページだけディスクから読む。テストケース <code>tests/cases/cross-anchor-bad</code> を新設（存在しないアンカーを検出できることを確認、終了コード 1 を期待値に登録）。全テスト成功（html2md 13・convert-encoding 98・text 50）。</p>
 			<p><span class="badge b-ok">済</span>6（ps1 の HTML 側リンク検査が pre/code とコメントを除外しない）も直した。<code>html2md-ps.ps1</code> の <code>Test-HtmlLinks</code> に、exe の <code>Checks.cs</code>（<code>StripCodeAreas</code>＋コメント除去）と同じ正規表現による除外を追加。<code>tests/cases/tags</code> の <code>&lt;pre&gt;&lt;code&gt;</code> に実在しない <code>href</code> を含む例を足し、除外前の ps1 では「リンク切れ」を誤検出する（終了コードが exe と食い違う）ことを確認したうえで直した。</p>
+			<p><span class="badge b-ok">済</span>10・11（テストの期待値の穴）も直した。<code>chapters</code> の <code>$Expect</code> に見出し行（<code>| 部 | タイトル | 内容 |</code>）と区切り行（<code>|---|---|---|</code>）を追加し、表になる前の旧挙動では通らないようにした（10）。<code>outside</code>・<code>svgvar</code> の <code>$Expect</code> が空だった点は、実際の生成結果を確認したうえで埋めた。<code>outside</code> は探索フォルダの内外でリンクの拡張子が変わること、<code>svgvar</code> は章スコープの CSS 変数（<code>--accent</code> が章ごとに違う値になる）・フォールバック値の優先順位（<code>:root</code> の定義があればそちらを使い、無ければフォールバック文字列を使う）・未解決の <code>var()</code> がそのまま残ることを固定した（11）。全ケース成功を確認。</p>
 			<ul>
-				<li>10. chapters の期待値が、表になる前の旧挙動でもそのまま通ってしまう（見出し行・区切り行・data-columns の 3 語を固定していない）</li>
-				<li>11. 「tests/cases で固定してある」と資料に書くが、期待値ゼロのケースが 2 件ある（<code>outside</code>・<code>svgvar</code>）</li>
 				<li>13. i260908-02 の当初一覧にあった medium 5 件が、済にも残りにも入っていない（少なくとも <code>--from utf8bom</code> の BOM 欠落は現物で未修正）</li>
 			</ul>
 		</div>

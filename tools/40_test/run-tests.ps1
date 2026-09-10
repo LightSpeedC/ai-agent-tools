@@ -53,7 +53,9 @@ $Expect = @{
 	)
 	'chapters' = @(
 		'第1部 基礎編',
-		'(docs/01-背景.md)'   # ttl のリンクも他のリンクと同じ経路で .html → .md になる（バグ #699 の回帰）
+		'(docs/01-背景.md)',   # ttl のリンクも他のリンクと同じ経路で .html → .md になる（バグ #699 の回帰）
+		'| 部 | タイトル | 内容 |',   # data-columns の見出し行（i260910-02 の10。表になる前の旧挙動を通さない）
+		'|---|---|---|'               # 区切り行
 	)
 	'link' = @(
 		'外部CSSのテスト',
@@ -95,6 +97,19 @@ $Expect = @{
 		'<summary>畳んだ見出し</summary>',
 		'畳んだ中身の段落',
 		'</details>'
+	)
+	'outside' = @(
+		# 探索フォルダ（notes）の中は .md、外（extra）は .html のまま（i260910-02 の11）
+		'[もう 1 つのページ](other.md)',
+		'[外にあるページ](../extra/outside.html)'
+	)
+	'svgvar' = @(
+		# 章スコープの CSS 変数が章ごとに解決される（i260910-02 の11）
+		'hsl(280,78%,25%)',    # ch01 の --accent
+		'hsl(0,78%,25%)',      # ch02 の --accent（ch01 と違う値になること）
+		'#d9dfe8',             # var(--line, #cccccc) は :root の定義を優先し、フォールバックは使わない
+		'#336699',             # var(--nothing, #336699) は定義が無いのでフォールバックを使う
+		'var(--unknown)'       # 定義もフォールバックも無い var はそのまま残す
 	)
 }
 
@@ -175,6 +190,7 @@ foreach ($c in $cases) {
 		'md-skip' = @('SKIPMARK')      # meta name="md-skip" のページ
 		'extra'   = @('WORKMARK')      # ルート直下でも --extra で名指ししていないページ
 		'badge'   = @('****')          # strong 直下のバッジが二重の ** にならない（#715 の回帰）
+		'outside' = @('OUTSIDEMARK')   # 探索フォルダの外のページは変換されない
 	}
 
 	# --- 出ているべき文字列 ---
