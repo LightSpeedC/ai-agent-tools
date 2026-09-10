@@ -189,6 +189,20 @@ function Get-PlainText([AllowEmptyString()][string]$Html) {
 	return $t.Trim()
 }
 
+# タグだけを落とし、実体参照はそのまま残す（バッジ・リンクテキスト・alt 用）。
+#
+# ここでデコードすると、本文中の「&amp;lt;p&amp;gt;」のような文字列が実体参照つきの
+# まま残っていればタグ除去では無視されるが、先にデコードして本物の "&lt;p&gt;" に
+# してしまうと、Convert-Inline の最終段にある汎用タグ除去（a・バッジ等の変換が
+# 済んだ後、$s 全体に対してもう一度かかる）が実タグと誤認して消してしまう。
+# デコードは、タグ除去がすべて終わった後（最終段）でまとめて行う。
+function Get-PlainTextRaw([AllowEmptyString()][string]$Html) {
+	if ([string]::IsNullOrEmpty($Html)) { return '' }
+	$t = $Html -replace '<[^>]+>', ' '
+	$t = $t -replace '\s+', ' '
+	return $t.Trim()
+}
+
 # GitHub の見出しアンカーを見出しテキストから求める。
 # 小文字化 → 記号を落とす → 空白 1 文字をハイフン 1 個にする。
 function Get-Anchor([string]$Heading) {
@@ -510,7 +524,7 @@ function Convert-Inline {
 		$inner = $m.Groups[2].Value
 		$mark = Get-BadgeMark $classes
 		if ($null -eq $mark) { return $inner }
-		$text = (Get-PlainText $inner)
+		$text = (Get-PlainTextRaw $inner)
 		if (-not $text) { return '' }
 		$body = [string]$script:SB + $text + [string]$script:SE
 		# バッジは CSS の余白で本文と離れていたので、空白 1 個を補って続く文と分ける
@@ -524,7 +538,7 @@ function Convert-Inline {
 		$tag = '<img' + $m.Groups[1].Value + '>'
 		$src = Get-Attr $tag 'src'
 		if (-not $src) { return '' }
-		$alt = Convert-Entity (Get-Attr $tag 'alt')
+		$alt = Get-Attr $tag 'alt'
 		return ('![{0}]({1})' -f $alt, $src)
 	}))
 
@@ -533,9 +547,7 @@ function Convert-Inline {
 		param($m)
 		$tag = '<a' + $m.Groups[1].Value + '>'
 		$href = Get-Attr $tag 'href'
-		$text = $m.Groups[2].Value -replace '<[^>]+>', ''
-		$text = (Convert-Entity $text) -replace '\s+', ' '
-		$text = $text.Trim()
+		$text = Get-PlainTextRaw $m.Groups[2].Value
 		if (-not $href) { return $text }
 		if ($href.StartsWith('#')) {
 			$key = $href.Substring(1)

@@ -129,7 +129,7 @@ namespace Html2Md
 				string inner = m.Groups[2].Value;
 				string mark = GetBadgeMark(classes);
 				if (mark == null) return inner;
-				string text = HtmlUtil.GetPlainText(inner);
+				string text = HtmlUtil.StripTagsRaw(inner);
 				if (text.Length == 0) return "";
 				string body = Emphasis.StrongBegin + text + Emphasis.StrongEnd.ToString();
 				// バッジは CSS の余白で本文と離れていたので、空白 1 個を補って続く文と分ける
@@ -143,7 +143,7 @@ namespace Html2Md
 				string tag = "<img" + m.Groups[1].Value + ">";
 				string src = HtmlUtil.GetAttr(tag, "src");
 				if (src.Length == 0) return "";
-				string alt = HtmlUtil.DecodeEntities(HtmlUtil.GetAttr(tag, "alt"));
+				string alt = HtmlUtil.GetAttr(tag, "alt");
 				return "![" + alt + "](" + src + ")";
 			});
 
@@ -152,8 +152,7 @@ namespace Html2Md
 			{
 				string tag = "<a" + m.Groups[1].Value + ">";
 				string href = HtmlUtil.GetAttr(tag, "href");
-				string text = Regex.Replace(m.Groups[2].Value, "<[^>]+>", "");
-				text = Regex.Replace(HtmlUtil.DecodeEntities(text), "\\s+", " ").Trim();
+				string text = HtmlUtil.StripTagsRaw(m.Groups[2].Value);
 				if (href.Length == 0) return text;
 				if (href.StartsWith("#", StringComparison.Ordinal))
 				{

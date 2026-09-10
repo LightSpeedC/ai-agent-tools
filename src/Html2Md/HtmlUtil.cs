@@ -74,6 +74,23 @@ namespace Html2Md
 			return m.Groups[1].Value;
 		}
 
+		/// <summary>
+		/// タグだけを落とし、実体参照はそのまま残す（バッジ・リンクテキスト・alt 用）。
+		///
+		/// ここでデコードすると、本文中の「&amp;lt;p&amp;gt;」のような文字列が実体参照つきの
+		/// まま残っていればタグ除去では無視されるが、先にデコードして本物の "&lt;p&gt;" に
+		/// してしまうと、Convert の最終段にある汎用タグ除去（&lt;a&gt;・バッジ等の変換が
+		/// 済んだ後、s 全体に対してもう一度かかる）が実タグと誤認して消してしまう。
+		/// デコードは、タグ除去がすべて終わった後（Convert の最終段）でまとめて行う。
+		/// </summary>
+		public static string StripTagsRaw(string html)
+		{
+			if (string.IsNullOrEmpty(html)) return "";
+			string t = Regex.Replace(html, "<[^>]+>", " ");
+			t = Regex.Replace(t, "\\s+", " ");
+			return t.Trim();
+		}
+
 		/// <summary>タグと実体参照を落として素のテキストにする（アンカー計算・突き合わせ用）。</summary>
 		public static string GetPlainText(string html)
 		{
