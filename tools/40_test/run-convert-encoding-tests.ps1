@@ -7,9 +7,10 @@
 
 	何度実行しても同じ結果になるよう、入力は毎回 tmp/ に作り直す。
 
-	注意: 仕様書 6 章のケース 3・4 は「--to utf8 で LF のみ」を期待しているが、
-	2 章の規則「改行を書かなければ、改行は変えない」と食い違う。
-	ケース 5d・5f が規則側を裏付けているため、規則に従った期待値にしてある。
+	仕様書 6 章のケース 3・4 は、受け取った時点では「--to utf8 で LF のみ」を
+	期待しており 2 章の規則「改行を書かなければ、改行は変えない」と食い違って
+	いたが、記述ミスと判断し規則に合わせて直した（仕様書側の callout を参照）。
+	このテストの期待値もその規則に従っている。
 #>
 [CmdletBinding()]
 param()
@@ -625,6 +626,16 @@ New-TextFile $p $Body $EncUtf8   # BOM 無し UTF-8
 Assert-Equal '55 終了コード' 0 (Invoke-Exe @($p, '--from', 'utf8bom', '--to', 'utf8bom'))
 $b = Get-Bytes $p
 Assert-True '55 BOM が付く' (Test-Prefix $b $Bom8) '先頭 EF BB BF'
+
+# 56. BOM 付きの UTF-8 に --from utf8 --to utf8 を強制すると、
+#     以前は「プリアンブルが要らない組だから」で先頭バイトを見ずに通り、
+#     BOM が残ったまま「変更なし」で終わっていた（定期レビュー #2 の medium 3。
+#     HasCorrectPreamble が「足りない」方向しか見ていなかったのが原因）
+$p = New-Case 'c56.txt'
+New-TextFile $p $Body $EncUtf8Bom   # BOM 付き UTF-8
+Assert-Equal '56 終了コード' 0 (Invoke-Exe @($p, '--from', 'utf8', '--to', 'utf8'))
+$b = Get-Bytes $p
+Assert-True '56 BOM が消える' (-not (Test-Prefix $b $Bom8)) '先頭が BOM でない'
 
 # ---------------------------------------------------------------
 Write-Host ''

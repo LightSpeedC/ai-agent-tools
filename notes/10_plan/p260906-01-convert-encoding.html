@@ -105,7 +105,7 @@
 <div class="titlebar"><div class="inner">
 <h1>convert-encoding 仕様書</h1>
 <div class="lead">文字コードと改行を変換するコマンドライン ツール</div>
-<div class="date">📅 作成: 2026-09-06 / 更新: 2026-09-10</div>
+<div class="date">📅 作成: 2026-09-06 / 更新: 2026-09-11</div>
 </div></div>
 
 <div class="wrap">
@@ -532,6 +532,10 @@ convert-encoding tmp/case.txt --from hex
 	<p><strong>CP932 には同じ文字が 2 か所にある重複が 550 件ある。</strong>デコードして再エンコードすると、<code>ⅰ</code>（NEC選定 <code>EEEF</code>／IBM <code>FA40</code>）のような文字が別のバイト列に化ける。<strong>改行だけ変えたつもりでも中身のバイトが変わり、往復が保たれない。</strong>デコードを通さなければこれが起きない。</p>
 </div>
 
+<div class="callout callout-important">
+	<p><strong>このパスに入る前に、実際の先頭バイトが宣言どおりかも確かめる。</strong><code>--from</code> で組を強制指定すると、実ファイルの先頭バイトと食い違うことがある（BOM 無しの UTF-8 に <code>--from utf8bom</code> を指定する、逆に BOM 付きの UTF-8 に <code>--from utf8</code> を指定する等）。確かめずに通すと、宣言どおりの中身にならないまま「変更なし」で終わる。</p>
+</div>
+
 <p>Shift_JIS の 2 バイト目は <code>40</code>〜<code>FC</code> で、<strong>改行コード（<code>0A</code> / <code>0D</code>）は絶対に現れない。</strong>UTF-8 も同じで、続きバイトは <code>80</code>〜<code>BF</code> だから <code>0A</code> / <code>0D</code> が文字の途中に現れない。<strong>この 2 つはバイト列のまま改行を探して置き換えても、文字を壊さない。</strong></p>
 
 <div class="tablewrap"><table>
@@ -747,6 +751,16 @@ try {
 <tr><td class="num">52</td><td>CP932 の重複文字（<code>EEEF</code>）を含む SJIS を <code>--to /crlf</code></td><td><strong>その 2 バイトが <code>EEEF</code> のまま。</strong>改行だけ CRLF になる</td></tr>
 <tr><td class="num">53</td><td>同じファイルを <code>--to sjis/crlf</code>（文字コードは同じ）</td><td>同上。バイトが化けない</td></tr>
 <tr><td class="num">54</td><td>UTF-16 LE のファイルを <code>--to /crlf</code></td><td>改行が CRLF になる。文字は壊れない</td></tr>
+</tbody>
+</table></div>
+
+<h2>BOM を伴う組の強制指定</h2>
+<p><code>--from</code> で組を強制指定したとき、実際の先頭バイトが宣言と食い違っていることがある。バイト保持パス（上の 52〜54）に入る前提が崩れるため、先頭バイトも確かめてから入る。</p>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>内容</th><th>期待する結果</th></tr></thead>
+<tbody>
+<tr><td class="num">55</td><td>BOM の無い UTF-8 に <code>--from utf8bom --to utf8bom</code> を強制</td><td>BOM が付く（プリアンブルが足りない側の食い違い）</td></tr>
+<tr><td class="num">56</td><td>BOM 付きの UTF-8 に <code>--from utf8 --to utf8</code> を強制</td><td>BOM が消える（プリアンブルが過剰な側の食い違い）</td></tr>
 </tbody>
 </table></div>
 

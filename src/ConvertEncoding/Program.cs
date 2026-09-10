@@ -402,18 +402,34 @@ namespace ConvertEncoding
 
 		/// <summary>
 		/// バイト保持パスに入る前提が正しいかの確認。--from で組を強制指定した場合、
-		/// 実際の先頭バイトが BOM の形になっていないことがある（BOM なしの UTF-8 に
-		/// --from utf8bom を指定する等）。その状態のまま素通りさせると、
-		/// BOM が付かないまま「変更なし」で終わってしまう。
+		/// 実際の先頭バイトが宣言と食い違っていることがある。両方向を見る。
+		///
+		///   足りない方向: BOM なしの UTF-8 に --from utf8bom を指定する
+		///                （プリアンブルが要る組なのに、実際には無い）
+		///   過剰な方向:   BOM 付きの UTF-8 に --from utf8 を指定する
+		///                （プリアンブルが要らない組なのに、実際には UTF-8 の BOM が付いている）
+		///
+		/// どちらを素通りさせても、宣言どおりの中身にならないまま
+		/// 「変更なし」で終わってしまう（前者は BOM が付かない、後者は BOM が残る）。
 		/// </summary>
 		private static bool HasCorrectPreamble(byte[] source, EncodingKind kind)
 		{
 			byte[] pre = Converter.GetPreamble(kind);
-			if (pre.Length == 0) return true;
-			if (source.Length < pre.Length) return false;
-			for (int i = 0; i < pre.Length; i++)
+			if (pre.Length == 0)
 			{
-				if (source[i] != pre[i]) return false;
+				// プリアンブルが要らない組（Utf8・Sjis）。UTF-8 の BOM で始まっていたら
+				// それは別物なので、バイト保持パスに入れてはいけない
+				return !StartsWith(source, Converter.GetPreamble(EncodingKind.Utf8Bom));
+			}
+			return StartsWith(source, pre);
+		}
+
+		private static bool StartsWith(byte[] source, byte[] prefix)
+		{
+			if (source.Length < prefix.Length) return false;
+			for (int i = 0; i < prefix.Length; i++)
+			{
+				if (source[i] != prefix[i]) return false;
 			}
 			return true;
 		}
