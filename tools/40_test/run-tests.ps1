@@ -66,7 +66,8 @@ $Expect = @{
 	'badge' = @(
 		'**5.1 では BADGESTRONG を必ず付けてください。**',   # strong 直下のバッジ。二重の ** にならない
 		'**完了** BADGEPLAIN',                                   # strong の外のバッジは従来どおり
-		'**BADGENOSPAN のような、バッジを含まない通常の強調。**'
+		'**BADGENOSPAN のような、バッジを含まない通常の強調。**',
+		'先頭は**BADGEWSTRONG** 続きです。'   # strong 内側末尾の空白は外側へ出す（i260910-03。Trim で捨てて語が繋がらない）
 	)
 	'cross-anchor' = @(
 		'(#1-この文書の概要)',                              # 同一ファイル内のアンカー張り替え（従来どおり）
@@ -191,7 +192,7 @@ foreach ($c in $cases) {
 	$forbidden = @{
 		'md-skip' = @('SKIPMARK')      # meta name="md-skip" のページ
 		'extra'   = @('WORKMARK')      # ルート直下でも --extra で名指ししていないページ
-		'badge'   = @('****')          # strong 直下のバッジが二重の ** にならない（#715 の回帰）
+		'badge'   = @('****', 'BADGEWSTRONG**続きです')   # 二重の **（#715）／strong 内末尾の空白を Trim で捨てて語が繋がる（i260910-03）
 		'outside'  = @('OUTSIDEMARK')   # 探索フォルダの外のページは変換されない
 		'chapters' = @('[03. リンクなしタイトル]')   # ttl が誤ってリンク化されない（i260910-03）
 	}

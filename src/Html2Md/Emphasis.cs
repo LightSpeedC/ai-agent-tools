@@ -133,7 +133,8 @@ namespace Html2Md
 
 				int openKind = KindOfBegin(t[m.Index]);
 				int closeKind = KindOfEnd(t[m.Index + m.Length - 1]);
-				string inner = m.Groups[1].Value.Trim();
+				string raw = m.Groups[1].Value;
+				string inner = raw.Trim();
 				string prefix = t.Substring(0, m.Index);
 				string suffix = t.Substring(m.Index + m.Length);
 
@@ -142,6 +143,13 @@ namespace Html2Md
 					t = prefix + suffix;
 					continue;
 				}
+
+				// 前後の空白は記法の外側へ出す。** の内側は前後に空白を置けない
+				// （CommonMark の規定）ので Trim 自体は要るが、そのまま捨てると
+				// 前後の語と強調テキストがくっついて見える
+				// （例: <strong>a </strong>b が **a**b になり空白が消える）
+				string leadWs = raw.Substring(0, raw.Length - raw.TrimStart().Length);
+				string trailWs = raw.Substring(raw.TrimEnd().Length);
 
 				// 同じ種類の強調がそのまま入れ子になっている場合（バッジが strong の
 				// 先頭に来るときなど）。直前・直後に同じ種類の生のセンチネルがまだ
@@ -168,7 +176,7 @@ namespace Html2Md
 				{
 					rep = inner;
 				}
-				else if (CanEmphasize(prefix + inner + suffix, prefix.Length, inner.Length))
+				else if (CanEmphasize(prefix + leadWs + inner + trailWs + suffix, prefix.Length + leadWs.Length, inner.Length))
 				{
 					string mark = MarkOf(openKind);
 					rep = mark + inner + mark;
@@ -178,7 +186,7 @@ namespace Html2Md
 					string tag = TagOf(openKind);
 					rep = "<" + tag + ">" + inner + "</" + tag + ">";
 				}
-				t = prefix + rep + suffix;
+				t = prefix + leadWs + rep + trailWs + suffix;
 			}
 			return t;
 		}

@@ -381,7 +381,8 @@ function Resolve-Emphasis([string]$Text) {
 		# 開きと閉じの種類が食い違うときは、記法にせずタグで出す
 		$openKind = Get-EmphasisKind $t[$m.Index] $true
 		$closeKind = Get-EmphasisKind $t[$m.Index + $m.Length - 1] $false
-		$inner = $m.Groups[1].Value.Trim()
+		$raw = $m.Groups[1].Value
+		$inner = $raw.Trim()
 		$prefix = $t.Substring(0, $m.Index)
 		$suffix = $t.Substring($m.Index + $m.Length)
 
@@ -389,6 +390,13 @@ function Resolve-Emphasis([string]$Text) {
 			$t = $prefix + $suffix
 			continue
 		}
+
+		# 前後の空白は記法の外側へ出す。** の内側は前後に空白を置けない
+		# （CommonMark の規定）ので Trim 自体は要るが、そのまま捨てると
+		# 前後の語と強調テキストがくっついて見える
+		# （例: <strong>a </strong>b が **a**b になり空白が消える）
+		$leadWs = $raw.Substring(0, $raw.Length - $raw.TrimStart().Length)
+		$trailWs = $raw.Substring($raw.TrimEnd().Length)
 
 		# 同じ種類の強調がそのまま入れ子になっている場合（バッジが strong の
 		# 先頭に来るときなど）。直前・直後に同じ種類の生のセンチネルがまだ
@@ -409,8 +417,8 @@ function Resolve-Emphasis([string]$Text) {
 			$rep = $inner
 		}
 		else {
-			$probe = $prefix + $inner + $suffix
-			if (Test-CanEmphasize -Text $probe -Start $prefix.Length -Length $inner.Length) {
+			$probe = $prefix + $leadWs + $inner + $trailWs + $suffix
+			if (Test-CanEmphasize -Text $probe -Start ($prefix.Length + $leadWs.Length) -Length $inner.Length) {
 				$mark = Get-EmphasisMark $openKind
 				$rep = $mark + $inner + $mark
 			}
@@ -418,7 +426,7 @@ function Resolve-Emphasis([string]$Text) {
 				$rep = '<' + $openKind + '>' + $inner + '</' + $openKind + '>'
 			}
 		}
-		$t = $prefix + $rep + $suffix
+		$t = $prefix + $leadWs + $rep + $trailWs + $suffix
 	}
 	return $t
 }
