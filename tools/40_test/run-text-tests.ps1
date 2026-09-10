@@ -179,6 +179,16 @@ Assert-Equal 'edit: 合言葉不一致 終了 4' 4 $r.Code
 $r = Run-Text @('edit', $fAmbig, '--old', 'x', '--new', 'y')
 Assert-Equal 'edit: 両方妥当は拒否 終了 3' 3 $r.Code
 
+# 両方妥当は --old-file / --new-file（内容ファイル）でも拒否する（i260908-02）。
+# 対象ファイル（上のテスト）は拒否していたが、内容ファイル側は組の判定結果を
+# 見ずに UTF-8 として黙って復号していた
+$fTarget = Join-Path $Work 'target-for-ambig.txt'
+New-TextFile $fTarget 'x' $EncUtf8
+$r = Run-Text @('edit', $fTarget, '--old', 'x', '--new-file', $fAmbig)
+Assert-Equal 'edit: --new-file が両方妥当なら拒否 終了 3' 3 $r.Code
+$r = Run-Text @('edit', $fTarget, '--old-file', $fAmbig, '--new', 'y')
+Assert-Equal 'edit: --old-file が両方妥当なら拒否 終了 3' 3 $r.Code
+
 # --old が複数一致でエラー
 $fMulti = Join-Path $Work 'multi.txt'
 New-TextFile $fMulti "foo`nfoo`n" $EncUtf8
@@ -191,13 +201,20 @@ Write-Host ''
 Write-Host '=== text write ===' -ForegroundColor Cyan
 
 $fBody = Join-Path $Work 'body.txt'
-New-TextFile $fBody "こんにちは`n世界" $EncUtf8
+# 短い漢字だけの文だと UTF-8 のバイト列が SJIS 構造としても妥当になり、
+# 組が曖昧（Ambiguous）と判定されて --in の読み込みが拒否される。
+# ひらがな主体の長めの文にして一意に決まるようにする
+New-TextFile $fBody "こんにちは`n今日はよい天気です" $EncUtf8
 $fW = Join-Path $Work 'out.cmd'
 $r = Run-Text @('write', $fW, '--to', 'cmd', '--in', $fBody)
 Assert-Equal 'write: --to cmd 終了 0' 0 $r.Code
 $b = Get-Bytes $fW
 Assert-True 'write: SJIS+CRLF で書ける（CRLF あり）' (($b -contains 0x0D) -and ($b -contains 0x0A)) 'CRLF が無い'
 Assert-Match 'write: 読み直すと sjis/crlf' (Run-Text @('read', $fW)).Out '[sjis/crlf]'
+
+# 両方妥当な --in（内容ファイル）は拒否する（i260908-02）
+$r = Run-Text @('write', $fW, '--to', 'cmd', '--in', $fAmbig)
+Assert-Equal 'write: --in が両方妥当なら拒否 終了 3' 3 $r.Code
 
 $fWr = Join-Path $Work 'out.reg'
 $r = Run-Text @('write', $fWr, '--to', 'reg', '--in', $fBody)

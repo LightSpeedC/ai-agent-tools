@@ -111,6 +111,11 @@ namespace TextTool
 			{
 				byte[] b = Files.ReadBytes(file);
 				Combo c = Detector.Detect(b);
+				if (c.Ambiguous)
+				{
+					throw new ToolError(3,
+						"UTF-8 と SJIS の両方で妥当で組を決められません（" + label + "-file）: " + Files.Show(file));
+				}
 				return Codec.Decode(b, c.Enc);
 			}
 			return null;

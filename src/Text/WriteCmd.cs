@@ -81,6 +81,11 @@ namespace TextTool
 			{
 				byte[] b = Files.ReadBytes(inFile);
 				Combo c = Detector.Detect(b);
+				if (c.Ambiguous)
+				{
+					throw new ToolError(3,
+						"UTF-8 と SJIS の両方で妥当で組を決められません（--in）: " + Files.Show(inFile));
+				}
 				return Codec.Decode(b, c.Enc);
 			}
 			// 第 2 引数は標準入力より優先する。エージェントのシェルは stdin が
@@ -99,6 +104,10 @@ namespace TextTool
 					if (all.Length > 0)
 					{
 						Combo c = Detector.Detect(all);
+						if (c.Ambiguous)
+						{
+							throw new ToolError(3, "UTF-8 と SJIS の両方で妥当で組を決められません（標準入力）。");
+						}
 						return Codec.Decode(all, c.Enc);
 					}
 				}
