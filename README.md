@@ -29,7 +29,7 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 
 | 文書 | 内容 |
 |---|---|
-| [他のプロジェクトから使う](USAGE-FOR-PROJECTS.html) | コマンド・オプション・変換対象の外し方・検査の読み方。**使う側が読むのはこれ** |
+| [他のプロジェクトから使う](USAGE-FOR-PROJECTS.md) | コマンド・オプション・変換対象の外し方・検査の読み方。**使う側が読むのはこれ** |
 | [html2md ツール共通化計画](notes/10_plan/html2md-plan.md) | 各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り |
 | [html2md タグ対応仕様](notes/10_plan/html2md-tag-spec.md) | どのタグをどう変換するか。実測した結果と、まだ決まっていない論点 |
 | [convert-encoding 仕様書](notes/10_plan/p260906-01-convert-encoding.md) | 文字コードの判定・変換の手順・終了コード・テストケース |
