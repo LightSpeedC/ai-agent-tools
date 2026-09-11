@@ -2,7 +2,7 @@
 
 HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-09-11
+> 📅 作成: 2026-09-04 / 更新: 2026-09-12
 
 [← html2md](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -55,6 +55,8 @@ html2md --root . --dry-run
 | `--help` | — | 説明を表示する |
 
 終了コードは `0`＝指摘なし、`1`＝指摘あり、`2`＝引数や対象の誤り。
+
+生成する `.md` と切り出した `.svg` は、<strong>BOM 無しの UTF-8 ＋ LF で書く。</strong>共通ルールが置く `.editorconfig` ・ `.gitattributes` の宣言（`.md` は LF）に合わせてある。元の HTML が CRLF でも、生成物は LF になる。
 
 > [!WARNING]
 > <strong>`docs/` を持つプロジェクトは `--dir docs` を忘れない。</strong>付けずに実行すると `docs/` が変換されないまま、そこへのリンクだけが残る。`docs/` の HTML へのリンクは `.html` のまま出るので壊れはしないが、Markdown 側から `docs/` の内容に到達できなくなる。

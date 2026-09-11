@@ -216,6 +216,18 @@ foreach ($c in $cases) {
 		$ok = $false
 	}
 
+	# --- 改行は LF ---
+	# .editorconfig・.gitattributes が .md を LF と宣言しているため、生成物も LF で書く。
+	# exe と ps1 の一致だけでは捕まらない（両方が CRLF でも一致してしまう）ので、
+	# バイトを直接見る。svg も .md と揃える
+	foreach ($f in @(Get-ChildItem -LiteralPath $work -Recurse -File | Where-Object { $_.Extension -eq '.md' -or $_.Extension -eq '.svg' })) {
+		$bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+		if ($bytes -contains 13) {
+			Write-Result '[NG]' ('CR が混ざっています（LF で書くこと）: ' + $f.FullName.Substring($work.Length))
+			$ok = $false
+		}
+	}
+
 	# --- 出てはいけない文字列 ---
 	$forbidden = @{
 		'md-skip' = @('SKIPMARK', 'ELEMSKIP')      # meta name="md-skip" のページ／要素単位の md-skip の中身（i260908-02）

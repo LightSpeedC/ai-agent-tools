@@ -147,7 +147,7 @@
 	<div class="inner">
 		<h1>html2md を他のプロジェクトから使う</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-11</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-12</p>
 	</div>
 </div>
 
@@ -219,6 +219,8 @@ html2md --root . --dry-run</code></pre>
 	</div>
 
 	<p>終了コードは <code>0</code>＝指摘なし、<code>1</code>＝指摘あり、<code>2</code>＝引数や対象の誤り。</p>
+
+	<p>生成する <code>.md</code> と切り出した <code>.svg</code> は、<strong>BOM 無しの UTF-8 ＋ LF で書く。</strong>共通ルールが置く <code>.editorconfig</code> ・ <code>.gitattributes</code> の宣言（<code>.md</code> は LF）に合わせてある。元の HTML が CRLF でも、生成物は LF になる。</p>
 
 	<div class="callout callout-warning">
 		<p><strong><code>docs/</code> を持つプロジェクトは <code>--dir docs</code> を忘れない。</strong>付けずに実行すると <code>docs/</code> が変換されないまま、そこへのリンクだけが残る。<code>docs/</code> の HTML へのリンクは <code>.html</code> のまま出るので壊れはしないが、Markdown 側から <code>docs/</code> の内容に到達できなくなる。</p>

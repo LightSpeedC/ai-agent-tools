@@ -170,7 +170,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-11</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-12</p>
 	</div>
 </div>
 
@@ -625,7 +625,8 @@ $sub = Convert-Blocks ...</code></pre>
 				<p><strong>記録の是正</strong>: <code>8fad598</code> の時点でこの項目を「済」と書き、レビュー元（#744）にも修正済みと伝えていたが、<strong>実際にはコードを直していなかった</strong>。実装は上記のとおり後から行い、記録が事実に追いついた状態になっている。</p>
 			</div>
 			<p><span class="badge b-ok">済</span>3（HasCorrectPreamble が BOM 過剰側を見ていない）を直した。<code>33d5da4</code> は「--from utf8bom を強制したのに BOM が無い」方向だけを直しており、逆の「--from utf8 を強制したが実は BOM 付き」の場合は <code>GetPreamble</code> が Utf8 に対して空を返すため <code>HasCorrectPreamble</code> が無条件に true になり、BOM 付きファイルへ <code>--from utf8 --to utf8</code> を指定すると BOM が残ったまま「変更なし」になっていた。<code>HasCorrectPreamble</code> を「宣言した組にプリアンブルがあるなら一致を見る」だけでなく、<strong>BOM の有無そのものが一致しているか</strong>を見るよう直した（Utf8/Sjis 側もファイルの先頭が実際に BOM で始まっていないかを確認）。</p>
-			<p><span class="badge b-none">未</span>残り11件は設計判断・追加調査を要するか、記録の是正のみで済むため今回は見送る:</p>
+			<p><span class="badge b-ok">済</span>11（生成物の改行が宣言と食い違う）を 2026-09-12 に直した。生成する <code>.md</code> ・ <code>.svg</code> を CRLF で書いていたが、<code>.editorconfig</code> ・ <code>.gitattributes</code> の宣言は LF だった。<strong>出力を LF に揃えた</strong>（宣言を CRLF に変える案は採らず、Windows 以外で読む人に不自然にならない側を選んだ）。exe（<code>Converter.cs</code> ・ <code>Svg.cs</code>）と ps1 の 4 箇所。git 経由では元から LF に正規化されていたため、リポジトリ側の内容差分は無い。<strong>生成物にバイトで CR が混ざっていないかを見る検証を <code>run-tests.ps1</code> に足した</strong>（exe と ps1 の一致だけでは、両方が CRLF でも通ってしまう）。生成物が「BOM 無し UTF-8 ＋ LF」であることを<a href="../../USAGE-FOR-PROJECTS.html">使う側の資料</a>に明記した。共通ルールには書かない（実装の仕様をルール本文に持つと追随が要るため、既存の参照から辿らせる）。</p>
+			<p><span class="badge b-none">未</span>残り10件は設計判断・追加調査を要するか、記録の是正のみで済むため今回は見送る:</p>
 			<ul>
 				<li>2. text の <code>--from</code>/<code>--to</code> が「convert-encoding と同じ語彙」と資料に書くが、実装は文字コード名5語だけで用途名（<code>cmd</code> 等）を受けない。<code>--to utf8</code> の改行挙動も convert-encoding と違う。<strong>text 側に用途名を足すか、資料の説明を弱めるかの選択</strong></li>
 				<li>4. 終了コードの契約（0/1/2）が exe と ps1 で細部が揃っていない（対象0件・変換中の例外の扱い）。ps1 側の例外処理を作り込む範囲の判断が要る</li>
@@ -635,7 +636,6 @@ $sub = Convert-Blocks ...</code></pre>
 				<li>8. <code>run-tests.ps1</code> の★行突き合わせが「HTML に無い文言」を件数でしか見ず、行の中身までは比較しない。▲（警告）は終了コード比較の対象外</li>
 				<li>9. check-contrast/check-markdown の既定除外（tmp/etc/node_modules/.git/contrast）が資料に記載が無く、除外で落ちた件数も画面に出ない</li>
 				<li>10. text のバイナリ判定（<code>LooksBinary</code>）が <code>find</code> にしか繋がっておらず、<code>edit</code>/<code>write</code> はバイナリでも Ambiguous（終了3）しか見ない。書き戻し経路にバイナリ拒否を足すかどうかの判断</li>
-				<li>11. 生成する .md・.svg を CRLF で書くが、.editorconfig・.gitattributes の宣言は LF。git 経由では正規化されるが、git を通さない配布経路では宣言と実態が食い違う。<strong>どちらに揃えるかは方針の変更になる</strong></li>
 				<li>12. <code>notes/10_plan/html2md-plan.html</code> が「check-markdown も exe 化する」と書くが、<span class="no">i260830-13</span> でその方針は「やらないと決めて閉じた」。計画書側が古いまま</li>
 				<li>13. バイト保持パスの条件（先頭バイト確認）が仕様書に書かれていない。<code>p260906-01-convert-encoding.html</code> の該当箇所とテストケース表に追記が要る</li>
 			</ul>

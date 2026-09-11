@@ -1077,8 +1077,9 @@ function Export-Svg {
 	}
 
 	$svg = ('<svg {0}>{1}</svg>' -f $newAttrs, $body)
-	$svg = ($svg -replace '\r?\n', "`r`n")
-	if (-not $svg.EndsWith("`r`n")) { $svg += "`r`n" }
+	# 改行は .md と揃えて LF にする
+	$svg = ($svg -replace "`r`n?", "`n")
+	if (-not $svg.EndsWith("`n")) { $svg += "`n" }
 
 	if ($Ctx.Write) {
 		if (-not (Test-Path -LiteralPath $Ctx.ImagesDir)) {
@@ -1545,7 +1546,9 @@ function Convert-HtmlFile {
 	$md = $md -replace "[ `t]+`n", "`n"
 	$md = $md -replace "`n{3,}", "`n`n"
 	$md = $md.TrimEnd() + "`n"
-	$md = $md -replace '\r?\n', "`r`n"
+	# 改行は LF にする。.editorconfig・.gitattributes が .md を LF と宣言しており、
+	# CRLF で書くと git を通さない配布経路（zip・共有フォルダ）で宣言と実体が食い違う
+	$md = $md -replace "`r`n?", "`n"
 
 	$mdPath = [System.IO.Path]::ChangeExtension($HtmlPath, '.md')
 	if ($Write) {

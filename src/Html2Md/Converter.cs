@@ -104,7 +104,9 @@ namespace Html2Md
 			md = Regex.Replace(md, "[ \t]+\n", "\n");
 			md = Regex.Replace(md, "\n{3,}", "\n\n");
 			md = md.TrimEnd() + "\n";
-			md = Regex.Replace(md, "\\r?\\n", "\r\n");
+			// 改行は LF にする。.editorconfig・.gitattributes が .md を LF と宣言しており、
+			// CRLF で書くと git を通さない配布経路（zip・共有フォルダ）で宣言と実体が食い違う
+			md = Regex.Replace(md, "\\r\\n?", "\n");
 
 			string mdPath = Path.ChangeExtension(htmlPath, ".md");
 			if (write) File.WriteAllText(mdPath, md, new UTF8Encoding(false));

@@ -92,8 +92,9 @@ namespace Html2Md
 			}
 
 			string svg = "<svg " + attrs.ToString() + ">" + body + "</svg>";
-			svg = Regex.Replace(svg, "\\r?\\n", "\r\n");
-			if (!svg.EndsWith("\r\n")) svg += "\r\n";
+			// 改行は .md と揃えて LF にする
+			svg = Regex.Replace(svg, "\\r\\n?", "\n");
+			if (!svg.EndsWith("\n")) svg += "\n";
 
 			if (ctx.Write)
 			{
