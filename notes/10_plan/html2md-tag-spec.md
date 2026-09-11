@@ -2,7 +2,7 @@
 
 html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。
 
-> 📅 作成: 2026-08-30 / 更新: 2026-09-09
+> 📅 作成: 2026-08-30 / 更新: 2026-09-11
 
 [← html2md](../../README.md) ／ [html2md ツール共通化計画](html2md-plan.md) ／ [HTML クラス名の取り決め](../90_rules/html-class-rules.md)
 
@@ -66,7 +66,8 @@ html2md には仕様書が無く、`src/Html2Md/Converter.cs` の実装が唯一
 | `svg` | — | `images/` に切り出して `![alt](images/x.svg)` |
 | `footer` `nav` | — | 中身を処理する。タグ自体は行にならない |
 | `a` | 段落の外に単独 | リンク 1 行 |
-| どれか | `class="md-skip"` | 要素ごと出力しない |
+| `details` | `class="md-flat"` | 畳まず、`summary` を見出し・中身をその配下の本文にする（決着 12） |
+| どれか | `class="md-skip"` | 要素ごと出力しない。`li`（`ol.toc` ・ `ul.chapters` を含む） ・ `td` `th` ・ `dt` `dd` ・ `span` も同じ。**落とした分は番号を消費しない**（`section` と同じ扱いで、目次と見出しの番号が揃う） |
 
 ## 3. インライン要素
 
@@ -79,6 +80,7 @@ html2md には仕様書が無く、`src/Html2Md/Converter.cs` の実装が唯一
 | `strong` `b` | `**太字**` または `<strong>` | 前後の文字で判定する |
 | `em` `i` | `*斜体*` または `<em>` | 同上 |
 | `span.badge` | `✅ **完了**` | 記号は太字の外。予約語以外は記号なし |
+| `span.no` | 中身＋空白 1 個 | 課題番号。CSS の余白は Markdown に持ち込めない（決着 12） |
 | `span`（バッジ以外） | 中身だけ残る | 装飾目的とみなす |
 | `img` | `![alt](src)` |  |
 | `br` | `<br>` | 表の中と外で同じ |
@@ -433,8 +435,49 @@ md-skip のページと探索フォルダの外にある HTML は、決着 7 と
 
 ✅ **済** 2026-09-09 に実装した。`HtmlUtil.ConvertLinkTarget` に対象ファイルごとのアンカーマップ（`crossAnchors`）を渡すよう拡張し、`Converter.BuildAnchorsFromHtml`（事前パス用の公開ラッパー）を追加。`Program.cs` の md-skip 判定ループで同時にマップを集める。`html2md-ps.ps1` にも同じ構造で実装（`Get-StrippedBody` を共通ヘルパーに切り出し）。テストケース `tests/cases/cross-anchor` を新設し、exe と ps1 の出力が一致することを確認。全テスト成功。
 
+### 決着 12 — HTML ブロックの中は Markdown が効かない ✅ **対処済み**
+
+決着 9 で `details` はタグのまま出すことにしたが、<strong>`summary` の行に置いた `**` が記号のまま表示される。</strong>CommonMark は HTML ブロックの中身を生の HTML として扱い、インラインの記法を解釈しない。`<summary>` の行は `<details>` から続く 1 つの HTML ブロックの中にあるため、そこだけ記法が効かない。
+
+課題の一覧（`md-skip` を外した写し）を変換して GitHub のレンダラに掛けると、**32 箇所すべてが `summary` の中のバッジだった。**
+
+```markdown
+<summary>✅ **済** i260830-01caption が出力されない</summary>
+    ↑ ** が記号のまま        ↑ 番号と件名がくっつく
+```
+
+#### 1. summary の中の強調はタグで出す
+
+強調を `**` にするかタグにするかは、前後の文字を見て最終段で決めている（決着 6）。<strong>HTML ブロックの中では前後の文字に関係なく必ずタグにする。</strong>判定を 1 つ足すだけで、`strong` ・ `em` ・ `del` が揃って直る。
+
+```markdown
+<summary>✅ <strong>済</strong> i260830-01 caption が出力されない</summary>
+```
+
+#### 2. 課題番号（.no）は空白 1 個を補う
+
+番号と件名が詰まるのは、<strong>HTML 側が CSS の余白（`margin`）でしか離していないため。</strong>余白は Markdown に持ち込めないので、バッジと同じ扱いで空白 1 個を補う。`no` をクラス名の取り決めに加える。
+
+#### 3. md-flat を付けた details は見出しに展開する
+
+`summary` は見出しにならないため、<strong>1 件ごとの見出しもアンカーも Markdown 側に残らない。</strong>GitHub の目次に出るのは章だけになる。畳めることを取るか、見出しになることを取るかは資料によって違うので、`class="md-flat"` で選べるようにする。
+
+| 書き方 | Markdown の出力 | 向くもの |
+|---|---|---|
+| `<details>` | タグのまま。畳みが効く | 本文の補足。読み飛ばせることに意味がある |
+| `<details class="md-flat">` | `summary` を見出し、中身をその配下の本文にする | 課題の一覧。1 件ずつ参照したい |
+
+見出しの段は**その位置の `h2` と同じ扱いにする**（章の中なら `###`）。`details` の入れ子や、見出しの深さを書き手が指定する形にはしない。
+
+> [!IMPORTANT]
+> <strong>`md-flat` の `details` に `id` を振っても、アンカーマップには載らない。</strong>そこへのリンクは張り替えられず、変換後の検査がアンカー切れとして報告する。載せるかどうかは、使う場面が出てから決める。
+
+✅ **済** 2026-09-11 に 3 つとも実装した。`Emphasis.ResolveAsTags`（ps1 は `Resolve-Emphasis -ForceTags`）を足し、`summary` の行だけ前後の文字を見ずにタグで確定させる。`no` は `span` の変換でバッジと同じく空白 1 個を補う。`md-flat` は `ConvertDetails` が見出し＋本文のブロック列を返す形にした。テストケース `tests/cases/details` を新設し、exe と ps1 の出力が一致することと、GitHub のレンダラで `**` が残らないことを `check-markdown` で確認した。全テスト成功。
+
 ### 残る論点
 
 `del` 以外に取り消し線を表すタグ（`s` `strike`）は対象にしていない。
+
+`summary` の中のリンクとコードスパンは、決着 12 と同じ理由で `[文字](リンク先)` ・ ``コード`` が記号のまま表示される。<strong>直すにはタグ（`<a href>` ・ `<code>`）で出す必要があり、リンクは `.md` 置換とアンカー張り替えの経路も通す。</strong>今回の範囲には入れていない。
 
 [← html2md](../../README.md)

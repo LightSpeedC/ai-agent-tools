@@ -149,7 +149,7 @@
 	<div class="inner">
 		<h1>HTML クラス名の取り決め</h1>
 		<p class="lead">html2md が読むクラス名を 1 つに決める。変換側は設定を持たず、ここに書いた名前だけを見る。プロジェクトごとに違う名前を使わない。</p>
-		<p class="date">📅 作成: 2026-08-29 / 更新: 2026-09-10</p>
+		<p class="date">📅 作成: 2026-08-29 / 更新: 2026-09-11</p>
 	</div>
 </div>
 
@@ -486,6 +486,19 @@
 <pre><code>&lt;p class="md-skip"&gt;この段落は Markdown に出ない&lt;/p&gt;</code></pre>
 
 	<p>その要素と中身がまとめて出力から外れる。使うのは、HTML の見た目のためだけに置いた要素に限る。文言そのものを Markdown から落とすと、HTML と内容が食い違う。</p>
+
+	<h2>折りたたみを見出しに展開する</h2>
+
+	<p><code>details</code> は既定でタグのまま出る。GitHub が解釈するので畳みが効く。<strong>畳むより見出しが要る資料には <code>md-flat</code> を付ける。</strong></p>
+
+<pre><code>&lt;details class="md-flat"&gt;
+	&lt;summary&gt;&lt;span class="badge b-warn"&gt;着手&lt;/span&gt;&lt;span class="no"&gt;i260830-01&lt;/span&gt;件名&lt;/summary&gt;
+	&lt;p&gt;本文&lt;/p&gt;
+&lt;/details&gt;</code></pre>
+
+	<p><code>summary</code> がその位置の <code>h2</code> と同じ段の見出しになり、中身はその配下の本文になる。畳めなくなる代わりに、GitHub の目次に 1 件ずつ並び、アンカーで参照できる。課題の一覧のように 1 件ずつ引く資料に向く。</p>
+
+	<p>課題番号は <code>no</code> で囲む。<strong>CSS の余白は Markdown に持ち込めないため、html2md が空白 1 個を補って件名と分ける。</strong>囲まないと番号と件名がくっつく。</p>
 
 	<h2>強調</h2>
 

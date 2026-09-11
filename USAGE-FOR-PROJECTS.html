@@ -147,7 +147,7 @@
 	<div class="inner">
 		<h1>html2md を他のプロジェクトから使う</h1>
 		<p class="lead">HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-10</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-11</p>
 	</div>
 </div>
 
@@ -267,7 +267,9 @@ html2md --root . --dry-run</code></pre>
 	</table>
 	</div>
 
-	<p>ページ全体を外すのは、変換すると構造が失われるものに使う。<code>details</code> で畳んだ課題一覧が該当する。Markdown に <code>details</code> の記法が無いため、畳みが解けて見出しも消える。</p>
+	<p>ページ全体を外すのは、変換すると構造が失われるものに使う。ログのように機械が書き足すページが該当する。</p>
+
+	<p><code>details</code> は既定でタグのまま出る。GitHub が解釈するので畳みが効く。<strong>畳むより見出しが要るページには <code>class="md-flat"</code> を付ける。</strong><code>summary</code> が見出しになり、中身はその配下の本文になる。課題の一覧のように 1 件ずつ引くものに向く。</p>
 
 	<p>外したページへのリンクは、<strong>拡張子を置き換えず <code>.html</code> のまま残る。</strong>除外の判定は html2md が行うので、書き手は常に <code>.html</code> と書けばよい。</p>
 

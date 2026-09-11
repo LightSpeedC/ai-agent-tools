@@ -125,6 +125,25 @@ namespace Html2Md
 		/// <summary>センチネルで囲んだ強調を、内側から順に ** かタグに確定させる。</summary>
 		public static string Resolve(string text)
 		{
+			return Resolve(text, false);
+		}
+
+		/// <summary>
+		/// HTML ブロックの中に置く文字列の強調を、前後の文字を見ずにタグで確定させる。
+		///
+		/// CommonMark は HTML ブロックの中身を生の HTML として扱い、インラインの記法を
+		/// 解釈しない。&lt;summary&gt; の行は &lt;details&gt; から続く 1 つの HTML ブロックの
+		/// 中にあるため、そこに ** を置くと記号のまま表示される（GitHub のレンダラで実測）。
+		///
+		/// 前後の文字に依存しないので、本文が組み上がるのを待たずにここで確定させてよい。
+		/// </summary>
+		public static string ResolveAsTags(string text)
+		{
+			return Resolve(text, true);
+		}
+
+		private static string Resolve(string text, bool forceTags)
+		{
 			string t = text;
 			while (true)
 			{
@@ -176,7 +195,8 @@ namespace Html2Md
 				{
 					rep = inner;
 				}
-				else if (CanEmphasize(prefix + leadWs + inner + trailWs + suffix, prefix.Length + leadWs.Length, inner.Length))
+				else if (!forceTags &&
+					CanEmphasize(prefix + leadWs + inner + trailWs + suffix, prefix.Length + leadWs.Length, inner.Length))
 				{
 					string mark = MarkOf(openKind);
 					rep = mark + inner + mark;

@@ -385,8 +385,13 @@ function Get-EmphasisMark([string]$Kind) {
 	return '~~'
 }
 
-# センチネルで囲んだ強調を、内側から順に ** かタグに確定させる
-function Resolve-Emphasis([string]$Text) {
+# センチネルで囲んだ強調を、内側から順に ** かタグに確定させる。
+#
+# ForceTags を渡すと、前後の文字を見ずにタグで確定させる。CommonMark は HTML ブロックの
+# 中身を生の HTML として扱い、インラインの記法を解釈しないため、<summary> の行に置いた
+# ** は記号のまま表示される（GitHub のレンダラで実測。タグ対応仕様の決着 12）。
+# 前後の文字に依存しないので、本文が組み上がるのを待たずに確定させてよい
+function Resolve-Emphasis([string]$Text, [switch]$ForceTags) {
 	$t = $Text
 	$pat = "[$SB$EB$DB]([^$SB$SE$EB$EE$DB$DE]*)[$SE$EE$DE]"
 	while ($true) {
@@ -432,7 +437,7 @@ function Resolve-Emphasis([string]$Text) {
 		}
 		else {
 			$probe = $prefix + $leadWs + $inner + $trailWs + $suffix
-			if (Test-CanEmphasize -Text $probe -Start ($prefix.Length + $leadWs.Length) -Length $inner.Length) {
+			if (-not $ForceTags -and (Test-CanEmphasize -Text $probe -Start ($prefix.Length + $leadWs.Length) -Length $inner.Length)) {
 				$mark = Get-EmphasisMark $openKind
 				$rep = $mark + $inner + $mark
 			}
@@ -523,6 +528,9 @@ function Convert-Inline {
 		$classes = Get-ClassList ('<span' + $m.Groups[1].Value + '>')
 		if ($classes -contains 'md-skip') { return '' }
 		$inner = $m.Groups[2].Value
+		# 課題番号（.no）は CSS の余白でしか本文と離れていないため、空白 1 個を
+		# 補って続く文と分ける。余白は Markdown に持ち込めない（決着 12）
+		if ($classes -contains 'no') { return ($inner + ' ') }
 		$mark = Get-BadgeMark $classes
 		if ($null -eq $mark) { return $inner }
 		$text = (Get-PlainTextRaw $inner)
@@ -769,8 +777,12 @@ function Convert-Toc {
 	)
 	$out = @()
 	$n = 0
-	foreach ($li in [regex]::Matches($TocHtml, '(?s)<li\b[^>]*>(.*?)</li>')) {
-		$a = [regex]::Match($li.Groups[1].Value, '(?s)<a\b[^>]*href="#([^"]+)"[^>]*>(.*?)</a>')
+	foreach ($li in [regex]::Matches($TocHtml, '(?s)<li\b([^>]*)>(.*?)</li>')) {
+		# md-skip の項目は番号も消費させない（残りが 1 から連番になる）
+		$liClasses = Get-ClassList ('<li' + $li.Groups[1].Value + '>')
+		if ($liClasses -contains 'md-skip') { continue }
+
+		$a = [regex]::Match($li.Groups[2].Value, '(?s)<a\b[^>]*href="#([^"]+)"[^>]*>(.*?)</a>')
 		if (-not $a.Success) { continue }
 		$n++
 		$id = $a.Groups[1].Value
@@ -834,6 +846,11 @@ function Convert-Chapters {
 		$start = $i + $m.Index
 		$block = Get-Block $inner $start 'li'
 		$i = $start + $block.Outer.Length
+
+		# md-skip の項目は行ごと落とす（空セルの行を残すと表に空行が並ぶ）
+		$liClasses = Get-ClassList (Get-OpenTag $block.Outer)
+		if ($liClasses -contains 'md-skip') { continue }
+
 		$liInner = $block.Inner
 
 		$part = Get-SpanText -Html $liInner -ClassName 'part' -Anchors $Anchors
@@ -1113,6 +1130,12 @@ function Convert-DefList {
 		$block = Get-Block $Inner $start $tag
 		$i = $start + $block.Outer.Length
 
+		# md-skip は dt・dd のどちらでも、その要素 1 つだけを落とす。
+		# dt を落としたときに dd も連れて消す形にはしない（消す範囲を
+		# HTML 側で選べなくなる。ぶら下げたい分は dd 側にも付ける）
+		$classes = Get-ClassList (Get-OpenTag $block.Outer)
+		if ($classes -contains 'md-skip') { continue }
+
 		$text = Convert-Inline -Html ($block.Inner) -Anchors ($Ctx.Anchors)
 		# 項目の中で改行すると箇条書きが切れる
 		$text = ([regex]::Replace($text, '\s*\r?\n\s*', ' ')).Trim()
@@ -1126,10 +1149,15 @@ function Convert-DefList {
 
 # 折りたたみはタグのまま出す。GitHub が解釈するため畳みが効く。
 # summary の後ろと閉じる前に空行を置く。空行が無いと中身が HTML として読まれ、
-# Markdown の記法が効かない
+# Markdown の記法が効かない。
+#
+# md-flat が付いていれば、畳まずに summary を見出し・中身をその配下の本文にする
+# （タグ対応仕様の決着 12）。1 件ずつ参照する資料は、畳みより見出しが要る。
+# ブロックを複数返すため、戻り値は配列にする
 function Convert-Details {
 	param(
 		[AllowEmptyString()][string]$Inner,
+		[string[]]$Classes,
 		[hashtable]$Ctx
 	)
 	$summaryText = ''
@@ -1142,14 +1170,24 @@ function Convert-Details {
 
 	$sub = Convert-Blocks $Inner $Ctx
 
-	$d = @('<details>', ('<summary>' + $summaryText + '</summary>'))
+	if ($Classes -contains 'md-flat') {
+		# 見出しに出す分は本文と同じ扱いなので、強調の記法は最終段の判定に任せる。
+		# 段は「その位置の h2」に揃える（章の中なら ###）
+		$flat = @()
+		if ($summaryText) { $flat += ((Get-HeadingMark -Ctx $Ctx -HtmlLevel 2) + $summaryText) }
+		foreach ($b in $sub) { $flat += $b }
+		return , $flat
+	}
+
+	# summary の行は HTML ブロックの中なので ** が効かない。強調はタグで確定させる
+	$d = @('<details>', ('<summary>' + (Resolve-Emphasis $summaryText -ForceTags) + '</summary>'))
 	foreach ($b in $sub) {
 		$d += ''
 		$d += $b
 	}
 	$d += ''
 	$d += '</details>'
-	return ($d -join "`n")
+	return , @(($d -join "`n"))
 }
 
 function Convert-Blocks {
@@ -1220,7 +1258,8 @@ function Convert-Blocks {
 				if ($b) { $out.Add($b) | Out-Null }
 			}
 			'details' {
-				$out.Add((Convert-Details ($block.Inner) $Ctx)) | Out-Null
+				$dBlocks = Convert-Details -Inner ($block.Inner) -Classes $classes -Ctx $Ctx
+				foreach ($b in $dBlocks) { $out.Add($b) | Out-Null }
 			}
 			'blockquote' {
 				$sub = Convert-Blocks ($block.Inner) $Ctx

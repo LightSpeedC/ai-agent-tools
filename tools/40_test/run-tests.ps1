@@ -62,6 +62,27 @@ $Expect = @{
 		'| 第2部 | 03. リンクなしタイトル |',        # ttl が a で囲まれていなければリンク化しない（i260910-03。desc 側だけの a を誤って使わない）
 		'詳しくは[こちら](docs/02-実行環境.md)を参照'  # desc 自身のリンクはそのまま残る
 	)
+	'details' = @(
+		# summary の行は HTML ブロックの中で ** が効かないため、強調はタグで出す（決着 12）
+		'<summary>✅ <strong>済</strong> i260830-01 DETAILSTRONG の件名</summary>',
+		'畳んだ中の段落。ここは**通常の判定**で強調になる。',   # 中身は空行で区切られ、通常の Markdown になる
+		'<summary>i260830-02 バッジなしの件名</summary>',       # .no は CSS の余白の代わりに空白 1 個を補う
+		# md-flat は畳まず、summary を「その位置の h2」の段の見出しにする
+		'### ⚠ **着手** i260830-03 FLATTITLE の件名',
+		'- 配下の箇条書きも本文として出る'
+	)
+	'toc-dl' = @(
+		# 目次の md-skip は番号を消費しない。章側の md-skip も番号を消費しないため、
+		# 目次の番号と見出しの番号が揃う（i260911-01 の medium 1）
+		'1. [TOCKEEP1 はじめに](#1-tockeep1-はじめに)',
+		'2. [TOCKEEP2 本編](#2-tockeep2-本編)',
+		'## 2. TOCKEEP2 本編',
+		# 定義リストの md-skip は dt・dd それぞれ 1 要素だけを落とす
+		'- DLKEEP dt',
+		'    - DLKEEP dd',
+		'- DLKEEP dt2',
+		'    - DLKEEP dd2'
+	)
 	'link' = @(
 		'外部CSSのテスト',
 		'本文'
@@ -201,7 +222,10 @@ foreach ($c in $cases) {
 		'extra'   = @('WORKMARK')      # ルート直下でも --extra で名指ししていないページ
 		'badge'   = @('****', 'BADGEWSTRONG**続きです')   # 二重の **（#715）／strong 内末尾の空白を Trim で捨てて語が繋がる（i260910-03）
 		'outside'  = @('OUTSIDEMARK')   # 探索フォルダの外のページは変換されない
-		'chapters' = @('[03. リンクなしタイトル]')   # ttl が誤ってリンク化されない（i260910-03）
+		'chapters' = @('[03. リンクなしタイトル]', 'SKIPCHAPTER')   # ttl が誤ってリンク化されない（i260910-03）／chapters の md-skip の li は行ごと落ちる（i260911-01）
+		'toc-dl'   = @('TOCSKIP', 'DLSKIP', '3. [')   # 目次・定義リスト・章の md-skip（i260911-01）
+		# summary の中に ** を残さない／md-flat では details タグを出さない（決着 12）
+		'details'  = @('<summary>✅ **済**', 'i260830-01DETAILSTRONG', '<summary>⚠ **着手**')
 	}
 
 	# --- 出ているべき文字列 ---

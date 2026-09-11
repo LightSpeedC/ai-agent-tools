@@ -146,7 +146,7 @@
 	<div class="inner">
 		<h1>html2md タグ対応仕様</h1>
 		<p class="lead">html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-09</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-11</p>
 	</div>
 </div>
 
@@ -228,7 +228,8 @@
 			<tr><td class="nowrap"><code>svg</code></td><td>—</td><td><code>images/</code> に切り出して <code>![alt](images/x.svg)</code></td></tr>
 			<tr><td class="nowrap"><code>footer</code> <code>nav</code></td><td>—</td><td>中身を処理する。タグ自体は行にならない</td></tr>
 			<tr><td class="nowrap"><code>a</code></td><td>段落の外に単独</td><td>リンク 1 行</td></tr>
-			<tr><td class="nowrap">どれか</td><td><code>class="md-skip"</code></td><td>要素ごと出力しない</td></tr>
+			<tr><td class="nowrap"><code>details</code></td><td><code>class="md-flat"</code></td><td>畳まず、<code>summary</code> を見出し・中身をその配下の本文にする（決着 12）</td></tr>
+			<tr><td class="nowrap">どれか</td><td><code>class="md-skip"</code></td><td>要素ごと出力しない。<code>li</code>（<code>ol.toc</code> ・ <code>ul.chapters</code> を含む） ・ <code>td</code> <code>th</code> ・ <code>dt</code> <code>dd</code> ・ <code>span</code> も同じ。<strong>落とした分は番号を消費しない</strong>（<code>section</code> と同じ扱いで、目次と見出しの番号が揃う）</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -248,6 +249,7 @@
 			<tr><td class="nowrap"><code>strong</code> <code>b</code></td><td><code>**太字**</code> または <code>&lt;strong&gt;</code></td><td>前後の文字で判定する</td></tr>
 			<tr><td class="nowrap"><code>em</code> <code>i</code></td><td><code>*斜体*</code> または <code>&lt;em&gt;</code></td><td>同上</td></tr>
 			<tr><td class="nowrap"><code>span.badge</code></td><td><code>✅ **完了**</code></td><td>記号は太字の外。予約語以外は記号なし</td></tr>
+			<tr><td class="nowrap"><code>span.no</code></td><td>中身＋空白 1 個</td><td>課題番号。CSS の余白は Markdown に持ち込めない（決着 12）</td></tr>
 			<tr><td class="nowrap"><code>span</code>（バッジ以外）</td><td>中身だけ残る</td><td>装飾目的とみなす</td></tr>
 			<tr><td class="nowrap"><code>img</code></td><td><code>![alt](src)</code></td><td></td></tr>
 			<tr><td class="nowrap"><code>br</code></td><td><code>&lt;br&gt;</code></td><td>表の中と外で同じ</td></tr>
@@ -667,9 +669,52 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 
 	<p><span class="badge b-ok">済</span>2026-09-09 に実装した。<code>HtmlUtil.ConvertLinkTarget</code> に対象ファイルごとのアンカーマップ（<code>crossAnchors</code>）を渡すよう拡張し、<code>Converter.BuildAnchorsFromHtml</code>（事前パス用の公開ラッパー）を追加。<code>Program.cs</code> の md-skip 判定ループで同時にマップを集める。<code>html2md-ps.ps1</code> にも同じ構造で実装（<code>Get-StrippedBody</code> を共通ヘルパーに切り出し）。テストケース <code>tests/cases/cross-anchor</code> を新設し、exe と ps1 の出力が一致することを確認。全テスト成功。</p>
 
+	<h2>決着 12 — HTML ブロックの中は Markdown が効かない <span class="badge b-ok">対処済み</span></h2>
+
+	<p>決着 9 で <code>details</code> はタグのまま出すことにしたが、<strong><code>summary</code> の行に置いた <code>**</code> が記号のまま表示される。</strong>CommonMark は HTML ブロックの中身を生の HTML として扱い、インラインの記法を解釈しない。<code>&lt;summary&gt;</code> の行は <code>&lt;details&gt;</code> から続く 1 つの HTML ブロックの中にあるため、そこだけ記法が効かない。</p>
+
+	<p>課題の一覧（<code>md-skip</code> を外した写し）を変換して GitHub のレンダラに掛けると、<strong>32 箇所すべてが <code>summary</code> の中のバッジだった。</strong></p>
+
+<pre><code class="language-markdown">&lt;summary&gt;✅ **済** i260830-01caption が出力されない&lt;/summary&gt;
+    ↑ ** が記号のまま        ↑ 番号と件名がくっつく</code></pre>
+
+	<h3>1. summary の中の強調はタグで出す</h3>
+
+	<p>強調を <code>**</code> にするかタグにするかは、前後の文字を見て最終段で決めている（決着 6）。<strong>HTML ブロックの中では前後の文字に関係なく必ずタグにする。</strong>判定を 1 つ足すだけで、<code>strong</code> ・ <code>em</code> ・ <code>del</code> が揃って直る。</p>
+
+<pre><code class="language-markdown">&lt;summary&gt;✅ &lt;strong&gt;済&lt;/strong&gt; i260830-01 caption が出力されない&lt;/summary&gt;</code></pre>
+
+	<h3>2. 課題番号（.no）は空白 1 個を補う</h3>
+
+	<p>番号と件名が詰まるのは、<strong>HTML 側が CSS の余白（<code>margin</code>）でしか離していないため。</strong>余白は Markdown に持ち込めないので、バッジと同じ扱いで空白 1 個を補う。<code>no</code> をクラス名の取り決めに加える。</p>
+
+	<h3>3. md-flat を付けた details は見出しに展開する</h3>
+
+	<p><code>summary</code> は見出しにならないため、<strong>1 件ごとの見出しもアンカーも Markdown 側に残らない。</strong>GitHub の目次に出るのは章だけになる。畳めることを取るか、見出しになることを取るかは資料によって違うので、<code>class="md-flat"</code> で選べるようにする。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>書き方</th><th>Markdown の出力</th><th>向くもの</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>&lt;details&gt;</code></td><td>タグのまま。畳みが効く</td><td>本文の補足。読み飛ばせることに意味がある</td></tr>
+			<tr><td class="nowrap"><code>&lt;details class="md-flat"&gt;</code></td><td><code>summary</code> を見出し、中身をその配下の本文にする</td><td>課題の一覧。1 件ずつ参照したい</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>見出しの段は<strong>その位置の <code>h2</code> と同じ扱いにする</strong>（章の中なら <code>###</code>）。<code>details</code> の入れ子や、見出しの深さを書き手が指定する形にはしない。</p>
+
+	<div class="callout callout-important">
+		<p><strong><code>md-flat</code> の <code>details</code> に <code>id</code> を振っても、アンカーマップには載らない。</strong>そこへのリンクは張り替えられず、変換後の検査がアンカー切れとして報告する。載せるかどうかは、使う場面が出てから決める。</p>
+	</div>
+
+	<p><span class="badge b-ok">済</span>2026-09-11 に 3 つとも実装した。<code>Emphasis.ResolveAsTags</code>（ps1 は <code>Resolve-Emphasis -ForceTags</code>）を足し、<code>summary</code> の行だけ前後の文字を見ずにタグで確定させる。<code>no</code> は <code>span</code> の変換でバッジと同じく空白 1 個を補う。<code>md-flat</code> は <code>ConvertDetails</code> が見出し＋本文のブロック列を返す形にした。テストケース <code>tests/cases/details</code> を新設し、exe と ps1 の出力が一致することと、GitHub のレンダラで <code>**</code> が残らないことを <code>check-markdown</code> で確認した。全テスト成功。</p>
+
 	<h2>残る論点</h2>
 
 	<p><code>del</code> 以外に取り消し線を表すタグ（<code>s</code> <code>strike</code>）は対象にしていない。</p>
+
+	<p><code>summary</code> の中のリンクとコードスパンは、決着 12 と同じ理由で <code>[文字](リンク先)</code> ・ <code>`コード`</code> が記号のまま表示される。<strong>直すにはタグ（<code>&lt;a href&gt;</code> ・ <code>&lt;code&gt;</code>）で出す必要があり、リンクは <code>.md</code> 置換とアンカー張り替えの経路も通す。</strong>今回の範囲には入れていない。</p>
 </section>
 
 </div>

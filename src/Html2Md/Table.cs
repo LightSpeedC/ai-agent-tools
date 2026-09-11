@@ -206,9 +206,13 @@ namespace Html2Md
 		{
 			List<string> outLines = new List<string>();
 			int n = 0;
-			foreach (Match li in Regex.Matches(tocHtml, "(?s)<li\\b[^>]*>(.*?)</li>"))
+			foreach (Match li in Regex.Matches(tocHtml, "(?s)<li\\b([^>]*)>(.*?)</li>"))
 			{
-				Match a = Regex.Match(li.Groups[1].Value, "(?s)<a\\b[^>]*href=\"#([^\"]+)\"[^>]*>(.*?)</a>");
+				// md-skip の項目は番号も消費させない（残りが 1 から連番になる）
+				string[] liClasses = HtmlUtil.GetClassList("<li" + li.Groups[1].Value + ">");
+				if (HtmlUtil.HasClass(liClasses, "md-skip")) continue;
+
+				Match a = Regex.Match(li.Groups[2].Value, "(?s)<a\\b[^>]*href=\"#([^\"]+)\"[^>]*>(.*?)</a>");
 				if (!a.Success) continue;
 				n++;
 				string id = a.Groups[1].Value;
@@ -255,6 +259,11 @@ namespace Html2Md
 				int start = i + m.Index;
 				HtmlUtil.Block block = HtmlUtil.GetBlock(inner, start, "li");
 				i = start + block.Outer.Length;
+
+				// md-skip の項目は行ごと落とす（空セルの行を残すと表に空行が並ぶ）
+				string[] liClasses = HtmlUtil.GetClassList(HtmlUtil.GetOpenTag(block.Outer));
+				if (HtmlUtil.HasClass(liClasses, "md-skip")) continue;
+
 				string liInner = block.Inner;
 
 				string part = ExtractSpanText(liInner, "part", anchors);

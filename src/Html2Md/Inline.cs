@@ -128,6 +128,9 @@ namespace Html2Md
 				string[] classes = HtmlUtil.GetClassList("<span" + m.Groups[1].Value + ">");
 				if (HtmlUtil.HasClass(classes, "md-skip")) return "";
 				string inner = m.Groups[2].Value;
+				// 課題番号（.no）は CSS の余白でしか本文と離れていないため、空白 1 個を
+				// 補って続く文と分ける。余白は Markdown に持ち込めない（決着 12）
+				if (HtmlUtil.HasClass(classes, "no")) return inner + " ";
 				string mark = GetBadgeMark(classes);
 				if (mark == null) return inner;
 				string text = HtmlUtil.StripTagsRaw(inner);

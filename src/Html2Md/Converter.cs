@@ -217,6 +217,12 @@ namespace Html2Md
 				HtmlUtil.Block block = HtmlUtil.GetBlock(inner, start, tag);
 				i = start + block.Outer.Length;
 
+				// md-skip は dt・dd のどちらでも、その要素 1 つだけを落とす。
+				// dt を落としたときに dd も連れて消す形にはしない（消す範囲を
+				// HTML 側で選べなくなる。ぶら下げたい分は dd 側にも付ける）
+				string[] classes = HtmlUtil.GetClassList(HtmlUtil.GetOpenTag(block.Outer));
+				if (HtmlUtil.HasClass(classes, "md-skip")) continue;
+
 				string text = inline.Convert(block.Inner, ctx.Anchors, false);
 				// 項目の中で改行すると箇条書きが切れる
 				text = Regex.Replace(text, "\\s*\\r?\\n\\s*", " ").Trim();
@@ -231,8 +237,11 @@ namespace Html2Md
 		/// 折りたたみはタグのまま出す。GitHub が解釈するため畳みが効く。
 		/// summary の後ろと閉じる前に空行を置く。空行が無いと中身が HTML として読まれ、
 		/// Markdown の記法が効かない。
+		///
+		/// md-flat が付いていれば、畳まずに summary を見出し・中身をその配下の本文にする
+		/// （タグ対応仕様の決着 12）。1 件ずつ参照する資料は、畳みより見出しが要る。
 		/// </summary>
-		private void ConvertDetails(string inner, ConvertContext ctx, List<string> outBlocks)
+		private void ConvertDetails(string inner, string[] classes, ConvertContext ctx, List<string> outBlocks)
 		{
 			string summaryText = "";
 			Match sm = Regex.Match(inner, "(?is)<summary\\b[^>]*>(.*?)</summary>");
@@ -245,9 +254,19 @@ namespace Html2Md
 
 			List<string> sub = ConvertBlocks(inner, ctx);
 
+			if (HtmlUtil.HasClass(classes, "md-flat"))
+			{
+				// 見出しに出す分は本文と同じ扱いなので、強調の記法は最終段の判定に任せる。
+				// 段は「その位置の h2」に揃える（章の中なら ###）
+				if (summaryText.Length > 0) outBlocks.Add(HeadingMark(ctx, 2) + summaryText);
+				outBlocks.AddRange(sub);
+				return;
+			}
+
 			List<string> d = new List<string>();
 			d.Add("<details>");
-			d.Add("<summary>" + summaryText + "</summary>");
+			// summary の行は HTML ブロックの中なので ** が効かない。強調はタグで確定させる
+			d.Add("<summary>" + Emphasis.ResolveAsTags(summaryText) + "</summary>");
 			foreach (string b in sub)
 			{
 				d.Add("");
@@ -328,7 +347,7 @@ namespace Html2Md
 						break;
 
 					case "details":
-						ConvertDetails(block.Inner, ctx, outBlocks);
+						ConvertDetails(block.Inner, classes, ctx, outBlocks);
 						break;
 
 					case "blockquote":

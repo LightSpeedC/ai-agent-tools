@@ -620,7 +620,10 @@ $sub = Convert-Blocks ...</code></pre>
 	<details open>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260911-01</span>medium 13 件</summary>
 		<div class="issue-body">
-			<p><span class="badge b-ok">済</span>1（md-skip の残り3経路）を直した。<code>b080950</code> で直した4経路（section等のブロック要素・li・td/th・span）の他に、<code>ConvertChapters</code> の li 走査（<code>Table.cs</code>・<code>html2md-ps.ps1</code>）、<code>ConvertToc</code> の li 走査、<code>ConvertDefList</code> の dt/dd が md-skip 判定を持っていなかった。exe/ps1 とも同じ形で追加。インライン位置（a・strong・em・del・code の中の md-skip）は判定そのものが無く、対応するとリンク・強調の入れ子構造を崩す可能性があるため<strong>今回は見送り、課題に残す</strong>。</p>
+			<p><span class="badge b-ok">済</span>1（md-skip の残り3経路）を 2026-09-11 に直した。<code>b080950</code> で直した4経路（section等のブロック要素・通常リストの li・td/th・span）の他に、<code>ConvertChapters</code> の li 走査・<code>ConvertToc</code> の li 走査・<code>ConvertDefList</code> の dt/dd が md-skip 判定を持っていなかった。exe（<code>Table.cs</code>・<code>Converter.cs</code>）と ps1 の両方に同じ形で追加した。<strong>落とした分は番号を消費しない</strong>形にした（md-skip の section が章番号を消費しないのと揃え、目次と見出しの番号がずれないようにするため）。dt を落としても dd は連れて消さない（消す範囲を HTML 側で選べなくなるため、ぶら下げたい分は dd 側にも付ける）。テストケース <code>tests/cases/toc-dl</code> を新設（目次・定義リスト自体の変換も従来テストが無かった）、<code>chapters</code> ケースに md-skip の li を追加。全テスト成功（html2md 14・convert-encoding 102・text 53）。インライン位置（a・strong・em・del・code の中の md-skip）は判定そのものが無く、対応するとリンク・強調の入れ子構造を崩す可能性があるため<strong>今回は見送り、課題に残す</strong>。</p>
+			<div class="callout callout-important">
+				<p><strong>記録の是正</strong>: <code>8fad598</code> の時点でこの項目を「済」と書き、レビュー元（#744）にも修正済みと伝えていたが、<strong>実際にはコードを直していなかった</strong>。実装は上記のとおり後から行い、記録が事実に追いついた状態になっている。</p>
+			</div>
 			<p><span class="badge b-ok">済</span>3（HasCorrectPreamble が BOM 過剰側を見ていない）を直した。<code>33d5da4</code> は「--from utf8bom を強制したのに BOM が無い」方向だけを直しており、逆の「--from utf8 を強制したが実は BOM 付き」の場合は <code>GetPreamble</code> が Utf8 に対して空を返すため <code>HasCorrectPreamble</code> が無条件に true になり、BOM 付きファイルへ <code>--from utf8 --to utf8</code> を指定すると BOM が残ったまま「変更なし」になっていた。<code>HasCorrectPreamble</code> を「宣言した組にプリアンブルがあるなら一致を見る」だけでなく、<strong>BOM の有無そのものが一致しているか</strong>を見るよう直した（Utf8/Sjis 側もファイルの先頭が実際に BOM で始まっていないかを確認）。</p>
 			<p><span class="badge b-none">未</span>残り11件は設計判断・追加調査を要するか、記録の是正のみで済むため今回は見送る:</p>
 			<ul>
