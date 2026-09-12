@@ -14,7 +14,11 @@
 	走らせると、対象が違うまま「問題なし」と出る。
 */
 
-export type OptionKind = 'string' | 'number' | 'boolean';
+/**
+ * list は同じオプションを何度でも受ける（`--skip a --skip b`）。
+ * 値は配列になる。html2md の --dir ・ --exclude と同じ扱い。
+ */
+export type OptionKind = 'string' | 'number' | 'boolean' | 'list';
 
 export type OptionSpec = {
 	/** 長い形の名前。`--path` なら 'path' */
@@ -28,8 +32,10 @@ export type OptionSpec = {
 	positional?: boolean;
 };
 
+export type OptionValue = string | number | boolean | string[];
+
 export type ParsedArgs = {
-	values: Record<string, string | number | boolean>;
+	values: Record<string, OptionValue>;
 	/** 読めなかったときの理由。あれば呼び手は 2 で止める */
 	error?: string;
 	/** --help ・ -h が来た */
@@ -43,8 +49,12 @@ function matches(spec: OptionSpec, token: string): boolean {
 	return false;
 }
 
-export function parseArgs(argv: string[], specs: OptionSpec[], defaults: Record<string, string | number | boolean>): ParsedArgs {
-	const values: Record<string, string | number | boolean> = { ...defaults };
+export function parseArgs(argv: string[], specs: OptionSpec[], defaults: Record<string, OptionValue>): ParsedArgs {
+	const values: Record<string, OptionValue> = { ...defaults };
+	// list は既定の配列をそのまま使わない。呼び出しごとに新しくする
+	for (const s of specs) {
+		if (s.kind === 'list') { values[s.name] = []; }
+	}
 	const positionalSpec = specs.find((s) => s.positional === true);
 
 	let i = 0;
@@ -66,7 +76,10 @@ export function parseArgs(argv: string[], specs: OptionSpec[], defaults: Record<
 				return { values, help: false, error: token + ' に値がありません。' };
 			}
 			const raw = argv[i + 1];
-			if (spec.kind === 'number') {
+			if (spec.kind === 'list') {
+				(values[spec.name] as string[]).push(raw);
+			}
+			else if (spec.kind === 'number') {
 				const n = Number(raw);
 				if (!Number.isFinite(n)) {
 					return { values, help: false, error: token + ' には数を渡してください: ' + raw };

@@ -159,7 +159,7 @@
 <div class="toc">
 	<h2>目次</h2>
 	<ol>
-		<li class="ch01"><a href="#ch01">6 つのコマンド</a></li>
+		<li class="ch01"><a href="#ch01">7 つのコマンド</a></li>
 		<li class="ch02"><a href="#ch02">html2md で変換する</a></li>
 		<li class="ch03"><a href="#ch03">検証する</a></li>
 		<li class="ch04"><a href="#ch04">文字コードと改行を直す</a></li>
@@ -170,7 +170,7 @@
 </div>
 
 <section class="ch01" id="ch01">
-	<h1>6 つのコマンド</h1>
+	<h1>7 つのコマンド</h1>
 
 	<p><strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。</p>
 
@@ -183,6 +183,7 @@
 			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせか</strong>をブラウザで実測する</td></tr>
 			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、<strong>ファイルの種類ごとに決められた形へ</strong>変換する</td></tr>
 			<tr><td class="nowrap"><code>text</code></td><td>SJIS・UTF-16 でも壊さず<strong>読む・探す・編集する・書く</strong>（Read・Grep・Edit・Write の代わり）</td></tr>
+			<tr><td class="nowrap"><code>check-public</code></td><td>公開前に、<strong>外に出してはいけないもの</strong>が混ざっていないかを見る</td></tr>
 			<tr><td class="nowrap"><code>psh</code></td><td>PowerShell を呼び、出力を <strong>UTF-8 に直して流す</strong>（第 6 章）</td></tr>
 		</tbody>
 	</table>
@@ -329,6 +330,35 @@ html2md --root . --dry-run</code></pre>
 	<p>ブラウザで実際に描画し、前景色と実効背景色の比を計算する。<strong>1.5:1 未満を 0 件にする。</strong>検出したいのは「白に白」「黒に黒」「色の継承事故」で、値を上げると誤検出に埋もれる。</p>
 
 	<p>ブラウザは PlayWright 共有環境を借りる。<strong>自プロジェクトに Playwright を入れる必要はない。</strong></p>
+
+	<h2>公開前に、出してはいけないものが混ざっていないか</h2>
+
+<pre><code class="language-shell">check-public                      # カレントのプロジェクトを見る
+check-public --word-list _ng.txt  # 除外語リストを指定する</code></pre>
+
+	<p>コミットは履歴に残る。<strong>一度上げたものを消すには履歴の書き換えが要る。</strong>上げる前に機械で見る。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>見るもの</th><th><code>--skip</code></th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">メールアドレス</td><td>一般的なアドレスの形。<code>example.com</code> ・ <code>noreply@</code> は除く</td><td class="nowrap"><code>mail</code></td></tr>
+			<tr><td class="nowrap">実体パス</td><td><code>C:\Users\</code> の直後が伏せ字でないもの</td><td class="nowrap"><code>path</code></td></tr>
+			<tr><td class="nowrap">認証情報</td><td><code>password</code> ・ <code>token</code> などに<strong>値が続くもの</strong></td><td class="nowrap"><code>secret</code></td></tr>
+			<tr><td class="nowrap">異体字</td><td>日本語・英数字に混ざったキリル・ハングル</td><td class="nowrap"><code>script</code></td></tr>
+			<tr><td class="nowrap">除外語</td><td>リストに書いた語。顧客名・案件名は式では見つけられない</td><td class="nowrap"><code>words</code></td></tr>
+			<tr><td class="nowrap">git の author</td><td><code>user.name</code> ・ <code>user.email</code> を本文から探す</td><td class="nowrap"><code>author</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-caution">
+		<p><strong>当たった値そのものは画面に出さない。</strong>出力は会話ログや CI のログに残る。伏せるための道具が漏らす側にまわってはいけない。出るのはファイルと行番号、当たった項目だけ。</p>
+	</div>
+
+	<p><strong>見るのは git が追跡しているファイルだけ。</strong><code>.gitignore</code> で外したものは公開されないため、見れば必ず誤検出になる（除外語リスト自身がそこにある）。<code>--all</code> で全部を見られる。</p>
+
+	<p>除外語リストは<strong>先頭 <code>_</code> のファイルを既定にする</strong>（<code>_public-ng-words.txt</code>）。リスト自体が機密になるため、共通ルールにより全階層が Git 管理外になる置き方を採る。<strong>リストが無ければ、その項目を飛ばしたことを画面に出す。</strong>黙っては通さない。</p>
 
 	<h2>どちらも既定で除外するフォルダがある</h2>
 

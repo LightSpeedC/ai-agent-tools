@@ -1018,7 +1018,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260912-01</span>公開前検査（check-public）を作るか</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260912-01</span>公開前検査（check-public）を作るか</summary>
 		<div class="issue-body">
 			<p>2026-09-12、<code>ai-agent-rules</code> から依頼（public ルーム #777）。<strong>public のリポジトリに出す前に、個人名・実体パス・認証情報が混ざっていないかを機械で止めたい。</strong>公開資料を作るプロジェクトが他にもあるため、共有ツール側に入れれば全部が守られる、という理由。</p>
 
@@ -1053,6 +1053,23 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 
 			<div class="callout callout-important">
 				<p><strong>依頼元は「どう作るかはお任せ。課題に残すかどうかも含めて」と書いている。</strong>受けない判断もあり得る。その場合は、どこに置くのが適切かを返す。</p>
+			</div>
+
+			<h3>2026-09-13 に作った</h3>
+
+			<p><strong>引き受けて <code>check-public</code> として作った</strong>（<code>src/check-public/main.ts</code>）。挙がった 6 項目をすべて入れ、<code>--skip</code> で 1 つずつ外せる。実装は TypeScript で、ほかの 6 つと揃えた。</p>
+
+			<p>決めごとへの答え。</p>
+
+			<ul>
+				<li><strong>受けた。</strong>公開前検査は変換の外側だが、<code>check-contrast</code> ・ <code>check-markdown</code> と同じ「出す前に実物で確かめる」道具であり、置き場としては揃う</li>
+				<li><strong>TypeScript 1 本。</strong>ps1 と exe の 2 本立てにしない。この時点で 3 ツールの移植が済み、ps1 版も TypeScript へ移していたため</li>
+				<li><strong>誤検出は件数で縛った。</strong>テストの材料に「当たる 4 つ」と「当たらない 10 個」を置き、<strong>当たる件数が 4 を超えたら落ちる</strong>ようにしてある</li>
+				<li><strong>リストが無ければ、飛ばしたことを画面に出す。</strong>黙っては通さない</li>
+			</ul>
+
+			<div class="callout callout-warning">
+				<p><strong>作った直後、このプロジェクト自身に掛けたら 12 件出た。中身を見たら全部が誤検出だった</strong>（<code>const token = argv[i]</code> ・ <code>token: string</code> ・ HTML でエスケープされた伏せ字）。判定を直して 0 件にした。<strong>止める検査は、誤検出が多いと道具ごと使われなくなる。</strong></p>
 			</div>
 		</div>
 	</details>
