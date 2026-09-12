@@ -1,7 +1,6 @@
 tmp/
 etc/
-_*/
-**/_*/
+_*
 *.exe
 
 .claude/*
