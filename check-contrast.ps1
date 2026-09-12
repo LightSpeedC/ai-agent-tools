@@ -47,6 +47,9 @@ param(
 	[string]$PlaywrightRoot = 'N:\PlayWright'
 )
 
+# 標準出力を UTF-8 にする。既定は CP932 で、Bash から呼ぶと日本語が化ける
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $ErrorActionPreference = 'Stop'
 
 Write-Host '=== HTML のコントラスト実測（ブラウザで描画して計測） ===' -ForegroundColor Cyan

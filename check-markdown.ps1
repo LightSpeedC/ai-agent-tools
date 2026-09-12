@@ -42,6 +42,9 @@ param(
 	[int]$DelayMs = 300
 )
 
+# 標準出力を UTF-8 にする。既定は CP932 で、Bash から呼ぶと日本語が化ける
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $ErrorActionPreference = 'Stop'
 
 Write-Host '=== Markdown の表示チェック（GitHub のレンダラ） ===' -ForegroundColor Cyan
