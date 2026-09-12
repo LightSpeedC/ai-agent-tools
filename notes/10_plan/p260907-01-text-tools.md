@@ -2,12 +2,12 @@
 
 SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。文字コードと改行の組を判定して、そのまま読み書きする
 
-> 📅 作成: 2026-09-07 / 更新: 2026-09-10
+> 📅 作成: 2026-09-07 / 更新: 2026-09-12
 
 [← html2md](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)
 
 > [!NOTE]
-> <strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド `text`（`text.exe`）1 本に `read`／`find`／`edit`／`write` を載せた（`src/Text/`、ビルド `build-text.cmd`、テスト `tools/40_test/run-text-tests.ps1` = 53 件成功）。**本文の「決定」はすべて実装に反映済み。**`--col`・`--regex`・`--all` は将来。`write`・`edit` の変換先で表現できない文字の検出は実装済み（終了 5 で止まる。convert-encoding の `--force` のような ? への置き換えは無い）。
+> <strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド `text`（`text.exe`）1 本に `read`／`find`／`edit`／`write` を載せた（`src/TextCs/`、ビルド `build-text-cs.cmd`、テスト `tools/40_test/run-text-tests.ps1` = 53 件成功）。**本文の「決定」はすべて実装に反映済み。**`--col`・`--regex`・`--all` は将来。`write`・`edit` の変換先で表現できない文字の検出は実装済み（終了 5 で止まる。convert-encoding の `--force` のような ? への置き換えは無い）。
 
 1. [目的と背景](#1-目的と背景)
 2. [全体設計（1 エンジン＋4 動詞）](#2-全体設計1-エンジン4-動詞)
@@ -85,7 +85,9 @@ Claude Code の標準ツールは、UTF-8 以外のファイルで壊れる。SJ
 
 ### 表記の約束
 
-ツールが出す**組は小文字**で書く。文字コードは `sjis` / `utf8` / `utf8bom` / `utf16le` / `utf16be`、改行は `crlf` / `lf` / `cr`。組は `sjis/crlf` のように `/` でつなぐ。
+ツールが出す**組は小文字**で書く。文字コードは `sjis` / `utf8` / `utf8bom` / `utf16le` / `utf16be`、改行は `crlf` / `lf` / `cr`。組は `sjis/crlf` のように `/` でつなぐ。**`convert-encoding` も同じ綴りを出す。**
+
+**非 ASCII のバイトを含まないファイルは `ascii` と出す。**`utf8` と `sjis` でバイト列が同じになり、どちらとも決められないため。**判定する組が増えたわけではない**ので `--from ascii` は受けず、内部では `utf8` のまま扱う。`--from` で組を明示したときは、指定した名前をそのまま出す。
 
 **日時（mtime）は `yymmdd-hhmmss-ccc`**（年 2 桁・月・日 ／ 時・分・秒 ／ ミリ秒 3 桁）。例: 2026-09-07 19:00:00.123 → `260907-190000-123`。短く、名前順が時刻順になり、合言葉の一部にも収まる。
 
@@ -311,16 +313,18 @@ text write app.reg --keep --in tmp/body.txt
 
 | 置き場 | 役目 |
 |---|---|
-| `src/Text/Program.cs` | 入口。第 1 引数（read/find/edit/write）でサブコマンドへ振り分ける |
-| `src/Text/Detector.cs` | 文字コードと改行の組の判定（両方妥当の倒し方は呼び手が指定） |
-| `src/Text/Digest.cs` | 合言葉（行範囲を LF 正規化 → ハッシュ ＋ サイズ ＋ 更新日時ミリ秒） |
-| `src/Text/Read.cs` ほか | 4 つの動詞それぞれの処理。共有部分を参照する |
+| `src/TextCs/Program.cs` | 入口。第 1 引数（read/find/edit/write）でサブコマンドへ振り分ける |
+| `src/TextCs/Engine.cs` | 組の判定・デコード・エンコード・行割り・合言葉 |
+| `src/TextCs/ReadCmd.cs` ほか | 4 つの動詞それぞれの処理。共有部分を参照する |
 
-`convert-encoding` の `Detector`・`Converter` と重なる。**将来 convert-encoding もこの共有部分に寄せて二重持ちを解消する**のが理想だが、まずは新ツール側だけで完結させ、convert-encoding には手を入れない（動いているものを崩さない）。**非 Windows のために起動時に `Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)` を呼ぶ**（Windows でも無害）。
+`convert-encoding` の `Detector`・`Converter` と重なる。**C# 版では二重持ちのまま残した**（動いているものを崩さないため）。
+
+> [!TIP]
+> <strong>TypeScript への移植で二重持ちが解消した。</strong>判定とデコード・エンコードは `src/lib/` の 1 本になり、`convert-encoding` と `text` の両方がそこを参照する。<strong>C# では `Text/Engine.cs` と `ConvertEncoding/Detector.cs` に一字一句同じコードが並んでいた。</strong>進め方は [bun への移植](p260912-02-bun移植.md)。
 
 ### ビルドと配置
 
-いまは `convert-encoding` と同じく `build-text.cmd`（SJIS ＋ CRLF）で `text.exe` をビルド。出力 exe はリポジトリ直下、`*.exe` は `.gitignore` のまま（課題 i260830-16）。PATH は既存ツールと同じ場所。exe が 1 つなので配置も 1 つで済む。
+いまは `convert-encoding` と同じく `build-text-cs.cmd`（SJIS ＋ CRLF）で `text.exe` をビルド。出力 exe はリポジトリ直下、`*.exe` は `.gitignore` のまま（課題 i260830-16）。PATH は既存ツールと同じ場所。exe が 1 つなので配置も 1 つで済む。
 
 ### Linux・Mac への展開を見越して
 

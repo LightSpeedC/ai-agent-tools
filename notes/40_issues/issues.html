@@ -405,7 +405,7 @@
 <section class="ch04" id="ch04">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 8 件。全件解消済み。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 11 件。9 件が解消済み、1 件が着手、1 件が未着手。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
@@ -526,7 +526,7 @@ $sub = Convert-Blocks ...</code></pre>
 
 			<h3>なぜ</h3>
 
-			<p><a href="../../tools/90_misc/bench-html2md/結果.html">本丸のベンチ</a>で、<strong>実際の資料 9 ファイルの変換に 29.6 秒</strong>かかることが分かった。exe の 67 倍、Bun へ移した版の 370 倍。<strong>参照実装として置いていたが、この速さでは道具として使えない。</strong></p>
+			<p><a href="../../tools/90_misc/bench-html2md/処理系比較-html2md.html">html2md のベンチ</a>で、<strong>実際の資料 9 ファイルの変換に 29.6 秒</strong>かかることが分かった。exe の 67 倍、Bun へ移した版の 370 倍。<strong>参照実装として置いていたが、この速さでは道具として使えない。</strong></p>
 
 			<p>もう一方の代償が二重メンテ。<strong>変換の修正はすべて 2 箇所へ入れている。</strong>2026-09-11 から 09-12 だけでも次のとおり。</p>
 
@@ -579,6 +579,197 @@ $sub = Convert-Blocks ...</code></pre>
 			<div class="callout callout-important">
 				<p><strong>削除は最後にする。</strong>ゴールデンの仕組みが動いてから消す。順序を逆にすると、担保が無い期間ができる。</p>
 			</div>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-ok">済</span><span class="no">i260912-03</span>文字コードと改行の違反を、人が気づく前に落とす</summary>
+		<div class="issue-body">
+			<p><span class="badge b-ok">済</span>2026-09-12 に実施した。<code>convert-encoding</code> に <strong><code>--check</code></strong> を足し、<code>--info</code> がフォルダを受けるようにした。</p>
+
+			<h3>なぜ</h3>
+
+			<p>道具を作ったのに、<strong>同じ話（BOM が落ちた・改行が LF になった）を何度も繰り返していた。</strong>気づく手段が人の目しか無く、<code>.gitattributes</code> の正規化のせいで <code>git status</code> にも <code>git diff</code> にも出ない場面がある。<strong>見つける側を機械に寄せた。</strong></p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>足したもの</th><th>内容</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>--check</code></td><td><strong>規約に合わないものだけ</strong>を出す。1 件でもあれば終了コード 1</td></tr>
+					<tr><td class="nowrap"><code>--info</code> の拡張</td><td>フォルダを受け、その下を再帰して<strong>全件</strong>出す。終了コードは常に 0</td></tr>
+					<tr><td class="nowrap">絞り込み</td><td><code>--include</code> ・ <code>--exclude</code> ・ <code>--exclude-dir</code>（カンマ区切り可）。既定の除外に<strong>足す</strong></td></tr>
+					<tr><td class="nowrap">全テストへの組み込み</td><td><code>run-all-tests.ps1</code> の最後で <code>--check</code> を回す。違反があれば全体を失敗にする</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p>あるべき組は<strong>拡張子で決まる</strong>。表に無い拡張子はすべて「BOM 無し UTF-8 ＋ LF」として見るので、<strong>今後 ts ・ js ・ mjs ・ json が増えても表を直さずに済む</strong>。仕様は <a href="../10_plan/p260906-01-convert-encoding.html">convert-encoding の計画</a>に書いた。</p>
+
+			<p>テストを先に書いてから実装した（8 件が落ちる状態を作ってから着手）。最終は <strong>123 件すべて成功</strong>。</p>
+
+			<h3>入れてすぐ見つかったもの</h3>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>件数</th><th>中身</th><th>原因</th></tr></thead>
+				<tbody>
+					<tr><td class="num">15</td><td><code>tests/golden/*/expected.txt</code> が CRLF</td><td><code>WriteAllLines</code> が <code>Environment.NewLine</code> で書いていた。<strong>生成側（<code>-UpdateGolden</code>）を LF に直した</strong></td></tr>
+					<tr><td class="num">8</td><td>日本語を含まない <code>cmd</code> が「SJIS でない」と出た</td><td>誤検知。<strong>純 ASCII は UTF-8 と SJIS でバイト列が同じ</strong>ので違反にしない、と直した</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<div class="callout callout-tip">
+				<p><strong>検査を足した回に違反が見つかるのは、検査が効いている証拠。</strong>15 件は <code>.gitattributes</code> の <code>eol=lf</code> で正規化されるため、git の差分には一度も出ていなかった。</p>
+			</div>
+
+			<h3>そのあと直した 3 点</h3>
+
+			<p>同じ日に、表示と判定の作りを見直した。<strong>どれも「検査が誤解を招く／誤検知する」たぐい</strong>で、放っておくと検査そのものが信用されなくなる。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>直した点</th><th>前</th><th>後</th></tr></thead>
+				<tbody>
+					<tr>
+						<td class="nowrap">表示を小文字に</td>
+						<td><code>SJIS</code> <code>UTF8BOM</code> <code>CRLF=47</code></td>
+						<td><code>sjis</code> <code>utf8bom</code> <code>crlf=47</code>。<strong><code>--to</code> ・ <code>--from</code> に書く綴りと同じ</strong>になり、出た名前をそのまま指定へ渡せる。<code>text</code> は元から小文字で、<code>convert-encoding</code> だけが揃っていなかった</td>
+					</tr>
+					<tr>
+						<td class="nowrap">純 ASCII は <code>ascii</code></td>
+						<td><code>check-contrast.cmd  UTF8</code></td>
+						<td><code>check-contrast.cmd  ascii</code>。<strong>「cmd なのに utf8」と読めてしまう</strong>のを止めた。判定する組は増やさず（<code>--from ascii</code> は受けない）、見せ方だけ変えた</td>
+					</tr>
+					<tr>
+						<td class="nowrap">規約の無い拡張子の改行</td>
+						<td>すべて LF を要求</td>
+						<td><strong>改行を定めた拡張子だけ見る。</strong><code>txt</code> ・ <code>log</code> ・ <code>csv</code> は問わない。ただし<strong>混在と単独 CR はどの拡張子でも違反</strong>のまま</td>
+					</tr>
+				</tbody>
+			</table>
+			</div>
+
+			<div class="callout callout-important">
+				<p><strong>3 点目は、手で CRLF にした <code>txt</code> が毎回違反に出るという指摘から。</strong><code>.gitattributes</code> の <code>* text=auto eol=lf</code> で git に入る時点で LF に正規化されるため、<strong>作業ツリーの改行まで縛る実益が薄い。</strong>縛ると本当の違反（<code>ps1</code> の BOM 落ち等）が埋もれる。<strong>文字コードは git が変換しない</strong>ので、そちらは拡張子によらず見る。</p>
+			</div>
+
+			<p>あわせて、あるべき組の呼び名を<strong>拡張子そのもの</strong>にした（<code>→ ts は utf8+lf</code>）。用途名の無い <code>ts</code> ・ <code>md</code> を「既定」と呼んでいて、何に対する規約か読めなかった。</p>
+
+			<p>テストは先に書いて 17 件落ちるのを見てから実装した。最終は <strong>convert-encoding 140 件 ・ text 55 件すべて成功</strong>。</p>
+
+			<div class="callout callout-tip">
+				<p><strong>純 ASCII の扱いは 2 回目の検討。</strong>1 回目（<span class="no">i260908-05</span>）では「<code>ascii</code> を組として導入するか」を検討して見送った。今回入れたのは<strong>表示だけ</strong>で、判定する組は増やしていない。見送りの理由だった「ascii と判定したファイルに日本語を足す <code>text edit</code> が止まる」は、表示だけなら起きない。</p>
+			</div>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">i260912-04</span>convert-encoding のテストが、ごくまれに書き込み失敗（exit 5）で落ちる</summary>
+		<div class="issue-body">
+			<p><code>run-convert-encoding-tests.ps1</code> のケースが<strong>再現しない形で 1 件だけ落ちる</strong>ことがある。2026-09-12 に 4 回観測（ケース 8 ・ 5g ・ 40 ・ 9）。<strong>毎回ちがうケースで、直後の再実行では通る</strong>（同日に 4 回連続で全件成功も確認）。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>ケース</th><th>症状</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap">5g</td><td>終了コード <strong>5（書き込み失敗）</strong></td></tr>
+					<tr><td class="nowrap">40</td><td><code>--from hex</code> が効かず、ファイルが 16 進テキストのまま残った</td></tr>
+					<tr><td class="nowrap">9</td><td><code>--to ps1</code> が効かず、改行が CR のまま残った</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p><strong>症状は「書き込みが起きなかった」で共通している。</strong><code>WriteAtomic</code> は同じフォルダに一時ファイルを作って <code>File.Replace</code> で置き換えるので、<strong>ウイルス対策や検索インデクサが一時ファイルを掴んでいると失敗しうる。</strong>4 回とも、直前に exe を作り直すか別のツールを走らせた直後だった。</p>
+
+			<h3>やること</h3>
+
+			<ul>
+				<li><span class="badge b-none">未</span>失敗時のメッセージに例外の種類を残す（いまは <code>ex.Message</code> だけ）</li>
+				<li><span class="badge b-none">未</span><code>File.Replace</code> の失敗を数回だけ待って再試行するか決める。<strong>握りつぶすのは避ける</strong></li>
+				<li><span class="badge b-none">未</span>失敗したケースの終了コードと標準エラーをテスト側でも残す。<strong>いまは <code>*&gt; $null</code> で捨てているため、落ちたときに手掛かりが無い</strong></li>
+			</ul>
+
+			<div class="callout callout-warning">
+				<p><strong>テストが「たまに落ちる」状態を放置しない。</strong>本物の失敗を見逃す方向に効く。</p>
+			</div>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260912-06</span>PowerShell ツールが使えない。exe の標準出力が CP932 で Bash から化ける</summary>
+		<div class="issue-body">
+			<p>2026-09-12 に発覚。PowerShell ツールがセッションで無効になり、Bash から exe を呼んだところ<strong>日本語が化けた。</strong>バイト列で確かめた結果は次のとおり。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>出力元</th><th>先頭バイト</th><th>文字コード</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>html2md</code>（<code>Console.WriteLine</code>）</td><td class="nowrap"><code>81 A8</code> ＝「→」</td><td class="nowrap"><strong>CP932</strong></td></tr>
+					<tr><td class="nowrap"><code>convert-encoding --check</code>（<code>WriteStdout</code>）</td><td class="nowrap"><code>E8 A6 8F</code> ＝「規」</td><td class="nowrap"><strong>UTF-8</strong></td></tr>
+					<tr><td class="nowrap"><code>node</code> ・ <code>bun</code></td><td class="nowrap"><code>E5 A4 89</code> ＝「変」</td><td class="nowrap"><strong>UTF-8</strong></td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p><strong>原因は .NET Framework。</strong><code>Console.OutputEncoding</code> の既定がコンソールの出力コードページで、日本語 Windows では 932 になる。<strong>Node と Bun はコードページを見ず、常に UTF-8 で書く。</strong></p>
+
+			<div class="callout callout-important">
+				<p><strong><code>convert-encoding</code> は同じコマンドの中で混在している。</strong><code>--read</code> ・ <code>--dump</code> ・ フォルダの <code>--info</code> ・ <code>--check</code> は <code>WriteStdout</code> で UTF-8、それ以外（変換結果の行・<code>--help</code> ・ 1 ファイルの <code>--info</code>）は <code>Console.WriteLine</code> で CP932。<strong>どちらで出るかが引数で変わる。</strong></p>
+			</div>
+
+			<p>いままで気づかなかったのは、Windows PowerShell 5.1 が外部コマンドの出力を CP932 として読むため<strong>ずれが打ち消し合っていた</strong>から。Bash は UTF-8 前提なので露見した。</p>
+
+			<h3>そもそも Bash から呼ぶことになった理由</h3>
+
+			<p><strong>Claude Code 2.1.269 の Windows 版から、PowerShell ツールが使えなくなった。</strong>再開したセッションでも、新しく始めたセッションでも同じ。設定は変えていない。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>確かめたこと</th><th>結果</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap">ツールの有無</td><td>一覧にも、遅延ロードにも、名前での検索にも無い</td></tr>
+					<tr><td class="nowrap">MCP 由来か</td><td>違う。接続は Microsoft 365 だけ</td></tr>
+					<tr><td class="nowrap">設定を変えたか</td><td>変えていない。ツールを止める記述は無い</td></tr>
+					<tr><td class="nowrap">リリースノート</td><td><strong>削除の記載は無い。</strong>2.1.269 は逆に「PowerShell tool commands sent to the background」を<strong>修正</strong>している</td></tr>
+					<tr><td class="nowrap">環境の記述</td><td><strong>いまも「Shell: PowerShell (primary)」と言っている。</strong>実際のツール一覧と食い違う</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p>不具合として報告済み。<strong>戻るまでは Bash から呼ぶしかない。</strong></p>
+
+			<h3><span class="badge b-ok">済</span>当て木を作った（psh）</h3>
+
+			<p>Bash から PowerShell を呼ぶと 2 つ困る。<strong>出力が化けること</strong>と、<code>-Command</code> に文字列を渡すと<strong>クォートが二重に解釈されること</strong>（エラーにならず、静かに違う内容で動く）。<code>tools/50_run/psh.ts</code> がその両方を引き受ける。</p>
+
+<pre><code class="language-shell">tools/50_run/psh &lt;path.ps1&gt; [引数...]
+tools/50_run/psh --command "&lt;式&gt;"</code></pre>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>やること</th><th>やり方</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap">クォート事故を防ぐ</td><td>子プロセスを<strong>配列で起動する</strong>（シェルを挟まない）。ps1 は <code>-File</code> で渡し、解釈を 1 段に留める</td></tr>
+					<tr><td class="nowrap">文字化けを直す</td><td>受け取ったバイト列を<strong>まず UTF-8 として厳密に読み、読めなければ CP932 として読み直す</strong></td></tr>
+					<tr><td class="nowrap">契約を保つ</td><td>終了コードを素通し。標準出力と標準エラーを混ぜない</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<div class="callout callout-important">
+				<p><strong>決め打ちの変換ではうまくいかない。</strong>PowerShell 自身の出力（<code>Write-Host</code> 等）は UTF-8、そこから呼んだ .NET 製 exe は CP932 で、<strong>1 回の実行で両方が混ざる。</strong>最初 CP932 固定で書いて、PowerShell 側の日本語をすべて壊した。判定して読み分ける形に直した。</p>
+			</div>
+
+			<p>テストは <code>tools/40_test/run-psh-tests.ts</code> に 13 件。<strong>ここだけ ts で書いている</strong>——道具自体が PowerShell を呼ぶので、テストまで ps1 にすると道具が壊れたときにテストも動かせない。混在の再現（PowerShell から exe を呼ぶ）も回帰に入れた。</p>
+
+			<h3>決めること</h3>
+
+			<ul>
+				<li><span class="badge b-ok">済</span><strong>exe 側を UTF-8 に揃えるかどうか</strong>——<strong>揃えずに移植した。</strong>捨てる予定のコードに手を入れるより、移すほうが早く根本解決する</li>
+				<li><span class="badge b-ok">済</span><strong>Bun へ移して根本から消した。</strong><code>convert-encoding</code> ・ <code>text</code> ・ <code>html2md</code> の 3 本とも TypeScript になり、<strong>Bash から直接呼んでも化けない</strong>（実測）。進め方と結果は <a href="../10_plan/p260912-02-bun移植.html">bun への移植</a></li>
+				<li><span class="badge b-none">未</span><strong>psh を消す時期。</strong>PowerShell ツールが戻れば要らなくなる</li>
+			</ul>
 		</div>
 	</details>
 </section>
@@ -683,6 +874,7 @@ $sub = Convert-Blocks ...</code></pre>
 			<ul>
 				<li>バッジ・callout の解釈語彙が exe と ps1 で違う（ps1 は ok/good/done 等の別名も受け、callout は前方一致で拾う）。html-class-rules.html は「b-ok/b-ng/b-warn/b-none の4つだけが予約語」と定めており、ps1 の別名受け入れはこの仕様とは食い違う。ただし ps1 側のコメントに「既存プロジェクトの命名をまとめて受けられるようにしている」とあり、他プロジェクトの実コンテンツが依存している可能性がある。<strong>ps1 を仕様どおりに絞るかどうかは、既存コンテンツへの影響を含めて利用者の判断を待つ（要判断）</strong></li>
 				<li>絶対パスのマスキングが 3 本で不揃い（text は伏せるが html2md・convert-encoding は生のパスを出す）。<strong>出力仕様の変更に当たるため利用者の判断を待つ（要判断）</strong></li>
+				<li><code>run-all-tests.ps1</code> が <code>check-contrast</code> ・ <code>check-markdown</code> を含まない（#732 の low。2026-09-12 に現物で確認し、束ねているのは html2md ・ convert-encoding ・ text の 3 本）。<strong>足すと 1 回まわすたびに GitHub の API（60 回/時）とブラウザの起動が要る。含めるかどうかは判断が要る</strong></li>
 			</ul>
 		</div>
 	</details>
@@ -714,18 +906,29 @@ $sub = Convert-Blocks ...</code></pre>
 			</div>
 			<p><span class="badge b-ok">済</span>3（HasCorrectPreamble が BOM 過剰側を見ていない）を直した。<code>33d5da4</code> は「--from utf8bom を強制したのに BOM が無い」方向だけを直しており、逆の「--from utf8 を強制したが実は BOM 付き」の場合は <code>GetPreamble</code> が Utf8 に対して空を返すため <code>HasCorrectPreamble</code> が無条件に true になり、BOM 付きファイルへ <code>--from utf8 --to utf8</code> を指定すると BOM が残ったまま「変更なし」になっていた。<code>HasCorrectPreamble</code> を「宣言した組にプリアンブルがあるなら一致を見る」だけでなく、<strong>BOM の有無そのものが一致しているか</strong>を見るよう直した（Utf8/Sjis 側もファイルの先頭が実際に BOM で始まっていないかを確認）。</p>
 			<p><span class="badge b-ok">済</span>11（生成物の改行が宣言と食い違う）を 2026-09-12 に直した。生成する <code>.md</code> ・ <code>.svg</code> を CRLF で書いていたが、<code>.editorconfig</code> ・ <code>.gitattributes</code> の宣言は LF だった。<strong>出力を LF に揃えた</strong>（宣言を CRLF に変える案は採らず、Windows 以外で読む人に不自然にならない側を選んだ）。exe（<code>Converter.cs</code> ・ <code>Svg.cs</code>）と ps1 の 4 箇所。git 経由では元から LF に正規化されていたため、リポジトリ側の内容差分は無い。<strong>生成物にバイトで CR が混ざっていないかを見る検証を <code>run-tests.ps1</code> に足した</strong>（exe と ps1 の一致だけでは、両方が CRLF でも通ってしまう）。生成物が「BOM 無し UTF-8 ＋ LF」であることを<a href="../../USAGE-FOR-PROJECTS.html">使う側の資料</a>に明記した。共通ルールには書かない（実装の仕様をルール本文に持つと追随が要るため、既存の参照から辿らせる）。</p>
-			<p><span class="badge b-none">未</span>残り10件は設計判断・追加調査を要するか、記録の是正のみで済むため今回は見送る:</p>
+			<p><span class="badge b-ok">済</span>2026-09-12 に 6 件が片付いた。<strong>4 件は <code>html2md-ps.ps1</code> の削除（<span class="no">i260912-02</span>）で前提ごと消え、2 件は資料に書いて解消した。</strong></p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>#</th><th>指摘</th><th>どうなったか</th></tr></thead>
+				<tbody>
+					<tr><td class="num">4</td><td>終了コードの契約が exe と ps1 で揃っていない</td><td><strong>消滅。</strong>ps1 が無くなり、exe の挙動が唯一になった</td></tr>
+					<tr><td class="num">6</td><td><code>-DryRun</code> で ps1 の <code>Test-MdLinks</code> がメモリ優先経路を持たない</td><td><strong>消滅。</strong>同上</td></tr>
+					<tr><td class="num">7</td><td><code>--exclude</code> の適用範囲が exe と ps1 で違う</td><td><strong>解消。</strong>exe の挙動（<code>--dir</code> で探した分だけに効き、<code>README.html</code> と <code>--extra</code> は素通り）を README ・ USAGE に明記した</td></tr>
+					<tr><td class="num">8</td><td>★行の突き合わせが件数でしか見ない</td><td><strong>解消。</strong>ゴールデンに切り替え、★行は<strong>中身まで完全一致</strong>で比べるようにした（終了コードも固定）</td></tr>
+					<tr><td class="num">9</td><td>既定除外が資料に無い</td><td><strong>解消。</strong>USAGE に表で明記した。<strong>除外で落ちた件数を画面に出す件は未対応</strong>（下に残す）</td></tr>
+					<tr><td class="num">12</td><td>計画書が「check-markdown も exe 化する」のまま</td><td><strong>解消済み。</strong>現物を確認したところ該当の記述は無い</td></tr>
+					<tr><td class="num">13</td><td>バイト保持パスの条件が仕様書に無い</td><td><strong>解消済み。</strong><code>p260906-01-convert-encoding.html</code> に記載あり</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p><span class="badge b-none">未</span>残り4件。いずれも判断か追加調査が要る:</p>
 			<ul>
 				<li>2. text の <code>--from</code>/<code>--to</code> が「convert-encoding と同じ語彙」と資料に書くが、実装は文字コード名5語だけで用途名（<code>cmd</code> 等）を受けない。<code>--to utf8</code> の改行挙動も convert-encoding と違う。<strong>text 側に用途名を足すか、資料の説明を弱めるかの選択</strong></li>
-				<li>4. 終了コードの契約（0/1/2）が exe と ps1 で細部が揃っていない（対象0件・変換中の例外の扱い）。ps1 側の例外処理を作り込む範囲の判断が要る</li>
-				<li>5. <span class="no">i260910-03</span> の内訳に #732 の low 2 件（<code>run-all-tests.ps1</code> が check-contrast/check-markdown を含まない／issues.html の3行が共通ルールと食い違う）が入っていない。記録の是正</li>
-				<li>6. <code>--dry-run</code>/<code>-DryRun</code> で ps1 の <code>Test-MdLinks</code> がメモリ優先経路を持たず、exe とテスト範囲が揃っていない</li>
-				<li>7. <code>--exclude</code> の適用範囲が exe（README・--extra は素通り）と ps1（一覧全体に適用）で違う。どちらが正か資料に明記が無く、決める必要がある</li>
-				<li>8. <code>run-tests.ps1</code> の★行突き合わせが「HTML に無い文言」を件数でしか見ず、行の中身までは比較しない。▲（警告）は終了コード比較の対象外</li>
-				<li>9. check-contrast/check-markdown の既定除外（tmp/etc/node_modules/.git/contrast）が資料に記載が無く、除外で落ちた件数も画面に出ない</li>
+				<li>5. <span class="no">i260910-03</span> の内訳に #732 の low 2 件（<code>run-all-tests.ps1</code> が check-contrast/check-markdown を含まない／issues.html の3行が共通ルールと食い違う）が入っていない。記録の是正。<strong>後者は元の指摘が手元に無く、何が食い違うのか特定できていない</strong></li>
+				<li>9b. check-contrast/check-markdown が<strong>除外で落ちた件数を画面に出さない</strong>。出すかどうかと、どう出すかの判断</li>
 				<li>10. text のバイナリ判定（<code>LooksBinary</code>）が <code>find</code> にしか繋がっておらず、<code>edit</code>/<code>write</code> はバイナリでも Ambiguous（終了3）しか見ない。書き戻し経路にバイナリ拒否を足すかどうかの判断</li>
-				<li>12. <code>notes/10_plan/html2md-plan.html</code> が「check-markdown も exe 化する」と書くが、<span class="no">i260830-13</span> でその方針は「やらないと決めて閉じた」。計画書側が古いまま</li>
-				<li>13. バイト保持パスの条件（先頭バイト確認）が仕様書に書かれていない。<code>p260906-01-convert-encoding.html</code> の該当箇所とテストケース表に追記が要る</li>
 			</ul>
 		</div>
 	</details>
@@ -751,7 +954,68 @@ $sub = Convert-Blocks ...</code></pre>
 <section class="ch08" id="ch08">
 	<h1>他プロジェクトからの要求</h1>
 
-	<p>ai-chat-lite で他のプロジェクトから届いた要求。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
+	<p>ai-chat-lite で他のプロジェクトから届いた要求と指摘。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
+
+	<details open>
+		<summary><span class="badge b-ok">済</span><span class="no">i260912-05</span>アイコンだけのリンクが Markdown で空になる</summary>
+		<div class="issue-body">
+			<p>2026-09-12、<code>ai-chat-lite-reviewer</code> から指摘（html2md ルーム #793）。共通ルール「root の README.html と資料の html は相互リンクする」に<strong>戻るリンクをアイコンだけにする規定</strong>が入ったが、<strong>html2md がそれを Markdown に落とせない。</strong></p>
+
+			<h3>実測</h3>
+
+			<p>指摘を受けて <code>tmp/</code> に見本を作り、変換した。<strong>指摘のとおりだった。</strong></p>
+
+<pre><code class="language-html">&lt;a class="backlink" href="../"&gt;&lt;svg width="16" height="16" …&gt;&lt;path d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/&gt;&lt;/svg&gt;&lt;/a&gt;</code></pre>
+
+<pre><code class="language-markdown">[](../)
+[](01-前.html) [](03-次.html) [](README.md)</code></pre>
+
+			<p><strong>リンクテキストが空になり、GitHub では何も表示されない。</strong>SVG の <code>images/</code> への切り出しも起きない（リンクの中の SVG は対象外の扱い）。</p>
+
+			<h3>あわせて確認した点</h3>
+
+			<p>指摘元から「<code>docs/</code> 配下の前へ・次へ・目次バッジは置き換わっているか」と問われたので調べた。<strong>置き換わっていない。</strong><code>&lt;&lt;</code> ・ <code>&gt;&gt;</code> ・ <code>^^</code> への置換は<strong>ソース全体で 1 件も実装されていない</strong>（共通ルール「資料間のリンク」には規定がある）。</p>
+
+			<div class="callout callout-important">
+				<p><strong><code>.backlink</code> だけの問題ではない。</strong>アイコンだけのリンク全般が対象で、<code>docs/</code> を持つプロジェクトでは前へ・次へ・目次の 3 つが同じように空になる。</p>
+			</div>
+
+			<h3>決めたこと</h3>
+
+			<p><strong>何に置き換えるかは共通ルールで決まっていた</strong>（前へ <code>&lt;&lt;</code> ／ 次へ <code>&gt;&gt;</code> ／ 目次 <code>^^</code>）。決めたのは<strong>どのアイコンかをどう判別するか。</strong>次の順で手がかりを探す。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th class="num">順</th><th>手がかり</th><th>置き換え</th></tr></thead>
+				<tbody>
+					<tr><td class="num">1</td><td class="nowrap"><code>&lt;a aria-label&gt;</code></td><td rowspan="3">語が表にあれば記号。<strong>表に無い語はその語をそのまま文字にする</strong></td></tr>
+					<tr><td class="num">2</td><td class="nowrap"><code>&lt;a title&gt;</code></td></tr>
+					<tr><td class="num">3</td><td class="nowrap"><code>svg</code> の中の <code>&lt;title&gt;</code></td></tr>
+					<tr><td class="num">4</td><td class="nowrap"><code>&lt;a class="backlink"&gt;</code></td><td><code>^^</code></td></tr>
+					<tr><td class="num">5</td><td>どれも無い</td><td><strong>空のまま。検査で指摘する</strong></td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<div class="callout callout-important">
+				<p><strong>SVG の形（<code>path</code> の <code>d</code>）では判別しない。</strong>共通ルールはアイコンの意味（<code>⌂</code> ・ <code>‹</code> ・ <code>›</code>）だけを定めており、<code>d</code> の実値に規定が無い。辞書を持っても当たる保証が無く、外れたときに<strong>静かに空のまま通る</strong>。推測で当てるより、指摘して書き手に気づかせる方を採った。</p>
+			</div>
+
+			<h3>途中で見つかったもの</h3>
+
+			<p><strong><code>&lt;&lt;</code> が消えていた。</strong>最終段の汎用タグ除去（<code>&lt;[^&gt;]+&gt;</code>）が <code>&lt;&lt;](b.md) [&gt;</code> をタグ 1 個と誤認して飲み込み、<code>[&gt;](b.md)</code> だけが残る。</p>
+
+			<p><strong>既存の <code>&lt;br&gt;</code> と同じセンチネル退避方式で直した。</strong>制御文字（15）に置いてタグ除去を通過させ、通過後に <code>&lt;&lt;</code> へ戻す。汎用タグ除去の正規表現を厳しくする方が根本的だが、<strong>全ケースに影響が及ぶ</strong>ため、影響が閉じる方を採った。</p>
+
+			<p><strong>「HTML に無い文言」検査も 2 点直した。</strong>(1) 記号 <code>&lt;&lt;</code> ・ <code>&gt;&gt;</code> ・ <code>^^</code> を両側から落とす（共通ルールが認めた代替なので付け足しではない）。(2) <code>aria-label</code> を<strong>元の位置に埋めてから</strong>突き合わせる。末尾にまとめて足す作りだったため、<code>…にする: 付録</code> のように地の文と繋がった行が一致しなかった。</p>
+
+			<h3>テスト</h3>
+
+			<p>ケース <code>icon-link</code> を新設。<strong>期待値（終了コードと ★ 行）を手で書いてから実装した</strong>ので、実装の出力に引きずられていない。手で書いた <code>expected.txt</code> と実装の出力は一致した。</p>
+
+			<p><span class="badge b-ok">済</span>html2md 16 ケース ・ convert-encoding 140 件 ・ text 55 件すべて成功。</p>
+		</div>
+	</details>
 
 	<details>
 		<summary><span class="badge b-none">未</span><span class="no">i260912-01</span>公開前検査（check-public）を作るか</summary>

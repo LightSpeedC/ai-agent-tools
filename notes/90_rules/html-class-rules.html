@@ -149,7 +149,7 @@
 	<div class="inner">
 		<h1>HTML クラス名の取り決め</h1>
 		<p class="lead">html2md が読むクラス名を 1 つに決める。変換側は設定を持たず、ここに書いた名前だけを見る。プロジェクトごとに違う名前を使わない。</p>
-		<p class="date">📅 作成: 2026-08-29 / 更新: 2026-09-11</p>
+		<p class="date">📅 作成: 2026-08-29 / 更新: 2026-09-12</p>
 	</div>
 </div>
 
@@ -234,6 +234,38 @@
 <pre><code>&lt;p class="backlink"&gt;&lt;a href="../README.html"&gt;← 目次に戻る&lt;/a&gt;&lt;/p&gt;</code></pre>
 
 	<p>リンク先は常に <code>.html</code> と書く。<code>.md</code> への置き換えは html2md が行う。HTML 側で先に <code>.md</code> と書くと、HTML のリンクが壊れたまま Markdown 側だけ正しくなるので気づけない。</p>
+
+	<h2>アイコンだけのリンク</h2>
+
+	<p>中身が <code>svg</code> だけのリンクは、<strong>タグを落とすと文字が残らない。</strong>そのままだと Markdown 側が <code>[](README.md)</code> になり、GitHub では何も表示されない。<strong>代替テキストから記号に置き換える。</strong></p>
+
+	<div class="tablewrap"><table>
+	<thead><tr><th>手がかり</th><th>見るもの</th><th>順</th></tr></thead>
+	<tbody>
+	<tr><td class="nowrap"><code>aria-label</code></td><td><code>&lt;a&gt;</code> の属性</td><td class="num">1</td></tr>
+	<tr><td class="nowrap"><code>title</code></td><td><code>&lt;a&gt;</code> の属性</td><td class="num">2</td></tr>
+	<tr><td class="nowrap"><code>&lt;title&gt;</code></td><td><code>svg</code> の中の要素</td><td class="num">3</td></tr>
+	<tr><td class="nowrap"><code>backlink</code></td><td><code>&lt;a&gt;</code> のクラス</td><td class="num">4</td></tr>
+	</tbody>
+	</table></div>
+
+<pre><code>&lt;a class="doclink" href="03-次.html" aria-label="次へ"&gt;&lt;svg …&gt;&lt;/svg&gt;&lt;/a&gt;
+　→ [&gt;&gt;](03-次.md)</code></pre>
+
+	<p>語と記号の対応は次のとおり。<strong>表に無い語は、その語をそのまま文字にする</strong>（<code>aria-label="付録"</code> なら <code>[付録](…)</code>）。</p>
+
+	<div class="tablewrap"><table>
+	<thead><tr><th>記号</th><th>当たる語</th></tr></thead>
+	<tbody>
+	<tr><td class="nowrap"><code>&lt;&lt;</code></td><td>前へ ・ 前 ・ <code>prev</code> ・ <code>previous</code></td></tr>
+	<tr><td class="nowrap"><code>&gt;&gt;</code></td><td>次へ ・ 次 ・ <code>next</code></td></tr>
+	<tr><td class="nowrap"><code>^^</code></td><td>目次 ・ 戻る ・ <code>toc</code> ・ <code>contents</code> ・ <code>home</code> ・ <code>index</code></td></tr>
+	</tbody>
+	</table></div>
+
+	<div class="callout callout-important">
+	<p><strong>手がかりが 1 つも無ければ、リンクの文字は空のままにして検査で指摘する。</strong>推測で記号を当てない。<strong>SVG の形（<code>path</code> の <code>d</code>）では判別しない</strong>——アイコンの意味は決めてあっても <code>d</code> の実値に決まりが無く、辞書を持っても当たる保証が無いため。</p>
+	</div>
 </section>
 
 <section class="ch03" id="ch03">

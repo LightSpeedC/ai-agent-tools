@@ -99,7 +99,7 @@
 <div class="titlebar"><div class="inner">
 <h1>SJIS ファイルの扱い方（作成・修正・削除）</h1>
 <div class="lead">cmd・bat（SJIS）を壊さず、しかも差分を見ながら扱うための手段の比較と決定</div>
-<div class="date">📅 作成: 2026-09-08 / 更新: 2026-09-08</div>
+<div class="date">📅 作成: 2026-09-08 / 更新: 2026-09-12</div>
 </div></div>
 
 <div class="wrap">
@@ -210,7 +210,7 @@ text find 日本語 --path . --recurse --include "*.cmd,*.reg"</code></pre>
 <tr><td class="nowrap">速度</td><td>大きいファイルの再エンコードを避けたいとき</td><td>効かない（exe 起動ぶんの差だけ）</td></tr>
 </tbody>
 </table></div>
-<p>「20/30/50/100 行」で切り替わるわけではなく、<strong>「全部読む・書き直すのが重いほど大きいか」</strong>が本質。<code>build.cmd</code>・<code>build-text.cmd</code> とも約 40 行でしきい値のはるか下。</p>
+<p>「20/30/50/100 行」で切り替わるわけではなく、<strong>「全部読む・書き直すのが重いほど大きいか」</strong>が本質。<code>build-html2md-cs.cmd</code>・<code>build-text-cs.cmd</code> とも約 40 行でしきい値のはるか下。</p>
 
 <h2>差分表示の知見</h2>
 <ul>

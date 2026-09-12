@@ -1,0 +1,490 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>check-public 計画</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（6 章 / 色相 280 → 0 を 56 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(224,78%,25%); --accent2:hsl(224,58%,55%); --soft:hsl(224,28%,95%); }
+	.ch03{ --accent:hsl(168,78%,25%); --accent2:hsl(168,58%,55%); --soft:hsl(168,28%,95%); }
+	.ch04{ --accent:hsl(112,78%,25%); --accent2:hsl(112,58%,55%); --soft:hsl(112,28%,95%); }
+	.ch05{ --accent:hsl(56,78%,25%);  --accent2:hsl(56,58%,55%);  --soft:hsl(56,28%,95%); }
+	.ch06{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	.badge{
+		display:inline-block; padding:1px 9px; border-radius:11px;
+		background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff;
+		font-size:.85em; font-weight:600; white-space:nowrap;
+	}
+	.badge.b-ok{ background:linear-gradient(100deg,#1d7a3c,#45b56c); color:#fff; }
+	.badge.b-ng{ background:linear-gradient(100deg,#a51f22,#e05a5c); color:#fff; }
+	.badge.b-warn{ background:linear-gradient(100deg,#b8620a,#f0a548); color:#fff; }
+	.badge.b-none{ background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>check-public 計画</h1>
+		<p class="lead">public のリポジトリに出す前に、出してはいけないものが混ざっていないかを機械で止める。</p>
+		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-09-12</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="html2md-plan.html">共通化計画</a> ／ <a href="../40_issues/issues.html">課題</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">何を解決するか</a></li>
+		<li class="ch02"><a href="#ch02">置き場と形</a></li>
+		<li class="ch03"><a href="#ch03">検査する 6 項目</a></li>
+		<li class="ch04"><a href="#ch04">除外語リスト</a></li>
+		<li class="ch05"><a href="#ch05">出力と終了コード</a></li>
+		<li class="ch06"><a href="#ch06">段取りと、決まったこと</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>何を解決するか</h1>
+
+	<p><a href="../40_issues/issues.html">課題 i260912-01</a>。<code>ai-agent-rules</code> からの依頼。<strong>public のリポジトリに出したものは消せない。</strong>個人名・実体パス・認証情報が 1 度でも混ざれば、履歴を書き換えない限り残る。</p>
+
+	<p>共通ルールには「機密情報のマスキング」と「コミット前の確認」があり、人が目で確かめる形になっている。<strong>目視は、量が増えると必ず抜ける。</strong>異体字の混入のように、そもそも目で見分けられないものもある。</p>
+
+	<div class="callout callout-caution">
+		<p><strong>取り返しがつかない側の失敗である。</strong>コードは書き直せるが、公開されたリポジトリの履歴に入った個人情報は消せない。<strong>誤検出で止まる不便より、見逃す害のほうが大きい。</strong>迷ったら止める側に倒す。</p>
+	</div>
+
+	<h2>今の手当てとの違い</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>いまあるもの</th><th>何を見るか</th><th>足りないところ</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>check-markdown</code></td><td>Markdown が GitHub で崩れないか</td><td>中身が出してよいものかは見ない</td></tr>
+			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の配色が読めるか</td><td>同上</td></tr>
+			<tr><td class="nowrap">共通ルールの「コミット前の確認」</td><td>人が目で確かめる</td><td><strong>実行されたかどうかが残らない。</strong>量が増えると抜ける</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>置き場と形</h1>
+
+	<h2>html2md に置く</h2>
+
+	<p>このフォルダは「HTML と Markdown の変換と検証」の置き場として作った。公開前検査はその外側にあたる。<strong>それでもここに置く。</strong>理由は 3 つ。</p>
+
+	<ul>
+		<li><strong>PATH に入っているのはこのフォルダだけ</strong>。別の置き場を作ると、使う側が 2 箇所を知ることになる</li>
+		<li><code>check-markdown</code> ・ <code>check-contrast</code> と<strong>同じ性格の道具</strong>（推測せず実物で判定し、指摘の件数を終了コードで返す）</li>
+		<li>公開資料を作るプロジェクトは複数あり、<strong>1 本にすれば全部が守られる</strong>。共通化計画が解決した問題と同じ構図</li>
+	</ul>
+
+	<p><span class="badge b-ok">決定</span>引き受けるにあたり、<a href="html2md-plan.html">共通化計画</a>の「置くもの」に <code>check-public</code> を足し、このフォルダの位置づけを<strong>「共有ツール置き場」</strong>に広げる。変換と関係ない道具が今後ここに増えることを受け入れる。</p>
+
+	<div class="callout">
+		<p><strong>プロジェクト名は後で変える予定。</strong><code>html2md</code> は変換ツールの名前で、置き場の名前としては狭い。名前を変えるのは道具が出揃ってからで、この計画には含めない。</p>
+	</div>
+
+	<h2>ps1 で書く。exe にはしない</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>案</th><th>内容</th><th>採否</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nowrap">A（採用）</td>
+				<td><code>check-public.ps1</code> ＋ <code>check-public.cmd</code>。<code>check-markdown</code> ・ <code>check-contrast</code> と同じ形</td>
+				<td><span class="badge b-ok">採用</span>検査系は ps1 で揃っている。正規表現の調整が頻繁に要る種類の処理で、ビルドを挟まないほうが直しやすい</td>
+			</tr>
+			<tr>
+				<td class="nowrap">B</td>
+				<td>C# で書き <code>check-public.exe</code> にする</td>
+				<td><span class="badge b-none">見送り</span><a href="../40_issues/issues.html">i260830-13</a> で <code>check-markdown</code> の exe 化を「やらない」と決めた前例に揃える。起動の速さが要る場面が無い</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>html2md の検査からも呼ぶ</h2>
+
+	<p><span class="badge b-ok">決定</span>依頼のとおり、<code>html2md</code> の検査からも呼ぶ。<strong>変換を回すたびに公開前検査が通る</strong>ので、公開の直前まで気づかない状態にならない。</p>
+
+	<p>外せるようにする。変換は編集のたびに何度も回すため、切れないと重さが効いてくる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>実装</th><th>外し方</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">exe</td><td><code>--no-public-check</code></td></tr>
+			<tr><td class="nowrap">ps1</td><td><code>-NoPublicCheck</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>指摘があれば <code>html2md</code> 自身の終了コードも <code>1</code>（指摘あり）にする。検査の種類が増えても<strong>終了コードの意味は変えない</strong>。</p>
+
+	<h3>どう呼ぶかは決まっていない</h3>
+
+	<p><code>html2md.exe</code> は C# 、参照実装は ps1 で、<strong>検査の本体をどちらに置くかで形が変わる。</strong></p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>案</th><th>形</th><th>代償</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nowrap">A（推す）</td>
+				<td>検査の本体は <code>check-public.ps1</code> の 1 本。exe も ps1 も<strong>同じスクリプトを起動して結果を受け取る</strong></td>
+				<td>実装が 1 本で済み、exe と ps1 で結果がずれない。<strong>代償は PowerShell の起動時間（1 回あたり 1 秒弱）と、exe が PowerShell に依存すること</strong></td>
+			</tr>
+			<tr>
+				<td class="nowrap">B</td>
+				<td>C# と ps1 に<strong>同じ検査を 2 本書く</strong>。ほかの変換・検査と同じ持ち方にする</td>
+				<td>起動は速く、依存も増えない。<strong>代償は乖離</strong>。正規表現の調整が両方に要り、片方だけ直す事故はこのプロジェクトで繰り返し起きている</td>
+			</tr>
+			<tr>
+				<td class="nowrap">C</td>
+				<td>検査の本体を C# で書き、<code>check-public.exe</code> として独立させる。ps1 はその exe を呼ぶ</td>
+				<td>起動が速く実装も 1 本。<strong>代償はビルドが要ること</strong>。誤検出の調整が頻繁に要る種類の処理で、直すたびにビルドを挟む</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-important">
+		<p><strong>A を推す。</strong>この道具の値打ちは検査の精度にあり、精度は誤検出を見ながら何度も直して上がる。<strong>2 本に分けると、その調整が 2 倍になるか、片方だけ古くなる。</strong>1 秒弱の遅さは <code>--no-public-check</code> で外せる。</p>
+	</div>
+
+	<h2>呼ぶ引き金</h2>
+
+	<p><span class="badge b-ok">決定</span>変換のたびに走るほかに、<strong>変換が起きない場面の引き金を共通ルールに書き足す</strong>。道具を作っても、呼ぶ引き金が無ければ実行されない。</p>
+
+	<ul>
+		<li>最初のコミットの前</li>
+		<li><code>gh repo create</code> で public を作る前</li>
+		<li>GitHub Pages を公開する前</li>
+	</ul>
+
+	<p><strong>書き足す先と文言は別に提示する。</strong>ルールの更新は指示を待つ。</p>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>検査する 6 項目</h1>
+
+	<p>依頼で挙がった 6 つをそのまま採る。<strong>各項目は独立に切れるようにする</strong>（<code>-Skip</code> で名指し）。誤検出が多い項目だけを外して使えないと、道具ごと使われなくなる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>#</th><th>対象</th><th>見つけ方</th><th>誤検出の抑え方</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nowrap">1</td>
+				<td class="nowrap">メールアドレス</td>
+				<td>一般的なアドレスの形</td>
+				<td><code>example.com</code> ・ <code>noreply@</code> ・ <code>&lt;メールアドレス&gt;</code> のような伏せ字は除く</td>
+			</tr>
+			<tr>
+				<td class="nowrap">2</td>
+				<td class="nowrap">実体パス</td>
+				<td><code>C:\Users\</code> の直後がプレースホルダでないもの</td>
+				<td><code>&lt;username&gt;</code> ・ <code>$env:USERPROFILE</code> ・ <code>~</code> は除く。<strong>実行しているユーザー名も環境から取って照合する</strong></td>
+			</tr>
+			<tr>
+				<td class="nowrap">3</td>
+				<td class="nowrap">認証情報</td>
+				<td><code>password</code> <code>passwd</code> <code>secret</code> <code>api_key</code> <code>token=</code> に<strong>値が続くもの</strong></td>
+				<td>値が空・プレースホルダ・変数参照（<code>$</code> <code>%</code> <code>{{ }}</code>）なら除く。<strong>いちばん誤検出しやすい項目</strong></td>
+			</tr>
+			<tr>
+				<td class="nowrap">4</td>
+				<td class="nowrap">除外語</td>
+				<td>リストに書かれた語の単純一致</td>
+				<td>リストは利用者が持つ（第 4 章）</td>
+			</tr>
+			<tr>
+				<td class="nowrap">5</td>
+				<td class="nowrap">異体字の混入</td>
+				<td>日本語・英数字の並びに混ざったキリル・ハングル</td>
+				<td>その言語だけで書かれた行・コードブロックは除く</td>
+			</tr>
+			<tr>
+				<td class="nowrap">6</td>
+				<td class="nowrap">git の author</td>
+				<td><code>git config user.name</code> ・ <code>user.email</code> と、ローカルのユーザー名を本文から探す</td>
+				<td><strong>名前をリストに書かずに済む</strong>のが利点。git の外で実行したときは黙って飛ばす</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>探す範囲</h2>
+
+	<p><strong>git が追跡しているファイルだけを見る。</strong><code>.gitignore</code> で除外したものは公開されないため、見る必要が無く、見れば必ず誤検出になる（除外語リスト自身がそこにある）。</p>
+
+	<p>バイナリは飛ばす。文字コードは <code>text find</code> と同じ判定を使い、<strong>SJIS ・ UTF-16 も取りこぼさない</strong>。ここを取りこぼすと、<code>cmd</code> ・ <code>reg</code> だけが検査されない状態になる。</p>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>除外語リスト</h1>
+
+	<p>顧客名・案件名・内部システム名は、正規表現では見つけられない。<strong>リストとして持つしかない。</strong></p>
+
+	<p>リスト自体が機密になるため、<strong>先頭 <code>_</code> のファイルを既定にする</strong>。共通ルール「.gitignore の共通除外設定」により全階層が Git 管理外になる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>決め</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">既定の置き場</td><td>プロジェクト直下の <code>_public-ng-words.txt</code></td></tr>
+			<tr><td class="nowrap">指定</td><td><code>-WordList &lt;パス&gt;</code> で差し替えられる</td></tr>
+			<tr><td class="nowrap">形式</td><td>1 行 1 語。空行と <code>#</code> 始まりは読み飛ばす</td></tr>
+			<tr><td class="nowrap">大小文字</td><td>区別しない</td></tr>
+			<tr><td class="nowrap">無いとき</td><td><strong>この項目だけ飛ばし、飛ばしたことを画面に出す。</strong>エラーにはしない</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-warning">
+		<p><strong>リストが無いことを黙って通さない。</strong>「検査した」という記録だけが残り、いちばん効く項目が働いていない状態になる。</p>
+	</div>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>出力と終了コード</h1>
+
+	<p>終了コードは<strong>ほかの検査ツールと同じ契約</strong>にする。使う側が道具ごとに覚え直さずに済む。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>コード</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="num">0</td><td>指摘なし</td></tr>
+			<tr><td class="num">1</td><td>指摘あり</td></tr>
+			<tr><td class="num">2</td><td>引数や対象の誤り</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>出力は<strong>ファイルと行番号、当たった項目、当たった箇所</strong>。当たった値そのものは伏せる。</p>
+
+<pre><code>docs/01-背景.html:42  [実体パス]  C:\Users\&lt;伏せ&gt;\...
+notes/10_plan/p260901-01-設計.html:13  [除外語]  1 件
+
+=== 2 件の指摘があります ===</code></pre>
+
+	<div class="callout callout-caution">
+		<p><strong>検出した値を画面にそのまま出さない。</strong>出力は会話ログ・CI のログに残る。伏せるための道具が漏らす側にまわってはいけない。</p>
+	</div>
+
+	<h2>引数</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>引数</th><th>既定</th><th>内容</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>-Path &lt;パス&gt;</code></td><td class="nowrap">カレント</td><td>対象のプロジェクトフォルダ</td></tr>
+			<tr><td class="nowrap"><code>-WordList &lt;パス&gt;</code></td><td class="nowrap"><code>_public-ng-words.txt</code></td><td>除外語リスト</td></tr>
+			<tr><td class="nowrap"><code>-Skip &lt;名前&gt;</code></td><td class="nowrap">—</td><td>飛ばす項目。複数回指定できる</td></tr>
+			<tr><td class="nowrap"><code>-All</code></td><td class="nowrap">—</td><td>追跡外のファイルも見る</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch06" id="ch06">
+	<h1>段取りと、決まったこと</h1>
+
+	<h2>段取り</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>順</th><th>やること</th></tr></thead>
+		<tbody>
+			<tr><td class="num">1</td><td>検査の本体をどこに置くか（第 2 章の A・B・C）を決める</td></tr>
+			<tr><td class="num">2</td><td><code>check-public.ps1</code> ＋ <code>check-public.cmd</code> を作る。項目 1・2・6（正規表現と環境から取れる分）から</td></tr>
+			<tr><td class="num">3</td><td>テストを作る（<code>tests/cases/public/</code> ＋ <code>tools/40_test/run-public-tests.ps1</code>）。<strong>当たる例と、当たってはいけない例を対で置く</strong></td></tr>
+			<tr><td class="num">4</td><td>項目 3・4・5 を足す。誤検出の調整はここに集まる</td></tr>
+			<tr><td class="num">5</td><td>このプロジェクト自身に掛けて実測する。<strong>0 件で通ることを確かめる</strong></td></tr>
+			<tr><td class="num">6</td><td><code>html2md</code> の検査に組み込み、<code>--no-public-check</code> ・ <code>-NoPublicCheck</code> を足す</td></tr>
+			<tr><td class="num">7</td><td>README ・ USAGE ・ 共通化計画の「置くもの」に足す。共通ルールへの引き金の追記は文言を提示して指示を待つ</td></tr>
+			<tr><td class="num">8</td><td>依頼元へ返す</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>決まったこと</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>#</th><th>決めたこと</th><th>どこに書いたか</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">1</td><td>html2md の位置づけを<strong>「共有ツール置き場」に広げる</strong>。プロジェクト名は後で変える</td><td>第 2 章</td></tr>
+			<tr><td class="nowrap">2</td><td><strong>html2md の検査からも呼ぶ。</strong>外すオプションを付ける</td><td>第 2 章</td></tr>
+			<tr><td class="nowrap">3</td><td>呼ぶ引き金を<strong>共通ルールに書き足す</strong></td><td>第 2 章</td></tr>
+			<tr><td class="nowrap">4</td><td><strong>誤検出は止める側に倒す。</strong><code>-Skip</code> で釣り合いを取る</td><td>第 3 章</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>決まったこと（2026-09-12 の追記）</h2>
+
+	<p>第 2 章に「検査の本体を ps1 ・ C# と ps1 の 2 本 ・ C# exe のどれにするか」を残していたが、<strong>要件が増えたうえで実測し、どれでもない形に決まった。</strong>詳しくは<a href="../../tools/90_misc/bench-check-public/処理系比較-check-public.html">処理系の比較</a>。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>決めたこと</th><th>内容</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">処理系</td><td><strong>Bun ＋ TypeScript。</strong>起動込み 48 ms（PowerShell の 12 分の 1）。SJIS ・ UTF-16 を標準で読める。Bun は <code>.ts</code> を <code>.js</code> と同じ速さで実行する</td></tr>
+			<tr><td class="nowrap">動く場所</td><td><strong>Windows ・ Linux ・ Mac。</strong>この要件で PowerShell 5.1（Windows 専用）と csc の exe（.NET Framework）が落ちた</td></tr>
+			<tr><td class="nowrap">判断の重み</td><td><strong>実行時の速さを重視し、事前の段（コンパイル・型チェック）は重み付けしない。</strong>頻度が低いため</td></tr>
+			<tr><td class="nowrap">型チェック</td><td><strong>必須。</strong>Bun も Node も実行時には型を見ない（実測）。<code>tsc --noEmit</code> を別に回す</td></tr>
+			<tr><td class="nowrap">依存</td><td><strong>増やす。</strong><code>typescript</code> と <code>@types/node</code> の 2 つ。「依存パッケージを増やさない」の方針をここで変える</td></tr>
+			<tr><td class="nowrap">型チェックの時期</td><td><strong>ソースを修正したとき</strong></td></tr>
+			<tr><td class="nowrap">単一 exe 化</td><td><strong>採らない。</strong><code>bun build --compile</code> は速くならず（48 → 53 ms）、84.7 MB になり、型チェックもしない</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>あわせて、<a href="html2md-plan.html">共通化計画</a>の第 9 章に<strong>別の処理系へ移すときの取り決め</strong>（オプションを <code>--</code> に揃える／古い形は案内して止める／全テストが一致してから切り替える／起動は bun 優先で無ければ node）を書いた。</p>
+
+	<h2>この計画に入っていないもの</h2>
+
+	<ul>
+		<li><strong>git の履歴の検査。</strong>いま作業ツリーにある内容だけを見る。過去のコミットに入ったものを見つけても、直すには履歴の書き換えが要り、道具の役目を越える</li>
+		<li><strong>自動での修正。</strong>見つけて止めるところまで。何に置き換えるかは書き手が決める</li>
+		<li><strong>フックへの組み込み。</strong>引き金は人が呼ぶ形から始める</li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>

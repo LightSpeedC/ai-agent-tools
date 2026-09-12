@@ -104,7 +104,7 @@
 <div class="titlebar"><div class="inner">
 <h1>文字コード対応テキスト・ツール一式</h1>
 <div class="lead">SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。文字コードと改行の組を判定して、そのまま読み書きする</div>
-<div class="date">📅 作成: 2026-09-07 / 更新: 2026-09-10</div>
+<div class="date">📅 作成: 2026-09-07 / 更新: 2026-09-12</div>
 </div></div>
 
 <div class="wrap">
@@ -112,7 +112,7 @@
 <p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="../40_issues/issues.html">課題 i260907-02</a></p>
 
 <div class="callout">
-<strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド <code>text</code>（<code>text.exe</code>）1 本に <code>read</code>／<code>find</code>／<code>edit</code>／<code>write</code> を載せた（<code>src/Text/</code>、ビルド <code>build-text.cmd</code>、テスト <code>tools/40_test/run-text-tests.ps1</code> = 53 件成功）。<strong>本文の「決定」はすべて実装に反映済み。</strong><code>--col</code>・<code>--regex</code>・<code>--all</code> は将来。<code>write</code>・<code>edit</code> の変換先で表現できない文字の検出は実装済み（終了 5 で止まる。convert-encoding の <code>--force</code> のような ? への置き換えは無い）。
+<strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド <code>text</code>（<code>text.exe</code>）1 本に <code>read</code>／<code>find</code>／<code>edit</code>／<code>write</code> を載せた（<code>src/TextCs/</code>、ビルド <code>build-text-cs.cmd</code>、テスト <code>tools/40_test/run-text-tests.ps1</code> = 53 件成功）。<strong>本文の「決定」はすべて実装に反映済み。</strong><code>--col</code>・<code>--regex</code>・<code>--all</code> は将来。<code>write</code>・<code>edit</code> の変換先で表現できない文字の検出は実装済み（終了 5 で止まる。convert-encoding の <code>--force</code> のような ? への置き換えは無い）。
 </div>
 
 <nav class="toc">
@@ -210,7 +210,9 @@
 <p>改行は中身から見る。<code>CRLF</code> が主なら crlf、<code>LF</code> だけなら lf、<code>CR</code> だけなら cr。文字コードと合わせて<strong>組</strong>として持つ。</p>
 
 <h2>表記の約束</h2>
-<p>ツールが出す<strong>組は小文字</strong>で書く。文字コードは <code>sjis</code> / <code>utf8</code> / <code>utf8bom</code> / <code>utf16le</code> / <code>utf16be</code>、改行は <code>crlf</code> / <code>lf</code> / <code>cr</code>。組は <code>sjis/crlf</code> のように <code>/</code> でつなぐ。</p>
+<p>ツールが出す<strong>組は小文字</strong>で書く。文字コードは <code>sjis</code> / <code>utf8</code> / <code>utf8bom</code> / <code>utf16le</code> / <code>utf16be</code>、改行は <code>crlf</code> / <code>lf</code> / <code>cr</code>。組は <code>sjis/crlf</code> のように <code>/</code> でつなぐ。<strong><code>convert-encoding</code> も同じ綴りを出す。</strong></p>
+
+<p><strong>非 ASCII のバイトを含まないファイルは <code>ascii</code> と出す。</strong><code>utf8</code> と <code>sjis</code> でバイト列が同じになり、どちらとも決められないため。<strong>判定する組が増えたわけではない</strong>ので <code>--from ascii</code> は受けず、内部では <code>utf8</code> のまま扱う。<code>--from</code> で組を明示したときは、指定した名前をそのまま出す。</p>
 <p><strong>日時（mtime）は <code>yymmdd-hhmmss-ccc</code></strong>（年 2 桁・月・日 ／ 時・分・秒 ／ ミリ秒 3 桁）。例: 2026-09-07 19:00:00.123 → <code>260907-190000-123</code>。短く、名前順が時刻順になり、合言葉の一部にも収まる。</p>
 
 <p>土台は <code>convert-encoding</code> の <code>Detector</code>。ただし<strong>「両方妥当」の倒し方が動詞で変わる</strong>。</p>
@@ -451,16 +453,19 @@ text write app.reg --keep --in tmp/body.txt</code></pre>
 <div class="tablewrap"><table>
 <thead><tr><th>置き場</th><th>役目</th></tr></thead>
 <tbody>
-<tr><td class="nowrap"><code>src/Text/Program.cs</code></td><td>入口。第 1 引数（read/find/edit/write）でサブコマンドへ振り分ける</td></tr>
-<tr><td class="nowrap"><code>src/Text/Detector.cs</code></td><td>文字コードと改行の組の判定（両方妥当の倒し方は呼び手が指定）</td></tr>
-<tr><td class="nowrap"><code>src/Text/Digest.cs</code></td><td>合言葉（行範囲を LF 正規化 → ハッシュ ＋ サイズ ＋ 更新日時ミリ秒）</td></tr>
-<tr><td class="nowrap"><code>src/Text/Read.cs</code> ほか</td><td>4 つの動詞それぞれの処理。共有部分を参照する</td></tr>
+<tr><td class="nowrap"><code>src/TextCs/Program.cs</code></td><td>入口。第 1 引数（read/find/edit/write）でサブコマンドへ振り分ける</td></tr>
+<tr><td class="nowrap"><code>src/TextCs/Engine.cs</code></td><td>組の判定・デコード・エンコード・行割り・合言葉</td></tr>
+<tr><td class="nowrap"><code>src/TextCs/ReadCmd.cs</code> ほか</td><td>4 つの動詞それぞれの処理。共有部分を参照する</td></tr>
 </tbody>
 </table></div>
-<p><code>convert-encoding</code> の <code>Detector</code>・<code>Converter</code> と重なる。<strong>将来 convert-encoding もこの共有部分に寄せて二重持ちを解消する</strong>のが理想だが、まずは新ツール側だけで完結させ、convert-encoding には手を入れない（動いているものを崩さない）。<strong>非 Windows のために起動時に <code>Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)</code> を呼ぶ</strong>（Windows でも無害）。</p>
+<p><code>convert-encoding</code> の <code>Detector</code>・<code>Converter</code> と重なる。<strong>C# 版では二重持ちのまま残した</strong>（動いているものを崩さないため）。</p>
+
+<div class="callout callout-tip">
+	<p><strong>TypeScript への移植で二重持ちが解消した。</strong>判定とデコード・エンコードは <code>src/lib/</code> の 1 本になり、<code>convert-encoding</code> と <code>text</code> の両方がそこを参照する。<strong>C# では <code>Text/Engine.cs</code> と <code>ConvertEncoding/Detector.cs</code> に一字一句同じコードが並んでいた。</strong>進め方は <a href="p260912-02-bun移植.html">bun への移植</a>。</p>
+</div>
 
 <h2>ビルドと配置</h2>
-<p>いまは <code>convert-encoding</code> と同じく <code>build-text.cmd</code>（SJIS ＋ CRLF）で <code>text.exe</code> をビルド。出力 exe はリポジトリ直下、<code>*.exe</code> は <code>.gitignore</code> のまま（課題 i260830-16）。PATH は既存ツールと同じ場所。exe が 1 つなので配置も 1 つで済む。</p>
+<p>いまは <code>convert-encoding</code> と同じく <code>build-text-cs.cmd</code>（SJIS ＋ CRLF）で <code>text.exe</code> をビルド。出力 exe はリポジトリ直下、<code>*.exe</code> は <code>.gitignore</code> のまま（課題 i260830-16）。PATH は既存ツールと同じ場所。exe が 1 つなので配置も 1 つで済む。</p>
 
 <h2>Linux・Mac への展開を見越して</h2>
 <p>最後は Linux・Mac にも展開する。<strong>コードは今から OS 非依存に書く</strong>が、道具立ては段階を踏む。</p>

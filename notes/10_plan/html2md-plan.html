@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -11,15 +11,16 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（8 章 / 色相 280 → 0 を 40 度刻み） */
+	/* 章のアクセント色（9 章 / 色相 280 → 0 を 35 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(240,78%,25%); --accent2:hsl(240,58%,55%); --soft:hsl(240,28%,95%); }
-	.ch03{ --accent:hsl(200,78%,25%); --accent2:hsl(200,58%,55%); --soft:hsl(200,28%,95%); }
-	.ch04{ --accent:hsl(160,78%,25%); --accent2:hsl(160,58%,55%); --soft:hsl(160,28%,95%); }
-	.ch05{ --accent:hsl(120,78%,25%); --accent2:hsl(120,58%,55%); --soft:hsl(120,28%,95%); }
-	.ch06{ --accent:hsl(80,78%,25%);  --accent2:hsl(80,58%,55%);  --soft:hsl(80,28%,95%); }
-	.ch07{ --accent:hsl(40,78%,25%);  --accent2:hsl(40,58%,55%);  --soft:hsl(40,28%,95%); }
-	.ch08{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(245,78%,25%); --accent2:hsl(245,58%,55%); --soft:hsl(245,28%,95%); }
+	.ch03{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch04{ --accent:hsl(175,78%,25%); --accent2:hsl(175,58%,55%); --soft:hsl(175,28%,95%); }
+	.ch05{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch06{ --accent:hsl(105,78%,25%);  --accent2:hsl(105,58%,55%);  --soft:hsl(105,28%,95%); }
+	.ch07{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch08{ --accent:hsl(35,78%,25%);  --accent2:hsl(35,58%,55%);  --soft:hsl(35,28%,95%); }
+	.ch09{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -152,7 +153,7 @@
 	<div class="inner">
 		<h1>html2md ツール共通化計画</h1>
 		<p class="lead">5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、このフォルダの共通ツールに統合する。あわせて PowerShell スクリプトを <code>csc.exe</code> でビルドする C# の exe に置き換える。</p>
-		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-09-11</p>
+		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-09-12</p>
 	</div>
 </div>
 
@@ -171,6 +172,7 @@
 		<li class="ch06"><a href="#ch06">生成後の検査</a></li>
 		<li class="ch07"><a href="#ch07">進め方</a></li>
 		<li class="ch08"><a href="#ch08">決めたこと</a></li>
+		<li class="ch09"><a href="#ch09">別の処理系へ移すときの取り決め</a></li>
 	</ol>
 </div>
 
@@ -382,7 +384,7 @@
 		<thead><tr><th>ファイル</th><th>役割</th></tr></thead>
 		<tbody>
 			<tr><td class="nowrap"><code>src\Html2Md\*.cs</code></td><td>変換と検査の実装</td></tr>
-			<tr><td class="nowrap"><code>build.cmd</code></td><td><code>csc.exe</code> を探して <code>html2md.exe</code> をビルドする</td></tr>
+			<tr><td class="nowrap"><code>build-html2md-cs.cmd</code></td><td><code>csc.exe</code> を探して <code>html2md.exe</code> をビルドする</td></tr>
 			<tr><td class="nowrap"><code>html2md.exe</code></td><td>ビルド成果物。各プロジェクトのランチャーが呼ぶ</td></tr>
 		</tbody>
 	</table>
@@ -516,7 +518,7 @@
 			<tr>
 				<td class="nowrap">2</td>
 				<td><code>html2md</code> を C# で実装する（変換＋ローカル検査）</td>
-				<td><code>build.cmd</code> が通ること</td>
+				<td><code>build-html2md-cs.cmd</code> が通ること</td>
 			</tr>
 			<tr>
 				<td class="nowrap">3</td>
@@ -620,6 +622,154 @@
 	<ul>
 		<li>Markdown から HTML への逆変換。HTML を正とする方針が変わらない限り必要ない。</li>
 		<li><code>20260828-typescript-learn</code> の空フォルダの扱い。ランチャーを置けばそのまま使えるようになる。</li>
+	</ul>
+</section>
+
+<section class="ch09" id="ch09">
+	<h1>別の処理系へ移すときの取り決め</h1>
+
+	<p>ここに置く道具を別の処理系へ移すときの決めごと。<strong>コマンド名を変えずに中身を入れ替える</strong>ため、使う側から見て何が変わるかを先に決めておく。</p>
+
+	<p>いまのところ対象になるのは、<a href="../../tools/90_misc/bench-html2md/処理系比較-html2md.html">html2md のベンチ</a>で <code>html2md-ps.ps1</code> が実際の資料 9 ファイルに 29.6 秒かかると分かったことによる。詳しくは<a href="../40_issues/issues.html">課題 i260912-02</a> と <a href="p260912-01-check-public.html">check-public 計画</a>。</p>
+
+	<h2>1. オプションは <code>--</code> に揃える</h2>
+
+	<p>ps1 で書いた道具は PowerShell のパラメータ（<code>-Path</code> ・ <code>-Recurse</code>）の形をしている。<strong>移した先ではすべて <code>--</code> の形に揃える。</strong></p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>道具</th><th>いまの形</th><th>移した後</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>check-markdown</code></td><td class="nowrap"><code>-Path</code> <code>-Recurse</code> <code>-Exclude</code> <code>-Token</code> <code>-DelayMs</code></td><td class="nowrap"><code>--path</code> <code>--recurse</code> <code>--exclude</code> <code>--token</code> <code>--delay-ms</code></td></tr>
+			<tr><td class="nowrap"><code>check-contrast</code></td><td class="nowrap"><code>-Path</code> <code>-Recurse</code> <code>-Exclude</code></td><td class="nowrap"><code>--path</code> <code>--recurse</code> <code>--exclude</code></td></tr>
+			<tr><td class="nowrap"><code>html2md</code> ・ <code>convert-encoding</code> ・ <code>text</code></td><td class="nowrap">すでに <code>--</code></td><td class="nowrap">変えない</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><strong>先頭の <code>--</code> に続けて、すべて小文字・語の区切りはハイフン 1 つ</strong>（<code>--delay-ms</code>）。<code>html2md</code> の <code>--no-readme</code> ・ <code>--dry-run</code> と同じ形にする。</p>
+
+	<h2>2. 古い形で呼ばれたら、代わりを教えて止める</h2>
+
+	<div class="callout callout-caution">
+		<p><strong>コマンド名が同じまま、オプションだけが変わる。</strong>呼ぶ側のスクリプト・資料・ほかのプロジェクトは、古い形のまま残っている。<strong>黙って無視すると、引数が効いていないことに気づけない。</strong></p>
+	</div>
+
+	<p><code>-Path</code> のような古い形を受け取ったら、<strong>実行せずに終わる。</strong>そのとき<strong>代わりのオプションを画面に出す。</strong>呼び元を直して、呼び直してもらう。</p>
+
+<pre><code>check-markdown -Path . -Recurse
+
+[NG] 古い形のオプションです。次に読み替えてください。
+       -Path     → --path
+       -Recurse  → --recurse
+     呼び出し元を直してから、もう一度実行してください。</code></pre>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>決め</th><th>理由</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">自動で読み替えて実行しない</td><td>動いてしまうと<strong>呼び元が古いまま残る。</strong>いつまでも両方を受け付けることになる</td></tr>
+			<tr><td class="nowrap">終了コードは <code>2</code></td><td>引数の誤りなので、既存の契約（0＝指摘なし / 1＝指摘あり / 2＝引数や対象の誤り）に合わせる</td></tr>
+			<tr><td class="nowrap">対応表は渡された分だけ出す</td><td>使っていないオプションまで並べると、どれを直すのか分からない</td></tr>
+			<tr><td class="nowrap">この案内はいつか消す</td><td>呼び元が片付いたら不要になる。<strong>消す時期は別に決める</strong></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>3. 全テストが現存と一致してから切り替える</h2>
+
+	<p><strong>移した実装は、現存の実装と出力が完全に一致するまで切り替えない。</strong>一致を確かめないまま置き換えると、差が出たときに「移植の失敗」か「もとからの挙動」かを切り分けられない。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>順</th><th>やること</th></tr></thead>
+		<tbody>
+			<tr><td class="num">1</td><td>移した実装を、現存とは<strong>別の名前で</strong>置く（<code>html2md.exe</code> の隣に置く形）</td></tr>
+			<tr><td class="num">2</td><td>テストを<strong>両方で回し、出力が一致することを確かめる</strong>。いま exe と ps1 を突き合わせているのと同じ形</td></tr>
+			<tr><td class="num">3</td><td>本番の資料（<code>README.html</code> と <code>notes/</code>）でも一致することを確かめる。<strong>テストケースに無い書き方が本番にはある</strong></td></tr>
+			<tr><td class="num">4</td><td>一致したら名前を入れ替える</td></tr>
+			<tr><td class="num">5</td><td>現存を消す。<strong>消すのは最後</strong></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-important">
+		<p><strong>オプションの形を変えるのは、切り替えと同時にする。</strong>移植の途中で変えると、一致の確認そのものが古い形と新しい形の混在になる。<strong>移植中は現存と同じオプションで受け、切り替えの回に <code>--</code> へ寄せる。</strong></p>
+	</div>
+
+	<h2>4. 起動は bun を優先し、無ければ node</h2>
+
+	<p>使う側は <code>text</code> ・ <code>check-markdown</code> のように<strong>名前だけで呼ぶ</strong>。その名前の入口が、どちらの処理系で走らせるかを決める。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>順</th><th>見つかったら</th></tr></thead>
+		<tbody>
+			<tr><td class="num">1</td><td><code>bun</code> で走らせる</td></tr>
+			<tr><td class="num">2</td><td>無ければ <code>node</code> で走らせる</td></tr>
+			<tr><td class="num">3</td><td>どちらも無ければ、<strong>何が要るかを出して終了コード 2 で止める</strong></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>bun を先にするのは速いから（<a href="../../tools/90_misc/bench-html2md/処理系比較-html2md.html">html2md のベンチ</a>で node の 2〜3 倍）。node を残すのは、<strong>bun が入っていない環境でも動かせるようにするため。</strong></p>
+
+	<h3>Windows（<code>text.cmd</code>）</h3>
+
+<pre><code class="language-batch">@echo off
+setlocal
+where bun &gt;nul 2&gt;&amp;1
+if %errorlevel%==0 goto :bun
+where node &gt;nul 2&gt;&amp;1
+if %errorlevel%==0 goto :node
+echo [NG] bun か node が要ります
+exit /b 2
+
+:bun
+bun "%~dp0src\text.ts" %*
+exit /b %errorlevel%
+
+:node
+node "%~dp0src\text.ts" %*
+exit /b %errorlevel%</code></pre>
+
+	<div class="callout callout-caution">
+		<p><strong><code>if ( )</code> のブロックの中で <code>%errorlevel%</code> を書かない。</strong>ブロックを解析した時点で展開されるため、<strong>コマンドを実行する前の値（ふつうは 0）が返る。</strong>分岐は <code>goto</code> で行い、終了コードはブロックの外で読む。</p>
+		<p><strong>エラーにならず、静かにいつも 0 を返す。</strong>実際にこの形で書いたところ、<code>convert-encoding</code> の移植版が<strong>終了コードを見るテスト 19 件すべてで 0 を返し</strong>、移植の誤りと見分けが付かなかった。</p>
+	</div>
+
+	<h3>Linux ・ Mac（<code>text</code>）</h3>
+
+<pre><code class="language-shell">#!/bin/sh
+dir=$(dirname "$0")
+
+if command -v bun &gt;/dev/null 2&gt;&amp;1; then
+	exec bun "$dir/src/text.ts" "$@"
+	exit $?
+fi
+
+if command -v node &gt;/dev/null 2&gt;&amp;1; then
+	exec node "$dir/src/text.ts" "$@"
+	exit $?
+fi
+
+echo "[NG] bun か node が要ります" &gt;&amp;2
+exit 2</code></pre>
+
+	<div class="callout">
+		<p><strong><code>exec</code> の次の行には来ない。</strong><code>exec</code> はプロセスを置き換えるためで、<strong><code>exec</code> 自体が失敗したときもシェルごと終わる</strong>（実測で終了コード 127）。それでも <code>exit</code> を書くのは、<strong>分岐がここで終わることを目で追えるようにするため。</strong>cmd 側の <code>exit /b</code> と読み比べたときに、同じ形として読める。</p>
+	</div>
+
+	<div class="callout callout-warning">
+		<p><strong>終了コードを素通しする。</strong>入口が握りつぶすと、<code>0</code>＝指摘なし / <code>1</code>＝指摘あり / <code>2</code>＝引数の誤り、の契約が呼び元に届かない。cmd は <code>exit /b %errorlevel%</code>、sh は <code>exec</code> で置き換える。</p>
+	</div>
+
+	<h3>決めておくこと</h3>
+
+	<ul>
+		<li><strong>node で <code>.ts</code> が走るかは版による。</strong>型注釈をそのまま実行できない版では動かないので、<strong>その場合も何が要るかを出して止める</strong>（黙って失敗させない）</li>
+		<li><strong>入口は 2 本になる</strong>（<code>.cmd</code> と拡張子なしの sh）。名前が同じで中身が別なので、<strong>片方だけ直す事故に注意する</strong></li>
+		<li>cmd は SJIS ＋ CRLF、sh は UTF-8 ＋ LF。文字コードの決めは共通ルールに従う</li>
 	</ul>
 </section>
 

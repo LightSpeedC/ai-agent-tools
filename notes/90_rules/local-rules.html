@@ -231,6 +231,53 @@
 	<h2>issues.html は更新日の検査が効かない</h2>
 
 	<p><code>md-skip</code> のページなので <code>.md</code> が生成されず、<strong>html2md の「更新日が古い」検査に掛からない。</strong>書き換えたら自分で日付を直す。</p>
+
+	<h2>C# と TypeScript でフォルダ名が衝突する</h2>
+
+	<p><code>src/Text/</code>（C#）と <code>src/text/</code>（TypeScript）は<strong>同じフォルダ</strong>になり、<code>.cs</code> と <code>.ts</code> が混ざる。一般則は共通ルール「大小だけが違う名前を作らない」。</p>
+
+	<div class="callout callout-warning">
+		<p><strong>2 度踏んだ</strong>（<code>Text</code> と <code>Html2Md</code>）。1 度目に <code>src/TextCs/</code> へ分けたのに、2 度目も同じ手順を繰り返した。</p>
+	</div>
+
+	<p><strong>C# 側は <code>〜Cs</code> にする</strong>（<code>ConvertEncodingCs</code> ・ <code>TextCs</code> ・ <code>Html2MdCs</code>）。移植を始める前に移す。あとから分けると、ビルドスクリプトの書き換えとビルドし直しが移植作業の途中に割り込む。</p>
+
+	<ul>
+		<li>衝突するのは<strong>ハイフンを含まない名前</strong>。<code>ConvertEncoding</code> と <code>convert-encoding</code> は別フォルダになるので起きない</li>
+		<li>移す手順は共通ルール「ファイルの移動・分割・置き換え時の順序」に従う。<strong>新しい場所でビルドが通ることを確かめてから元を消す</strong></li>
+	</ul>
+
+	<h2>移植で落ちるのは「言語が肩代わりしていた比較」</h2>
+
+	<p>C# は <code>HashSet&lt;string&gt;(StringComparer.OrdinalIgnoreCase)</code> で<strong>大小を無視して比べていた。</strong>TypeScript の <code>Set</code> にその仕組みは無いので入れるときに小文字へ寄せた——が、<strong>引くときを直し忘れた。</strong></p>
+
+	<p><code>.html</code> → <code>.md</code> の置き換えが<strong>すべて素通り</strong>し、16 ケース中 8 ケースが落ちた。<strong>例外は出ず、リンクが <code>.html</code> のまま残るだけ。</strong>一般則は共通ルール「移植で落ちるのは、言語が肩代わりしていた比較」。</p>
+
+	<h2>道具を作ったら、外側で同じことをしない</h2>
+
+	<p><code>psh</code> は PowerShell の出力を読み分けて UTF-8 で流す。<strong>その出力にさらに <code>iconv -f CP932</code> をかけて壊した。</strong>PowerShell を直接呼んでいた頃の手癖が残っていた。</p>
+
+	<div class="callout callout-caution">
+		<p><strong>二重変換はエラーにならない。</strong>集計行が 1 行も出なくなり、「文字化けで読めない」と誤って報告した。実際はこちらが壊していた。</p>
+	</div>
+
+	<h2>cmd を書いたら必ず <code>--to cmd</code> を通す</h2>
+
+	<p>共通ルール「bat / cmdファイルの文字コード・改行コード」にあるとおりだが、<strong>このセッションで 2 度忘れた。</strong>UTF-8 のまま置くと <code>'ら、ここを' は、内部コマンドまたは外部コマンド</code> で落ちる。</p>
+
+	<p><strong>Write でファイルを作った直後に変換する。</strong>あとでまとめてやろうとすると、その間に実行して失敗する。</p>
+
+	<h2>ヒアドキュメントで作ったファイルが消えた</h2>
+
+	<p><code>cat &gt; "$t" &lt;&lt;EOF</code> で作った <code>text</code> ・ <code>html2md</code> の sh 入口が、作成・動作確認のあとで<strong>消えていた。</strong><code>rm foo.exe</code> が拡張子なしの <code>foo</code> を消すか再現を試したが<strong>再現せず、原因は特定できていない。</strong></p>
+
+	<p><strong>ファイルは Write ツールで作る。</strong>共通ルール「Python 等のヒアドキュメントでファイルを書き換えない」と同じ扱いにする。</p>
+
+	<h2>置いてからテストしない</h2>
+
+	<p>移植版の入口を <code>public/</code> に<strong>置いてからテストを回した。</strong>計画では「テストが全件一致してから置く」と決めていた。結果は全件一致で害は出なかったが、順序としては逆だった。</p>
+
+	<p><strong>PATH に置いた瞬間、ほかのプロジェクトも移植版を使う。</strong>確かめてから置く。</p>
 </section>
 
 </div>

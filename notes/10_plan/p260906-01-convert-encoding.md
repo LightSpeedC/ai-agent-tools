@@ -58,7 +58,8 @@ AI エージェントがファイルを書くとき、書き込みツールは *
 
 ```text
 convert-encoding <path> --to <指定>[/<改行>] [--from <形式>] [--force]
-convert-encoding <path> --info
+convert-encoding <path> --info  [--include <glob>] [--exclude <glob>] [--exclude-dir <名前>]
+convert-encoding <path> --check [--include <glob>] [--exclude <glob>] [--exclude-dir <名前>]
 convert-encoding <path> --read
 convert-encoding <path> --from hex
 convert-encoding <path> --dump [--offset <n>] [--bytes <m>]
@@ -69,11 +70,15 @@ convert-encoding --help
 
 | 引数 | 必須 | 内容 |
 |---|---|---|
-| <path> | はい | 対象ファイル。1 つだけ受ける |
+| <path> | はい | 対象ファイル。1 つだけ受ける。**`--info` ・ `--check` のときはフォルダも受け、その下を再帰で見る** |
 | --to <指定> | はい<br>（--info・--read 時は不要） | 変換先。用途名または文字コード名。`/` の後ろで改行も指定できる |
 | --from <形式> | いいえ | 変換元の文字コード。省略すると自動判定 |
 | --force | いいえ | 変換先で表現できない文字があっても続行する |
-| --info | いいえ | いまの状態を表示するだけ。書き込まない |
+| --info | いいえ | いまの状態を表示するだけ。書き込まない。**全件出す** |
+| --check | いいえ | **規約に合わないものだけ**を出す。書き込まない。1 件でもあれば終了コード 1 |
+| --include <glob> | いいえ | 対象を絞る。カンマ区切りで複数。`text find` と同じ語彙 |
+| --exclude <glob> | いいえ | 除くファイル。既定の除外に**足す** |
+| --exclude-dir <名前> | いいえ | 除くフォルダ名。既定の除外に**足す** |
 | --read | いいえ | 中身を UTF-8 で標準出力へ出す。書き込まない |
 | --from hex | いいえ | 中身を 16 進テキストとみなし、バイト列に展開して書き戻す |
 | --dump | いいえ | 中身を 16 進テキストで標準出力へ出す。書き込まない |
@@ -264,7 +269,7 @@ convert-encoding foo.cmd --dump
 
 #### 純 ASCII のファイル
 
-ASCII だけのファイルは UTF-8 とも SJIS とも解釈できる。<strong>UTF-8 と判定する。</strong>どちらに解釈しても変換結果のバイト列は同じになるため、実害は無い。
+ASCII だけのファイルは UTF-8 とも SJIS とも解釈できる。<strong>UTF-8 と判定する。</strong>どちらに解釈しても変換結果のバイト列は同じになるため、実害は無い。**表示だけは `ascii` にする**（5 章）。判定は UTF-8 のままで、組を増やすわけではない。
 
 #### 両方とも妥当になる並び
 
@@ -389,23 +394,111 @@ try {
 
 ## 5. 出力と終了コード
 
+### 組と改行の名前は小文字
+
+<strong>表示する名前は `--to` ・ `--from` に書く綴りと同じにする。</strong>出た名前をそのまま指定へ渡せる。`text` も同じ綴りを出す。
+
+| 種類 | 出す名前 |
+|---|---|
+| 文字コード | `utf8` `utf8bom` `sjis` `utf16le` `utf16be` `ascii` |
+| 改行 | `crlf` `lf` `cr` ／ `混在` `改行なし` |
+
+`混在` と `改行なし` だけ日本語のまま。**指定に書ける語ではなく、状態を言う語だから。**
+
+### 純 ASCII は ascii と出す
+
+非 ASCII のバイトを含まないファイルは、`utf8` と `sjis` で**バイト列が同じ**になる。判定はどちらかに寄るが、<strong>片方の名前だけを出すと「cmd なのに utf8」と読めてしまう。</strong>そこで表示だけ `ascii` にする。
+
+```text
+check-contrast.cmd  ascii  crlf=3  lf=0  cr=0  100 bytes
+```
+
+> [!IMPORTANT]
+> **判定する組は増やさない。**`--from ascii` は受けない（引数エラー）。`ascii` を組として持つと、ascii と判定したファイルに日本語を足す `text edit` が表現できない文字で止まる縁が増える。**ここで変えるのは見せ方だけ**で、内部では `utf8` のまま扱う。
+
+`--from` で組を明示したときは、**指定した名前をそのまま出す**。書き手が決めた組を言い換えない。
+
 ### 変換したとき
 
 ```text
-foo.cmd  SJIS+CRLF -> UTF8BOM+CRLF  1,771 -> 1,802 bytes
+foo.cmd  sjis+crlf -> utf8bom+crlf  1,771 -> 1,802 bytes
 ```
 
 ### 変更が無かったとき
 
 ```text
-foo.cmd  SJIS+CRLF  変更なし
+foo.cmd  sjis+crlf  変更なし
 ```
 
 ### --info
 
 ```text
-foo.cmd  SJIS  CRLF=48  LF=0  CR=0  1,771 bytes
+foo.cmd  sjis  crlf=48  lf=0  cr=0  1,771 bytes
 ```
+
+フォルダを渡すと、その下を再帰して**全件**を同じ形で出す。規約に合わないものには**あるべき組を付け足す**。
+
+```text
+build.cmd                    sjis     crlf=47  lf=0    cr=0  1,340 bytes
+tools/40_test/run-tests.ps1  utf8bom  crlf=0   lf=366  cr=0  17,357 bytes  → ps1 は crlf
+notes/10_plan/plan.html      utf8     crlf=0   lf=980  cr=0  47,027 bytes  → html は utf8bom
+
+=== 128 件（うち規約に合わないもの 2 件）===
+```
+
+<strong>終了コードは常に 0。</strong>見るための機能で、落とすのは `--check` の役目にする。
+
+### --check
+
+**規約に合わないものだけ**を出す。合っているものは 1 行も出さない。
+
+```text
+tools/40_test/run-tests.ps1  utf8bom+lf  → ps1 は utf8bom+crlf
+notes/10_plan/plan.html      utf8+lf     → html は utf8bom+lf
+
+=== 2 件が規約に合いません ===
+```
+
+1 件も無ければ `=== 規約どおりです ===` と出して終了コード 0。あれば 1。
+
+あるべき組の呼び名は**拡張子そのもの**にする（`ps1` `cmd` `ts` `txt`）。用途名を別に持つと、用途名の無い `ts` ・ `md` を「既定」と呼ぶことになり、**何に対する規約なのかが読めなくなる**。
+
+### 規約（判定の表）
+
+| 拡張子 | あるべき組 | 出どころ |
+|---|---|---|
+| `.ps1` | BOM 付き UTF-8 ＋ CRLF | `--to ps1` |
+| `.cmd` `.bat` | SJIS ＋ CRLF | `--to cmd` |
+| `.reg` | UTF-16 LE ＋ BOM ＋ CRLF | `--to reg` |
+| `.html` `.htm` | BOM 付き UTF-8 ＋ LF | `--to html` |
+| 改行を LF と定めたもの | BOM 無し UTF-8 ＋ LF | `.editorconfig` の `[*]` |
+| そのほか | BOM 無し UTF-8（**改行は問わない**） | 下の説明 |
+
+「改行を LF と定めたもの」は**自分たちが書くファイル**を挙げる。`md` ・ `js` ・ `mjs` ・ `cjs` ・ `ts` ・ `tsx` ・ `jsx` ・ `json` ・ `css` ・ `scss` ・ `cs` ・ `go` ・ `rs` ・ `py` ・ `rb` ・ `java` ・ `sql` ・ `yml` ・ `yaml` ・ `toml` ・ `sh` ・ `svg` ・ `xml`。増えたら 1 行足す。
+
+#### 文字コードは全部見る。改行は定めたものだけ見る
+
+<strong>文字コードは拡張子によらず見る。</strong>表に無いものは「BOM 無し UTF-8」として扱うので、拡張子が増えても表を直さずに済む。
+
+**改行は、定めた拡張子だけを見る。**`txt` ・ `log` ・ `csv` のような、規約を置いていないものは問わない。
+
+> [!IMPORTANT]
+> <strong>理由は `.gitattributes` の `* text=auto eol=lf`。</strong>これらは git に入る時点で LF に正規化されるため、<strong>作業ツリーの改行まで縛る実益が薄い。</strong>縛ると、手で CRLF にした `txt` が毎回違反に出て、本当の違反（`ps1` の BOM 落ち等）が埋もれる。**文字コードは git が変換しない**ので、そちらは見る値打ちがある。
+
+**改行が混ざっていれば、それだけで規約に合わない**（CRLF と LF の両方が 1 以上）。単独の CR も同じ。**これは拡張子によらず見る**（どの種類でも事故のため）。**改行がまったく無いファイルは、どちらとも言えないので合っている扱いにする。**
+
+> [!TIP]
+> <strong>純 ASCII のファイルは、UTF-8 と SJIS のどちらと判定されても違反にしない。</strong>バイト列が同じで、どちらに解釈しても規約どおりのファイルになるため。日本語を含まない `cmd` が「SJIS でない」と言われるのを防ぐ。**表示は `ascii` になる**（前の節）。
+
+### 見ないもの
+
+| 種類 | 既定 | なぜ |
+|---|---|---|
+| フォルダ | `tmp` ・ `etc` ・ `node_modules` ・ `.git` | 生成物と一時物。check-markdown ・ check-contrast の既定と同じ |
+| 先頭 `_` | ファイル・フォルダとも除く | 共通ルールで全階層 Git 管理外。**中身が機密のことがあり、名前を画面に出すこと自体を避ける** |
+| バイナリ | 除く | 判定に意味がない。`text find` と同じ判定を使う |
+
+`--exclude` ・ `--exclude-dir` は**既定に足す**。置き換えではない。`.gitignore` は読まない。**「配布しない」と「規約を守らなくてよい」は別のこと**で、`tmp` ・ `etc` を既定で外せば足りる。
 
 ### --read
 
@@ -428,7 +521,7 @@ foo.cmd  SJIS  CRLF=48  LF=0  CR=0  1,771 bytes
 
 ```text
 [NG] 文字コードを判定できません。--from で指定してください: foo.txt
-[NG] SJIS で表現できない文字があります: 3 行目の '✓' (U+2713)
+[NG] sjis で表現できない文字があります: 3 行目の '✓' (U+2713)
      --force を付けると ? に置き換えて続行します
 [NG] ファイルが見つかりません: foo.txt
 ```
@@ -495,7 +588,7 @@ foo.cmd  SJIS  CRLF=48  LF=0  CR=0  1,771 bytes
 
 | # | 内容 | 期待する結果 |
 |---:|---|---|
-| 19 | SJIS のファイルを `--info` | SJIS と表示される |
+| 19 | SJIS のファイルを `--info` | `sjis` と表示される |
 | 20 | 判定できないバイト列 | 終了コード 3。書き込まない |
 | 21 | 誤判定するファイルに `--from` を付ける | 指定に従う |
 | 22 | 存在しないファイル | 終了コード 2 |
@@ -574,12 +667,12 @@ foo.cmd  SJIS  CRLF=48  LF=0  CR=0  1,771 bytes
 
 ### html2md と同じ作りにする
 
-`html2md` は csproj もソリューションも持たず、`build.cmd` が `csc.exe` にソースを直接渡している。同じ形にする。
+`html2md` は csproj もソリューションも持たず、`build-html2md-cs.cmd` が `csc.exe` にソースを直接渡している。同じ形にする。
 
 | 置き場 | 内容 |
 |---|---|
 | src/ConvertEncoding/*.cs | ソース |
-| build-convert-encoding.cmd | ビルド（build.cmd と同じ構造） |
+| build-convert-encoding-cs.cmd | ビルド（build-html2md-cs.cmd と同じ構造） |
 | convert-encoding.exe | 成果物。root 直下 |
 | tests/ | テスト |
 
@@ -593,7 +686,7 @@ foo.cmd  SJIS  CRLF=48  LF=0  CR=0  1,771 bytes
 | 置き場 | 内容 |
 |---|---|
 | src/ConvertEncoding/ | `Program.cs` `Spec.cs` `Detector.cs` `Converter.cs` |
-| build-convert-encoding.cmd | `build.cmd` と同じ構造。Roslyn を探し、無ければ Windows 標準の csc を使う |
+| build-convert-encoding-cs.cmd | `build-html2md-cs.cmd` と同じ構造。Roslyn を探し、無ければ Windows 標準の csc を使う |
 | convert-encoding.exe | root 直下。15,360 バイト |
 | tools/40_test/run-convert-encoding-tests.ps1 | 6 章のケースを実行する。**93 件すべて成功** |
 
