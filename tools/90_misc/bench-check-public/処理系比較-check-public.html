@@ -1,0 +1,754 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="md-skip">
+<title>check-public の処理系比較</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%);  --accent2:hsl(140,58%,55%);  --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	.badge{
+		display:inline-block; padding:1px 9px; border-radius:11px;
+		background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff;
+		font-size:.85em; font-weight:600; white-space:nowrap;
+	}
+	.badge.b-ok{ background:linear-gradient(100deg,#1d7a3c,#45b56c); color:#fff; }
+	.badge.b-ng{ background:linear-gradient(100deg,#a51f22,#e05a5c); color:#fff; }
+	.badge.b-warn{ background:linear-gradient(100deg,#b8620a,#f0a548); color:#fff; }
+	.badge.b-none{ background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>check-public の処理系比較</h1>
+		<p class="lead">同じ検査を 6 つの処理系で書き、実行時の速さ・事前の段・行数を測った。JavaScript は CommonJS ・ ESM ・ TypeScript の差も測った。どれで実装するかを決めるための材料。</p>
+		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-09-12</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../../README.html">← html2md</a> ／ <a href="../../../notes/10_plan/p260912-01-check-public.html">check-public 計画</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">測ったもの</a></li>
+		<li class="ch02"><a href="#ch02">結果</a></li>
+		<li class="ch03"><a href="#ch03">JavaScript の書き方で変わるか</a></li>
+		<li class="ch04"><a href="#ch04">食い違いから出てきたこと</a></li>
+		<li class="ch05"><a href="#ch05">どれを選ぶか</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>測ったもの</h1>
+
+	<p><a href="../../../notes/10_plan/p260912-01-check-public.html">check-public 計画</a>の第 2 章で「検査の本体をどこに置くか」が決まらなかった。<strong>推測で決めずに測る。</strong></p>
+
+	<h2>同じにした条件</h2>
+
+	<ul>
+		<li>同じフォルダを同じ拡張子で走査する（<code>.cs</code> <code>.ps1</code> <code>.md</code> <code>.html</code> <code>.cmd</code> <code>.txt</code> <code>.json</code> <code>.js</code>、<code>.git</code> ・ <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> は除く）</li>
+		<li>同じ 4 つの検査を 1 行ずつに当てる（メールアドレス／実体パス／認証情報／キリル・ハングルの混入）</li>
+		<li>各実装が<strong>自分で時間を測って出す</strong>（<code>inner_ms</code>）。外側はランナーが測る。差が起動の分になる</li>
+		<li>21 回まわして中央値を採る</li>
+	</ul>
+
+	<p>対象はこのプロジェクト自身。<strong>143 ファイル・約 22,000 行</strong>。プロジェクトが育つと件数も変わるため、<strong>比べるときは全実装を同じときに測り直す</strong>。</p>
+
+	<h2>測った環境</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>処理系</th><th>版</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">csc</td><td>Visual Studio 2022 同梱の Roslyn</td></tr>
+			<tr><td class="nowrap">rustc</td><td>1.96.1</td></tr>
+			<tr><td class="nowrap">go</td><td>1.26.4</td></tr>
+			<tr><td class="nowrap">node</td><td>26.8.1</td></tr>
+			<tr><td class="nowrap">bun</td><td><strong>1.4.2</strong>（最初の計測時は 1.4.0）</td></tr>
+			<tr><td class="nowrap">Windows PowerShell</td><td>5.1.26100</td></tr>
+			<tr><td class="nowrap">tsc</td><td><strong>7.0.2（Go 実装）。</strong>従来の JavaScript 実装（5 系）とは別物で、数字をそのまま一般化できない</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-important">
+		<p><strong>bun だけ、最初の計測から版が上がっている</strong>（1.4.0 → 1.4.2）。メモリを足した測り直しは 1.4.2 で採った値である。<strong>前回との差には、版の差が混ざっている。</strong>ほかの処理系は同じ版。</p>
+	</div>
+
+	<h2>公平でないところ</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>処理系</th><th>どう不公平か</th><th>向き</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">Rust</td><td><strong>標準ライブラリに正規表現が無い</strong>ため、4 つの検査を手書きの走査で書いた</td><td>速度は有利・行数は不利</td></tr>
+			<tr><td class="nowrap">Go</td><td>ビルドキャッシュが効いた状態の値。csc と rustc は毎回まるごとコンパイルする</td><td>コンパイル時間が有利</td></tr>
+			<tr><td class="nowrap">Bun</td><td>Node と同じソースを走らせている</td><td>行数は同値</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>結果</h1>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>処理系</th><th>コンパイル</th><th>起動込み</th><th>検査のみ</th><th>起動</th><th>メモリ</th><th>総行数</th><th>実行行数</th><th>実行物</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><strong>Rust（rustc）</strong></td><td class="num">574 ms</td><td class="num"><strong>41 ms</strong></td><td class="num">31 ms</td><td class="num">10 ms</td><td class="num"><strong>5.3 MB</strong></td><td class="num">183</td><td class="num">159</td><td class="num">4,741 KB</td></tr>
+			<tr><td class="nowrap"><strong>Bun</strong></td><td class="num">—</td><td class="num"><strong>47 ms</strong></td><td class="num">22 ms</td><td class="num">25 ms</td><td class="num">28.2 MB</td><td class="num">63</td><td class="num">47</td><td class="num">—</td></tr>
+			<tr><td class="nowrap"><strong>Node</strong></td><td class="num">—</td><td class="num"><strong>79 ms</strong></td><td class="num">30 ms</td><td class="num">49 ms</td><td class="num">42.3 MB</td><td class="num">63</td><td class="num">47</td><td class="num">—</td></tr>
+			<tr><td class="nowrap">Go</td><td class="num">595 ms</td><td class="num">133 ms</td><td class="num">116 ms</td><td class="num">17 ms</td><td class="num">10.1 MB</td><td class="num">87</td><td class="num">72</td><td class="num">3,062 KB</td></tr>
+			<tr><td class="nowrap">C#（csc）</td><td class="num">209 ms</td><td class="num">178 ms</td><td class="num">141 ms</td><td class="num">37 ms</td><td class="num">20.5 MB</td><td class="num">87</td><td class="num">66</td><td class="num">8 KB</td></tr>
+			<tr><td class="nowrap">PowerShell 5.1</td><td class="num">—</td><td class="num">585 ms</td><td class="num">338 ms</td><td class="num">247 ms</td><td class="num">111.2 MB</td><td class="num">51</td><td class="num">37</td><td class="num">—</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><code>起動</code> は「起動込み − 検査のみ」。実行行数は空行とコメントだけの行を除いた数。<strong>メモリは実行中にポーリングして拾ったピーク作業セット</strong>で、時間と別に 1 回だけ測っている（<strong>終了したプロセスからは 0 しか返らない</strong>）。</p>
+
+	<h2>1 回呼ぶのにかかる時間</h2>
+
+	<svg viewBox="0 0 1160 380" role="img" aria-label="起動込みの時間を処理系ごとに比べた横棒グラフ。Rust 42ms、Bun 48ms、Node 76ms、Go 113ms、C# 161ms、PowerShell 560ms" style="max-width:100%; height:auto;">
+		<defs>
+			<linearGradient id="g-bench-1a" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(280,78%,25%)"/><stop offset="1" stop-color="hsl(280,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-1b" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(224,78%,25%)"/><stop offset="1" stop-color="hsl(224,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-1c" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(168,78%,25%)"/><stop offset="1" stop-color="hsl(168,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-1d" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(112,78%,25%)"/><stop offset="1" stop-color="hsl(112,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-1e" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(56,78%,25%)"/><stop offset="1" stop-color="hsl(56,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-1f" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(0,78%,25%)"/><stop offset="1" stop-color="hsl(0,58%,55%)"/>
+			</linearGradient>
+		</defs>
+		<rect width="100%" height="100%" fill="#ffffff"/>
+
+		<!-- 目盛り -->
+		<g font-size="13" fill="#4a5568" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+			<text x="150" y="34" text-anchor="middle">0</text>
+			<text x="300" y="34" text-anchor="middle">100</text>
+			<text x="450" y="34" text-anchor="middle">200</text>
+			<text x="600" y="34" text-anchor="middle">300</text>
+			<text x="750" y="34" text-anchor="middle">400</text>
+			<text x="900" y="34" text-anchor="middle">500</text>
+			<text x="1050" y="34" text-anchor="middle">600 ms</text>
+		</g>
+		<g stroke="#d9dfe8" stroke-width="1">
+			<line x1="150" y1="44" x2="150" y2="340"/>
+			<line x1="300" y1="44" x2="300" y2="340"/>
+			<line x1="450" y1="44" x2="450" y2="340"/>
+			<line x1="600" y1="44" x2="600" y2="340"/>
+			<line x1="750" y1="44" x2="750" y2="340"/>
+			<line x1="900" y1="44" x2="900" y2="340"/>
+			<line x1="1050" y1="44" x2="1050" y2="340"/>
+		</g>
+
+		<g font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif" font-size="14">
+			<!-- Rust 41ms（検査 31 + 起動 10） -->
+			<text x="140" y="88" text-anchor="end" fill="#1c2330" font-weight="700">Rust</text>
+			<rect x="150" y="70" width="47" height="26" rx="2" fill="url(#g-bench-1a)"/>
+			<rect x="197" y="70" width="15" height="26" rx="2" fill="hsl(280,30%,84%)"/>
+			<text x="220" y="88" fill="#1c2330" font-weight="700">41 ms</text>
+
+			<!-- Bun 47ms（検査 22 + 起動 25） -->
+			<text x="140" y="134" text-anchor="end" fill="#1c2330" font-weight="700">Bun</text>
+			<rect x="150" y="116" width="33" height="26" rx="2" fill="url(#g-bench-1b)"/>
+			<rect x="183" y="116" width="38" height="26" rx="2" fill="hsl(224,30%,84%)"/>
+			<text x="229" y="134" fill="#1c2330" font-weight="700">47 ms</text>
+
+			<!-- Node 79ms（検査 30 + 起動 49） -->
+			<text x="140" y="180" text-anchor="end" fill="#1c2330" font-weight="700">Node</text>
+			<rect x="150" y="162" width="45" height="26" rx="2" fill="url(#g-bench-1c)"/>
+			<rect x="195" y="162" width="74" height="26" rx="2" fill="hsl(168,30%,84%)"/>
+			<text x="277" y="180" fill="#1c2330" font-weight="700">79 ms</text>
+
+			<!-- Go 133ms（検査 116 + 起動 17） -->
+			<text x="140" y="226" text-anchor="end" fill="#1c2330">Go</text>
+			<rect x="150" y="208" width="174" height="26" rx="2" fill="url(#g-bench-1d)"/>
+			<rect x="324" y="208" width="26" height="26" rx="2" fill="hsl(112,30%,84%)"/>
+			<text x="358" y="226" fill="#1c2330">133 ms</text>
+
+			<!-- C# 178ms（検査 141 + 起動 37） -->
+			<text x="140" y="272" text-anchor="end" fill="#1c2330">C#</text>
+			<rect x="150" y="254" width="212" height="26" rx="2" fill="url(#g-bench-1e)"/>
+			<rect x="362" y="254" width="56" height="26" rx="2" fill="hsl(56,30%,84%)"/>
+			<text x="426" y="272" fill="#1c2330">178 ms</text>
+
+			<!-- PowerShell 585ms（検査 338 + 起動 247） -->
+			<text x="140" y="318" text-anchor="end" fill="#1c2330">PowerShell</text>
+			<rect x="150" y="300" width="507" height="26" rx="2" fill="url(#g-bench-1f)"/>
+			<rect x="657" y="300" width="371" height="26" rx="2" fill="hsl(0,30%,84%)"/>
+			<text x="1036" y="318" fill="#1c2330">585 ms</text>
+		</g>
+
+		<!-- 凡例 -->
+		<g font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#1c2330">
+			<rect x="150" y="352" width="20" height="14" rx="2" fill="hsl(240,60%,40%)"/>
+			<text x="178" y="364">濃いほう ＝ 検査そのもの</text>
+			<rect x="400" y="352" width="20" height="14" rx="2" fill="hsl(240,30%,84%)"/>
+			<text x="428" y="364">薄いほう ＝ 起動</text>
+		</g>
+	</svg>
+
+	<p><strong>PowerShell だけ桁が違う。</strong>棒の薄い部分が起動で、PowerShell は起動だけで 247 ms を使う。ほかの 5 つは起動込みでもそこに届かない。</p>
+
+	<h2>メモリは実行物の大きさと関係しない</h2>
+
+	<svg viewBox="0 0 1160 380" role="img" aria-label="ピークメモリを処理系ごとに比べた横棒グラフ。Rust 5.3MB、Go 10.1MB、C# 20.5MB、Bun 28.2MB、Node 42.3MB、PowerShell 111.2MB" style="max-width:100%; height:auto;">
+		<defs>
+			<linearGradient id="g-bench-mem-a" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(280,78%,25%)"/><stop offset="1" stop-color="hsl(280,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-mem-b" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(224,78%,25%)"/><stop offset="1" stop-color="hsl(224,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-mem-c" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(168,78%,25%)"/><stop offset="1" stop-color="hsl(168,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-mem-d" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(112,78%,25%)"/><stop offset="1" stop-color="hsl(112,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-mem-e" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(56,78%,25%)"/><stop offset="1" stop-color="hsl(56,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-mem-f" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(0,78%,25%)"/><stop offset="1" stop-color="hsl(0,58%,55%)"/>
+			</linearGradient>
+		</defs>
+		<rect width="100%" height="100%" fill="#ffffff"/>
+
+		<!-- 目盛り（20MB = 150px） -->
+		<g font-size="13" fill="#4a5568" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+			<text x="150" y="34" text-anchor="middle">0</text>
+			<text x="300" y="34" text-anchor="middle">20</text>
+			<text x="450" y="34" text-anchor="middle">40</text>
+			<text x="600" y="34" text-anchor="middle">60</text>
+			<text x="750" y="34" text-anchor="middle">80</text>
+			<text x="900" y="34" text-anchor="middle">100</text>
+			<text x="1050" y="34" text-anchor="middle">120 MB</text>
+		</g>
+		<g stroke="#d9dfe8" stroke-width="1">
+			<line x1="150" y1="44" x2="150" y2="340"/>
+			<line x1="300" y1="44" x2="300" y2="340"/>
+			<line x1="450" y1="44" x2="450" y2="340"/>
+			<line x1="600" y1="44" x2="600" y2="340"/>
+			<line x1="750" y1="44" x2="750" y2="340"/>
+			<line x1="900" y1="44" x2="900" y2="340"/>
+			<line x1="1050" y1="44" x2="1050" y2="340"/>
+		</g>
+
+		<g font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif" font-size="14">
+			<text x="140" y="88" text-anchor="end" fill="#1c2330" font-weight="700">Rust</text>
+			<rect x="150" y="70" width="40" height="26" rx="2" fill="url(#g-bench-mem-a)"/>
+			<text x="198" y="88" fill="#1c2330" font-weight="700">5.3 MB</text>
+
+			<text x="140" y="134" text-anchor="end" fill="#1c2330" font-weight="700">Go</text>
+			<rect x="150" y="116" width="76" height="26" rx="2" fill="url(#g-bench-mem-d)"/>
+			<text x="234" y="134" fill="#1c2330" font-weight="700">10.1 MB</text>
+
+			<text x="140" y="180" text-anchor="end" fill="#1c2330">C#</text>
+			<rect x="150" y="162" width="154" height="26" rx="2" fill="url(#g-bench-mem-e)"/>
+			<text x="312" y="180" fill="#1c2330">20.5 MB</text>
+
+			<text x="140" y="226" text-anchor="end" fill="#1c2330">Bun</text>
+			<rect x="150" y="208" width="212" height="26" rx="2" fill="url(#g-bench-mem-b)"/>
+			<text x="370" y="226" fill="#1c2330">28.2 MB</text>
+
+			<text x="140" y="272" text-anchor="end" fill="#1c2330">Node</text>
+			<rect x="150" y="254" width="317" height="26" rx="2" fill="url(#g-bench-mem-c)"/>
+			<text x="475" y="272" fill="#1c2330">42.3 MB</text>
+
+			<text x="140" y="318" text-anchor="end" fill="#1c2330">PowerShell</text>
+			<rect x="150" y="300" width="834" height="26" rx="2" fill="url(#g-bench-mem-f)"/>
+			<text x="992" y="318" fill="#1c2330">111.2 MB</text>
+		</g>
+
+		<g font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#4a5568">
+			<text x="150" y="364">実行中にポーリングして拾ったピーク作業セット。1 回の計測</text>
+		</g>
+	</svg>
+
+	<p><strong>Rust は 4.7 MB の実行ファイルで 5.3 MB しか使わず、C# は 8 KB の実行ファイルで 20.5 MB 使う。</strong>実行物の大きさとメモリは対応しない。ランタイムを実行ファイルに抱き込むか、外に置くかの違いが出ているだけである。</p>
+
+	<div class="callout callout-important">
+		<p><strong>PowerShell は 111 MB。</strong>ほかの 5 つの合計より多い。時間だけでなくメモリでも桁が違う。<strong>同時に何本も走らせる形には向かない。</strong></p>
+	</div>
+
+	<h2>書く量は逆に並ぶ</h2>
+
+	<svg viewBox="0 0 1060 380" role="img" aria-label="実行行数を処理系ごとに比べた横棒グラフ。PowerShell 37行、Bun 47行、Node 47行、C# 66行、Go 72行、Rust 159行" style="max-width:100%; height:auto;">
+		<defs>
+			<linearGradient id="g-bench-2a" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(0,78%,25%)"/><stop offset="1" stop-color="hsl(0,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-2b" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(224,78%,25%)"/><stop offset="1" stop-color="hsl(224,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-2c" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(168,78%,25%)"/><stop offset="1" stop-color="hsl(168,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-2d" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(56,78%,25%)"/><stop offset="1" stop-color="hsl(56,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-2e" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(112,78%,25%)"/><stop offset="1" stop-color="hsl(112,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-bench-2f" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(280,78%,25%)"/><stop offset="1" stop-color="hsl(280,58%,55%)"/>
+			</linearGradient>
+		</defs>
+		<rect width="100%" height="100%" fill="#ffffff"/>
+
+		<g font-size="13" fill="#4a5568" font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+			<text x="150" y="34" text-anchor="middle">0</text>
+			<text x="400" y="34" text-anchor="middle">50</text>
+			<text x="650" y="34" text-anchor="middle">100</text>
+			<text x="900" y="34" text-anchor="middle">150 行</text>
+		</g>
+		<g stroke="#d9dfe8" stroke-width="1">
+			<line x1="150" y1="44" x2="150" y2="340"/>
+			<line x1="400" y1="44" x2="400" y2="340"/>
+			<line x1="650" y1="44" x2="650" y2="340"/>
+			<line x1="900" y1="44" x2="900" y2="340"/>
+		</g>
+
+		<g font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif" font-size="14">
+			<text x="140" y="88" text-anchor="end" fill="#1c2330">PowerShell</text>
+			<rect x="150" y="70" width="185" height="26" rx="2" fill="url(#g-bench-2a)"/>
+			<text x="343" y="88" fill="#1c2330">37 行</text>
+
+			<text x="140" y="134" text-anchor="end" fill="#1c2330" font-weight="700">Bun</text>
+			<rect x="150" y="116" width="235" height="26" rx="2" fill="url(#g-bench-2b)"/>
+			<text x="393" y="134" fill="#1c2330">47 行</text>
+
+			<text x="140" y="180" text-anchor="end" fill="#1c2330" font-weight="700">Node</text>
+			<rect x="150" y="162" width="235" height="26" rx="2" fill="url(#g-bench-2c)"/>
+			<text x="393" y="180" fill="#1c2330">47 行</text>
+
+			<text x="140" y="226" text-anchor="end" fill="#1c2330">C#</text>
+			<rect x="150" y="208" width="330" height="26" rx="2" fill="url(#g-bench-2d)"/>
+			<text x="488" y="226" fill="#1c2330">66 行</text>
+
+			<text x="140" y="272" text-anchor="end" fill="#1c2330">Go</text>
+			<rect x="150" y="254" width="360" height="26" rx="2" fill="url(#g-bench-2e)"/>
+			<text x="518" y="272" fill="#1c2330">72 行</text>
+
+			<text x="140" y="318" text-anchor="end" fill="#1c2330">Rust</text>
+			<rect x="150" y="300" width="795" height="26" rx="2" fill="url(#g-bench-2f)"/>
+			<text x="953" y="318" fill="#1c2330">159 行</text>
+		</g>
+
+		<g font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif" font-size="13" fill="#4a5568">
+			<text x="150" y="364">色は上の図と同じ処理系を指す。Rust だけ正規表現が無く手書きのため長い</text>
+		</g>
+	</svg>
+
+	<p>いちばん速い Rust がいちばん長く、いちばん短い PowerShell がいちばん遅い。<strong>2 つの図は、ほぼ逆順に並ぶ。</strong></p>
+
+	<h2>読み取れること</h2>
+
+	<ul>
+		<li><strong>PowerShell の起動は約 247 ms。</strong>計画書に「1 秒弱」と書いたのは過大だった</li>
+		<li><strong>起動込みで見ると 14 倍の開きがある</strong>（Rust 41 ms 対 PowerShell 585 ms）</li>
+		<li><strong>書く量は逆に並ぶ。</strong>いちばん短いのは PowerShell の 37 行、いちばん長いのは Rust の 159 行</li>
+		<li><strong>メモリも同じ順に並ぶ。</strong>Rust 5.3 MB に対して PowerShell 111.2 MB で、<strong>21 倍</strong></li>
+		<li>コンパイルする 3 つは、直すたびに 0.2〜0.6 秒が乗る</li>
+	</ul>
+
+	<div class="callout">
+		<p><strong>この検査の重さは、量にほぼ比例する。</strong>22,238 行で PowerShell が 338 ms なので、10 倍の資料を持つプロジェクトでは 3 秒を超える。変換のたびに走らせる形では、ここが効いてくる。</p>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>JavaScript の書き方で変わるか</h1>
+
+	<p>Node と Bun を採るなら、<strong>CommonJS（<code>.js</code>）・ESM（<code>.mjs</code>）・TypeScript（<code>.ts</code>）のどれで書くか</strong>も決めることになる。中身が同じ 3 本を用意して測った。条件は第 1 章と同じ、21 回の中央値。</p>
+
+	<h2>実行時に型は検査されない</h2>
+
+	<p>まずここを実測した。<strong>Bun も Node も、型注釈を取り除いて走らせるだけ。</strong>次のファイルは、どちらも警告すら出さずに最後まで走り、終了コードは 0 だった。</p>
+
+<pre><code class="language-typescript">const n: number = "これは文字列";
+const f = (x: number): string =&gt; x;
+console.log("実行された:", n, typeof f);</code></pre>
+
+	<div class="callout callout-caution">
+		<p><strong>型は「書ける」だけで「守られる」わけではない。</strong>守るには <code>tsc --noEmit</code> を別に走らせるしかない。<strong>そしてそれは、csc ・ rustc ・ go build と同じ「事前に通す段」である。</strong>TypeScript は「コンパイル不要の側」ではなく「コンパイルが要る側」に入る。</p>
+	</div>
+
+	<h2>事前の段と、1 回あたりの実行</h2>
+
+	<p>型チェックを必須とした場合の並べ直し。<code>tsc</code> の時間は第 1 章と同じ条件で 21 回測った中央値（<code>--noEmit --skipLibCheck</code>、対象は同じ 1 ファイル。tsc は 7.0.2 の Go 実装）。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>書き方</th><th>事前に要る段</th><th>その時間</th><th>bun 起動込み</th><th>node 起動込み</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>.js</code>（CommonJS）</td><td class="nowrap">なし</td><td class="num">—</td><td class="num">56 ms</td><td class="num">79 ms</td></tr>
+			<tr><td class="nowrap"><strong><code>.mjs</code>（ESM）</strong></td><td class="nowrap">なし</td><td class="num">—</td><td class="num">58 ms</td><td class="num"><strong>86 ms</strong></td></tr>
+			<tr><td class="nowrap"><code>.ts</code></td><td class="nowrap"><code>tsc --noEmit</code></td><td class="num">156 ms</td><td class="num"><strong>55 ms</strong></td><td class="num">127 ms</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>この 156 ms を、コンパイルする処理系と同じ列で見るとこうなる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>書き方・処理系</th><th>事前の段</th><th>時間</th><th>何を得るか</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">C#（csc）</td><td class="nowrap">コンパイル</td><td class="num">209 ms</td><td>実行ファイル。型も検査される</td></tr>
+			<tr><td class="nowrap"><strong>TypeScript（tsc）</strong></td><td class="nowrap">型チェック</td><td class="num"><strong>156 ms</strong></td><td><strong>型の検査だけ。実行ファイルは作られない</strong></td></tr>
+			<tr><td class="nowrap">Rust（rustc）</td><td class="nowrap">コンパイル</td><td class="num">574 ms</td><td>実行ファイル。型も検査される</td></tr>
+			<tr><td class="nowrap">Go（go build）</td><td class="nowrap">コンパイル</td><td class="num">595 ms</td><td>同上（ビルドキャッシュ有効）</td></tr>
+			<tr><td class="nowrap"><code>.mjs</code></td><td class="nowrap">なし</td><td class="num">—</td><td>—</td></tr>
+			<tr><td class="nowrap">PowerShell</td><td class="nowrap">なし</td><td class="num">—</td><td>—</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><strong>TypeScript の 156 ms は、コンパイルする処理系の中でいちばん軽い。</strong>ただし得られるのは型の検査だけで、実行ファイルは作られない。実行時にはもう一度、型を捨てる処理が走る。</p>
+
+	<h2>単一実行ファイルに固める（bun build --compile）</h2>
+
+	<p><code>bun build --compile</code> は、Bun の実行環境ごと 1 つの exe に詰める。<strong>Bun が入っていない環境でも動く</strong>ようになる。試した結果を残す。<span class="badge b-none">採らない</span></p>
+
+	<div class="callout">
+		<p><strong>この節の数値は最初に測ったときのもの</strong>（bun 1.4.0）。メモリを足した測り直しでは <code>bun build --compile</code> を対象にしていないため、上の表と数 ms ずれる。<strong>結論は変わらない。</strong></p>
+	</div>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>見たこと</th><th>結果</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">速さ</td><td><strong>変わらない。</strong>起動込み 48 ms（スクリプト）に対して 53 ms。むしろ微増した</td></tr>
+			<tr><td class="nowrap">大きさ</td><td><strong>84.7 MB</strong>（86,736 KB）。Rust の 18 倍、Go の 28 倍</td></tr>
+			<tr><td class="nowrap">コンパイル</td><td>399 ms</td></tr>
+			<tr><td class="nowrap">型チェック</td><td><strong>されない。</strong>型エラーのあるファイルも終了コード 0 で exe ができ、そのまま動いた</td></tr>
+			<tr><td class="nowrap">構文チェック</td><td><strong>される。</strong>括弧の閉じ忘れは位置を出して止まり、exe はできない</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-important">
+		<p><strong>固めても速くならないのは、起動の 28 ms が Bun 実行環境そのものの初期化だから</strong>と見られる。スクリプトの読み込みではないため、詰めても減らない。<strong>exe 化の値打ちは「Bun が入っていない環境でも動く」ことだけ</strong>になる。</p>
+	</div>
+
+	<p>また、<strong>固めても <code>tsc --noEmit</code> は要る。</strong>csc ・ rustc ・ go build はコンパイル時に型を検査するが、<code>bun build</code> は型注釈を取り除くだけである。</p>
+
+	<h2>型チェックには依存が 2 つ要る</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>要るもの</th><th>なぜ</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>typescript</code></td><td><code>tsc</code> 本体。Bun にも Node にも型チェッカは入っていない</td></tr>
+			<tr><td class="nowrap"><code>@types/node</code></td><td><strong>無いと <code>node:fs</code> ・ <code>process</code> が未定義になり、型チェックが通らない。</strong>実測で確認した</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>このプロジェクトは「テスト用の依存パッケージを増やさない」で通してきた。<strong><code>.ts</code> を選ぶことは、その方針を変えることを含む。</strong></p>
+
+	<h2>ESM と CommonJS の差</h2>
+
+	<ul>
+		<li><strong>Bun はどちらでも同じ</strong>（56 ・ 58 ・ 55 ms。誤差の範囲）</li>
+		<li><strong>Node もほぼ同じ</strong>（79 ・ 86 ms。<code>.ts</code> だけ 127 ms）</li>
+		<li>検査そのものの時間は 3 つとも変わらない。差はすべて起動側に出る</li>
+	</ul>
+
+	<p>速度では決まらない。決め手は<strong>「型チェックのために事前の段と依存 2 つを持つか、持たないか」</strong>になる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>書き方</th><th>得るもの</th><th>代償</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>.ts</code></td><td>型が守られる（<code>tsc</code> を回す前提）。検査の項目が増えても構造を保ちやすい</td><td><strong>事前の段 156 ms ＋ 依存 2 つ。</strong>Node で走らせると実行も 1.7 倍（124 ms）</td></tr>
+			<tr><td class="nowrap"><code>.mjs</code></td><td>Bun でも Node でも最速。<strong>事前の段も依存も無い</strong></td><td>型が無い</td></tr>
+			<tr><td class="nowrap"><code>.js</code></td><td>同上。<code>require</code> で書ける</td><td>ESM に寄せる流れとは逆向き</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>食い違いから出てきたこと</h1>
+
+	<p>各実装の出力を突き合わせたところ、<strong>Rust だけ検出数が違った。</strong></p>
+
+<pre><code>C#（csc）        files=90 lines=19858 hits=3
+Rust（rustc）    files=90 lines=19713 hits=0     ← 違う
+Go               files=90 lines=19943 hits=3
+Node             files=90 lines=19943 hits=3
+Bun              files=90 lines=19943 hits=3
+PowerShell 5.1   files=90 lines=19858 hits=3</code></pre>
+
+	<p>3 件の内訳を数え直すと、<strong>すべて「キリル・ハングルの混入」の誤検出</strong>で、当たった先は <code>build.cmd</code> ・ <code>build-text.cmd</code> ・ <code>build-convert-encoding.cmd</code> の 3 本だった。</p>
+
+	<p>つまり <strong>SJIS のファイルを UTF-8 として読んだ文字化けが、異体字の検査に当たっていた。</strong>Rust が 0 件だったのは、UTF-8 として読めないファイルを丸ごと読み飛ばしたため（<code>read_to_string</code> が失敗する）。行数が少ないのも同じ理由。</p>
+
+	<div class="callout callout-important">
+		<p><strong>これは測定の事故ではなく、検査対象の要件そのものである。</strong><code>cmd</code> ・ <code>bat</code> は SJIS、<code>reg</code> は UTF-16 で書く決めになっている。そこを正しく読めない実装は、<strong>「検査したのに <code>cmd</code> だけ見ていない」状態</strong>になる。</p>
+	</div>
+
+	<h2>SJIS を標準で読めるか</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>処理系</th><th>可否</th><th>手立て</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">C#（.NET Framework）</td><td><span class="badge b-ok">読める</span></td><td><code>Encoding.GetEncoding(932)</code></td></tr>
+			<tr><td class="nowrap">PowerShell 5.1</td><td><span class="badge b-ok">読める</span></td><td>同上</td></tr>
+			<tr><td class="nowrap">Node</td><td><span class="badge b-ok">読める</span></td><td><code>TextDecoder('shift_jis')</code>。実測で確認</td></tr>
+			<tr><td class="nowrap">Bun</td><td><span class="badge b-ok">読める</span></td><td>同上。実測で確認</td></tr>
+			<tr><td class="nowrap">Go</td><td><span class="badge b-ng">標準では不可</span></td><td><code>golang.org/x/text</code> が要る</td></tr>
+			<tr><td class="nowrap">Rust</td><td><span class="badge b-ng">標準では不可</span></td><td><code>encoding_rs</code> が要る</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>Go と Rust は<strong>外部依存を足さないと要件を満たせない。</strong>このプロジェクトは「テスト用の依存パッケージを増やさない」「CDN を参照しない」で通してきたので、依存を足すこと自体が別の判断になる。</p>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>どれを選ぶか</h1>
+
+	<h2>決まっている条件</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>条件</th><th>内容</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">実行時の速さ</td><td><strong>重視する。</strong>変換のたびに呼ぶため、1 回あたりの時間がそのまま効く</td></tr>
+			<tr><td class="nowrap">事前の段の速さ</td><td><strong>重み付けしない。</strong>コンパイルも型チェックも頻度が低い</td></tr>
+			<tr><td class="nowrap">動く場所</td><td><strong>Windows ・ Linux ・ Mac の 3 つ。</strong>これを満たさないものは選べない</td></tr>
+			<tr><td class="nowrap">型チェック</td><td><strong>必須。</strong>型を書くなら守る仕組みまで持つ</td></tr>
+			<tr><td class="nowrap">文字コード</td><td>SJIS ・ UTF-16 を読めること（第 4 章）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>条件で落ちるもの</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>処理系</th><th>落ちる理由</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">PowerShell 5.1</td><td><strong>Windows 専用。</strong>Linux ・ Mac に存在しない。pwsh 7 へ移せば動くが、共通ルールの「ps1 は 5.1 で動くように書く」を変えることになる</td></tr>
+			<tr><td class="nowrap">C#（csc）</td><td><strong>Windows 専用。</strong><code>build.cmd</code> が使う csc は .NET Framework 4.8 で、作られる exe も Windows でしか動かない。.NET 8 系へ移せば動くが、ビルドの作りごと変わる</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>残るのは <strong>Bun ・ Node ・ Go ・ Rust</strong> の 4 つ。事前の段を重み付けしないので、<strong>コンパイルの 574 ms ・ 595 ms は判断から外れる。</strong></p>
+
+	<h2>残った 4 つを実行時の速さで並べる</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>処理系</th><th>起動込み</th><th>メモリ</th><th>実行行数</th><th>SJIS</th><th>外部依存</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><strong>Rust</strong></td><td class="num"><strong>41 ms</strong></td><td class="num"><strong>5.3 MB</strong></td><td class="num">159</td><td>標準では不可</td><td><code>encoding_rs</code>（＋正規表現を使うなら <code>regex</code>）</td></tr>
+			<tr><td class="nowrap"><strong>Bun</strong></td><td class="num"><strong>47 ms</strong></td><td class="num">28.2 MB</td><td class="num">47</td><td>標準で読める</td><td>無し（<code>.ts</code> にするなら型チェック用に 2 つ）</td></tr>
+			<tr><td class="nowrap">Node</td><td class="num">79 ms</td><td class="num">42.3 MB</td><td class="num">47</td><td>標準で読める</td><td>同上</td></tr>
+			<tr><td class="nowrap">Go</td><td class="num">133 ms</td><td class="num">10.1 MB</td><td class="num">72</td><td>標準では不可</td><td><code>golang.org/x/text</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-important">
+		<p><strong>Rust の 41 ms は、ほかと同じ実装ではない。</strong>標準ライブラリに正規表現が無いため手書きの走査で測った値で、<code>regex</code> を入れれば変わる。<strong>6 ms の差は、この条件の違いより小さい。</strong>速さで Rust と Bun を分けることはできない。</p>
+	</div>
+
+	<p>メモリでは差がはっきり出る。<strong>Rust と Go は 10 MB 前後、Bun と Node は 28 MB ・ 42 MB。</strong>ただしこの検査を 1 本ずつ呼ぶ使い方では、<strong>どれも問題にならない量</strong>である。</p>
+
+	<h2>Bun を推す</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>観点</th><th>Bun</th><th>Rust</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">実行時の速さ</td><td>47 ms</td><td>41 ms（条件が違う）</td></tr>
+			<tr><td class="nowrap">メモリ</td><td>28.2 MB</td><td><strong>5.3 MB</strong></td></tr>
+			<tr><td class="nowrap">書く量</td><td><strong>47 行</strong></td><td>159 行（正規表現があれば縮むが、型と所有権の分は残る）</td></tr>
+			<tr><td class="nowrap">SJIS ・ UTF-16</td><td><strong>標準で読める</strong></td><td>外部クレートが要る</td></tr>
+			<tr><td class="nowrap">誤検出の直しやすさ</td><td><strong>ビルド不要。直して即実行</strong></td><td>直すたびに 574 ms のビルド</td></tr>
+			<tr><td class="nowrap">3 OS</td><td>○</td><td>○</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><strong>実行時の速さで差が付かない以上、決め手は残りの 4 つになる。</strong><code>check-public</code> は誤検出を見ながら何度も直す道具で、そこは Bun のほうが向く。</p>
+
+	<h2>書き方は TypeScript</h2>
+
+	<p>型チェックが必須なら、<code>.ts</code> の代償は<strong>事前の段 156 ms と依存 2 つ</strong>（第 3 章）。<strong>事前の段は重み付けしないため、残る代償は依存 2 つだけになる。</strong></p>
+
+	<p>そして <strong>Bun は <code>.ts</code> を <code>.js</code> と同じ 55 ms で実行する。</strong>実行時の速さを重視する条件で、型を持つ代償が実行時にはゼロになる。</p>
+
+	<div class="callout">
+		<p>Node でも走らせられるようにしておきたい場合だけ <code>.mjs</code> を採る。<strong>Node の <code>.ts</code> は実行が 127 ms</strong>（<code>.js</code> の 1.6 倍）で、実行時重視の条件に合わない。<strong>Bun に寄せるか、型を諦めるかの二択</strong>になる。</p>
+	</div>
+
+	<h2>残る決めごと</h2>
+
+	<ul>
+		<li><strong>Bun を共有ツール置き場の前提に加えてよいか。</strong>このプロジェクトに無い処理系が 1 つ増える</li>
+		<li><strong>型チェックのための依存 2 つ（<code>typescript</code> ・ <code>@types/node</code>）を受け入れるか。</strong>「依存パッケージを増やさない」の方針を変えることになる</li>
+		<li><strong>型チェックをいつ回すか。</strong>テストの一部にするか、コミット前にするか。走らせ忘れれば型は無いのと同じ</li>
+	</ul>
+
+	<h2>測り直すとき</h2>
+
+<pre><code>tools\90_misc\bench-check-public\run-bench.cmd</code></pre>
+
+	<p>対象と回数を変えるときは <code>run-bench.ps1</code> に <code>-Target</code> ・ <code>-Runs</code> を渡す。<strong><code>tsc</code> の時間は別に測っている</strong>（このランナーには入っていない）。</p>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>

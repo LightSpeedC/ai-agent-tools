@@ -1,0 +1,423 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="md-skip">
+<title>html2md の処理系比較</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	.badge{
+		display:inline-block; padding:1px 9px; border-radius:11px;
+		background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff;
+		font-size:.85em; font-weight:600; white-space:nowrap;
+	}
+	.badge.b-ok{ background:linear-gradient(100deg,#1d7a3c,#45b56c); color:#fff; }
+	.badge.b-ng{ background:linear-gradient(100deg,#a51f22,#e05a5c); color:#fff; }
+	.badge.b-warn{ background:linear-gradient(100deg,#b8620a,#f0a548); color:#fff; }
+	.badge.b-none{ background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>html2md の処理系比較</h1>
+		<p class="lead">合成した検査ではなく、実際の HTML → Markdown 変換で測った。移植が終わり、C# の exe と TypeScript 版が同じ振る舞いになったので、時間もメモリもそのまま突き合わせて読める。</p>
+		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-09-12</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../../README.html">← html2md</a> ／ <a href="../bench-check-public/処理系比較-check-public.html">check-public の処理系比較</a> ／ <a href="../../../notes/10_plan/p260912-01-check-public.html">check-public 計画</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">測ったもの</a></li>
+		<li class="ch02"><a href="#ch02">結果</a></li>
+		<li class="ch03"><a href="#ch03">公平でないところ</a></li>
+		<li class="ch04"><a href="#ch04">読み取れること</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>測ったもの</h1>
+
+	<p>前回は<a href="../bench-check-public/処理系比較-check-public.html">合成した検査</a>で比べ、次に実際の変換で測ったときは<strong>移植が途中だった</strong>ため、変換だけの簡易版と本物を並べるしかなかった。<strong>移植が終わった今は、同じ振る舞いのもの同士で比べられる。</strong></p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>区分</th><th>何を走らせたか</th><th>やること</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">本物</td><td><code>html2md-cs.exe</code>（C#）</td><td rowspan="2">変換・検査・SVG 切り出しまで<strong>すべて</strong></td></tr>
+			<tr><td class="nowrap">本物</td><td><code>src/html2md/main.ts</code> を <code>bun</code> ・ <code>node</code> で</td></tr>
+			<tr><td class="nowrap">port</td><td><code>port.js</code> ・ <code>port.mjs</code> ・ <code>port.ts</code></td><td>変換のみ。<code>.js</code> ・ <code>.mjs</code> ・ <code>.ts</code> の読み込みコストを見るためのもの</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>参照実装だった <code>html2md-ps.ps1</code> は<strong>削除済み</strong>のため、比較から外してある。実際の変換に 29.6 秒かかることは前回の計測で分かっている。</p>
+
+	<h2>条件</h2>
+
+	<ul>
+		<li>対象は <code>README.html</code> と <code>notes/10_plan</code> ・ <code>notes/90_rules</code> の <strong>10 ファイル</strong>（約 388 KB）</li>
+		<li><strong>実装ごとに別の作業フォルダへ複製してから変換する。</strong>同じ場所へ書くと互いに上書きしてしまう</li>
+		<li>11 回まわして中央値を採る</li>
+		<li><strong>メモリは時間と別に 1 回だけ測る。</strong>同じ実行で測ると、計測の分が時間に乗る</li>
+	</ul>
+
+	<h2>測った環境</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>処理系</th><th>版</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">bun</td><td><strong>1.4.2</strong>（前回の計測時は 1.4.0）</td></tr>
+			<tr><td class="nowrap">node</td><td>26.8.1</td></tr>
+			<tr><td class="nowrap">C#</td><td>Visual Studio 2022 同梱の Roslyn でビルドした exe</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-important">
+		<p><strong>bun だけ、前回の計測から版が上がっている。</strong>port 版の数値を前回と並べるときは、<strong>版の差が混ざっている</strong>ことを踏まえて読む。本物どうしの 3 行は今回まとめて採った値なので、この影響を受けない。</p>
+	</div>
+
+	<h2>メモリの測り方</h2>
+
+	<p>ピークの作業セット（<code>PeakWorkingSet64</code>）を採る。<strong>終了したプロセスからは 0 しか返らない</strong>ので、実行中にポーリングして拾う。</p>
+
+	<div class="callout callout-warning">
+		<p><strong>出力はファイルへ逃がす。</strong>親がパイプを読まずに待つと、バッファが埋まったところで相手が止まる。ポーリングしながら待つ形では、標準出力を繋いだままにできない。</p>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>結果</h1>
+
+	<h2>本物どうし</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>実装</th><th>起動込み</th><th>メモリ</th><th>総行数</th><th>実行行数</th><th>生成 md</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><strong>bun <code>.ts</code></strong></td><td class="num"><strong>179 ms</strong></td><td class="num">79.5 MB</td><td class="num">2,308</td><td class="num">1,920</td><td class="num">10</td></tr>
+			<tr><td class="nowrap">node <code>.ts</code></td><td class="num">272 ms</td><td class="num">71.3 MB</td><td class="num">2,308</td><td class="num">1,920</td><td class="num">10</td></tr>
+			<tr><td class="nowrap">C# <code>exe</code></td><td class="num">464 ms</td><td class="num"><strong>29.7 MB</strong></td><td class="num">2,566</td><td class="num">1,920</td><td class="num">10</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-important">
+		<p><strong>実行行数が 1,920 で一致した。</strong>偶然ではなく、移植で 1 行ずつ対応させた結果である。総行数の差（2,566 対 2,308）はコメントと型の書き方の差で、<strong>やっている量は同じ。</strong></p>
+	</div>
+
+	<h2>port 版（変換のみ・参考）</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>実装</th><th>起動込み</th><th>変換のみ</th><th>メモリ</th><th>総行数</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">bun <code>.js</code></td><td class="num">73 ms</td><td class="num">44 ms</td><td class="num">52.3 MB</td><td class="num">419</td></tr>
+			<tr><td class="nowrap">bun <code>.ts</code></td><td class="num">75 ms</td><td class="num">45 ms</td><td class="num">52.9 MB</td><td class="num">422</td></tr>
+			<tr><td class="nowrap">bun <code>.mjs</code></td><td class="num">76 ms</td><td class="num">47 ms</td><td class="num">53.9 MB</td><td class="num">419</td></tr>
+			<tr><td class="nowrap">node <code>.mjs</code></td><td class="num">162 ms</td><td class="num">106 ms</td><td class="num">47.6 MB</td><td class="num">419</td></tr>
+			<tr><td class="nowrap">node <code>.js</code></td><td class="num">168 ms</td><td class="num">115 ms</td><td class="num">42.6 MB</td><td class="num">419</td></tr>
+			<tr><td class="nowrap">node <code>.ts</code></td><td class="num">174 ms</td><td class="num">65 ms</td><td class="num">64.8 MB</td><td class="num">422</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>速さとメモリは逆に並ぶ</h2>
+
+	<svg viewBox="0 0 1180 470" role="img" aria-label="本物どうしの比較。起動込みの時間は bun 179ms、node 272ms、C# 464ms。ピークメモリは C# 29.7MB、node 71.3MB、bun 79.5MB" style="max-width:100%; height:auto;">
+		<defs>
+			<linearGradient id="g-h2m-a" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(280,78%,25%)"/><stop offset="1" stop-color="hsl(280,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-h2m-b" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(187,78%,25%)"/><stop offset="1" stop-color="hsl(187,58%,55%)"/>
+			</linearGradient>
+			<linearGradient id="g-h2m-c" x1="0" y1="1" x2="0" y2="0">
+				<stop offset="0" stop-color="hsl(93,78%,25%)"/><stop offset="1" stop-color="hsl(93,58%,55%)"/>
+			</linearGradient>
+		</defs>
+		<rect width="100%" height="100%" fill="#ffffff"/>
+
+		<g font-family="Segoe UI, Yu Gothic UI, Meiryo, sans-serif">
+			<!-- 上段: 起動込みの時間（100ms = 160px） -->
+			<text x="200" y="28" font-size="15" font-weight="700" fill="#1c2330">起動込みの時間（短いほど速い）</text>
+			<g font-size="13" fill="#4a5568">
+				<text x="200" y="56" text-anchor="middle">0</text>
+				<text x="360" y="56" text-anchor="middle">100 ms</text>
+				<text x="520" y="56" text-anchor="middle">200</text>
+				<text x="680" y="56" text-anchor="middle">300</text>
+				<text x="840" y="56" text-anchor="middle">400</text>
+				<text x="1000" y="56" text-anchor="middle">500</text>
+			</g>
+			<g stroke="#d9dfe8" stroke-width="1">
+				<line x1="200" y1="66" x2="200" y2="190"/>
+				<line x1="360" y1="66" x2="360" y2="190"/>
+				<line x1="520" y1="66" x2="520" y2="190"/>
+				<line x1="680" y1="66" x2="680" y2="190"/>
+				<line x1="840" y1="66" x2="840" y2="190"/>
+				<line x1="1000" y1="66" x2="1000" y2="190"/>
+			</g>
+			<g font-size="14">
+				<text x="190" y="92" text-anchor="end" fill="#1c2330" font-weight="700">bun</text>
+				<rect x="200" y="74" width="286" height="26" rx="2" fill="url(#g-h2m-a)"/>
+				<text x="494" y="92" fill="#1c2330" font-weight="700">179 ms</text>
+
+				<text x="190" y="132" text-anchor="end" fill="#1c2330">node</text>
+				<rect x="200" y="114" width="435" height="26" rx="2" fill="url(#g-h2m-b)"/>
+				<text x="643" y="132" fill="#1c2330">272 ms</text>
+
+				<text x="190" y="172" text-anchor="end" fill="#1c2330">C#（exe）</text>
+				<rect x="200" y="154" width="742" height="26" rx="2" fill="url(#g-h2m-c)"/>
+				<text x="950" y="172" fill="#1c2330">464 ms</text>
+			</g>
+
+			<!-- 下段: ピークメモリ（25MB = 200px） -->
+			<text x="200" y="248" font-size="15" font-weight="700" fill="#1c2330">ピークメモリ（少ないほど軽い）</text>
+			<g font-size="13" fill="#4a5568">
+				<text x="200" y="276" text-anchor="middle">0</text>
+				<text x="400" y="276" text-anchor="middle">25 MB</text>
+				<text x="600" y="276" text-anchor="middle">50</text>
+				<text x="800" y="276" text-anchor="middle">75</text>
+				<text x="1000" y="276" text-anchor="middle">100</text>
+			</g>
+			<g stroke="#d9dfe8" stroke-width="1">
+				<line x1="200" y1="286" x2="200" y2="410"/>
+				<line x1="400" y1="286" x2="400" y2="410"/>
+				<line x1="600" y1="286" x2="600" y2="410"/>
+				<line x1="800" y1="286" x2="800" y2="410"/>
+				<line x1="1000" y1="286" x2="1000" y2="410"/>
+			</g>
+			<g font-size="14">
+				<text x="190" y="312" text-anchor="end" fill="#1c2330" font-weight="700">C#（exe）</text>
+				<rect x="200" y="294" width="238" height="26" rx="2" fill="url(#g-h2m-c)"/>
+				<text x="446" y="312" fill="#1c2330" font-weight="700">29.7 MB</text>
+
+				<text x="190" y="352" text-anchor="end" fill="#1c2330">node</text>
+				<rect x="200" y="334" width="570" height="26" rx="2" fill="url(#g-h2m-b)"/>
+				<text x="778" y="352" fill="#1c2330">71.3 MB</text>
+
+				<text x="190" y="392" text-anchor="end" fill="#1c2330">bun</text>
+				<rect x="200" y="374" width="636" height="26" rx="2" fill="url(#g-h2m-a)"/>
+				<text x="844" y="392" fill="#1c2330">79.5 MB</text>
+			</g>
+
+			<g font-size="13" fill="#4a5568">
+				<text x="200" y="440">3 つとも変換・検査・SVG 切り出しまで行う。目盛りは線形</text>
+				<text x="200" y="458">色は実装で揃えてある（紫＝bun ・ 青＝node ・ 緑＝C#）</text>
+			</g>
+		</g>
+	</svg>
+
+	<p><strong>速い順とメモリの少ない順が、きれいに逆になる。</strong>bun は exe の <strong>2.6 倍速い</strong>が、メモリは <strong>2.7 倍</strong>使う。</p>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>公平でないところ</h1>
+
+	<div class="callout callout-important">
+		<p><strong>本物どうしの 3 行は、前回と違って公平に読める。</strong>同じテストが通る実装で、変換・検査・SVG 切り出しまで同じことをしている。前回「読み取ってはいけない」とした exe と移植版の差は、<strong>今回は読み取ってよい。</strong></p>
+	</div>
+
+	<p>残る条件は次のとおり。</p>
+
+	<ul>
+		<li><strong>port 版は変換だけ。</strong>本物と並べて速さを比べない。<code>.js</code> ・ <code>.mjs</code> ・ <code>.ts</code> の差を見るための表である</li>
+		<li><strong>メモリは 1 回の計測。</strong>時間のように中央値を採っていない。数 MB の揺れは意味を持たない</li>
+		<li><strong>ポーリングの間隔を置いていない。</strong>短命なプロセスほど取りこぼす可能性がある。今回はどれも 170 ms 以上あり、拾えている</li>
+		<li>exe のビルド時間と <code>tsc</code> の型チェック時間は、頻度が低いので測っていない</li>
+	</ul>
+
+	<h2>node は型注釈を取り除くだけ</h2>
+
+	<p>node は TypeScript を<strong>型注釈の除去だけ</strong>で走らせる（strip-only）。<strong>型以上の意味を持つ構文は通らない。</strong></p>
+
+	<div class="callout callout-warning">
+		<p>引数に修飾子を付けて宣言を兼ねる書き方（parameter property）が 1 箇所あり、<strong>node で <code>ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX</code> で落ちていた。</strong>bun では通るため、この計測まで気づいていない。ランチャーは bun が無ければ node に落ちる作りなので、<strong>bun の無い環境では動かない状態だった。</strong></p>
+	</div>
+
+	<p>直したのは <code>src/html2md/table.ts</code> の 1 箇所。<strong>フィールドの宣言と代入に分けるだけで、振る舞いは変わらない。</strong></p>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>読み取れること</h1>
+
+	<h2>1. bun は exe より速い。前回の見込みどおり</h2>
+
+	<p>前回は条件が揃わず「速い可能性がある」までしか言えなかった。<strong>同じことをする実装どうしで、bun 179 ms 対 exe 464 ms。2.6 倍速い。</strong></p>
+
+	<p>exe が遅いのは処理ではなく<strong>起動</strong>と見てよい。port 版（変換のみ）が bun で 75 ms、本物が 179 ms。<strong>検査と SVG 切り出しを足しても 100 ms しか増えていない。</strong></p>
+
+	<h2>2. メモリは C# が最も少ない</h2>
+
+	<p><strong>29.7 MB 対 79.5 MB。bun は 2.7 倍使う。</strong>JavaScript の処理系はヒープを広めに確保してから使うため、小さな仕事でも下がりきらない。</p>
+
+	<div class="callout">
+		<p>この資料 10 ファイルの変換では<strong>どちらも問題にならない量</strong>である。効いてくるのは、同時に何本も走らせるときと、メモリの少ない環境で動かすとき。</p>
+	</div>
+
+	<h2>3. node も実用の範囲に入る</h2>
+
+	<p><strong>272 ms。</strong>bun の 1.5 倍かかるが、exe よりは速い。<strong>メモリは bun より少ない（71.3 MB 対 79.5 MB）。</strong>bun の無い環境では node で走らせてよい。</p>
+
+	<p>ただし<strong>node は TypeScript の一部の構文を受け付けない</strong>（第 3 章）。<strong>node でも動くことを、時々でよいので確かめる必要がある。</strong></p>
+
+	<h2>4. 書き方（js ・ mjs ・ ts）の差は、やはり小さい</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>書き方</th><th>bun 起動込み</th><th>node 起動込み</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>.js</code></td><td class="num">73 ms</td><td class="num">168 ms</td></tr>
+			<tr><td class="nowrap"><code>.mjs</code></td><td class="num">76 ms</td><td class="num">162 ms</td></tr>
+			<tr><td class="nowrap"><code>.ts</code></td><td class="num">75 ms</td><td class="num">174 ms</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><strong>数 ms の揺れで、順位に意味は無い。</strong>型注釈を入れても速度は変わらない。<code>.ts</code> を選ぶ理由は型であって速度ではない、という前回の結論が、実際の変換でも変わらない。</p>
+
+	<h2>測り直すとき</h2>
+
+<pre><code>tools\90_misc\bench-html2md\run-bench.cmd</code></pre>
+
+	<p>回数を変えるときは <code>run-bench.ps1</code> に <code>-Runs</code> を渡す。作業フォルダは <code>tmp/bench-html2md/</code> に実装ごとに作られる。</p>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>

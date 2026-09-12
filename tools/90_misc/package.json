@@ -1,0 +1,6 @@
+{
+	"name": "html2md-bench",
+	"private": true,
+	"type": "commonjs",
+	"description": "処理系比較のベンチ。.js を CommonJS のまま走らせるための宣言"
+}
