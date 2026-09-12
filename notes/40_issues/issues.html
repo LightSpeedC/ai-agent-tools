@@ -15,12 +15,13 @@
 	}
 	/* グループのアクセント色（7 グループ / 色相 280 → 0 を 46.7 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);     --accent2:hsl(280,58%,55%);     --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(233.3,78%,25%);   --accent2:hsl(233.3,58%,55%);   --soft:hsl(233.3,28%,95%); }
-	.ch03{ --accent:hsl(186.7,78%,25%);   --accent2:hsl(186.7,58%,55%);   --soft:hsl(186.7,28%,95%); }
-	.ch04{ --accent:hsl(140,78%,25%);     --accent2:hsl(140,58%,55%);     --soft:hsl(140,28%,95%); }
-	.ch05{ --accent:hsl(93.3,78%,25%);    --accent2:hsl(93.3,58%,55%);    --soft:hsl(93.3,28%,95%); }
-	.ch06{ --accent:hsl(46.7,78%,25%);    --accent2:hsl(46.7,58%,55%);    --soft:hsl(46.7,28%,95%); }
-	.ch07{ --accent:hsl(0,78%,25%);       --accent2:hsl(0,58%,55%);       --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(240,78%,25%);   --accent2:hsl(240,58%,55%);   --soft:hsl(240,28%,95%); }
+	.ch03{ --accent:hsl(200,78%,25%);   --accent2:hsl(200,58%,55%);   --soft:hsl(200,28%,95%); }
+	.ch04{ --accent:hsl(160,78%,25%);     --accent2:hsl(160,58%,55%);     --soft:hsl(160,28%,95%); }
+	.ch05{ --accent:hsl(120,78%,25%);    --accent2:hsl(120,58%,55%);    --soft:hsl(120,28%,95%); }
+	.ch06{ --accent:hsl(80,78%,25%);    --accent2:hsl(80,58%,55%);    --soft:hsl(80,28%,95%); }
+	.ch07{ --accent:hsl(40,78%,25%);      --accent2:hsl(40,58%,55%);      --soft:hsl(40,28%,95%); }
+	.ch08{ --accent:hsl(0,78%,25%);       --accent2:hsl(0,58%,55%);       --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -188,6 +189,7 @@
 		<li class="ch05"><a href="#ch05">レビュー #649 の指摘</a></li>
 		<li class="ch06"><a href="#ch06">定期レビュー #1 の指摘</a></li>
 		<li class="ch07"><a href="#ch07">定期レビュー #2 の指摘</a></li>
+		<li class="ch08"><a href="#ch08">他プロジェクトからの要求</a></li>
 	</ol>
 </div>
 
@@ -656,6 +658,52 @@ $sub = Convert-Blocks ...</code></pre>
 				<li>リンク検査のパス解決が exe（<code>Path.Combine</code>→<code>GetFullPath</code>、例外は握って null）と ps1（<code>Join-Path</code>+<code>Test-Path</code>、外す経路なし）で違う。先頭が <code>/</code> の href で2本が別の場所を見る可能性がある</li>
 				<li><code>run-convert-encoding-tests.ps1</code> 冒頭のコメントが「仕様書6章のケース3・4は…食い違う」と現在形で書くが、<code>p260906-01-convert-encoding.html</code> 側は既に過去形の callout に直っており、テストの期待値も既に一致している。コメントだけが古い</li>
 			</ol>
+		</div>
+	</details>
+</section>
+
+<section class="ch08" id="ch08">
+	<h1>他プロジェクトからの要求</h1>
+
+	<p>ai-chat-lite で他のプロジェクトから届いた要求。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">i260912-01</span>公開前検査（check-public）を作るか</summary>
+		<div class="issue-body">
+			<p>2026-09-12、<code>ai-agent-rules</code> から依頼（public ルーム #777）。<strong>public のリポジトリに出す前に、個人名・実体パス・認証情報が混ざっていないかを機械で止めたい。</strong>公開資料を作るプロジェクトが他にもあるため、共有ツール側に入れれば全部が守られる、という理由。</p>
+
+			<p>希望された形は <code>check-contrast</code> ・ <code>check-markdown</code> と同じ<strong>独立コマンド</strong>（<code>check-public</code> など）で、html2md の検査からも呼ぶ。変換が起きない場面（コミット前・リモート作成前）でも走らせたいため。</p>
+
+			<h3>検査してほしいと挙がったもの</h3>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>対象</th><th>補足</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap">メールアドレス</td><td>—</td></tr>
+					<tr><td class="nowrap">実体パス</td><td><code>C:\Users\</code> の直後が実名のもの。プレースホルダは除外</td></tr>
+					<tr><td class="nowrap">認証情報</td><td><code>password</code> / <code>passwd</code> / <code>secret</code> / <code>api_key</code> / <code>token=</code>。<strong>コード例の変数名が誤検出しやすく、調整が要る</strong></td></tr>
+					<tr><td class="nowrap">除外語リスト</td><td>顧客名・案件名・内部システム名</td></tr>
+					<tr><td class="nowrap">異体字の混入</td><td>キリル・ハングル。日本語に紛れると目視で気づけない</td></tr>
+					<tr><td class="nowrap">git の author</td><td>ローカルユーザー名が本文に出ていないか。<strong>環境から取れるので、名前をリストに書かずに済む</strong></td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p>除外語リストの置き場は<strong>先頭 <code>_</code> のファイルを既定に</strong>、という希望。リスト自体が機密のため、共通ルール「.gitignore の共通除外設定」で全階層が管理外になることを前提にしている。</p>
+
+			<h3>決めること</h3>
+
+			<ul>
+				<li><strong>受けるかどうか。</strong>html2md は「HTML と Markdown の変換と検証」の置き場で、公開前検査はその外側にある。共有ツール置き場として引き受けるなら、位置づけを計画書に書き足す必要がある</li>
+				<li>引き受ける場合の実装。exe（C#）と ps1 の 2 本立てにするか、<code>check-contrast</code> ・ <code>check-markdown</code> と同じ ps1 だけにするか</li>
+				<li>誤検出をどこまで許すか。<strong>止める検査は、誤検出が多いと使われなくなる</strong></li>
+				<li>除外語リストの形式と、リストが無いときの振る舞い</li>
+			</ul>
+
+			<div class="callout callout-important">
+				<p><strong>依頼元は「どう作るかはお任せ。課題に残すかどうかも含めて」と書いている。</strong>受けない判断もあり得る。その場合は、どこに置くのが適切かを返す。</p>
+			</div>
 		</div>
 	</details>
 </section>
