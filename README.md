@@ -2,7 +2,7 @@
 
 HTML から Markdown を生成し、双方を検証するツール置き場。プロジェクトを問わず使えるよう、ここに置いている。
 
-> 📅 作成: 2026-08-27 / 更新: 2026-09-11
+> 📅 作成: 2026-08-27 / 更新: 2026-09-12
 
 ## 目次
 
@@ -36,6 +36,7 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 | [text ツール仕様書](notes/10_plan/p260907-01-text-tools.md) | read/find/edit/write の仕様。合言葉（digest）・組の判定・出力の形 |
 | [SJIS ファイルの扱い方](notes/10_plan/p260908-01-sjis-file-handling.md) | cmd・bat を壊さず、差分を見ながら作成・修正・削除する手順の比較 |
 | [HTML クラス名の取り決め](notes/90_rules/html-class-rules.md) | html2md が読むクラス名。バッジ・callout・表・図の書き方 |
+| [ローカルルール](notes/90_rules/local-rules.md) | このプロジェクトでだけ通る決めごと。共通ルールとの差と、踏んだ落とし穴 |
 
 ## 2. html2md
 

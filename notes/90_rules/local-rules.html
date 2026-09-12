@@ -1,0 +1,243 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>html2md のローカルルール</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch03{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>html2md のローカルルール</h1>
+		<p class="lead">このプロジェクトでだけ通る決めごと。全プロジェクトに通ることは共通ルールにあり、ここには書かない。</p>
+		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-09-12</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="html-class-rules.html">クラス名の取り決め</a> ／ <a href="../40_issues/issues.html">課題</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">共通ルールとの関係</a></li>
+		<li class="ch02"><a href="#ch02">判断が不要な作業はいつも消化する</a></li>
+		<li class="ch03"><a href="#ch03">消化するときに踏んだ落とし穴</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>共通ルールとの関係</h1>
+
+	<p>ここに書くのは、このプロジェクトでしか言えないことだけ。全プロジェクトに通ることは共通ルールにある。同じ文を両方に書かない。</p>
+
+	<h2>共通ルールと違う運用にしている点</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>共通ルールの見出し</th><th>どう違うか</th><th>なぜ</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nowrap">フィードバックの記録先</td>
+				<td>作業の進め方のフィードバックを、共通ルールではなく<strong>この文書に置く</strong>（第 2 章）</td>
+				<td>このプロジェクトの課題の持ち方に結びついた決めごとであるため。<code>issues.html</code> に未検証の項目が数十件積まれる状態が続いており、そこから何を自動で消化してよいかの線引きは、ほかのプロジェクトには当てはまらない</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>ほかの見出しは共通ルールのとおりに運用する。食い違いを見つけたら、まずこの表に載っているかを見る。載っていなければ共通ルールが正しい。</p>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>判断が不要な作業はいつも消化する</h1>
+
+	<p>適用条件: 課題（<code>notes/40_issues/issues.html</code>）に手を付けるとき。</p>
+
+	<p><strong>判断が要らないものは、指示を待たずに最後まで進める。</strong>毎回どれをやるか聞き返さない。</p>
+
+	<h2>判断が要らないもの</h2>
+
+	<ul>
+		<li><strong>直し方が 1 つしかない不具合</strong>。原因と直し方が特定できていて、選択肢が無いもの</li>
+		<li><strong>exe と ps1 の乖離</strong>。どちらが正しいかが仕様・資料から決まるもの</li>
+		<li><strong>記録を実態に追いつかせる</strong>。課題の状態・件数、資料の更新日、既に直っている項目の消し込み</li>
+		<li><strong>資料が実装と食い違っている</strong>。実装したものが正で、資料が古いだけのもの</li>
+		<li><strong>テストの穴</strong>。既にある振る舞いに回帰テストを足す</li>
+	</ul>
+
+	<p>ここまでは<strong>実装・テスト・資料・課題の記録まで進めてよい</strong>。コミットは別（共通ルール「修正は1点ずつ、確認を重視」に従い、指示を待つ）。</p>
+
+	<h2>判断が要るもの</h2>
+
+	<ul>
+		<li><strong>仕様を決める</strong>。出力の形・オプションの既定値・クラス名を増やす</li>
+		<li><strong>直し方が 2 つ以上ある</strong>。共通ルール「複数の解決案がある場合の対応」に従って案を出す</li>
+		<li><strong>ほかのプロジェクトに影響する変更</strong>。生成物の形が変わるもの、共通ルールの書き換えが要るもの</li>
+		<li><strong>元の指摘が手元に無く、拾い直しが要るもの</strong>。調べる範囲が読めないため、先に見積もりを出す</li>
+	</ul>
+
+	<p>これらは課題に残して報告だけにする。<strong>消化のついでに決めない。</strong></p>
+
+	<div class="callout">
+		<p>迷ったら「これを間違えたとき、直すのに何が要るか」で見る。<strong>コードを書き直すだけで済むなら判断は要らない。</strong>生成物やほかのプロジェクトに残るなら判断が要る。</p>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>消化するときに踏んだ落とし穴</h1>
+
+	<h2>記録を先に「済」と書かない</h2>
+
+	<p>実装する前に課題へ「済」と書き、外部（ai-chat-lite）にも直したと伝えたのに、<strong>コードを直していなかったことがある。</strong>まとめて消化していると、記録の更新だけが先に進む。</p>
+
+	<p><strong>「済」と書くのは、テストを通したあと。</strong>共通ルール「課題の管理」の「まだ済んでいないものを済にするのは別」は、この順序のこと。</p>
+
+	<h2>回帰テストを先に入れる</h2>
+
+	<p>exe と ps1 の乖離は、<strong>テストを先に書くと、課題に挙がっていない分まで出てくる。</strong>リンク解決の食い違い（<code>i260911-02</code> の 6）では、指摘は検査の 2 経路だけだったが、テストを入れたら <code>.html</code> → <code>.md</code> 置換にも同じ原因があった。</p>
+
+	<p>直してからテストを書くと、<strong>直した分しか見つからない。</strong></p>
+
+	<h2>部分的なステージでコミットを分けない</h2>
+
+	<p>1 つのファイルに 2 つの変更が混ざったとき、<code>git diff -U0</code> の一部だけを <code>git apply --cached</code> で載せてコミットを分けたところ、<strong>挿入位置が 7 行ずれて、中間のコミットが単体では動かない状態になった。</strong>零文脈のパッチは位置を照合できない。</p>
+
+	<p>分けられないときは<strong>1 つのコミットにまとめる。</strong>履歴の粒度より、各コミットが単体で通ることを優先する。</p>
+
+	<h2>issues.html は更新日の検査が効かない</h2>
+
+	<p><code>md-skip</code> のページなので <code>.md</code> が生成されず、<strong>html2md の「更新日が古い」検査に掛からない。</strong>書き換えたら自分で日付を直す。</p>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>
