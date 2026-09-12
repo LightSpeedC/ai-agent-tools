@@ -33,7 +33,9 @@ HTML から Markdown を生成し、双方を検証する。自プロジェク�
 
 ### 中身が TypeScript に変わった（2026-09-12）
 
-`html2md` ・ `text` ・ `convert-encoding` の 3 つは、<strong>C# の exe から TypeScript へ移した。</strong>呼び出し方・オプション・出力の中身は変えていない。**使う側の書き換えは要らない。**
+**6 つとも TypeScript になった。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-contrast` ・ `check-markdown` は PowerShell から移した。`psh` は最初から TypeScript である。
+
+呼び出し方・出力の中身は変えていない。**使う側の書き換えは要らない**（`check-〜` のオプションだけ `--` へ寄せたが、古い形も受ける）。
 
 | 項目 | 前（C# の exe） | 後（TypeScript） |
 |---|---|---|
@@ -150,7 +152,9 @@ Markdown を GitHub のレンダラに投げ、返る HTML に `**` が記号の
 check-contrast . --recurse
 ```
 
-**オプションは 6 つとも同じ形**（`--path` ・ `-p` ・ 名前を付けない対象）。この 2 つは以前 `-Path` 形式だったが、`--` へ寄せた。**古い形も当面は受ける。**
+**オプションは 6 つとも同じ形**（`--path` ・ `-p` ・ 名前を付けない対象）。この 2 つは以前 PowerShell 製で `-Path` 形式だったが、<strong>TypeScript へ移して `--` へ寄せた。</strong>古い形も当面は受ける。
+
+移す前の PowerShell 版は `check-contrast-ps.ps1` ・ `check-markdown-ps.ps1` として残してある。**突き合わせ用で、ふだん呼ぶものではない。**
 
 ブラウザで実際に描画し、前景色と実効背景色の比を計算する。<strong>1.5:1 未満を 0 件にする。</strong>検出したいのは「白に白」「黒に黒」「色の継承事故」で、値を上げると誤検出に埋もれる。
 

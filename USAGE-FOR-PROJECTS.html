@@ -192,7 +192,9 @@
 
 	<h2>中身が TypeScript に変わった（2026-09-12）</h2>
 
-	<p><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> の 3 つは、<strong>C# の exe から TypeScript へ移した。</strong>呼び出し方・オプション・出力の中身は変えていない。<strong>使う側の書き換えは要らない。</strong></p>
+	<p><strong>6 つとも TypeScript になった。</strong><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> は C# の exe から、<code>check-contrast</code> ・ <code>check-markdown</code> は PowerShell から移した。<code>psh</code> は最初から TypeScript である。</p>
+
+	<p>呼び出し方・出力の中身は変えていない。<strong>使う側の書き換えは要らない</strong>（<code>check-〜</code> のオプションだけ <code>--</code> へ寄せたが、古い形も受ける）。</p>
 
 	<div class="tablewrap">
 	<table>
@@ -320,7 +322,9 @@ html2md --root . --dry-run</code></pre>
 
 <pre><code class="language-shell">check-contrast . --recurse</code></pre>
 
-	<p><strong>オプションは 6 つとも同じ形</strong>（<code>--path</code> ・ <code>-p</code> ・ 名前を付けない対象）。この 2 つは以前 <code>-Path</code> 形式だったが、<code>--</code> へ寄せた。<strong>古い形も当面は受ける。</strong></p>
+	<p><strong>オプションは 6 つとも同じ形</strong>（<code>--path</code> ・ <code>-p</code> ・ 名前を付けない対象）。この 2 つは以前 PowerShell 製で <code>-Path</code> 形式だったが、<strong>TypeScript へ移して <code>--</code> へ寄せた。</strong>古い形も当面は受ける。</p>
+
+	<p>移す前の PowerShell 版は <code>check-contrast-ps.ps1</code> ・ <code>check-markdown-ps.ps1</code> として残してある。<strong>突き合わせ用で、ふだん呼ぶものではない。</strong></p>
 
 	<p>ブラウザで実際に描画し、前景色と実効背景色の比を計算する。<strong>1.5:1 未満を 0 件にする。</strong>検出したいのは「白に白」「黒に黒」「色の継承事故」で、値を上げると誤検出に埋もれる。</p>
 

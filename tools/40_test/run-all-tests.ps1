@@ -30,8 +30,8 @@ $Suites = @(
 	# node でも動くかの確認。ランチャーは bun が無ければ node に落ちるため、
 	# bun でしか試していないと bun の無い環境で初めて落ちる
 	@{ Name = 'node で動くか'; Script = 'run-node-tests.ts' },
-	# check ツールのオプション解釈。この 2 つだけ ps1 で、-- へ寄せた
-	@{ Name = 'check ツール'; Script = 'run-check-tools-tests.ps1' },
+	# check ツール。ps1 から移植したので、ps1 版との突き合わせも見る
+	@{ Name = 'check ツール'; Script = 'run-check-tools-tests.ts' },
 	# 型チェック。bun も node も型を見ないため、ここでしか食い違いが出ない
 	@{ Name = '型チェック'; Script = 'run-tsc-tests.ps1' }
 )
