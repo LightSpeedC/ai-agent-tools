@@ -78,7 +78,7 @@ html2md --root . --dry-run
 |---|---|
 | ページ全体 | `head` に `<meta name="md-skip">` を置く |
 | 要素だけ | その要素に `class="md-skip"` を付ける |
-| ファイル名で | `--exclude <名前>` を渡す |
+| ファイル名で | `--exclude <名前>` を渡す。**効くのは `--dir` で探したファイルだけ**で、`README.html` と `--extra` で名指ししたものは素通りする |
 
 ページ全体を外すのは、変換すると構造が失われるものに使う。ログのように機械が書き足すページが該当する。
 
@@ -119,9 +119,17 @@ html2md --root . --dry-run
 
 #### ビルド
 
-`build.cmd` を実行する。Roslyn の `csc.exe` があればそれを使い、無ければ .NET Framework 4.8 の `csc.exe` を使う。標準搭載版は C# 5 相当なので、文字列補間や `out var` は書けない。
+`build-html2md-cs.cmd` を実行する。Roslyn の `csc.exe` があればそれを使い、無ければ .NET Framework 4.8 の `csc.exe` を使う。標準搭載版は C# 5 相当なので、文字列補間や `out var` は書けない。
 
-**`build.cmd` が作るのは `html2md.exe` だけ。**`convert-encoding.exe` は `build-convert-encoding.cmd`、`text.exe` は `build-text.cmd` で個別に作る（いずれも同じ csc の探し方）。
+<strong>ビルドの入口はツールごとに 1 本。</strong>名前は**ツール名と処理系**で付ける（`build-<ツール>-<処理系>.cmd`）。移植版が増えても、どれを作る入口か名前で分かる。
+
+| 作るもの | 入口 |
+|---|---|
+| `html2md.exe` | `build-html2md-cs.cmd` |
+| `convert-encoding.exe` | `build-convert-encoding-cs.cmd` |
+| `text.exe` | `build-text-cs.cmd` |
+
+いずれも同じ csc の探し方をする。**TypeScript 版はビルドが要らない**（bun ・ node がソースをそのまま走らせる）。
 
 ## 3. check-markdown
 
@@ -306,6 +314,10 @@ convert-encoding foo.txt --to /crlf
 
 # いまの状態を見るだけ。書き込まない
 convert-encoding foo.cmd --info
+
+# フォルダも受ける。--info は全件、--check は規約に合わないものだけ
+convert-encoding . --info
+convert-encoding . --check
 
 # 中身を UTF-8 で標準出力へ出す。書き込まない
 convert-encoding foo.cmd --read

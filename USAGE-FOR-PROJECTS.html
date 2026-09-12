@@ -13,11 +13,12 @@
 	}
 	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(224,78%,25%);   --accent2:hsl(224,58%,55%);   --soft:hsl(224,28%,95%); }
-	.ch03{ --accent:hsl(168,78%,25%);   --accent2:hsl(168,58%,55%);   --soft:hsl(168,28%,95%); }
-	.ch04{ --accent:hsl(112,78%,25%);   --accent2:hsl(112,58%,55%);   --soft:hsl(112,28%,95%); }
-	.ch05{ --accent:hsl(56,78%,25%);    --accent2:hsl(56,58%,55%);    --soft:hsl(56,28%,95%); }
-	.ch06{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(233.3,78%,25%); --accent2:hsl(233.3,58%,55%); --soft:hsl(233.3,28%,95%); }
+	.ch03{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch04{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
+	.ch05{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch06{ --accent:hsl(46.7,78%,25%);  --accent2:hsl(46.7,58%,55%);  --soft:hsl(46.7,28%,95%); }
+	.ch07{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -158,17 +159,18 @@
 <div class="toc">
 	<h2>目次</h2>
 	<ol>
-		<li class="ch01"><a href="#ch01">5 つのコマンド</a></li>
+		<li class="ch01"><a href="#ch01">6 つのコマンド</a></li>
 		<li class="ch02"><a href="#ch02">html2md で変換する</a></li>
 		<li class="ch03"><a href="#ch03">検証する</a></li>
 		<li class="ch04"><a href="#ch04">文字コードと改行を直す</a></li>
 		<li class="ch05"><a href="#ch05">文字コードを問わず読む・探す・書く（text）</a></li>
-		<li class="ch06"><a href="#ch06">つまずきやすいところ</a></li>
+		<li class="ch06"><a href="#ch06">PowerShell を呼ぶ（psh）</a></li>
+		<li class="ch07"><a href="#ch07">つまずきやすいところ</a></li>
 	</ol>
 </div>
 
 <section class="ch01" id="ch01">
-	<h1>5 つのコマンド</h1>
+	<h1>6 つのコマンド</h1>
 
 	<p><strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。</p>
 
@@ -181,11 +183,37 @@
 			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせか</strong>をブラウザで実測する</td></tr>
 			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、<strong>ファイルの種類ごとに決められた形へ</strong>変換する</td></tr>
 			<tr><td class="nowrap"><code>text</code></td><td>SJIS・UTF-16 でも壊さず<strong>読む・探す・編集する・書く</strong>（Read・Grep・Edit・Write の代わり）</td></tr>
+			<tr><td class="nowrap"><code>psh</code></td><td>PowerShell を呼び、出力を <strong>UTF-8 に直して流す</strong>（第 6 章）</td></tr>
 		</tbody>
 	</table>
 	</div>
 
 	<p>どちらの検証ツールも<strong>推測せず実物で判定する。</strong>前者は GitHub のレンダラに投げ、後者はブラウザで描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。</p>
+
+	<h2>中身が TypeScript に変わった（2026-09-12）</h2>
+
+	<p><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> の 3 つは、<strong>C# の exe から TypeScript へ移した。</strong>呼び出し方・オプション・出力の中身は変えていない。<strong>使う側の書き換えは要らない。</strong></p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>前（C# の exe）</th><th>後（TypeScript）</th></tr></thead>
+		<tbody>
+			<tr><td>実体</td><td class="nowrap"><code>html2md.exe</code></td><td class="nowrap"><code>html2md</code> ・ <code>html2md.cmd</code> から <code>src/html2md/main.ts</code></td></tr>
+			<tr><td>実行に要るもの</td><td>なし（単体で動く）</td><td class="nowrap"><strong><code>bun</code> か <code>node</code></strong>（bun を優先）</td></tr>
+			<tr><td>標準出力の文字コード</td><td class="nowrap">CP932</td><td class="nowrap"><strong>常に UTF-8</strong></td></tr>
+			<tr><td>Bash から呼んだとき</td><td><strong>日本語が化ける</strong></td><td>化けない</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><strong>残した C# 版も UTF-8 で出すように直した</strong>ので、いまはどれを呼んでも標準出力は UTF-8 である。</p>
+
+	<div class="callout callout-important">
+		<p><strong>素の PowerShell 5.1 から呼ぶと化ける。</strong>5.1 は標準出力を CP932 として読むため、UTF-8 で出す側と打ち消し合わない（実測で <code>→</code> が壊れた）。受け手側に 1 行置いて揃える。<strong><code>psh</code> 経由なら要らない</strong>（第 6 章）。</p>
+<pre><code class="language-powershell">[Console]::OutputEncoding = [System.Text.Encoding]::UTF8</code></pre>
+	</div>
+
+	<p>移す前の C# 版は <code>html2md-cs.exe</code> ・ <code>text-cs.exe</code> ・ <code>convert-encoding-cs.exe</code> として残してある。<strong>突き合わせ用で、ふだん呼ぶものではない。</strong>結果が食い違ったときの切り分けに使う。</p>
 	</div>
 </section>
 
@@ -261,7 +289,7 @@ html2md --root . --dry-run</code></pre>
 		<tbody>
 			<tr><td class="nowrap">ページ全体</td><td><code>head</code> に <code>&lt;meta name="md-skip"&gt;</code> を置く</td></tr>
 			<tr><td class="nowrap">要素だけ</td><td>その要素に <code>class="md-skip"</code> を付ける</td></tr>
-			<tr><td class="nowrap">ファイル名で</td><td><code>--exclude &lt;名前&gt;</code> を渡す</td></tr>
+			<tr><td class="nowrap">ファイル名で</td><td><code>--exclude &lt;名前&gt;</code> を渡す。<strong>効くのは <code>--dir</code> で探したファイルだけ</strong>で、<code>README.html</code> と <code>--extra</code> で名指ししたものは素通りする</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -295,6 +323,22 @@ html2md --root . --dry-run</code></pre>
 	<p>ブラウザで実際に描画し、前景色と実効背景色の比を計算する。<strong>1.5:1 未満を 0 件にする。</strong>検出したいのは「白に白」「黒に黒」「色の継承事故」で、値を上げると誤検出に埋もれる。</p>
 
 	<p>ブラウザは PlayWright 共有環境を借りる。<strong>自プロジェクトに Playwright を入れる必要はない。</strong></p>
+
+	<h2>どちらも既定で除外するフォルダがある</h2>
+
+	<p><code>check-markdown</code> ・ <code>check-contrast</code> は、<strong>次のフォルダを既定で対象から外す。</strong>除外した件数は画面に出ないので、対象が思ったより少ないときはここを疑う。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ツール</th><th>既定の除外</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>check-markdown</code></td><td><code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> ・ <code>.git</code></td></tr>
+			<tr><td class="nowrap"><code>check-contrast</code></td><td>上記に加えて <code>contrast</code>（自身の出力先）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><code>-Exclude</code> に正規表現を渡すと差し替えられる。<strong>足すのではなく置き換わる</strong>ので、既定の分も要るなら書き足す。</p>
 </section>
 
 <section class="ch04" id="ch04">
@@ -330,6 +374,37 @@ convert-encoding foo.txt --to /crlf       # 改行だけ変える
 convert-encoding foo.txt --info           # いまの状態を見るだけ
 convert-encoding foo.cmd --read           # 中身を UTF-8 で出す
 convert-encoding foo.cmd --dump           # 中身を 16 進で出す</code></pre>
+
+	<h2>フォルダをまとめて見る（--info と --check）</h2>
+
+	<p><code>--info</code> と <code>--check</code> は<strong>フォルダも受ける</strong>。その下を再帰して 1 ファイルずつ見る。書き込みはしない。</p>
+
+<pre><code class="language-powershell">convert-encoding . --info    # 全件を出す。終了コードは常に 0
+convert-encoding . --check   # 規約に合わないものだけ。あれば 1</code></pre>
+
+<pre><code class="language-text">tools/40_test/run-tests.ps1  utf8bom+lf  → ps1 は utf8bom+crlf
+notes/10_plan/plan.html      utf8+lf     → html は utf8bom+lf
+
+=== 2 件が規約に合いません ===</code></pre>
+
+	<p><strong>あるべき組は拡張子で決まる。</strong><code>ps1</code> は BOM 付き UTF-8 ＋ CRLF、<code>cmd</code> ・ <code>bat</code> は SJIS ＋ CRLF、<code>reg</code> は UTF-16 LE ＋ CRLF、<code>html</code> ・ <code>htm</code> は BOM 付き UTF-8 ＋ LF。<strong>そのほかは BOM 無し UTF-8</strong>（<code>.editorconfig</code> の <code>[*]</code>）。</p>
+
+	<p><strong>改行は、規約を置いた拡張子だけ見る。</strong><code>md</code> ・ <code>js</code> ・ <code>mjs</code> ・ <code>ts</code> ・ <code>json</code> ・ <code>css</code> ・ <code>cs</code> ・ <code>go</code> ・ <code>rs</code> ・ <code>yml</code> ・ <code>sh</code> ・ <code>svg</code> ・ <code>xml</code> 等は LF。<strong><code>txt</code> ・ <code>log</code> ・ <code>csv</code> のような、規約を置いていないものは問わない</strong>（<code>.gitattributes</code> の <code>* text=auto eol=lf</code> で git 側は LF に揃うため、作業ツリーまで縛らない）。<strong>文字コードは git が変換しないので、拡張子によらず見る。</strong></p>
+
+	<p><strong>改行が混ざっていれば、それだけで規約に合わない。</strong>単独の CR も同じ。<strong>これは拡張子によらず見る。</strong>改行がまったく無いファイルは合っている扱い。</p>
+
+	<div class="callout callout-tip">
+		<p><strong>表示する組と改行の名前は、<code>--to</code> ・ <code>--from</code> に書く綴りと同じ小文字。</strong>出た名前をそのまま指定へ渡せる（<code>text</code> も同じ）。<strong>非 ASCII を含まないファイルは <code>ascii</code> と出す</strong>——<code>utf8</code> と <code>sjis</code> でバイト列が同じで区別できないため。<strong>組が増えたわけではない</strong>ので <code>--from ascii</code> は受けない。</p>
+	</div>
+
+	<p>既定で <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> ・ <code>.git</code>、<strong>先頭 <code>_</code> のファイルとフォルダ</strong>、バイナリを見ない。<code>--include</code> で絞り、<code>--exclude</code> ・ <code>--exclude-dir</code> で既定に足す（カンマ区切りで複数書ける）。<code>.gitignore</code> は読まない。</p>
+
+<pre><code class="language-powershell">convert-encoding . --check --include "*.ps1,*.cmd"
+convert-encoding . --info  --exclude-dir "dist,_releases"</code></pre>
+
+	<div class="callout callout-tip">
+		<p><strong>テストの最後に置くと、編集の道具が落とした BOM や改行をその場で拾える。</strong>このリポジトリでは <code>tools/40_test/run-all-tests.ps1</code> が全テストのあとに <code>--check</code> を回し、違反があれば全体を失敗にしている。</p>
+	</div>
 
 	<h2>cmd・bat を作る・直す・消す（Windows）</h2>
 
@@ -445,6 +520,42 @@ echo @echo off | text write new.cmd --to cmd    # 標準入力／第 2 引数で
 </section>
 
 <section class="ch06" id="ch06">
+	<h1>PowerShell を呼ぶ（psh）</h1>
+
+	<p><strong>Bash から PowerShell を呼ぶと、日本語の出力が化ける。</strong>PowerShell が呼んだ .NET 製の exe が CP932 で出すため。<code>psh</code> は間に入って、受け取ったバイト列を読み分けて <strong>UTF-8 で流し直す。</strong></p>
+
+<pre><code class="language-shell">psh tools/40_test/run-tests.ps1          # ps1 を実行する（引数はそのまま後ろに足す）
+psh -c "Get-ChildItem . | Measure-Object"  # 式を実行する
+psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる</code></pre>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>オプション</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>-c &lt;式&gt;</code> ・ <code>--command &lt;式&gt;</code></td><td>式を実行する。<strong>式は 1 つの引数として渡す</strong></td></tr>
+			<tr><td class="nowrap"><code>--pwsh</code></td><td>pwsh（7）で走らせる。<strong>先頭に置く</strong></td></tr>
+			<tr><td class="nowrap"><code>--help</code> ・ <code>-h</code></td><td>使い方を出して終わる。<strong>先頭に置いたときだけ</strong>（<code>psh foo.ps1 --help</code> の <code>--help</code> は <code>foo.ps1</code> へ渡る）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>オプションを付けなければ第 1 引数を ps1 のパスとして <code>-File</code> で実行する。<strong>いずれも <code>-NoProfile -ExecutionPolicy Bypass</code> が付く。</strong>終了コードは PowerShell のものをそのまま返す。</p>
+
+	<h2>既定は 5.1。7 ではない</h2>
+
+	<p>ps1 は Windows PowerShell 5.1 で動くように書く決めがある。<strong>厳しい側で動かさないと、7 でしか通らない書き方に気づけない。</strong>起動も 5.1 のほうが速い（実測 185ms 対 285ms。7 は .NET Core の起動コストが乗る）。</p>
+
+	<h2>クォートの注意</h2>
+
+	<p><code>powershell -Command "…"</code> に文字列を渡すと<strong>引用符が二重に解釈される。</strong>エラーにならず、静かに違う内容で動くことがある。<code>psh</code> は子プロセスを配列のまま起動するので、この段が 1 つ減る。</p>
+
+	<div class="callout callout-warning">
+		<p><strong>式の中の <code>$</code> は呼び出し側のシェルが先に食う。</strong>Bash から渡すならシングルクォートで囲む（<code>psh -c '$PSVersionTable'</code>）。<strong>PowerShell に渡したい変数を、呼び出し側で展開させない。</strong></p>
+	</div>
+
+</section>
+
+<section class="ch07" id="ch07">
 	<h1>つまずきやすいところ</h1>
 
 	<h2>Markdown を直接編集しない</h2>

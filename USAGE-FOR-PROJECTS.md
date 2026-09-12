@@ -8,14 +8,15 @@ HTML から Markdown を生成し、双方を検証する。自プロジェク�
 
 ## 目次
 
-1. [5 つのコマンド](#1-5-つのコマンド)
+1. [6 つのコマンド](#1-6-つのコマンド)
 2. [html2md で変換する](#2-html2md-で変換する)
 3. [検証する](#3-検証する)
 4. [文字コードと改行を直す](#4-文字コードと改行を直す)
 5. [文字コードを問わず読む・探す・書く（text）](#5-文字コードを問わず読む探す書くtext)
-6. [つまずきやすいところ](#6-つまずきやすいところ)
+6. [PowerShell を呼ぶ（psh）](#6-powershell-を呼ぶpsh)
+7. [つまずきやすいところ](#7-つまずきやすいところ)
 
-## 1. 5 つのコマンド
+## 1. 6 つのコマンド
 
 <strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。
 
@@ -26,8 +27,30 @@ HTML から Markdown を生成し、双方を検証する。自プロジェク�
 | `check-contrast` | HTML の文字色と背景色が **読める組み合わせか**をブラウザで実測する |
 | `convert-encoding` | ファイルの文字コードと改行を、**ファイルの種類ごとに決められた形へ**変換する |
 | `text` | SJIS・UTF-16 でも壊さず**読む・探す・編集する・書く**（Read・Grep・Edit・Write の代わり） |
+| `psh` | PowerShell を呼び、出力を **UTF-8 に直して流す**（第 6 章） |
 
 どちらの検証ツールも<strong>推測せず実物で判定する。</strong>前者は GitHub のレンダラに投げ、後者はブラウザで描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。
+
+### 中身が TypeScript に変わった（2026-09-12）
+
+`html2md` ・ `text` ・ `convert-encoding` の 3 つは、<strong>C# の exe から TypeScript へ移した。</strong>呼び出し方・オプション・出力の中身は変えていない。**使う側の書き換えは要らない。**
+
+| 項目 | 前（C# の exe） | 後（TypeScript） |
+|---|---|---|
+| 実体 | `html2md.exe` | `html2md` ・ `html2md.cmd` から `src/html2md/main.ts` |
+| 実行に要るもの | なし（単体で動く） | **`bun` か `node`**（bun を優先） |
+| 標準出力の文字コード | CP932 | **常に UTF-8** |
+| Bash から呼んだとき | **日本語が化ける** | 化けない |
+
+**残した C# 版も UTF-8 で出すように直した**ので、いまはどれを呼んでも標準出力は UTF-8 である。
+
+> [!IMPORTANT]
+> <strong>素の PowerShell 5.1 から呼ぶと化ける。</strong>5.1 は標準出力を CP932 として読むため、UTF-8 で出す側と打ち消し合わない（実測で `→` が壊れた）。受け手側に 1 行置いて揃える。**`psh` 経由なら要らない**（第 6 章）。
+> ```powershell
+> [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+> ```
+
+移す前の C# 版は `html2md-cs.exe` ・ `text-cs.exe` ・ `convert-encoding-cs.exe` として残してある。<strong>突き合わせ用で、ふだん呼ぶものではない。</strong>結果が食い違ったときの切り分けに使う。
 
 ## 2. html2md で変換する
 
@@ -98,7 +121,7 @@ html2md --root . --extra USAGE-FOR-PROJECTS.html
 |---|---|
 | ページ全体 | `head` に `<meta name="md-skip">` を置く |
 | 要素だけ | その要素に `class="md-skip"` を付ける |
-| ファイル名で | `--exclude <名前>` を渡す |
+| ファイル名で | `--exclude <名前>` を渡す。**効くのは `--dir` で探したファイルだけ**で、`README.html` と `--extra` で名指ししたものは素通りする |
 
 ページ全体を外すのは、変換すると構造が失われるものに使う。ログのように機械が書き足すページが該当する。
 
@@ -131,6 +154,17 @@ check-contrast -Path . -Recurse
 
 ブラウザは PlayWright 共有環境を借りる。**自プロジェクトに Playwright を入れる必要はない。**
 
+### どちらも既定で除外するフォルダがある
+
+`check-markdown` ・ `check-contrast` は、<strong>次のフォルダを既定で対象から外す。</strong>除外した件数は画面に出ないので、対象が思ったより少ないときはここを疑う。
+
+| ツール | 既定の除外 |
+|---|---|
+| `check-markdown` | `tmp` ・ `etc` ・ `node_modules` ・ `.git` |
+| `check-contrast` | 上記に加えて `contrast`（自身の出力先） |
+
+`-Exclude` に正規表現を渡すと差し替えられる。**足すのではなく置き換わる**ので、既定の分も要るなら書き足す。
+
 ## 4. 文字コードと改行を直す
 
 Windows で扱うファイルは種類ごとに求められる形式が違う。**用途名を渡せば、文字コードと改行の組み合わせを覚えなくて済む。**
@@ -162,6 +196,41 @@ convert-encoding foo.txt --info           # いまの状態を見るだけ
 convert-encoding foo.cmd --read           # 中身を UTF-8 で出す
 convert-encoding foo.cmd --dump           # 中身を 16 進で出す
 ```
+
+### フォルダをまとめて見る（--info と --check）
+
+`--info` と `--check` は**フォルダも受ける**。その下を再帰して 1 ファイルずつ見る。書き込みはしない。
+
+```powershell
+convert-encoding . --info    # 全件を出す。終了コードは常に 0
+convert-encoding . --check   # 規約に合わないものだけ。あれば 1
+```
+
+```text
+tools/40_test/run-tests.ps1  utf8bom+lf  → ps1 は utf8bom+crlf
+notes/10_plan/plan.html      utf8+lf     → html は utf8bom+lf
+
+=== 2 件が規約に合いません ===
+```
+
+**あるべき組は拡張子で決まる。**`ps1` は BOM 付き UTF-8 ＋ CRLF、`cmd` ・ `bat` は SJIS ＋ CRLF、`reg` は UTF-16 LE ＋ CRLF、`html` ・ `htm` は BOM 付き UTF-8 ＋ LF。**そのほかは BOM 無し UTF-8**（`.editorconfig` の `[*]`）。
+
+**改行は、規約を置いた拡張子だけ見る。**`md` ・ `js` ・ `mjs` ・ `ts` ・ `json` ・ `css` ・ `cs` ・ `go` ・ `rs` ・ `yml` ・ `sh` ・ `svg` ・ `xml` 等は LF。**`txt` ・ `log` ・ `csv` のような、規約を置いていないものは問わない**（`.gitattributes` の `* text=auto eol=lf` で git 側は LF に揃うため、作業ツリーまで縛らない）。**文字コードは git が変換しないので、拡張子によらず見る。**
+
+<strong>改行が混ざっていれば、それだけで規約に合わない。</strong>単独の CR も同じ。<strong>これは拡張子によらず見る。</strong>改行がまったく無いファイルは合っている扱い。
+
+> [!TIP]
+> <strong>表示する組と改行の名前は、`--to` ・ `--from` に書く綴りと同じ小文字。</strong>出た名前をそのまま指定へ渡せる（`text` も同じ）。**非 ASCII を含まないファイルは `ascii` と出す**——`utf8` と `sjis` でバイト列が同じで区別できないため。**組が増えたわけではない**ので `--from ascii` は受けない。
+
+既定で `tmp` ・ `etc` ・ `node_modules` ・ `.git`、**先頭 `_` のファイルとフォルダ**、バイナリを見ない。`--include` で絞り、`--exclude` ・ `--exclude-dir` で既定に足す（カンマ区切りで複数書ける）。`.gitignore` は読まない。
+
+```powershell
+convert-encoding . --check --include "*.ps1,*.cmd"
+convert-encoding . --info  --exclude-dir "dist,_releases"
+```
+
+> [!TIP]
+> <strong>テストの最後に置くと、編集の道具が落とした BOM や改行をその場で拾える。</strong>このリポジトリでは `tools/40_test/run-all-tests.ps1` が全テストのあとに `--check` を回し、違反があれば全体を失敗にしている。
 
 ### cmd・bat を作る・直す・消す（Windows）
 
@@ -272,7 +341,36 @@ echo @echo off | text write new.cmd --to cmd    # 標準入力／第 2 引数で
 
 詳しい仕様は html2md 側の `notes/10_plan/p260907-01-text-tools.html` にある。
 
-## 6. つまずきやすいところ
+## 6. PowerShell を呼ぶ（psh）
+
+<strong>Bash から PowerShell を呼ぶと、日本語の出力が化ける。</strong>PowerShell が呼んだ .NET 製の exe が CP932 で出すため。`psh` は間に入って、受け取ったバイト列を読み分けて **UTF-8 で流し直す。**
+
+```shell
+psh tools/40_test/run-tests.ps1          # ps1 を実行する（引数はそのまま後ろに足す）
+psh -c "Get-ChildItem . | Measure-Object"  # 式を実行する
+psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる
+```
+
+| オプション | 意味 |
+|---|---|
+| `-c <式>` ・ `--command <式>` | 式を実行する。**式は 1 つの引数として渡す** |
+| `--pwsh` | pwsh（7）で走らせる。**先頭に置く** |
+| `--help` ・ `-h` | 使い方を出して終わる。**先頭に置いたときだけ**（`psh foo.ps1 --help` の `--help` は `foo.ps1` へ渡る） |
+
+オプションを付けなければ第 1 引数を ps1 のパスとして `-File` で実行する。<strong>いずれも `-NoProfile -ExecutionPolicy Bypass` が付く。</strong>終了コードは PowerShell のものをそのまま返す。
+
+### 既定は 5.1。7 ではない
+
+ps1 は Windows PowerShell 5.1 で動くように書く決めがある。<strong>厳しい側で動かさないと、7 でしか通らない書き方に気づけない。</strong>起動も 5.1 のほうが速い（実測 185ms 対 285ms。7 は .NET Core の起動コストが乗る）。
+
+### クォートの注意
+
+`powershell -Command "…"` に文字列を渡すと<strong>引用符が二重に解釈される。</strong>エラーにならず、静かに違う内容で動くことがある。`psh` は子プロセスを配列のまま起動するので、この段が 1 つ減る。
+
+> [!WARNING]
+> <strong>式の中の `$` は呼び出し側のシェルが先に食う。</strong>Bash から渡すならシングルクォートで囲む（`psh -c '$PSVersionTable'`）。**PowerShell に渡したい変数を、呼び出し側で展開させない。**
+
+## 7. つまずきやすいところ
 
 ### Markdown を直接編集しない
 

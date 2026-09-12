@@ -231,7 +231,7 @@ html2md --root . --dry-run</code></pre>
 		<tbody>
 			<tr><td class="nowrap">ページ全体</td><td><code>head</code> に <code>&lt;meta name="md-skip"&gt;</code> を置く</td></tr>
 			<tr><td class="nowrap">要素だけ</td><td>その要素に <code>class="md-skip"</code> を付ける</td></tr>
-			<tr><td class="nowrap">ファイル名で</td><td><code>--exclude &lt;名前&gt;</code> を渡す</td></tr>
+			<tr><td class="nowrap">ファイル名で</td><td><code>--exclude &lt;名前&gt;</code> を渡す。<strong>効くのは <code>--dir</code> で探したファイルだけ</strong>で、<code>README.html</code> と <code>--extra</code> で名指ししたものは素通りする</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -274,9 +274,20 @@ html2md --root . --dry-run</code></pre>
 
 	<h3>ビルド</h3>
 
-	<p><code>build.cmd</code> を実行する。Roslyn の <code>csc.exe</code> があればそれを使い、無ければ .NET Framework 4.8 の <code>csc.exe</code> を使う。標準搭載版は C# 5 相当なので、文字列補間や <code>out var</code> は書けない。</p>
+	<p><code>build-html2md-cs.cmd</code> を実行する。Roslyn の <code>csc.exe</code> があればそれを使い、無ければ .NET Framework 4.8 の <code>csc.exe</code> を使う。標準搭載版は C# 5 相当なので、文字列補間や <code>out var</code> は書けない。</p>
 
-	<p><strong><code>build.cmd</code> が作るのは <code>html2md.exe</code> だけ。</strong><code>convert-encoding.exe</code> は <code>build-convert-encoding.cmd</code>、<code>text.exe</code> は <code>build-text.cmd</code> で個別に作る（いずれも同じ csc の探し方）。</p>
+	<p><strong>ビルドの入口はツールごとに 1 本。</strong>名前は<strong>ツール名と処理系</strong>で付ける（<code>build-&lt;ツール&gt;-&lt;処理系&gt;.cmd</code>）。移植版が増えても、どれを作る入口か名前で分かる。</p>
+
+	<div class="tablewrap"><table>
+	<thead><tr><th>作るもの</th><th>入口</th></tr></thead>
+	<tbody>
+	<tr><td class="nowrap"><code>html2md.exe</code></td><td class="nowrap"><code>build-html2md-cs.cmd</code></td></tr>
+	<tr><td class="nowrap"><code>convert-encoding.exe</code></td><td class="nowrap"><code>build-convert-encoding-cs.cmd</code></td></tr>
+	<tr><td class="nowrap"><code>text.exe</code></td><td class="nowrap"><code>build-text-cs.cmd</code></td></tr>
+	</tbody>
+	</table></div>
+
+	<p>いずれも同じ csc の探し方をする。<strong>TypeScript 版はビルドが要らない</strong>（bun ・ node がソースをそのまま走らせる）。</p>
 </section>
 
 <section class="ch03" id="ch03">
@@ -502,6 +513,10 @@ convert-encoding foo.txt --to /crlf
 
 # いまの状態を見るだけ。書き込まない
 convert-encoding foo.cmd --info
+
+# フォルダも受ける。--info は全件、--check は規約に合わないものだけ
+convert-encoding . --info
+convert-encoding . --check
 
 # 中身を UTF-8 で標準出力へ出す。書き込まない
 convert-encoding foo.cmd --read</code></pre>
