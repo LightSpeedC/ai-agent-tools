@@ -1,0 +1,10 @@
+{
+	"name": "html2md-tools",
+	"private": true,
+	"type": "module",
+	"description": "HTML → Markdown 変換と、文字コード・テキスト操作の共有ツール",
+	"devDependencies": {
+		"@types/node": "^22.20.2",
+		"typescript": "^7.0.2"
+	}
+}

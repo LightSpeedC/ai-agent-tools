@@ -3,6 +3,9 @@ etc/
 _*
 *.exe
 
+node_modules/
+bun.lock
+
 .claude/*
 !.claude/settings.json
 !.claude/commands/

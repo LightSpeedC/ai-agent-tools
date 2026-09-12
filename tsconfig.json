@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"target": "es2022",
+		"lib": ["es2023"],
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"types": ["node"],
+
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitOverride": true,
+
+		"noEmit": true,
+		"skipLibCheck": true,
+
+		// bun ・ node はどちらも拡張子付きの import を要るため、
+		// ソース側は .ts を書いたままにして型チェックだけ許可する
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true
+	},
+	"include": ["src/**/*.ts", "tools/40_test/*.ts"]
+}
