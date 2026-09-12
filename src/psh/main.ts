@@ -1,0 +1,186 @@
+/*
+	PowerShell を呼んで、出力を UTF-8 に直して流す。
+
+	    psh <path.ps1> [引数...]         ps1 を -File で実行する
+	    psh -c "<式>"                   PowerShell の式を実行する（--command も可）
+	    psh --pwsh …                    pwsh（7）で走らせる
+
+	なぜ要るか:
+	  Claude Code 2.1.269 の Windows 版から PowerShell ツールが使えなくなり、
+	  Bash ツール経由で powershell を呼ぶしかなくなった。そのとき 2 つ困る。
+
+	    1. 出力が CP932 になり、UTF-8 前提の呼び出し側で日本語が化ける
+	    2. powershell -Command に文字列を渡すと、クォートが二重に解釈される
+	       （エラーにならず、静かに違う内容で動くことがある）
+
+	  ここでは子プロセスを配列で起動して 2 を避け、受け取ったバイト列を
+	  CP932 として読み直して 1 を避ける。
+
+	  PowerShell ツールが戻れば要らなくなる当て木。課題は i260912-06。
+
+	決め:
+	  ・終了コードは素通しする（呼び元の 0/1/2 の契約を壊さない）
+	  ・標準出力は標準出力へ、標準エラーは標準エラーへ。混ぜない
+	  ・対象が無い・引数が無いときは 2 で止める。黙って成功しない
+*/
+
+import { spawnSync } from 'node:child_process';
+import * as fs from 'node:fs';
+
+/** 引数の誤り・対象が無い。html2md 系の契約に合わせる */
+const ExitBadArgs = 2;
+
+/*
+	使い方を出す。
+
+	求められて出すとき（--help）は標準出力へ、誤用を指したとき（引数なし）は
+	標準エラーへ出す。**読みたくて呼んだものを、エラーの側へ流さない。**
+*/
+function usage(toStdout: boolean): void {
+	const write = toStdout ? console.log : console.error;
+	write('PowerShell を呼んで、出力を UTF-8 に直して流します。');
+	write('');
+	write('  psh <path.ps1> [引数...]     ps1 を -File で実行する');
+	write('  psh -c "<式>"               式を実行する（--command も同じ）');
+	write('');
+	write('  --pwsh                      pwsh（7）で走らせる。既定は powershell（5.1）');
+	write('  --help ・ -h                この使い方を出す');
+	write('');
+	write('既定を 5.1 にしているのは、ps1 を 5.1 で動くように書く決めがあるため。');
+	write('厳しい側で動かさないと、7 でしか通らない書き方に気づけません。');
+	write('起動も 5.1 のほうが速い（実測 185ms 対 285ms）。');
+	write('');
+	write('終了コードは PowerShell のものをそのまま返します。');
+}
+
+/*
+	受け取ったバイト列を読む。
+
+	出力の文字コードは、呼び出しの経路と中身で変わる（いずれも実測）。
+
+	  ・bun から起動した PowerShell 自身の出力は UTF-8
+	  ・node ・ Bash ・ cmd から起動した PowerShell 自身の出力は CP932
+	  ・PowerShell が呼ぶ .NET 製の exe は、その exe しだい
+	    （Console.OutputEncoding を UTF-8 にしていれば UTF-8、既定なら CP932）
+
+	つまり <strong>1 回の実行で両方が混ざる</strong>。
+	node から CP932 で出す PowerShell に、UTF-8 で出す exe を呼ばせた形が実例で、
+	<strong>全体をまとめて読むと、どちらかが必ず化ける。</strong>
+
+	そこで <strong>行ごとに読み分ける</strong>。まず全体を UTF-8 として厳密に読み、
+	読めなければ行に切って 1 行ずつ判定する。行の中で切り替わることは無い
+	（1 つの Write-Host ・ 1 つの exe の出力が行をまたいで混ざらないため）。
+
+	WHATWG の shift_jis デコーダは Windows-31J（CP932）のテーブルを使うため、
+	日本語 Windows の exe が吐くバイト列をそのまま読める。
+	bun ・ node のどちらでも使え、外部の依存が要らない。
+*/
+const utf8Strict = new TextDecoder('utf-8', { fatal: true });
+const cp932 = new TextDecoder('shift_jis');
+
+/** 改行（\n）を含んだまま行に切る。CRLF の \r は行の末尾に残る */
+function splitLines(buf: Buffer): Buffer[] {
+	const out: Buffer[] = [];
+	let start = 0;
+	for (let i = 0; i < buf.length; i++) {
+		if (buf[i] === 0x0a) {
+			out.push(buf.subarray(start, i + 1));
+			start = i + 1;
+		}
+	}
+	if (start < buf.length) { out.push(buf.subarray(start)); }
+	return out;
+}
+
+function decodeOne(b: Uint8Array): string {
+	try {
+		return utf8Strict.decode(b);
+	} catch {
+		return cp932.decode(b);
+	}
+}
+
+function decode(buf: Buffer | null): string {
+	if (buf == null || buf.length === 0) { return ''; }
+	try {
+		// 全体が UTF-8 で読めるなら、それでよい（混ざっていない）
+		return utf8Strict.decode(buf);
+	} catch {
+		// 混ざっている。行ごとに読み分ける
+		return splitLines(buf).map(decodeOne).join('');
+	}
+}
+
+function main(): number {
+	let args = process.argv.slice(2);
+
+	/*
+		どちらの PowerShell を呼ぶか。
+
+		既定は powershell（Windows PowerShell 5.1）。pwsh（7）ではない。
+		ps1 は 5.1 で動くように書く決めがあり、厳しい側で動かさないと
+		7 でしか通らない書き方に気づけないため。起動も 5.1 のほうが速い
+		（実測 185ms 対 285ms。7 は .NET Core の起動コストが乗る）。
+	*/
+	let exe = 'powershell';
+	if (args[0] === '--pwsh') {
+		exe = 'pwsh';
+		args = args.slice(1);
+	}
+
+	if (args.length === 0) {
+		usage(false);
+		return ExitBadArgs;
+	}
+
+	/*
+		使い方の要求。ほかの 3 つ（html2md ・ text ・ convert-encoding）に合わせる。
+		見るのは先頭だけ。`psh script.ps1 --help` の --help は
+		**呼ばれる ps1 のもの**なので、こちらで食べない
+	*/
+	if (args[0] === '--help' || args[0] === '-h') {
+		usage(true);
+		return 0;
+	}
+
+	const base = ['-NoProfile', '-ExecutionPolicy', 'Bypass'];
+	let pwshArgs: string[];
+
+	// -c は --command の短縮（sh -c ・ bash -c と同じ慣習）
+	if (args[0] === '--command' || args[0] === '-c') {
+		if (args.length < 2) {
+			console.error('[NG] ' + args[0] + ' に式がありません。');
+			return ExitBadArgs;
+		}
+		// 式は 1 つの引数として渡す。シェルを挟まないので、
+		// ここで引用符を足す必要はない（足すと式の一部になってしまう）
+		pwshArgs = base.concat(['-Command', args[1]]);
+	} else {
+		const script = args[0];
+		if (!fs.existsSync(script)) {
+			console.error('[NG] ファイルが見つかりません: ' + script);
+			return ExitBadArgs;
+		}
+		// -File は引数の解釈が 1 段で済む。-Command より事故が少ない
+		pwshArgs = base.concat(['-File', script], args.slice(1));
+	}
+
+	// shell: false（既定）で起動する。配列のまま渡るので、
+	// 空白や記号を含む引数が割れたり、別の意味に解釈されたりしない
+	const r = spawnSync(exe, pwshArgs, { encoding: 'buffer' });
+
+	if (r.error != null) {
+		console.error('[NG] ' + exe + ' を起動できません: ' + r.error.message);
+		return ExitBadArgs;
+	}
+
+	const out = decode(r.stdout as Buffer | null);
+	const err = decode(r.stderr as Buffer | null);
+	if (out.length > 0) { process.stdout.write(out); }
+	if (err.length > 0) { process.stderr.write(err); }
+
+	// シグナルで落ちた場合は status が null になる
+	return r.status == null ? ExitBadArgs : r.status;
+}
+
+process.exit(main());
