@@ -136,19 +136,21 @@ html2md --root . --extra USAGE-FOR-PROJECTS.html
 
 ### Markdown が GitHub で崩れていないか
 
-```powershell
-check-markdown -Path . -Recurse
+```shell
+check-markdown . --recurse
 ```
 
 Markdown を GitHub のレンダラに投げ、返る HTML に `**` が記号のまま残っていないかを見る。**日本語では `**` が強調にならないことがある**（前後の文字で開閉が決まる）。html2md は該当箇所を `<strong>` に置き換えるが、実物で確かめるのはこちら。
 
-認証なしは 60 回/時。`-Token` を渡すと 5000 回/時になる。
+認証なしは 60 回/時。`--token` を渡すと 5000 回/時になる。
 
 ### HTML の色が読める組み合わせか
 
-```powershell
-check-contrast -Path . -Recurse
+```shell
+check-contrast . --recurse
 ```
+
+**オプションは 6 つとも同じ形**（`--path` ・ `-p` ・ 名前を付けない対象）。この 2 つは以前 `-Path` 形式だったが、`--` へ寄せた。**古い形も当面は受ける。**
 
 ブラウザで実際に描画し、前景色と実効背景色の比を計算する。<strong>1.5:1 未満を 0 件にする。</strong>検出したいのは「白に白」「黒に黒」「色の継承事故」で、値を上げると誤検出に埋もれる。
 

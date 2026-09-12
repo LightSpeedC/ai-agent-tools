@@ -34,13 +34,81 @@
 	check-markdown -Path .\README.md
 #>
 
-param(
-	[string]$Path = '.',
-	[switch]$Recurse,
-	[string]$Exclude = '\\(tmp|etc|node_modules|\.git)\\',
-	[string]$Token,
-	[int]$DelayMs = 300
-)
+<#
+	オプションは -- 形式で受ける。ほかの道具（html2md ・ text ・
+	convert-encoding ・ psh）に揃えるため。
+
+	**PowerShell 流の -Path 形式も受ける。**共通ルールと他プロジェクトの
+	呼び出しがその形で書かれているため、いきなり止めると壊れる。
+
+	CmdletBinding は付けない。付けると知らない名前が来た時点で
+	PowerShell がはじき、$args に入らないため自前で解釈できない。
+#>
+param()
+
+$Path = '.'
+$Recurse = $false
+$Exclude = '\\(tmp|etc|node_modules|\.git)\\'
+$Token = ''
+$DelayMs = 300
+
+function Show-Usage([bool]$ToStdout) {
+	$lines = @(
+		'Markdown が GitHub のレンダラで意図どおりに表示されるかを実測します。',
+		'',
+		'  check-markdown [--path <対象>] [--recurse] [--token <値>]',
+		'                 [--exclude <正規表現>] [--delay-ms <ミリ秒>]',
+		'',
+		'  -p, --path <対象>         フォルダかファイル。既定はカレント',
+		'  -r, --recurse             サブフォルダも見る',
+		'  -t, --token <値>          GitHub のトークン。渡すと 5000 回/時になる',
+		'  -e, --exclude <正規表現>  除外するパス',
+		'      --delay-ms <ミリ秒>   1 ファイルごとの待ち。既定 300',
+		'  -h, --help                この使い方を出す',
+		'',
+		'対象はオプション名を付けずに置いてもかまいません（check-markdown . -r）。',
+		'古い -Path 形式も受けます。'
+	)
+	foreach ($l in $lines) {
+		if ($ToStdout) { Write-Output $l } else { [Console]::Error.WriteLine($l) }
+	}
+}
+
+# 引数の誤りは 2 で止める。黙って既定値で走らない
+$ExitBadArgs = 2
+
+$i = 0
+while ($i -lt $args.Count) {
+	$a = [string]$args[$i]
+	$needsValue = $true
+	<#
+		switch -Regex は break を書かないと、マッチした分をすべて実行する。
+		break が無いと --path が下の '^-' にも当たり、知らないオプション扱いになる
+	#>
+	switch -Regex ($a) {
+		'^(-p|--path|-Path)$' { $Path = [string]$args[$i + 1]; break }
+		'^(-e|--exclude|-Exclude)$' { $Exclude = [string]$args[$i + 1]; break }
+		'^(-t|--token|-Token)$' { $Token = [string]$args[$i + 1]; break }
+		'^(--delay-ms|-DelayMs)$' { $DelayMs = [int]$args[$i + 1]; break }
+		'^(-r|--recurse|-Recurse)$' { $Recurse = $true; $needsValue = $false; break }
+		'^(-h|--help)$' { Show-Usage $true; exit 0 }
+		'^-' {
+			[Console]::Error.WriteLine('[NG] 知らないオプションです: ' + $a)
+			Show-Usage $false
+			exit $ExitBadArgs
+		}
+		# ハイフンで始まらないものは対象として受ける（Linux 風の位置引数）
+		default { $Path = $a; $needsValue = $false }
+	}
+	if ($needsValue) {
+		if ($i + 1 -ge $args.Count) {
+			[Console]::Error.WriteLine('[NG] ' + $a + ' に値がありません。')
+			exit $ExitBadArgs
+		}
+		$i += 2
+	}
+	else { $i++ }
+}
 
 # 標準出力を UTF-8 にする。既定は CP932 で、Bash から呼ぶと日本語が化ける
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

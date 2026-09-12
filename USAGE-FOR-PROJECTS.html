@@ -310,15 +310,17 @@ html2md --root . --dry-run</code></pre>
 
 	<h2>Markdown が GitHub で崩れていないか</h2>
 
-<pre><code class="language-powershell">check-markdown -Path . -Recurse</code></pre>
+<pre><code class="language-shell">check-markdown . --recurse</code></pre>
 
 	<p>Markdown を GitHub のレンダラに投げ、返る HTML に <code>**</code> が記号のまま残っていないかを見る。<strong>日本語では <code>**</code> が強調にならないことがある</strong>（前後の文字で開閉が決まる）。html2md は該当箇所を <code>&lt;strong&gt;</code> に置き換えるが、実物で確かめるのはこちら。</p>
 
-	<p>認証なしは 60 回/時。<code>-Token</code> を渡すと 5000 回/時になる。</p>
+	<p>認証なしは 60 回/時。<code>--token</code> を渡すと 5000 回/時になる。</p>
 
 	<h2>HTML の色が読める組み合わせか</h2>
 
-<pre><code class="language-powershell">check-contrast -Path . -Recurse</code></pre>
+<pre><code class="language-shell">check-contrast . --recurse</code></pre>
+
+	<p><strong>オプションは 6 つとも同じ形</strong>（<code>--path</code> ・ <code>-p</code> ・ 名前を付けない対象）。この 2 つは以前 <code>-Path</code> 形式だったが、<code>--</code> へ寄せた。<strong>古い形も当面は受ける。</strong></p>
 
 	<p>ブラウザで実際に描画し、前景色と実効背景色の比を計算する。<strong>1.5:1 未満を 0 件にする。</strong>検出したいのは「白に白」「黒に黒」「色の継承事故」で、値を上げると誤検出に埋もれる。</p>
 
