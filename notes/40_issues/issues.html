@@ -643,8 +643,10 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260911-02</span>low 7 件</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260911-02</span>low 7 件</summary>
 		<div class="issue-body">
+			<p><span class="badge b-ok">済</span>2026-09-12 に 7 件とも片付いた。<strong>6 以外は先に直っていたもので、記録が追いついていなかった</strong>（1・2・4・5・7 は現物を確認して解消済み、3 は既に 着手 になっていた）。</p>
+			<p><span class="badge b-ok">済</span>6（リンク解決の食い違い）を直した。ps1 に <code>Resolve-LinkPath</code> を切り出し、exe の <code>HtmlUtil.ResolveLink</code> と同じ解決（<code>Path.Combine</code> → <code>GetFullPath</code>、例外は握って <code>$null</code>）に揃えた。<strong>検査の 2 経路だけでなく、<code>.html</code> → <code>.md</code> 置換の <code>Convert-LinkTarget</code> も同じ原因でずれていた</strong>（回帰テストを足して初めて分かった）。<code>Join-Path</code> は先頭が <code>/</code> の値を基準フォルダからの相対として繋ぐが、<code>Path.Combine</code> は根として扱うため、2 本が別の場所を見ていた。テストケース <code>cross-anchor-bad</code> に先頭が <code>/</code> のリンクを足した。</p>
 			<ol>
 				<li><code>p260906-01-convert-encoding.html</code> のテストケース表が54番で止まり、09-10 に足された55番（BOM付きの組を強制指定したときのプリアンブル回帰）が載っていない</li>
 				<li>README が参照実装 ps1 の引数を「5つ（-Root -Dir -Exclude -NoReadme -DryRun）」と書くが、実際は <code>-Extra</code> を含めて6つ</li>

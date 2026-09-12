@@ -216,6 +216,23 @@ function Get-Anchor([string]$Heading) {
 # 見出しアンカーマップ（$script:CrossAnchors）を引いて張り替える。見つからなければ
 # 元のアンカーのまま残す（同一ファイル内の張り替えと同じ落とし方）。
 #
+# 相対リンクを絶対パスに直す。外部リンク・アンカーだけの場合は $null。
+#
+# 検査の 2 経路（Markdown 側・HTML 側）で同じ解決を通すために切り出した。
+# Join-Path だけで済ませると exe と結果が割れる。先頭が / の href を
+# exe は根から解決し、Join-Path は基準フォルダからの相対として繋ぐ。
+# パスに使えない文字が来たときも、exe は握って飛ばすのに対し Join-Path は
+# 例外で止まる（$ErrorActionPreference = 'Stop' のため変換ごと落ちる）
+function Resolve-LinkPath([string]$BaseDir, [AllowEmptyString()][string]$Href) {
+	if ([string]::IsNullOrEmpty($Href)) { return $null }
+	if ($Href -match '^(https?:|mailto:|tel:)') { return $null }
+	if ($Href.StartsWith('#')) { return $null }
+	$target = ($Href -split '#')[0]
+	if (-not $target) { return $null }
+	try { return [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($BaseDir, ($target -replace '/', '\'))) }
+	catch { return $null }
+}
+
 # 置き換えるのは、この実行で .md が生成されるページへのリンクだけ。
 # 探索フォルダの外にある HTML や md-skip のページを .md で指すと、
 # 存在しないファイルを指すことになる。
@@ -226,10 +243,7 @@ function Convert-LinkTarget([AllowEmptyString()][string]$Href) {
 	if (-not $script:ConvertedPages -or -not $script:LinkBaseDir) {
 		return ($Href -replace '\.html(?=$|[#?])', '.md')
 	}
-	$target = ($Href -split '#')[0]
-	if (-not $target) { return $Href }
-	$full = $null
-	try { $full = [System.IO.Path]::GetFullPath((Join-Path $script:LinkBaseDir ($target -replace '/', '\'))) } catch { $full = $null }
+	$full = Resolve-LinkPath $script:LinkBaseDir $Href
 	if (-not $full -or -not $script:ConvertedPages.Contains($full)) { return $Href }
 
 	$hashIdx = $Href.IndexOf('#')
@@ -1595,9 +1609,8 @@ function Test-MdLinks([object]$Result) {
 			if ($heads -notcontains $link.Substring(1)) { $bad += ('アンカー先なし: ' + $link) }
 			continue
 		}
-		$target = ($link -split '#')[0]
-		if (-not $target) { continue }
-		$full = Join-Path $dir ($target -replace '/', '\')
+		$full = Resolve-LinkPath $dir $link
+		if (-not $full) { continue }
 		if (-not (Test-Path -LiteralPath $full)) {
 			$bad += ('リンク切れ: ' + $link)
 			continue
@@ -1635,9 +1648,8 @@ function Test-HtmlLinks([string]$HtmlPath) {
 			$bad += ('.md を参照: ' + $href + '（HTML には常に .html と書く）')
 			continue
 		}
-		$target = ($href -split '#')[0]
-		if (-not $target) { continue }
-		$full = Join-Path $dir ($target -replace '/', '\')
+		$full = Resolve-LinkPath $dir $href
+		if (-not $full) { continue }
 		if (-not (Test-Path -LiteralPath $full)) { $bad += ('リンク切れ: ' + $href) }
 	}
 	return , $bad
