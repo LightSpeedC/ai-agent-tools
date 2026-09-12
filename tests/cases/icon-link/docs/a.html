@@ -1,0 +1,22 @@
+﻿<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><title>t</title></head><body>
+<div class="titlebar"><div class="inner"><h1>アイコンだけのリンク</h1></div></div>
+<div class="wrap">
+
+<p class="nav">
+<a class="doclink" href="b.html" aria-label="前へ"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg></a>
+<a class="doclink" href="b.html" aria-label="次へ"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></a>
+<a class="doclink" href="b.html" aria-label="目次"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a>
+</p>
+
+<p>title だけでも効く: <a class="doclink" href="b.html" title="次へ"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></a></p>
+
+<p>backlink は代替テキストが無くても目次と同じ記号: <a class="backlink" href="b.html"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p>対応表に無い語はそのまま文字にする: <a class="doclink" href="b.html" aria-label="付録"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 2h12v12H2z"/></svg></a></p>
+
+<p>手がかりが無いものは空のままにし、検査で指摘する: <a class="doclink" href="b.html"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 2h12v12H2z"/></svg></a></p>
+
+<p>文字があるリンクはこれまでどおり: <a href="b.html">ふつうのリンク</a></p>
+
+</div></body></html>

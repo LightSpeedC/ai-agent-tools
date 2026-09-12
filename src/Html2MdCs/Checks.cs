@@ -64,6 +64,15 @@ namespace Html2Md
 			foreach (Match m in Regex.Matches(body, "!?\\[[^\\]]*\\]\\(([^)]+)\\)"))
 			{
 				string link = m.Groups[1].Value;
+
+				// アイコンだけのリンクで代替テキストが無いと、ここが空になる。
+				// GitHub では何も表示されず、リンクがあることに気づけない（i260912-05）。
+				// 画像（!）は alt が空でも正当なので対象にしない
+				if (m.Value.StartsWith("[]", StringComparison.Ordinal))
+				{
+					bad.Add("リンクの文字が空です（aria-label か title を付けてください）: " + link);
+				}
+
 				if (Regex.IsMatch(link, "^(https?:|mailto:|tel:)")) continue;
 				if (link.StartsWith("#", StringComparison.Ordinal))
 				{
@@ -145,6 +154,9 @@ namespace Html2Md
 			t = Regex.Replace(t, "[*`|~\\\\]", "");
 			// 色分けの代替として認めた記号
 			t = Regex.Replace(t, "[✅❌⚠⬜✖―]", "");
+			// アイコンだけのリンクの代替として認めた記号（共通ルール「資料間のリンク」）。
+			// 両側に同じ規則で効くので、本文に素で現れても取り違えない
+			t = t.Replace("<<", "").Replace(">>", "").Replace("^^", "");
 			t = t.Replace("️", "");   // 異体字セレクタ
 			t = Regex.Replace(t, "\\s", "");
 			return t;
@@ -171,6 +183,17 @@ namespace Html2Md
 		{
 			string html = File.ReadAllText(result.HtmlPath, Encoding.UTF8);
 			html = HtmlUtil.StripNonContent(html);
+
+			// アイコンだけのリンクは、aria-label / title が可視テキストの代わりになる。
+			// 末尾にまとめて足すだけだと、続く地の文と繋がった行（「…にする: 付録」）が
+			// 一致しなくなるため、元の位置に埋めておく（i260912-05）
+			html = Regex.Replace(html, "(?s)(<a\\b[^>]*>)(.*?)(</a>)", m =>
+			{
+				if (HtmlUtil.StripTagsRaw(m.Groups[2].Value).Length > 0) return m.Value;
+				string label = HtmlUtil.GetAttr(m.Groups[1].Value, "aria-label");
+				if (label.Length == 0) label = HtmlUtil.GetAttr(m.Groups[1].Value, "title");
+				return m.Groups[1].Value + label + m.Groups[3].Value;
+			});
 
 			// aria-label は属性なのでタグ除去で消える。画像の alt と突き合わせるため足す
 			StringBuilder labels = new StringBuilder();

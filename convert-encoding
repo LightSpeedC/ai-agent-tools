@@ -1,0 +1,21 @@
+#!/bin/sh
+# ファイルの文字コードと改行を変換する。
+# 中身は src/convert-encoding/main.ts。bun を優先し、無ければ node で走らせる。
+#
+# exec の次の行には来ない。exec はプロセスを置き換えるためで、
+# exec 自体が失敗したときもシェルごと終わる。
+# それでも exit を書くのは、分岐がここで終わることを目で追えるようにするため。
+dir=$(dirname "$0")
+
+if command -v bun >/dev/null 2>&1; then
+	exec bun "$dir/src/convert-encoding/main.ts" "$@"
+	exit $?
+fi
+
+if command -v node >/dev/null 2>&1; then
+	exec node "$dir/src/convert-encoding/main.ts" "$@"
+	exit $?
+fi
+
+echo "[NG] bun か node が要ります" >&2
+exit 2

@@ -33,6 +33,9 @@ namespace Html2Md
 
 		private static int Main(string[] args)
 		{
+			// 標準出力を UTF-8 にする。既定は CP932 で、Bash から呼ぶと日本語が化ける
+			Console.OutputEncoding = Encoding.UTF8;
+
 			string root = null;
 			List<string> dirs = new List<string>();
 			List<string> excludes = new List<string>();

@@ -30,10 +30,20 @@ namespace TextTool
 		public EncKind Enc;
 		public EolKind Eol;
 		public bool Ambiguous;   // UTF-8 と SJIS の両方で妥当（非 ASCII）
+		public bool Ascii;       // 非 ASCII のバイトが無い（utf8 と sjis でバイト列が同じ）
 
+		/// <summary>
+		/// 表示する組。純 ASCII は utf8 と sjis を区別できないので ascii と書く
+		/// （「cmd なのに utf8」と読めてしまうのを防ぐ）。
+		/// <strong>判定する組は増やさない</strong>ので --from ascii は受けない。
+		/// --from で明示された組は、そのままの名前で出す。
+		/// </summary>
 		public string Name()
 		{
-			return Names.Enc(Enc) + "/" + Names.Eol(Eol);
+			string enc = (Ascii && (Enc == EncKind.Utf8 || Enc == EncKind.Sjis))
+				? "ascii"
+				: Names.Enc(Enc);
+			return enc + "/" + Names.Eol(Eol);
 		}
 	}
 
@@ -145,6 +155,7 @@ namespace TextTool
 			}
 
 			c.Eol = EolOf(b, c.Enc);
+			c.Ascii = IsAscii(b);
 			return c;
 		}
 

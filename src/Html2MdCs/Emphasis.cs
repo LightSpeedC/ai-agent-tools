@@ -37,6 +37,11 @@ namespace Html2Md
 		/// まとめるため、\t \n \v \f \r（9〜13）を使うとキーが空白に置き換わって壊れる。
 		/// </summary>
 		public const char StoreEnd = (char)14;
+		/// <summary>
+		/// アイコンだけのリンクを表す「&lt;&lt;」（前へ）を退避する。そのまま置くと、
+		/// 後ろに現れる「&gt;」と組んで汎用タグ除去に飲まれる（i260912-05）。
+		/// </summary>
+		public const char IconPrev = (char)15;
 		/// <summary>退避した文字列の開き（中身を他の変換の対象から外す）</summary>
 		public const char CodeSpan = '\u0007';
 

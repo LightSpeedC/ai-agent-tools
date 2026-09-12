@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 rem ---------------------------------------------------------------
-rem  convert-encoding.exe をビルドする
+rem  convert-encoding-cs.exe をビルドする
 rem
 rem  Roslyn 版の csc.exe があればそれを使い、無ければ Windows 標準の
 rem  .NET Framework 4.8 の csc.exe を使う。標準同梱版は C# 5 相当なので、
@@ -33,7 +33,7 @@ echo コンパイル: %CSC%
 echo.
 
 "%CSC%" /nologo /target:exe /platform:anycpu /optimize+ /warnaserror- /utf8output ^
-	/out:"%~dp0convert-encoding.exe" "%~dp0src\ConvertEncoding\*.cs"
+	/out:"%~dp0convert-encoding-cs.exe" "%~dp0src\ConvertEncodingCs\*.cs"
 
 if errorlevel 1 (
 	echo.
@@ -42,6 +42,6 @@ if errorlevel 1 (
 )
 
 echo.
-echo [OK] convert-encoding.exe を作成しました
-for %%f in ("%~dp0convert-encoding.exe") do echo      サイズ: %%~zf バイト
+echo [OK] convert-encoding-cs.exe を作成しました
+for %%f in ("%~dp0convert-encoding-cs.exe") do echo      サイズ: %%~zf バイト
 exit /b 0

@@ -23,8 +23,14 @@ param(
 	# 対象のケース名（省略時はすべて）
 	[string]$Case,
 	# 期待値を現在の出力で作り直す
-	[switch]$UpdateGolden
+	[switch]$UpdateGolden,
+	# 試す実装。既定は C# の exe。移植版を突き合わせるときに差し替える
+	# （例: -Target (Join-Path $Root 'html2md.cmd')）
+	[string]$Target
 )
+
+# 標準出力を UTF-8 にする。既定は CP932 で、Bash から呼ぶと日本語が化ける
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $ErrorActionPreference = 'Stop'
 
@@ -33,7 +39,7 @@ $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $CasesDir = Join-Path $Root 'tests\cases'
 $GoldenDir = Join-Path $Root 'tests\golden'
 $WorkRoot = Join-Path $Root 'tmp\test-run'
-$Exe = Join-Path $Root 'html2md.exe'
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'html2md-cs.exe' }
 
 # ケースごとに「変換後の Markdown に出ているべき文字列」を並べる。
 # ここに書いたものが 1 つでも欠けたら失敗にする。
@@ -140,6 +146,15 @@ $Expect = @{
 		'[もう 1 つのページ](other.md)',
 		'[外にあるページ](../extra/outside.html)'
 	)
+	'icon-link' = @(
+		# アイコンだけのリンクは、代替テキストから記号に置き換える（i260912-05）。
+		# 置き換えの対応は共通ルール「資料間のリンク」が定める
+		'[<<](b.md)',            # aria-label="前へ"
+		'[>>](b.md)',            # aria-label="次へ"。title="次へ" も同じ記号になる
+		'[^^](b.md)',            # aria-label="目次"。class="backlink" も同じ記号になる
+		'[付録](b.md)',          # 対応表に無い語は、その語をそのまま文字にする
+		'[ふつうのリンク](b.md)' # 文字があるリンクは、これまでどおり
+	)
 	'svgvar' = @(
 		# 章スコープの CSS 変数が章ごとに解決される（i260910-02 の11）
 		'hsl(280,78%,25%)',    # ch01 の --accent
@@ -160,6 +175,7 @@ $ExtraFiles = @{
 # 意図して指摘あり（1）を確かめたいケースだけ、ここに名指しする
 $ExpectedExitCode = @{
 	'cross-anchor-bad' = 1   # 存在しない他ファイルのアンカーを検出できるかの確認用
+	'icon-link' = 1          # 手がかりの無いアイコンリンクを指摘できるかの確認用（i260912-05）
 }
 
 function Write-Result([string]$Mark, [string]$Text) {
@@ -170,7 +186,7 @@ Write-Host ''
 Write-Host '=== html2md のテスト ===' -ForegroundColor Cyan
 
 if (-not (Test-Path -LiteralPath $Exe)) {
-	Write-Host ('html2md.exe がありません。build.cmd を実行してください: ' + $Exe) -ForegroundColor Red
+	Write-Host ('html2md.exe がありません。build-html2md-cs.cmd を実行してください: ' + $Exe) -ForegroundColor Red
 	exit 2
 }
 
@@ -287,7 +303,11 @@ foreach ($c in $cases) {
 			[System.IO.File]::WriteAllText($dst, $exeOut[$k], (New-Object System.Text.UTF8Encoding($false)))
 		}
 		$meta = @('exit=' + $exeCode) + $exeProblems
-		[System.IO.File]::WriteAllLines((Join-Path $goldenCase 'expected.txt'), $meta, (New-Object System.Text.UTF8Encoding($false)))
+		# WriteAllLines は Environment.NewLine（CRLF）で書く。期待値も LF に揃える
+		[System.IO.File]::WriteAllText(
+			(Join-Path $goldenCase 'expected.txt'),
+			(($meta -join "`n") + "`n"),
+			(New-Object System.Text.UTF8Encoding($false)))
 		Write-Result '[--]' ('期待値を更新しました（{0} ファイル）' -f $exeOut.Count)
 		continue
 	}

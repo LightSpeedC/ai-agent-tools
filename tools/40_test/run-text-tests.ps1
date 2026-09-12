@@ -10,14 +10,18 @@
 	書かない）。判定できない並びだけ convert-encoding --from hex で作る。
 #>
 [CmdletBinding()]
-param()
+param(
+	# 試す実装。既定は C# の exe。移植版を突き合わせるときに差し替える
+	# （例: -Target (Join-Path $Root 'text.cmd')）
+	[string]$Target
+)
 
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$Exe = Join-Path $Root 'text.exe'
-$ConvExe = Join-Path $Root 'convert-encoding.exe'
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'text-cs.exe' }
+$ConvExe = Join-Path $Root 'convert-encoding-cs.exe'
 $Work = Join-Path $Root 'tmp\text-test'
 
 $script:Pass = 0
@@ -68,7 +72,7 @@ function Assert-Equal { param([string]$Name, $Expected, $Actual) if ($Expected -
 function Assert-Match { param([string]$Name, [string]$Text, [string]$Needle) if ($Text.Contains($Needle)) { Write-Ok $Name } else { Write-Ng $Name ('「' + $Needle + '」が無い') } }
 
 # ---------------------------------------------------------------
-if (-not (Test-Path $Exe)) { Write-Host "[NG] text.exe がありません。build-text.cmd を先に実行してください。" -ForegroundColor Red; exit 2 }
+if (-not (Test-Path $Exe)) { Write-Host "[NG] text.exe がありません。build-text-cs.cmd を先に実行してください。" -ForegroundColor Red; exit 2 }
 if (Test-Path $Work) { Remove-Item -Recurse -Force $Work }
 New-Item -ItemType Directory -Force $Work | Out-Null
 
@@ -121,6 +125,14 @@ Assert-Match 'read: lines= を表示' $r.Out 'lines=2-2'
 $r = Run-Text @('read', $fU8, '--from', 'sjis')
 Assert-Match 'read: --from で判定を上書き' $r.Out '[sjis/'
 
+# 純 ASCII は utf8 と sjis でバイト列が同じ。片方の名前だけを出すと
+# 「cmd なのに utf8」と読めてしまうため、表示だけ ascii にする。
+# convert-encoding と同じ見せ方に揃える（判定する組は増やさない）
+$fAscii = Join-Path $Work 'i.cmd'
+New-TextFile $fAscii "@echo off`r`n" $EncUtf8
+$r = Run-Text @('read', $fAscii)
+Assert-Match 'read: 純 ASCII は ascii と出す' $r.Out '[ascii/crlf]'
+
 Write-Host ''
 Write-Host '=== text find ===' -ForegroundColor Cyan
 
@@ -131,6 +143,10 @@ Assert-Match 'find: ◎ ヘッダ' $r.Out '◎"'
 Assert-Match 'find: ◆ ファイル行に組' $r.Out '[sjis/crlf]'
 Assert-Match 'find: サブフォルダも当たる' $r.Out 'h.cmd'
 Assert-Match 'find: ■ サブフォルダ見出し' $r.Out '■"sub"'
+
+# find のファイル行の組も ascii に揃える
+$r = Run-Text @('find', 'echo', '--path', $Work, '--recurse')
+Assert-Match 'find: 純 ASCII は ascii と出す' $r.Out '[ascii/crlf]'
 
 $r = Run-Text @('find', 'いない語 zzz', '--path', $Work, '--recurse')
 Assert-Equal 'find: 一致なし 終了 1' 1 $r.Code

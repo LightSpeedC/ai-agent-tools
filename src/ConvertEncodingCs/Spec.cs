@@ -195,23 +195,42 @@ namespace ConvertEncoding
 			return "utf8 utf8bom sjis utf16le utf16be（用途名 ps1 cmd bat reg html も可）";
 		}
 
-		/// <summary>表示用の名前。</summary>
+		/// <summary>
+		/// 表示用の名前。--to ・ --from に書く綴りと同じにする。
+		/// 出た名前をそのまま指定に渡せるようにするため、小文字で揃える（text 側も同じ）。
+		/// </summary>
 		public static string NameOf(EncodingKind kind)
 		{
 			switch (kind)
 			{
-				case EncodingKind.Utf8: return "UTF8";
-				case EncodingKind.Utf8Bom: return "UTF8BOM";
-				case EncodingKind.Sjis: return "SJIS";
-				case EncodingKind.Utf16Le: return "UTF16LE";
-				case EncodingKind.Utf16Be: return "UTF16BE";
+				case EncodingKind.Utf8: return "utf8";
+				case EncodingKind.Utf8Bom: return "utf8bom";
+				case EncodingKind.Sjis: return "sjis";
+				case EncodingKind.Utf16Le: return "utf16le";
+				case EncodingKind.Utf16Be: return "utf16be";
 				default: return "?";
 			}
 		}
 
 		public static string NameOf(EolKind eol)
 		{
-			return eol == EolKind.CrLf ? "CRLF" : "LF";
+			return eol == EolKind.CrLf ? "crlf" : "lf";
+		}
+
+		/// <summary>
+		/// 実際のファイルの組を表示するときの名前。純 ASCII は utf8 と sjis で
+		/// バイト列が同じになるため、どちらか一方の名前を出さず ascii と書く。
+		/// 「cmd なのに utf8」と読めてしまうのを防ぐのが目的で、
+		/// <strong>判定する組は増やさない</strong>（--from ascii は受けない）。
+		/// </summary>
+		public static string DisplayName(EncodingKind kind, byte[] source)
+		{
+			if ((kind == EncodingKind.Utf8 || kind == EncodingKind.Sjis)
+				&& Converter.IsAscii(source))
+			{
+				return "ascii";
+			}
+			return NameOf(kind);
 		}
 	}
 }

@@ -1,0 +1,2 @@
+exit=1
+★Markdown 側: リンクの文字が空です（aria-label か title を付けてください）: b.md

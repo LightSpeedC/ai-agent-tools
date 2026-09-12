@@ -17,6 +17,9 @@ namespace TextTool
 			// 非 Windows（将来 dotnet）で CP932 を使うには CodePages プロバイダの登録が要る。
 			// .NET Framework の csc ビルドでは標準で 932 が使えるため、ここでは登録しない。
 
+			// 標準出力を UTF-8 にする。既定は CP932 で、Bash から呼ぶと日本語が化ける
+			Console.OutputEncoding = Encoding.UTF8;
+
 			Io.Init();
 
 			if (args.Length == 0)

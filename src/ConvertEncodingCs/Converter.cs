@@ -237,7 +237,10 @@ namespace ConvertEncoding
 			}
 		}
 
-		/// <summary>改行の状態を 1 語で表す。</summary>
+		/// <summary>
+		/// 改行の状態を 1 語で表す。組の名前と同じく小文字に揃える
+		/// （「混在」「改行なし」は指定に書けない状態なので日本語のまま）。
+		/// </summary>
 		public static string DescribeEol(int crlf, int lf, int cr)
 		{
 			int kinds = 0;
@@ -247,9 +250,22 @@ namespace ConvertEncoding
 
 			if (kinds == 0) { return "改行なし"; }
 			if (kinds > 1) { return "混在"; }
-			if (crlf > 0) { return "CRLF"; }
-			if (lf > 0) { return "LF"; }
-			return "CR";
+			if (crlf > 0) { return "crlf"; }
+			if (lf > 0) { return "lf"; }
+			return "cr";
+		}
+
+		/// <summary>
+		/// 非 ASCII のバイトを含まないか。含まなければ utf8 と sjis で
+		/// バイト列が同じになり、どちらの組として扱っても結果が変わらない。
+		/// </summary>
+		public static bool IsAscii(byte[] bytes)
+		{
+			for (int i = 0; i < bytes.Length; i++)
+			{
+				if (bytes[i] > 0x7F) { return false; }
+			}
+			return true;
 		}
 
 		public static int GetLineNumber(string text, int index)

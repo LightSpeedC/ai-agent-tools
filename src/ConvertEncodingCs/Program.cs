@@ -10,6 +10,7 @@ namespace ConvertEncoding
 	///
 	///     convert-encoding &lt;path&gt; --to &lt;指定&gt;[/&lt;改行&gt;] [--from &lt;形式&gt;] [--force]
 	///     convert-encoding &lt;path&gt; --info
+	///     convert-encoding &lt;path&gt; --check
 	/// </summary>
 	internal static class Program
 	{
@@ -22,15 +23,22 @@ namespace ConvertEncoding
 
 		private static int Main(string[] args)
 		{
+			// 標準出力を UTF-8 にする。既定は CP932 で、Bash から呼ぶと日本語が化ける
+			Console.OutputEncoding = Encoding.UTF8;
+
 			string path = null;
 			string toText = null;
 			string fromText = null;
 			bool force = false;
 			bool info = false;
+			bool check = false;
 			bool read = false;
 			bool dump = false;
 			int dumpOffset = 0;
 			int dumpBytes = -1;   // -1 は末尾まで
+			List<string> include = new List<string>();
+			List<string> exclude = new List<string>();
+			List<string> excludeDirs = new List<string>();
 
 			for (int i = 0; i < args.Length; i++)
 			{
@@ -55,7 +63,26 @@ namespace ConvertEncoding
 				}
 				if (a == "--force") { force = true; continue; }
 				if (a == "--info") { info = true; continue; }
+				if (a == "--check") { check = true; continue; }
 				if (a == "--read") { read = true; continue; }
+				if (a == "--include")
+				{
+					if (i + 1 >= args.Length) { return Fail(ExitBadArgs, "--include に値がありません。"); }
+					AddCommaSeparated(include, args[++i]);
+					continue;
+				}
+				if (a == "--exclude")
+				{
+					if (i + 1 >= args.Length) { return Fail(ExitBadArgs, "--exclude に値がありません。"); }
+					AddCommaSeparated(exclude, args[++i]);
+					continue;
+				}
+				if (a == "--exclude-dir")
+				{
+					if (i + 1 >= args.Length) { return Fail(ExitBadArgs, "--exclude-dir に値がありません。"); }
+					AddCommaSeparated(excludeDirs, args[++i]);
+					continue;
+				}
 				if (a == "--dump") { dump = true; continue; }
 				if (a == "--offset")
 				{
@@ -95,9 +122,31 @@ namespace ConvertEncoding
 			}
 			bool expandHex = string.Equals(fromText, "hex", StringComparison.OrdinalIgnoreCase);
 
-			if (!info && !read && !dump && !expandHex && toText == null)
+			if (!info && !check && !read && !dump && !expandHex && toText == null)
 			{
-				return Fail(ExitBadArgs, "--to か --info か --read を指定してください。");
+				return Fail(ExitBadArgs, "--to か --info か --check か --read を指定してください。");
+			}
+
+			// フォルダを見る（--info ・ --check）。書き込みは行わない
+			if (info || check)
+			{
+				if (Directory.Exists(path))
+				{
+					List<ScanEntry> entries = Scan.Walk(path, include, exclude, excludeDirs);
+					return Report(entries, check);
+				}
+				if (check)
+				{
+					// 1 ファイルでも同じ見方をする。合っていれば何も出さない
+					if (!File.Exists(path))
+					{
+						return Fail(ExitNoFile, string.Format("ファイルが見つかりません: {0}", path));
+					}
+					List<ScanEntry> one = new List<ScanEntry>();
+					ScanEntry single = Scan.Inspect(path, Path.GetFileName(path));
+					if (single != null) { one.Add(single); }
+					return Report(one, true);
+				}
 			}
 
 			if (!File.Exists(path))
@@ -202,8 +251,8 @@ namespace ConvertEncoding
 			if (info)
 			{
 				Console.WriteLine(string.Format(
-					"{0}  {1}  CRLF={2}  LF={3}  CR={4}  {5:N0} bytes",
-					name, Spec.NameOf(fromKind), crlf, lf, cr, source.Length));
+					"{0}  {1}  crlf={2}  lf={3}  cr={4}  {5:N0} bytes",
+					name, Spec.DisplayName(fromKind, source), crlf, lf, cr, source.Length));
 				return ExitOk;
 			}
 
@@ -230,7 +279,7 @@ namespace ConvertEncoding
 				if (Converter.SameBytes(source, kept))
 				{
 					Console.WriteLine(string.Format(
-						"{0}  {1}+{2}  変更なし", name, Spec.NameOf(fromKind), fromEol));
+						"{0}  {1}+{2}  変更なし", name, Spec.DisplayName(fromKind, source), fromEol));
 					return ExitOk;
 				}
 
@@ -244,8 +293,11 @@ namespace ConvertEncoding
 				}
 
 				Console.WriteLine(string.Format(
-					"{0}  {1}+{2} -> {1}+{3}  {4:N0} -> {5:N0} bytes",
-					name, Spec.NameOf(fromKind), fromEol, keptEol, source.Length, kept.Length));
+					"{0}  {1}+{2} -> {3}+{4}  {5:N0} -> {6:N0} bytes",
+					name,
+					Spec.DisplayName(fromKind, source), fromEol,
+					Spec.DisplayName(toKind, kept), keptEol,
+					source.Length, kept.Length));
 				return ExitOk;
 			}
 
@@ -295,7 +347,7 @@ namespace ConvertEncoding
 			if (Converter.SameBytes(source, result))
 			{
 				Console.WriteLine(string.Format(
-					"{0}  {1}+{2}  変更なし", name, Spec.NameOf(fromKind), fromEol));
+					"{0}  {1}+{2}  変更なし", name, Spec.DisplayName(fromKind, source), fromEol));
 				return ExitOk;
 			}
 
@@ -311,8 +363,8 @@ namespace ConvertEncoding
 			Console.WriteLine(string.Format(
 				"{0}  {1}+{2} -> {3}+{4}  {5:N0} -> {6:N0} bytes",
 				name,
-				Spec.NameOf(fromKind), fromEol,
-				Spec.NameOf(toKind), toEol,
+				Spec.DisplayName(fromKind, source), fromEol,
+				Spec.DisplayName(toKind, result), toEol,
 				source.Length, result.Length));
 
 			return ExitOk;
@@ -490,6 +542,37 @@ namespace ConvertEncoding
 			}
 		}
 
+		/// <summary>
+		/// カンマ区切りでまとめて書けるようにする（text find と同じ語彙）。
+		/// 同じオプションを何度書いてもよい。
+		/// </summary>
+		private static void AddCommaSeparated(List<string> list, string value)
+		{
+			string[] parts = value.Split(',');
+			for (int i = 0; i < parts.Length; i++)
+			{
+				string p = parts[i].Trim();
+				if (p.Length > 0) { list.Add(p); }
+			}
+		}
+
+		/// <summary>
+		/// 見た結果を出す。--info は全件を出して常に 0、--check は違反だけを出して 0 か 1。
+		/// </summary>
+		private static int Report(List<ScanEntry> entries, bool check)
+		{
+			if (!check)
+			{
+				WriteStdout(Scan.FormatInfo(entries));
+				return ExitOk;
+			}
+
+			int bad;
+			string text = Scan.FormatCheck(entries, out bad);
+			WriteStdout(text);
+			return bad > 0 ? 1 : ExitOk;
+		}
+
 		private static int Fail(int code, string message)
 		{
 			Console.Error.WriteLine("[NG] " + message);
@@ -501,7 +584,8 @@ namespace ConvertEncoding
 			Console.WriteLine("ファイルの文字コードと改行を変換します。");
 			Console.WriteLine();
 			Console.WriteLine("  convert-encoding <path> --to <指定>[/<改行>] [--from <形式>] [--force]");
-			Console.WriteLine("  convert-encoding <path> --info");
+			Console.WriteLine("  convert-encoding <path> --info  [--include <glob>] [--exclude <glob>] [--exclude-dir <名前>]");
+			Console.WriteLine("  convert-encoding <path> --check [--include <glob>] [--exclude <glob>] [--exclude-dir <名前>]");
 			Console.WriteLine("  convert-encoding <path> --read");
 			Console.WriteLine("  convert-encoding <path> --from hex");
 			Console.WriteLine("  convert-encoding <path> --dump [--offset <n>] [--bytes <m>]");
@@ -514,6 +598,17 @@ namespace ConvertEncoding
 			Console.WriteLine("  utf8  utf8bom  sjis  utf16le  utf16be");
 			Console.WriteLine("                 文字コードだけを変える。改行は入力のまま");
 			Console.WriteLine("  /lf  /crlf     改行を上書きする。単独で書くと改行だけ変える");
+			Console.WriteLine();
+			Console.WriteLine("--info / --check");
+			Console.WriteLine("  文字コードと改行を見るだけ。ファイルは書き換えません。");
+			Console.WriteLine("  フォルダを渡すと、その下を再帰して見ます。");
+			Console.WriteLine("  --info  全件を出す。終了コードは常に 0");
+			Console.WriteLine("  --check 規約に合わないものだけを出す。あれば 1");
+			Console.WriteLine("  あるべき組は拡張子で決まります（ps1 cmd bat reg html。");
+			Console.WriteLine("  そのほかは BOM 無し UTF-8）。改行を定めていない拡張子（txt 等）は");
+			Console.WriteLine("  改行を問いません。ただし改行が混ざっていれば、どの拡張子でも違反です。");
+			Console.WriteLine("  既定で tmp etc node_modules .git ・ 先頭 _ ・ バイナリを見ません。");
+			Console.WriteLine("  --exclude と --exclude-dir は既定に足します。");
 			Console.WriteLine();
 			Console.WriteLine("--read");
 			Console.WriteLine("  中身を UTF-8 で標準出力へ出す。ファイルは書き換えません。");
@@ -529,7 +624,7 @@ namespace ConvertEncoding
 			Console.WriteLine("  hex を渡すと、中身を 16 進テキストとみなしてバイト列に展開します。");
 			Console.WriteLine();
 			Console.WriteLine("終了コード");
-			Console.WriteLine("  0 成功  1 引数エラー  2 ファイル無し");
+			Console.WriteLine("  0 成功  1 引数エラー（--check では規約に合わないものがある）  2 ファイル無し");
 			Console.WriteLine("  3 文字コードを判定できない  4 表現できない文字がある  5 書き込み失敗");
 		}
 	}

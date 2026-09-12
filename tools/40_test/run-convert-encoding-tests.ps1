@@ -13,13 +13,17 @@
 	このテストの期待値もその規則に従っている。
 #>
 [CmdletBinding()]
-param()
+param(
+	# 試す実装。既定は C# の exe。移植版を突き合わせるときに差し替える
+	# （例: -Target (Join-Path $Root 'public\convert-encoding.cmd')）
+	[string]$Target
+)
 
 $ErrorActionPreference = 'Stop'
 
 # tools/40_test/ に置くため、2 階層上がプロジェクトルート
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$Exe = Join-Path $Root 'convert-encoding.exe'
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'convert-encoding-cs.exe' }
 $Work = Join-Path $Root 'tmp\convert-encoding-test'
 
 $script:Pass = 0
@@ -144,7 +148,7 @@ Write-Host ''
 Write-Host '=== convert-encoding のテスト ===' -ForegroundColor Cyan
 
 if (-not (Test-Path -LiteralPath $Exe)) {
-	Write-Host ('convert-encoding.exe がありません。build-convert-encoding.cmd を実行してください') -ForegroundColor Red
+	Write-Host ('convert-encoding.exe がありません。build-convert-encoding-cs.cmd を実行してください') -ForegroundColor Red
 	exit 2
 }
 
@@ -353,11 +357,11 @@ New-TextFile $p 'A' $EncUtf8
 $e = Measure-Eol (Get-Bytes $p)
 Assert-True '13 改行を足さない' ($e.CrLf -eq 0 -and $e.Lf -eq 0) '改行 0'
 
-# 14. 純 ASCII のファイル  →  UTF-8 と判定される
+# 14. 純 ASCII のファイル  →  ascii と表示される（判定は utf8 のまま）
 $p = New-Case 'c14.txt'
 New-TextFile $p "abc`ndef" $EncUtf8
 $out = & $Exe $p --info
-Assert-True '14 UTF8 と判定される' ($out -match 'UTF8\s') $out
+Assert-True '14 ascii と表示される' ($out -cmatch 'ascii\s') $out
 
 # 15. 1 バイトのファイル  →  落ちない
 $p = New-Case 'c15.txt'
@@ -396,7 +400,7 @@ Write-Host '[判定]' -ForegroundColor Cyan
 $p = New-Case 'c19.txt'
 New-TextFile $p $Body $EncSjis
 $out = & $Exe $p --info
-Assert-True '19 SJIS と表示される' ($out -match 'SJIS') $out
+Assert-True '19 sjis と表示される' ($out -cmatch 'sjis') $out
 
 # 20. 判定できないバイト列  →  終了コード 3。書き込まない
 #     0x80 単独は UTF-8 でも SJIS でも成立しない
@@ -419,7 +423,7 @@ Assert-Equal '22 終了コード' 2 (Invoke-Exe @((Join-Path $Work 'nothing.txt'
 $p = New-Case 'c23.txt'
 New-TextFile $p $Body $EncUtf16Le
 $out = & $Exe $p --info
-Assert-True '23 UTF16LE と表示される' ($out -match 'UTF16LE') $out
+Assert-True '23 utf16le と表示される' ($out -cmatch 'utf16le') $out
 
 # 24. --from utf8bom を指定して BOM が無い  →  続行する
 $p = New-Case 'c24.txt'
@@ -639,11 +643,182 @@ Assert-True '56 BOM が消える' (-not (Test-Prefix $b $Bom8)) '先頭が BOM �
 
 # ---------------------------------------------------------------
 Write-Host ''
+Write-Host '[フォルダを見る（--info と --check）]' -ForegroundColor Cyan
+
+# 規約に合うものと合わないものを混ぜたフォルダを作り、
+# --info は全件、--check は違反だけを出すことを確かめる。
+# 除外（tmp・先頭 _・バイナリ）も同じフォルダで見る。
+$Tree = Join-Path $Work 'tree'
+if (Test-Path -LiteralPath $Tree) { Remove-Item -LiteralPath $Tree -Recurse -Force }
+New-Item -ItemType Directory -Path (Join-Path $Tree 'sub') -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $Tree 'tmp') -Force | Out-Null
+
+# 規約どおり（違反ではない）
+New-TextFile (Join-Path $Tree 'ok.ps1')  ($L1 + "`r`n" + $L2 + "`r`n") $EncUtf8Bom
+New-TextFile (Join-Path $Tree 'ok.html') ($L1 + "`n" + $L2 + "`n")     $EncUtf8Bom
+New-TextFile (Join-Path $Tree 'ok.md')   ($L1 + "`n" + $L2 + "`n")     $EncUtf8
+New-TextFile (Join-Path $Tree 'ok.cmd')  ($L1 + "`r`n")                $EncSjis
+# 規約に合わない 3 件
+New-TextFile (Join-Path $Tree 'bad.ps1')      ($L1 + "`n" + $L2 + "`n") $EncUtf8Bom   # CRLF であるべき
+New-TextFile (Join-Path $Tree 'sub\bad.html') ($L1 + "`n")              $EncUtf8      # BOM が要る
+New-TextFile (Join-Path $Tree 'sub\bad.ts')   ($L1 + "`r`n")            $EncUtf8      # LF であるべき
+# 見ないもの
+New-TextFile (Join-Path $Tree 'tmp\ignored.ps1') ($L1 + "`n") $EncUtf8Bom             # tmp は除外
+New-TextFile (Join-Path $Tree '_secret.ps1')     ($L1 + "`n") $EncUtf8Bom             # 先頭 _ は除外
+New-RawFile  (Join-Path $Tree 'bin.dat') @(0x00, 0x01, 0x02, 0xFF, 0x00)              # バイナリは除外
+
+$infoOut = (& $Exe $Tree --info 2>&1 | Out-String)
+Assert-Equal 'c1 --info の終了コード（違反があっても 0）' 0 (Invoke-Exe @($Tree, '--info'))
+Assert-True 'c1 --info は規約どおりのものも出す' ($infoOut -match 'ok\.ps1') 'ok.ps1 が出る'
+Assert-True 'c1 --info は違反も出す' ($infoOut -match 'bad\.ps1') 'bad.ps1 が出る'
+Assert-True 'c1 --info は再帰する' ($infoOut -match 'bad\.ts') 'sub/bad.ts が出る'
+Assert-True 'c2 tmp は見ない' (-not ($infoOut -match 'ignored\.ps1')) 'ignored.ps1 が出ない'
+Assert-True 'c2 先頭 _ は見ない' (-not ($infoOut -match '_secret')) '_secret.ps1 が出ない'
+Assert-True 'c2 バイナリは見ない' (-not ($infoOut -match 'bin\.dat')) 'bin.dat が出ない'
+
+$checkOut = (& $Exe $Tree --check 2>&1 | Out-String)
+Assert-Equal 'c3 --check の終了コード（違反あり）' 1 (Invoke-Exe @($Tree, '--check'))
+Assert-True 'c3 --check は違反だけ出す（ok は出ない）' (-not ($checkOut -match 'ok\.ps1')) 'ok.ps1 が出ない'
+Assert-True 'c3 --check に bad.ps1' ($checkOut -match 'bad\.ps1') '出る'
+Assert-True 'c3 --check に bad.html' ($checkOut -match 'bad\.html') '出る'
+Assert-True 'c3 --check に bad.ts' ($checkOut -match 'bad\.ts') '出る'
+
+# 違反を直すと 0 になる
+[void](Invoke-Exe @((Join-Path $Tree 'bad.ps1'), '--to', 'ps1'))
+[void](Invoke-Exe @((Join-Path $Tree 'sub\bad.html'), '--to', 'html'))
+[void](Invoke-Exe @((Join-Path $Tree 'sub\bad.ts'), '--to', 'utf8/lf'))
+Assert-Equal 'c4 直したら --check は 0' 0 (Invoke-Exe @($Tree, '--check'))
+
+# 純 ASCII なら UTF-8 と SJIS でバイト列が同じ。どちらと判定されても違反にしない
+# （日本語を含まない cmd を「SJIS でない」と言わないため）
+New-TextFile (Join-Path $Tree 'ascii.cmd') ("@echo off`r`n") $EncUtf8
+Assert-Equal 'c7 純 ASCII の cmd は違反にしない' 0 (Invoke-Exe @($Tree, '--check'))
+
+# 1 ファイルに渡したときの表示は変えない
+$one = (& $Exe (Join-Path $Tree 'ok.cmd') --info 2>&1 | Out-String)
+Assert-True 'c5 1 ファイルの --info は従来どおり' ($one -cmatch 'sjis' -and $one -cmatch 'crlf=') '組と改行の数が出る'
+
+# 絞り込み
+$incOut = (& $Exe $Tree --check --include '*.html' 2>&1 | Out-String)
+Assert-True 'c6 --include で絞れる' (-not ($incOut -match '\.ts')) 'ts は出ない'
+$excOut = (& $Exe $Tree --info --exclude-dir 'sub' 2>&1 | Out-String)
+Assert-True 'c6 --exclude-dir が効く' (-not ($excOut -match 'bad\.ts')) 'sub の中が出ない'
+# カンマ区切りでまとめて書ける（text find と同じ語彙）
+$twoOut = (& $Exe $Tree --info --include '*.html,*.cmd' 2>&1 | Out-String)
+Assert-True 'c6 --include はカンマ区切り（html）' ($twoOut -match 'ok\.html') 'html が出る'
+Assert-True 'c6 --include はカンマ区切り（cmd）' ($twoOut -match 'ok\.cmd') 'cmd が出る'
+Assert-True 'c6 --include はカンマ区切り（外は出ない）' (-not ($twoOut -match 'ok\.ps1')) 'ps1 は出ない'
+$excFile = (& $Exe $Tree --info --exclude 'ok.*' 2>&1 | Out-String)
+Assert-True 'c6 --exclude でファイルを外す' (-not ($excFile -match 'ok\.ps1')) 'ok.ps1 が出ない'
+
+# ---------------------------------------------------------------
+Write-Host ''
+Write-Host '[表示は小文字に揃える]' -ForegroundColor Cyan
+
+# 指定側（--to / --from）は元から小文字。表示も小文字にして一致させる。
+# text 側は元から小文字で、convert-encoding だけが大文字だった。
+# PowerShell の -match は既定で大小を区別しないため、ここは -cmatch で見る
+$p = New-Case 'low1.txt'
+New-TextFile $p ($L1 + "`r`n" + $L2 + "`r`n") $EncSjis
+$lowOut = (& $Exe $p --info 2>&1 | Out-String)
+Assert-True 'l1 組が小文字で出る' ($lowOut -cmatch 'sjis') $lowOut.Trim()
+Assert-True 'l1 大文字では出ない' (-not ($lowOut -cmatch 'SJIS')) '大文字の SJIS が無い'
+Assert-True 'l2 改行のラベルも小文字' ($lowOut -cmatch 'crlf=2') $lowOut.Trim()
+Assert-True 'l2 大文字のラベルは出ない' (-not ($lowOut -cmatch 'CRLF=')) '大文字の CRLF= が無い'
+
+# 変換した行も小文字
+$p = New-Case 'low2.txt'
+New-TextFile $p ($L1 + "`n") $EncUtf8
+$lowConv = (& $Exe $p --to ps1 2>&1 | Out-String)
+Assert-True 'l3 変換の行が小文字' ($lowConv -cmatch 'utf8bom\+crlf') $lowConv.Trim()
+
+# エラーメッセージの組名も小文字。
+# ここは stderr を読むので、Invoke-Exe と同じ手当てが要る。5.1 では
+# ErrorActionPreference=Stop のとき native の stderr 出力が停止エラーになる
+$p = New-Case 'low3.txt'
+New-TextFile $p "困った✓です`n" $EncUtf8
+$oldEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+$lowErr = (& $Exe $p --to sjis 2>&1 | Out-String)
+$ErrorActionPreference = $oldEap
+Assert-True 'l4 エラーの組名も小文字' ($lowErr -cmatch 'sjis で表現できない') $lowErr.Trim()
+
+# ---------------------------------------------------------------
+Write-Host ''
+Write-Host '[純 ASCII は ascii と表示する]' -ForegroundColor Cyan
+
+# 純 ASCII は utf8 と sjis でバイト列が同じ。片方の名前だけを出すと
+# 「cmd なのに utf8」と読めてしまうため、表示だけ ascii にする。
+# 判定（--from に渡せる組）は utf8 のままで、ascii という組は増やさない
+$p = New-Case 'asc1.cmd'
+New-TextFile $p "@echo off`r`n" $EncUtf8
+$ascOut = (& $Exe $p --info 2>&1 | Out-String)
+Assert-True 'a1 --info は ascii と出す' ($ascOut -cmatch 'ascii') $ascOut.Trim()
+
+# 日本語が入れば ascii ではない
+$p = New-Case 'asc2.txt'
+New-TextFile $p ($L1 + "`n") $EncUtf8
+$ascOut2 = (& $Exe $p --info 2>&1 | Out-String)
+Assert-True 'a2 日本語入りは ascii にしない' (-not ($ascOut2 -cmatch 'ascii')) $ascOut2.Trim()
+
+# 変換した行の変換元も ascii と出る
+$p = New-Case 'asc3.txt'
+New-TextFile $p "abc`n" $EncUtf8
+$ascConv = (& $Exe $p --to ps1 2>&1 | Out-String)
+Assert-True 'a3 変換の行も ascii' ($ascConv -cmatch 'ascii\+lf') $ascConv.Trim()
+
+# 組が増えたわけではないので --from ascii は受けない
+$p = New-Case 'asc4.txt'
+New-TextFile $p "abc`n" $EncUtf8
+Assert-Equal 'a4 --from ascii は受けない' 1 (Invoke-Exe @($p, '--from', 'ascii', '--to', 'utf8'))
+
+# ---------------------------------------------------------------
+Write-Host ''
+Write-Host '[規約を定めていない拡張子の改行は問わない]' -ForegroundColor Cyan
+
+# .gitattributes の「* text=auto eol=lf」で git 側は LF に正規化される。
+# 作業ツリーの改行まで縛ると、手で CRLF にした txt が毎回違反に出る。
+# 文字コードは git が変換しないので、そちらは見る
+$Tree2 = Join-Path $Work 'tree2'
+if (Test-Path -LiteralPath $Tree2) { Remove-Item -LiteralPath $Tree2 -Recurse -Force }
+New-Item -ItemType Directory -Path $Tree2 -Force | Out-Null
+
+New-TextFile (Join-Path $Tree2 'memo.txt') ($L1 + "`r`n" + $L2 + "`r`n") $EncUtf8
+Assert-Equal 'x1 CRLF の txt は違反にしない' 0 (Invoke-Exe @($Tree2, '--check'))
+
+# 規約を定めた拡張子は今までどおり見る
+New-TextFile (Join-Path $Tree2 'a.ts') ($L1 + "`r`n") $EncUtf8
+Assert-Equal 'x2 CRLF の ts は違反' 1 (Invoke-Exe @($Tree2, '--check'))
+Remove-Item -LiteralPath (Join-Path $Tree2 'a.ts') -Force
+
+# 混在と単独 CR は、どの拡張子でも違反
+New-TextFile (Join-Path $Tree2 'mix.txt') ($L1 + "`r`n" + $L2 + "`n") $EncUtf8
+Assert-Equal 'x3 混在は txt でも違反' 1 (Invoke-Exe @($Tree2, '--check'))
+Remove-Item -LiteralPath (Join-Path $Tree2 'mix.txt') -Force
+
+New-TextFile (Join-Path $Tree2 'cr.txt') ($L1 + "`r" + $L2 + "`r") $EncUtf8
+Assert-Equal 'x4 単独 CR は txt でも違反' 1 (Invoke-Exe @($Tree2, '--check'))
+Remove-Item -LiteralPath (Join-Path $Tree2 'cr.txt') -Force
+
+# 文字コードは見る（BOM 付きの txt は違反）
+New-TextFile (Join-Path $Tree2 'bom.txt') ($L1 + "`r`n") $EncUtf8Bom
+Assert-Equal 'x5 BOM 付きの txt は違反' 1 (Invoke-Exe @($Tree2, '--check'))
+$x5Out = (& $Exe $Tree2 --check 2>&1 | Out-String)
+Assert-True 'x5 あるべき組に改行を書かない' ($x5Out -cmatch 'txt は utf8(?!\+)') $x5Out.Trim()
+Remove-Item -LiteralPath (Join-Path $Tree2 'bom.txt') -Force
+
+# あるべき組の呼び名は拡張子。用途名の無いものも「既定」ではなく拡張子で出す
+New-TextFile (Join-Path $Tree2 'b.ts') ($L1 + "`r`n") $EncUtf8
+$x6Out = (& $Exe $Tree2 --check 2>&1 | Out-String)
+Assert-True 'x6 拡張子の名前で出す' ($x6Out -cmatch 'ts は utf8\+lf') $x6Out.Trim()
+
+# ---------------------------------------------------------------
+Write-Host ''
 Write-Host '[実際のファイルでの往復]' -ForegroundColor Cyan
 
 # このプロジェクトの実ファイルを複製し、往復させてバイト列が戻ることを見る
 $pairs = @(
-	@{ Name = 'build.cmd'; Src = (Join-Path $Root 'build.cmd'); To = 'cmd' },
+	@{ Name = 'build-html2md-cs.cmd'; Src = (Join-Path $Root 'build-html2md-cs.cmd'); To = 'cmd' },
 	# 日本語を多く含む大きめの ps1 を選ぶ。往復で 1 バイトでも変われば落ちる
 	@{ Name = 'run-tests.ps1'; Src = (Join-Path $Root 'tools\40_test\run-tests.ps1'); To = 'ps1' }
 )

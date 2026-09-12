@@ -68,6 +68,59 @@ namespace Html2Md
 			return t;
 		}
 
+		// アイコンだけのリンクを Markdown で表す記号。
+		// 対応は共通ルール「資料間のリンク」が定める（前へ ‹ ／ 次へ › ／ 目次 ⌂）
+		// 「<<」は退避したまま運ぶ。汎用タグ除去に飲まれるのを防ぐ（最終段で戻す）
+		private static readonly string PrevMark = Emphasis.IconPrev.ToString();
+		private const string NextMark = ">>";
+		private const string TocMark = "^^";
+
+		/// <summary>
+		/// 中身が絵（SVG）だけのリンクに与える文字。
+		///
+		///   1. aria-label → title → SVG の中の &lt;title&gt; の順で代替テキストを探す
+		///   2. 決まった語なら記号に置き換える。表に無い語はその語をそのまま文字にする
+		///   3. 代替テキストが無ければ、共通ルールが定めるクラス（backlink）を見る
+		///   4. どれも無ければ空を返す。Markdown を壊さず、検査側で指摘する
+		///
+		/// SVG の形（path の d）では判別しない。共通ルールはアイコンの意味だけを
+		/// 定めており、d の実値に規定が無いため、辞書を持っても当たる保証が無い。
+        /// </summary>
+		private static string IconLinkText(string tag, string inner)
+		{
+			string label = HtmlUtil.GetAttr(tag, "aria-label");
+			if (label.Length == 0) label = HtmlUtil.GetAttr(tag, "title");
+			if (label.Length == 0)
+			{
+				Match t = Regex.Match(inner, "(?s)<title\\b[^>]*>(.*?)</title>");
+				if (t.Success) label = HtmlUtil.StripTagsRaw(t.Groups[1].Value);
+			}
+
+			label = label.Trim();
+			if (label.Length == 0)
+			{
+				string[] classes = HtmlUtil.GetClassList(tag);
+				if (HtmlUtil.HasClass(classes, "backlink")) return TocMark;
+				return "";
+			}
+			return MarkForLabel(label);
+		}
+
+		/// <summary>代替テキストを記号にする。表に無い語はそのまま返す。</summary>
+		private static string MarkForLabel(string label)
+		{
+			if (label == "前へ" || label == "前" || IsWord(label, "prev") || IsWord(label, "previous")) return PrevMark;
+			if (label == "次へ" || label == "次" || IsWord(label, "next")) return NextMark;
+			if (label == "目次" || label == "戻る" || IsWord(label, "toc")
+				|| IsWord(label, "contents") || IsWord(label, "home") || IsWord(label, "index")) return TocMark;
+			return label;
+		}
+
+		private static bool IsWord(string label, string word)
+		{
+			return string.Equals(label, word, StringComparison.OrdinalIgnoreCase);
+		}
+
 		/// <summary>
 		/// バッジのクラスから記号を求める。バッジでなければ null。
 		/// 記号が決まらない b-* は種類を表すラベルなので空文字（太字だけにする）。
@@ -157,6 +210,9 @@ namespace Html2Md
 				string tag = "<a" + m.Groups[1].Value + ">";
 				string href = HtmlUtil.GetAttr(tag, "href");
 				string text = HtmlUtil.StripTagsRaw(m.Groups[2].Value);
+				// 中身が絵（SVG）だけのリンクは、タグを落とすと文字が残らない。
+				// 代替テキストを探して記号に置き換える（i260912-05）
+				if (text.Trim().Length == 0) text = IconLinkText(tag, m.Groups[2].Value);
 				if (href.Length == 0) return text;
 				if (href.StartsWith("#", StringComparison.Ordinal))
 				{
@@ -213,6 +269,8 @@ namespace Html2Md
 
 			// <br> はタグのまま出す。表の中と外で表現を揃える
 			s = s.Replace(Emphasis.Break.ToString(), "<br>");
+			// 退避しておいた「<<」を戻す（タグ除去を通り過ぎた後）
+			s = s.Replace(Emphasis.IconPrev.ToString(), "<<");
 
 			if (inTable)
 			{
