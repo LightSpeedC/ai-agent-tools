@@ -1,15 +1,19 @@
 ﻿<#
 	html2md のテスト
 
-	tests/cases/ 配下の HTML を exe と ps1 の両方で変換し、次を確かめる。
+	tests/cases/ 配下の HTML を exe で変換し、次を確かめる。
 
 	  1. exe が異常終了しないこと
-	  2. ps1 が異常終了しないこと
-	  3. exe と ps1 の出力が完全に一致すること
+	  2. 出力が tests/golden/ の期待値と完全に一致すること
+	  3. 終了コードと検査の指摘（★ の行）も期待値と一致すること
 	  4. ケースごとに決めた「出ているべき文字列」がすべて出ていること
 
-	3 が要になる。参照実装の ps1 と本実装の exe が食い違ったら、
-	どちらかに入れ忘れた修正がある。
+	2 が要になる。以前は参照実装 ps1 で同じ変換を行い、2 本の出力が一致する
+	ことで担保していたが、ps1 を消したため期待値との突き合わせに変えた。
+	期待値は、exe と ps1 が 15 ケースすべてで一致していた時点の出力である。
+
+	出力を変える修正を入れたときは、差分を目で確かめてから -UpdateGolden で
+	期待値を更新する。確かめずに更新すると、担保が無くなる。
 
 	何度実行しても同じ結果になるよう、変換は tmp/ に複製してから行う。
 	tests/cases/ の HTML は書き換えない。
@@ -17,7 +21,9 @@
 [CmdletBinding()]
 param(
 	# 対象のケース名（省略時はすべて）
-	[string]$Case
+	[string]$Case,
+	# 期待値を現在の出力で作り直す
+	[switch]$UpdateGolden
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,9 +31,9 @@ $ErrorActionPreference = 'Stop'
 # tools/40_test/ に置くため、2 階層上がプロジェクトルート
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $CasesDir = Join-Path $Root 'tests\cases'
+$GoldenDir = Join-Path $Root 'tests\golden'
 $WorkRoot = Join-Path $Root 'tmp\test-run'
 $Exe = Join-Path $Root 'html2md.exe'
-$Ps1 = Join-Path $Root 'html2md-ps.ps1'
 
 # ケースごとに「変換後の Markdown に出ているべき文字列」を並べる。
 # ここに書いたものが 1 つでも欠けたら失敗にする。
@@ -260,83 +266,91 @@ foreach ($c in $cases) {
 		}
 	}
 
-	# --- ps1 で変換して突き合わせる ---
+	# --- 期待値（ゴールデン）と突き合わせる ---
 	#
-	# exe の出力は読み終わったら消す。残したままだと、ps1 が 1 つも生成しなかった場合に
-	# exe の出力をそのまま読んで「一致」と誤判定する
-	foreach ($f in @(Get-ChildItem -LiteralPath $work -Recurse -File | Where-Object { $_.Extension -eq '.md' -or $_.Extension -eq '.svg' })) {
-		Remove-Item -LiteralPath $f.FullName -Force
-	}
+	# 以前は参照実装 ps1 で同じ変換を行い、2 本の出力が一致することで担保していた。
+	# ps1 を消したため、tests/golden/ に固定した期待値と突き合わせる形に変えた。
+	# 期待値は、exe と ps1 の出力が 15 ケースすべてで一致していた時点のもの。
+	#
+	# 出力そのものだけでなく、検査の指摘（★ の行）と終了コードも固定する。
+	# 本文が合っていても、指摘の内容が変われば見逃さない。
+	$goldenCase = Join-Path $GoldenDir $c.Name
+	$exeProblems = @(Get-Content -LiteralPath (Join-Path $work 'exe.log') -Encoding UTF8 |
+		Where-Object { $_ -match '★' } | ForEach-Object { $_.Trim() } | Sort-Object)
 
-	$ps1Err = $null
-	$ps1Code = $null
-	try {
-		$ps1Args = @{ Root = $work; Dir = @('docs', 'notes') }
-		if ($ExtraFiles.ContainsKey($c.Name)) { $ps1Args['Extra'] = $ExtraFiles[$c.Name] }
-		& $Ps1 @ps1Args *> (Join-Path $work 'ps1.log')
-		$ps1Code = $LASTEXITCODE
-	}
-	catch {
-		$ps1Err = $_.Exception.Message
-	}
-	if ($ps1Err) {
-		Write-Result '[NG]' ('ps1 が例外で止まりました: ' + $ps1Err)
-		$ok = $false
-	}
-	else {
-		if ($ps1Code -ne $exeCode) {
-			Write-Result '[NG]' ('exe と ps1 で終了コードが違います（exe {0} / ps1 {1}）' -f $exeCode, $ps1Code)
-			$ok = $false
-		}
-
-		# exe が生成したファイルを、ps1 も同じ中身で生成しているか（exe → ps1 方向）
+	if ($UpdateGolden) {
+		if (Test-Path -LiteralPath $goldenCase) { Remove-Item -LiteralPath $goldenCase -Recurse -Force }
+		New-Item -ItemType Directory -Path $goldenCase -Force | Out-Null
 		foreach ($k in $exeOut.Keys) {
-			$path = $work + $k
-			if (-not (Test-Path -LiteralPath $path)) {
-				Write-Result '[NG]' ('ps1 が生成しませんでした: ' + $k)
-				$ok = $false
-				continue
-			}
-			$ps1Text = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
-			if ($ps1Text -cne $exeOut[$k]) {
-				$d = Compare-Object ($exeOut[$k] -split "`r?`n") ($ps1Text -split "`r?`n")
-				Write-Result '[NG]' ('exe と ps1 の出力が違います{0}（差分 {1} 行）' -f $k, $d.Count)
-				$d | Select-Object -First 6 | ForEach-Object {
-					$side = if ($_.SideIndicator -eq '<=') { 'exe' } else { 'ps1' }
-					Write-Host ('        {0}: {1}' -f $side, $_.InputObject)
-				}
-				$ok = $false
-			}
+			$dst = Join-Path $goldenCase ($k.TrimStart('\'))
+			New-Item -ItemType Directory -Path (Split-Path -Parent $dst) -Force | Out-Null
+			[System.IO.File]::WriteAllText($dst, $exeOut[$k], (New-Object System.Text.UTF8Encoding($false)))
 		}
+		$meta = @('exit=' + $exeCode) + $exeProblems
+		[System.IO.File]::WriteAllLines((Join-Path $goldenCase 'expected.txt'), $meta, (New-Object System.Text.UTF8Encoding($false)))
+		Write-Result '[--]' ('期待値を更新しました（{0} ファイル）' -f $exeOut.Count)
+		continue
+	}
 
-		# ps1 だけが余分に生成したファイルが無いか（ps1 → exe 方向。md-skip の
-		# 変換忘れ・余分な SVG 切り出しなど、逆向きの乖離はここでしか捕まえられない）
-		$ps1Files = @(Get-ChildItem -LiteralPath $work -Recurse -File | Where-Object { $_.Extension -eq '.md' -or $_.Extension -eq '.svg' })
-		foreach ($f in $ps1Files) {
-			$k = $f.FullName.Substring($work.Length)
-			if (-not $exeOut.ContainsKey($k)) {
-				Write-Result '[NG]' ('ps1 だけが生成しました: ' + $k)
-				$ok = $false
-			}
+	if (-not (Test-Path -LiteralPath $goldenCase)) {
+		Write-Result '[NG]' ('期待値がありません。-UpdateGolden で作成してください: tests\golden\' + $c.Name)
+		$failed++
+		continue
+	}
+
+	# 期待値と同じ中身か（期待値 → 出力 方向）
+	$goldenFiles = @(Get-ChildItem -LiteralPath $goldenCase -Recurse -File |
+		Where-Object { $_.Extension -eq '.md' -or $_.Extension -eq '.svg' })
+	foreach ($g in $goldenFiles) {
+		$k = $g.FullName.Substring($goldenCase.Length)
+		if (-not $exeOut.ContainsKey($k)) {
+			Write-Result '[NG]' ('生成されませんでした: ' + $k)
+			$ok = $false
+			continue
 		}
-
-		# 検査結果（★ で始まる行）を exe と ps1 で突き合わせる。本文が一致していても、
-		# 検査の指摘内容そのものが食い違っていれば見逃さない
-		$exeProblems = @(Get-Content -LiteralPath (Join-Path $work 'exe.log') -Encoding UTF8 | Where-Object { $_ -match '★' } | ForEach-Object { $_.Trim() } | Sort-Object)
-		$ps1Problems = @(Get-Content -LiteralPath (Join-Path $work 'ps1.log') -Encoding UTF8 | Where-Object { $_ -match '★' } | ForEach-Object { $_.Trim() } | Sort-Object)
-		$pd = Compare-Object $exeProblems $ps1Problems
-		if ($pd) {
-			Write-Result '[NG]' ('exe と ps1 で検査の指摘が違います（差分 {0} 件）' -f $pd.Count)
-			$pd | Select-Object -First 6 | ForEach-Object {
-				$side = if ($_.SideIndicator -eq '<=') { 'exe' } else { 'ps1' }
+		$want = [System.IO.File]::ReadAllText($g.FullName, [System.Text.Encoding]::UTF8)
+		if ($exeOut[$k] -cne $want) {
+			$d = Compare-Object ($want -split "`r?`n") ($exeOut[$k] -split "`r?`n")
+			Write-Result '[NG]' ('期待値と出力が違います{0}（差分 {1} 行）' -f $k, $d.Count)
+			$d | Select-Object -First 6 | ForEach-Object {
+				$side = if ($_.SideIndicator -eq '<=') { '期待' } else { '実際' }
 				Write-Host ('        {0}: {1}' -f $side, $_.InputObject)
 			}
 			$ok = $false
 		}
 	}
 
+	# 期待値に無いものを生成していないか（出力 → 期待値 方向）。
+	# md-skip の変換忘れ・余分な SVG 切り出しは、この向きでしか捕まらない
+	$goldenKeys = @{}
+	foreach ($g in $goldenFiles) { $goldenKeys[$g.FullName.Substring($goldenCase.Length)] = $true }
+	foreach ($k in $exeOut.Keys) {
+		if (-not $goldenKeys.ContainsKey($k)) {
+			Write-Result '[NG]' ('期待値に無いものを生成しました: ' + $k)
+			$ok = $false
+		}
+	}
+
+	# 終了コードと検査の指摘
+	$expected = @(Get-Content -LiteralPath (Join-Path $goldenCase 'expected.txt') -Encoding UTF8)
+	$wantExit = ($expected | Where-Object { $_ -like 'exit=*' }) -replace '^exit=', ''
+	$wantProblems = @($expected | Where-Object { $_ -notlike 'exit=*' })
+	if ([string]$exeCode -ne [string]$wantExit) {
+		Write-Result '[NG]' ('終了コードが期待値と違います（期待 {0} / 実際 {1}）' -f $wantExit, $exeCode)
+		$ok = $false
+	}
+	$pd = Compare-Object $wantProblems $exeProblems
+	if ($pd) {
+		Write-Result '[NG]' ('検査の指摘が期待値と違います（差分 {0} 件）' -f $pd.Count)
+		$pd | Select-Object -First 6 | ForEach-Object {
+			$side = if ($_.SideIndicator -eq '<=') { '期待' } else { '実際' }
+			Write-Host ('        {0}: {1}' -f $side, $_.InputObject)
+		}
+		$ok = $false
+	}
+
 	if ($ok) {
-		Write-Result '[OK]' ('{0} ファイルを変換、exe と ps1 が一致' -f $exeOut.Count)
+		Write-Result '[OK]' ('{0} ファイルを変換、期待値と一致' -f $exeOut.Count)
 	}
 	else {
 		$failed++

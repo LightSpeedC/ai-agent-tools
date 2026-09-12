@@ -385,7 +385,7 @@
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-14</span>旧 ps1 / mjs を削除</summary>
 		<div class="issue-body">
 			<p>各プロジェクトの <code>src/scripts/70_html2md/</code> にある 5 本（ps1 4 本、mjs 1 本）を削除する。ランチャーへの置き換えが済み、出力を確かめてから。</p>
-			<p>共通ツール側の <code>html2md-ps.ps1</code> は参照実装として残す。テストで exe との一致を確かめている。</p>
+			<p>共通ツール側の <code>html2md-ps.ps1</code> は参照実装として残す。テストで exe との一致を確かめている。<strong>（2026-09-12 に削除した。<span class="no">i260912-02</span> を参照）</strong></p>
 			<p><strong>ランチャーへの置き換えという前提は無くなった</strong>（課題 12 参照）。<code>html2md</code> が PATH で呼べるので、各プロジェクトは旧スクリプトを消すだけでよい。<strong>他プロジェクトのファイルなのでこちらからは触らない。</strong></p>
 			<p><span class="badge b-ok">済</span>2026-09-05 に閉じた。<strong>周知で「消せます」と伝えた時点でこちらの役目は終わり。</strong>削除は各プロジェクトが自分で行う。課題 11 と同じ扱い。</p>
 		</div>
@@ -405,7 +405,7 @@
 <section class="ch04" id="ch04">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 7 件。全件解消済み。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 8 件。全件解消済み。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
@@ -493,6 +493,92 @@ $sub = Convert-Blocks ...</code></pre>
 			<p>0x20〜0x7e と改行だけで構成されるファイルは、自動判定で <code>utf8</code> になる（<code>sjis</code> にはならない）。純 ASCII は UTF-8・SJIS のどちらでもバイトが同じなので実害は無いが、<strong>cmd でも <code>sjis</code> と出ない</strong>のが直感に合わない場面がある。</p>
 			<p><strong>案</strong>: <code>ascii</code> の組を設け、純 ASCII のファイルは <code>ascii</code> と表示・扱う。read/find のヘッダ表記や、cmd 判定の分かりやすさが上がるか検討する。</p>
 			<p><span class="badge b-ok">済</span>2026-09-08 に<strong>やらないと決めて閉じた。</strong>ascii は機能的に UTF-8・SJIS と等価なので、足しても読み・書き・編集の結果は変わらない。「cmd が sjis と出ない」問題も、内容だけからは解決できない（拡張子を見ない限り原理的に判定不能）。<strong>むしろ ascii を組として本格導入すると、ascii 判定のファイルに日本語を足す edit で exit 5 になる縁が増える</strong>。表示だけ ascii にする案（判定は utf8 のまま）も検討したが、得るのは表示の正直さだけで見送った。</p>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-ok">済</span><span class="no">i260912-02</span>参照実装 html2md-ps.ps1 を削除し、二重メンテをやめる</summary>
+		<div class="issue-body">
+			<p><span class="badge b-ok">済</span>2026-09-12 に実施した。<strong>ゴールデンファイルの仕組みを先に入れてから消した。</strong>手順は下の「やること」のとおり。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>やったこと</th><th>内容</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap">照合の置き換え</td><td><strong>消す前に、exe と ps1 が 15 ケースすべてで一致していることを確認</strong>し、その出力を <code>tests/golden/</code> に固定した。出力そのものに加えて、終了コードと検査の指摘（★ の行）も固定している</td></tr>
+					<tr><td class="nowrap">期待値の作り直し</td><td><code>run-tests.ps1 -UpdateGolden</code> を足した。<strong>出力を変える修正を入れたら、差分を目で確かめてから更新する</strong></td></tr>
+					<tr><td class="nowrap">削除</td><td><code>html2md-ps.ps1</code> ・ <code>html2md-ps.cmd</code></td></tr>
+					<tr><td class="nowrap">テストの手当て</td><td><code>run-tests.ps1</code> から ps1 の実行と比較を外した。<code>run-convert-encoding-tests.ps1</code> の往復変換の対象を <code>run-tests.ps1</code> に差し替えた</td></tr>
+					<tr><td class="nowrap">資料</td><td>README ・ USAGE から参照実装の記述を外し、期待値による担保の説明に置き換えた</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p>全テスト成功（html2md 15 ・ convert-encoding 102 ・ text 53）。</p>
+
+			<div class="callout callout-important">
+				<p><strong>担保の形が変わった。</strong>これまでは「2 本の独立した実装が同じ出力を出す」ことで守っていたが、いまは「1 本の出力が、固定した期待値と同じ」になる。<strong>期待値は exe 自身の出力から作っているので、exe の誤りは期待値にも写る。</strong>出力を変える修正のときに差分を目で確かめることが、唯一の関門になる。</p>
+			</div>
+
+			<h3>もとの記録</h3>
+
+			<p>2026-09-12 の方針。<strong><code>html2md-ps.ps1</code> を削除し、実装を exe の 1 本にする。</strong></p>
+
+			<h3>なぜ</h3>
+
+			<p><a href="../../tools/90_misc/bench-html2md/結果.html">本丸のベンチ</a>で、<strong>実際の資料 9 ファイルの変換に 29.6 秒</strong>かかることが分かった。exe の 67 倍、Bun へ移した版の 370 倍。<strong>参照実装として置いていたが、この速さでは道具として使えない。</strong></p>
+
+			<p>もう一方の代償が二重メンテ。<strong>変換の修正はすべて 2 箇所へ入れている。</strong>2026-09-11 から 09-12 だけでも次のとおり。</p>
+
+			<ul>
+				<li>md-skip の残る 3 経路（<span class="no">i260911-01</span> の medium 1）</li>
+				<li>summary の強調・<code>span.no</code> ・ <code>md-flat</code>（タグ対応仕様の決着 12）</li>
+				<li>生成物の改行を LF にする（<span class="no">i260911-01</span> の medium 11）</li>
+				<li>リンク解決の食い違い（<span class="no">i260911-02</span> の 6）</li>
+			</ul>
+
+			<div class="callout callout-warning">
+				<p><strong>ただし ps1 は、テストが exe を照合する相手でもある。</strong><code>run-tests.ps1</code> は 15 ケースすべてで<strong>「exe と ps1 の出力が完全に一致すること」</strong>を確かめており、これが変換の品質を担保する要になっている。<strong>消すと、その担保が無くなる。</strong></p>
+			</div>
+
+			<h3>決めること</h3>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>#</th><th>決めること</th><th>案</th></tr></thead>
+				<tbody>
+					<tr>
+						<td class="nowrap">1</td>
+						<td><strong>照合の相手をどうするか</strong></td>
+						<td>期待する Markdown をファイルとして <code>tests/</code> に置き、それと突き合わせる（ゴールデンファイル）。<strong>2 本の実装を比べる形から、1 本と期待値を比べる形へ変わる</strong></td>
+					</tr>
+					<tr>
+						<td class="nowrap">2</td>
+						<td>消す前にゴールデンを作るか</td>
+						<td><strong>作る。</strong>いまの ps1 と exe が一致している状態で固定すれば、期待値の正しさを 2 本で裏取りできる。消してからでは取れない</td>
+					</tr>
+					<tr>
+						<td class="nowrap">3</td>
+						<td>Bun へ移す計画と、どちらを先にするか</td>
+						<td><span class="no">i260912-01</span> の結論次第。<strong>exe を Bun へ移すなら、ps1 を消す前にゴールデンを作っておくと移行の照合にも使える</strong></td>
+					</tr>
+				</tbody>
+			</table>
+			</div>
+
+			<h3>やること</h3>
+
+			<ol>
+				<li>ゴールデンファイルの仕組みを <code>run-tests.ps1</code> に足し、いまの出力で固定する</li>
+				<li><code>html2md-ps.ps1</code> ・ <code>html2md-ps.cmd</code> を削除する</li>
+				<li><code>run-tests.ps1</code> から ps1 の実行と出力比較を外す</li>
+				<li><code>run-convert-encoding-tests.ps1</code> が <code>html2md-ps.ps1</code> を往復変換の対象にしているので、別のファイルに差し替える</li>
+				<li>README ・ USAGE ・ 共通化計画から参照実装の記述を外す</li>
+			</ol>
+
+			<div class="callout callout-important">
+				<p><strong>削除は最後にする。</strong>ゴールデンの仕組みが動いてから消す。順序を逆にすると、担保が無い期間ができる。</p>
+			</div>
 		</div>
 	</details>
 </section>

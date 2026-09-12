@@ -644,7 +644,8 @@ Write-Host '[実際のファイルでの往復]' -ForegroundColor Cyan
 # このプロジェクトの実ファイルを複製し、往復させてバイト列が戻ることを見る
 $pairs = @(
 	@{ Name = 'build.cmd'; Src = (Join-Path $Root 'build.cmd'); To = 'cmd' },
-	@{ Name = 'html2md-ps.ps1'; Src = (Join-Path $Root 'html2md-ps.ps1'); To = 'ps1' }
+	# 日本語を多く含む大きめの ps1 を選ぶ。往復で 1 バイトでも変われば落ちる
+	@{ Name = 'run-tests.ps1'; Src = (Join-Path $Root 'tools\40_test\run-tests.ps1'); To = 'ps1' }
 )
 
 foreach ($pair in $pairs) {

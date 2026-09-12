@@ -17,7 +17,6 @@ HTML から Markdown を生成し、双方を検証するツール置き場。�
 | ツール | 何を確かめるか |
 |---|---|
 | `html2md` | HTML から Markdown を生成する。**変換はこれを使う**（実体は `html2md.exe`） |
-| `html2md-ps` | 同じ処理の参照実装。exe の挙動を確かめるために残している |
 | `check-markdown` | Markdown が **GitHub 上で意図どおりに表示されるか** |
 | `check-contrast` | HTML の文字色と背景色が **読める組み合わせになっているか** |
 | `convert-encoding` | ファイルの文字コードと改行を、決められた組み合わせへ変換する |
@@ -55,9 +54,6 @@ html2md --root .
 html2md --root . --dir docs --dir notes
 html2md --root . --dry-run
 ```
-
-> [!IMPORTANT]
-> <strong>`html2md` は exe、`html2md-ps` は参照実装の ps1 に解決される。</strong>PowerShell は同名の `.ps1` を `.exe` より先に選ぶため、参照実装の名前を分けている。exe は ps1 の **65 倍速い**（実測 228 ms 対 14.9 秒）。
 
 | オプション | 既定 | 内容 |
 |---|---|---|
@@ -115,17 +111,11 @@ html2md --root . --dry-run
 
 変換のあとに検査を行う。Markdown 側のリンク切れ・アンカー切れ、HTML 側が `.md` を参照していないか、HTML 側のリンク切れ、Markdown 側だけにある文言、更新日の古さを見る。**HTML 側も独立に検査するのは、Markdown 側だけ見ると変換で `.md` になった分と区別できず見逃すため。**
 
-#### 参照実装の ps1
+#### 出力の担保
 
-`html2md-ps` は同じ処理を PowerShell で書いたもの。<strong>通常は `html2md` を使う。</strong>ps1 は exe の挙動を読んで確かめるためと、csc.exe が使えない環境のために残している。
+変換した結果が `tests/golden/` に置いた期待値と**完全に一致すること**を `tools/40_test/run-tests.cmd` が検査する。出力そのものだけでなく、終了コードと検査の指摘も固定している。
 
-```powershell
-html2md-ps -Root . -Dir docs,notes -DryRun
-```
-
-引数は exe と対応する（`-Root` `-Dir` `-Extra` `-Exclude` `-NoReadme` `-DryRun`）。ダブルクリックで実行する `html2md-ps.cmd` も同じフォルダにある。
-
-両者の出力が一致することを `tools/40_test/run-tests.cmd` で検査している。<strong>片方だけ直すと落ちる。</strong>テストは exe の出力を読んだあとに削除してから ps1 を走らせる。残したままにすると、ps1 が 1 つも生成しなかった場合に exe の出力を読んで「一致」と誤判定する。
+出力を変える修正を入れたときは、**差分を目で確かめてから** `run-tests.ps1 -UpdateGolden` で期待値を作り直す。確かめずに更新すると担保が無くなる。
 
 #### ビルド
 

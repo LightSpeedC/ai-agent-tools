@@ -153,7 +153,6 @@
 		<thead><tr><th>ツール</th><th>何を確かめるか</th></tr></thead>
 		<tbody>
 			<tr><td class="nowrap"><code>html2md</code></td><td>HTML から Markdown を生成する。<strong>変換はこれを使う</strong>（実体は <code>html2md.exe</code>）</td></tr>
-			<tr><td class="nowrap"><code>html2md-ps</code></td><td>同じ処理の参照実装。exe の挙動を確かめるために残している</td></tr>
 			<tr><td class="nowrap"><code>check-markdown</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
 			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
 			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、決められた組み合わせへ変換する</td></tr>
@@ -200,9 +199,6 @@
 html2md --root . --dir docs --dir notes
 html2md --root . --dry-run</code></pre>
 
-	<div class="callout callout-important">
-		<p><strong><code>html2md</code> は exe、<code>html2md-ps</code> は参照実装の ps1 に解決される。</strong>PowerShell は同名の <code>.ps1</code> を <code>.exe</code> より先に選ぶため、参照実装の名前を分けている。exe は ps1 の <strong>65 倍速い</strong>（実測 228 ms 対 14.9 秒）。</p>
-	</div>
 
 	<div class="tablewrap">
 	<table>
@@ -270,15 +266,11 @@ html2md --root . --dry-run</code></pre>
 
 	<p>変換のあとに検査を行う。Markdown 側のリンク切れ・アンカー切れ、HTML 側が <code>.md</code> を参照していないか、HTML 側のリンク切れ、Markdown 側だけにある文言、更新日の古さを見る。<strong>HTML 側も独立に検査するのは、Markdown 側だけ見ると変換で <code>.md</code> になった分と区別できず見逃すため。</strong></p>
 
-	<h3>参照実装の ps1</h3>
+	<h3>出力の担保</h3>
 
-	<p><code>html2md-ps</code> は同じ処理を PowerShell で書いたもの。<strong>通常は <code>html2md</code> を使う。</strong>ps1 は exe の挙動を読んで確かめるためと、csc.exe が使えない環境のために残している。</p>
+	<p>変換した結果が <code>tests/golden/</code> に置いた期待値と<strong>完全に一致すること</strong>を <code>tools/40_test/run-tests.cmd</code> が検査する。出力そのものだけでなく、終了コードと検査の指摘も固定している。</p>
 
-<pre><code class="language-powershell">html2md-ps -Root . -Dir docs,notes -DryRun</code></pre>
-
-	<p>引数は exe と対応する（<code>-Root</code> <code>-Dir</code> <code>-Extra</code> <code>-Exclude</code> <code>-NoReadme</code> <code>-DryRun</code>）。ダブルクリックで実行する <code>html2md-ps.cmd</code> も同じフォルダにある。</p>
-
-	<p>両者の出力が一致することを <code>tools/40_test/run-tests.cmd</code> で検査している。<strong>片方だけ直すと落ちる。</strong>テストは exe の出力を読んだあとに削除してから ps1 を走らせる。残したままにすると、ps1 が 1 つも生成しなかった場合に exe の出力を読んで「一致」と誤判定する。</p>
+	<p>出力を変える修正を入れたときは、<strong>差分を目で確かめてから</strong> <code>run-tests.ps1 -UpdateGolden</code> で期待値を作り直す。確かめずに更新すると担保が無くなる。</p>
 
 	<h3>ビルド</h3>
 

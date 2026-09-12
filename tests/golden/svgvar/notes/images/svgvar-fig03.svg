@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60" role="img" aria-label="章の外の図">
+	<rect width="100%" height="100%" fill="#ffffff"/>
+		<rect x="10" y="10" width="180" height="40" fill="#12224d"/>
+		<text x="100" y="35" fill="#336699">章の外</text>
+		<text x="100" y="50" fill="var(--unknown)">解決できない</text>
+	</svg>

@@ -105,7 +105,7 @@
 <div class="titlebar"><div class="inner">
 <h1>convert-encoding 仕様書</h1>
 <div class="lead">文字コードと改行を変換するコマンドライン ツール</div>
-<div class="date">📅 作成: 2026-09-06 / 更新: 2026-09-11</div>
+<div class="date">📅 作成: 2026-09-06 / 更新: 2026-09-12</div>
 </div></div>
 
 <div class="wrap">
@@ -790,7 +790,7 @@ try {
 </table></div>
 
 <h2>実際のファイルでの確認</h2>
-<p>実ファイルで往復させ、バイト列が元に戻ることを確かめる。このプロジェクトの <code>build.cmd</code>（SJIS + CRLF、日本語コメントを含む）と <code>html2md-ps.ps1</code>（BOM 付き UTF-8 + CRLF、64 KB）を使う。</p>
+<p>実ファイルで往復させ、バイト列が元に戻ることを確かめる。このプロジェクトの <code>build.cmd</code>（SJIS + CRLF、日本語コメントを含む）と <code>tools/40_test/run-tests.ps1</code>（BOM 付き UTF-8 + CRLF、日本語コメントを多く含む）を使う。</p>
 
 </section>
 
@@ -826,7 +826,7 @@ try {
 </tbody>
 </table></div>
 
-<p>テストの入力は毎回 <code>tmp/</code> に作り直すため、何度実行しても同じ結果になる。実ファイル（<code>build.cmd</code>・<code>html2md-ps.ps1</code>）を UTF-8 ／ LF に落としてから元の形へ戻す往復でも、バイト列が完全に一致した。</p>
+<p>テストの入力は毎回 <code>tmp/</code> に作り直すため、何度実行しても同じ結果になる。実ファイル（<code>build.cmd</code>・<code>run-tests.ps1</code>）を UTF-8 ／ LF に落としてから元の形へ戻す往復でも、バイト列が完全に一致した。</p>
 
 <div class="callout"><strong>作ったツールで自分自身を整えた。</strong>テストスクリプトの ps1 と cmd ランチャーの文字コードは、<code>convert-encoding</code> を通して決められた形にしてある。</div>
 

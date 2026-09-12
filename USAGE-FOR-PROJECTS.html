@@ -186,9 +186,6 @@
 	</div>
 
 	<p>どちらの検証ツールも<strong>推測せず実物で判定する。</strong>前者は GitHub のレンダラに投げ、後者はブラウザで描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。</p>
-
-	<div class="callout callout-important">
-		<p><code>html2md-ps</code> という名前でも呼べるが、これは<strong>参照実装の PowerShell 版</strong>で、通常は使わない。<strong>exe の 65 倍遅い</strong>（実測 228 ms 対 14.9 秒）。exe の挙動を読んで確かめたいときと、<code>csc.exe</code> が使えない環境のために残している。</p>
 	</div>
 </section>
 
@@ -478,9 +475,9 @@ echo @echo off | text write new.cmd --to cmd    # 標準入力／第 2 引数で
 
 	<p>切り出すとき <code>var(--accent)</code> のような CSS 変数は実際の値に置き換わる。<strong>章ごとに色が違うので、その図がどの章にあるかを見て解決する。</strong>解決できない変数はそのまま残る。</p>
 
-	<h2>参照実装との一致を壊さない</h2>
+	<h2>期待値との一致を壊さない</h2>
 
-	<p>html2md 側に手を入れる場合、<strong>exe と <code>html2md-ps</code> の出力が一致することを <code>tools/40_test/run-tests.cmd</code> が検査している。</strong>片方だけ直すと落ちる。</p>
+	<p>html2md 側に手を入れる場合、<strong>出力が <code>tests/golden/</code> の期待値と一致することを <code>tools/40_test/run-tests.cmd</code> が検査している。</strong>出力を変える修正なら落ちるので、差分を目で確かめてから期待値を作り直す。</p>
 </section>
 
 </div>

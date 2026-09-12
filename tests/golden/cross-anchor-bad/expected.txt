@@ -1,0 +1,4 @@
+exit=1
+★HTML 側: リンク切れ: /docs/target.html
+★Markdown 側: リンク切れ: /docs/target.html
+★Markdown 側: 他ファイルのアンカー先なし: docs/target.md#ch99

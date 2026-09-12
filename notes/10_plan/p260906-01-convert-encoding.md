@@ -2,7 +2,7 @@
 
 文字コードと改行を変換するコマンドライン ツール
 
-> 📅 作成: 2026-09-06 / 更新: 2026-09-11
+> 📅 作成: 2026-09-06 / 更新: 2026-09-12
 
 [← html2md](../../README.md) ／ [課題](../40_issues/issues.html)
 
@@ -568,7 +568,7 @@ foo.cmd  SJIS  CRLF=48  LF=0  CR=0  1,771 bytes
 
 ### 実際のファイルでの確認
 
-実ファイルで往復させ、バイト列が元に戻ることを確かめる。このプロジェクトの `build.cmd`（SJIS + CRLF、日本語コメントを含む）と `html2md-ps.ps1`（BOM 付き UTF-8 + CRLF、64 KB）を使う。
+実ファイルで往復させ、バイト列が元に戻ることを確かめる。このプロジェクトの `build.cmd`（SJIS + CRLF、日本語コメントを含む）と `tools/40_test/run-tests.ps1`（BOM 付き UTF-8 + CRLF、日本語コメントを多く含む）を使う。
 
 ## 7. ビルドと配置
 
@@ -597,7 +597,7 @@ foo.cmd  SJIS  CRLF=48  LF=0  CR=0  1,771 bytes
 | convert-encoding.exe | root 直下。15,360 バイト |
 | tools/40_test/run-convert-encoding-tests.ps1 | 6 章のケースを実行する。**93 件すべて成功** |
 
-テストの入力は毎回 `tmp/` に作り直すため、何度実行しても同じ結果になる。実ファイル（`build.cmd`・`html2md-ps.ps1`）を UTF-8 ／ LF に落としてから元の形へ戻す往復でも、バイト列が完全に一致した。
+テストの入力は毎回 `tmp/` に作り直すため、何度実行しても同じ結果になる。実ファイル（`build.cmd`・`run-tests.ps1`）を UTF-8 ／ LF に落としてから元の形へ戻す往復でも、バイト列が完全に一致した。
 
 > [!NOTE]
 > <strong>作ったツールで自分自身を整えた。</strong>テストスクリプトの ps1 と cmd ランチャーの文字コードは、`convert-encoding` を通して決められた形にしてある。
