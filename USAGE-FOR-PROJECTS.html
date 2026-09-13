@@ -546,6 +546,16 @@ text find 日本語 --path . --recurse --include "*.cmd,*.reg"</code></pre>
 
 	<p><code>find</code> は<strong>ファイルごとに ◆ 見出し＋一致行</strong>を出す（サクラエディタの grep 風）。<strong>複数の glob はダブルクォートで囲む</strong>（<code>"*.cmd,*.reg"</code>）。フォルダを外すのは <code>--exclude-dir</code>。</p>
 
+	<h3>既定で外すフォルダ</h3>
+
+	<p><code>find</code> は <strong><code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> ・ <code>.git</code> を見ない</strong>（<code>check-markdown</code> ・ <code>check-contrast</code> と同じ）。<code>--exclude-dir</code> は<strong>この既定に足す</strong>形で、渡しても既定は消えない。</p>
+
+	<div class="callout callout-caution">
+		<p><strong><code>etc/history/jsonl</code> には会話ログが入る。</strong>素で <code>--recurse</code> を撃つとここまで読み、<strong>過去の会話が出力に出る。</strong>共通ルール「.gitignore で除外されたファイルの取り扱い」を破ることになるため、既定で外してある。</p>
+	</div>
+
+	<p>意図して見たいときは <code>--no-default-exclude</code> で解除する。<strong>付け忘れると読んでしまう形ではなく、明示したときだけ読む形にしてある。</strong></p>
+
 	<h2>編集する</h2>
 
 <pre><code class="language-powershell">text edit foo.cmd --old "powershell.exe" --new "powershell"     # 中身で指す

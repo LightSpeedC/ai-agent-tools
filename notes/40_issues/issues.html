@@ -1124,6 +1124,35 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p><code>check-contrast</code> は自分のフィクスチャ置き場（<code>contrast/</code>）を既定で除外している。<strong>同じように <code>--exclude</code> を足すかどうかは、まだ決めていない。</strong>汎用の道具に、このプロジェクト固有の除外を既定で入れるのは避けたい。</p>
 		</div>
 	</details>
+
+	<details>
+		<summary><span class="badge b-none">未</span><span class="no">i260913-02</span>text find --recurse が既定で tmp ・ etc を舐める</summary>
+		<div class="issue-body">
+			<p>2026-09-13、<code>ai-agent-rules</code> から報告（public ルーム #831）。<strong>共通ルール「名前を変えたら全体を検査する」に従って <code>text find --recurse</code> を素で撃ったところ、<code>etc/history/jsonl</code> のセッションログ（11.8 MB）に当たり、過去の会話が出力に出た。</strong></p>
+
+			<div class="callout callout-caution">
+				<p><strong>共通ルール違反を誘発する。</strong>「.gitignore で除外されたファイルの取り扱い」は「除外されたものは原則として読まない／出力に含めない」としている。<strong>素で撃つと必ずこれを破る。</strong>会話ログには個人名・パスもあり得る。</p>
+			</div>
+
+			<h3>調べた</h3>
+
+			<p><strong>報告のとおり。</strong><code>dirSet()</code>（<code>src/text/find.ts</code>）は引数が無ければ空の <code>Set</code> を返すため、<strong>既定の除外が無い。</strong><code>tmp/</code> に置いた語が <code>--recurse</code> で当たることを実測した。このプロジェクトの <code>etc/</code> は 58 MB ある。</p>
+
+			<p><strong>ほかの道具とも不揃い。</strong><code>check-markdown</code> ・ <code>check-contrast</code> は <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> ・ <code>.git</code> を既定で外し、<code>check-public</code> は git が追跡しているものだけを見る。<strong><code>text find</code> だけが素通し。</strong></p>
+
+			<h3>直し方の案</h3>
+
+			<ul>
+				<li><strong>A（推し）既定で <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> ・ <code>.git</code> を外す。</strong>ほかの 3 つと揃う。解除は <code>--no-default-exclude</code> のような明示で受ける</li>
+				<li>B <code>--recurse</code> のときだけ既定で外す。単一フォルダの指定は素通しのまま</li>
+				<li>C 変えない。呼ぶ側が <code>--exclude-dir</code> を付ける</li>
+			</ul>
+
+			<p><strong>C は採らない。</strong>報告元が書いているとおり「新ルールが <code>--recurse</code> を指示しているので、付け忘れる人は増える」。<strong>付け忘れたときに黙って会話ログを読む形は、道具の側が悪い。</strong></p>
+
+			<p>A は後方互換を壊す（<code>tmp/</code> を探していた呼び出しが当たらなくなる）。ただし <code>tmp/</code> ・ <code>etc/</code> を意図して探す場面は少なく、<strong>破る側の害のほうが大きい。</strong></p>
+		</div>
+	</details>
 </section>
 
 </div>

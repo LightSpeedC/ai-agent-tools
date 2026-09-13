@@ -360,6 +360,15 @@ text find 日本語 --path . --recurse --include "*.cmd,*.reg"
 
 `find` は**ファイルごとに ◆ 見出し＋一致行**を出す（サクラエディタの grep 風）。**複数の glob はダブルクォートで囲む**（`"*.cmd,*.reg"`）。フォルダを外すのは `--exclude-dir`。
 
+#### 既定で外すフォルダ
+
+`find` は **`tmp` ・ `etc` ・ `node_modules` ・ `.git` を見ない**（`check-markdown` ・ `check-contrast` と同じ）。`--exclude-dir` は**この既定に足す**形で、渡しても既定は消えない。
+
+> [!CAUTION]
+> <strong>`etc/history/jsonl` には会話ログが入る。</strong>素で `--recurse` を撃つとここまで読み、<strong>過去の会話が出力に出る。</strong>共通ルール「.gitignore で除外されたファイルの取り扱い」を破ることになるため、既定で外してある。
+
+意図して見たいときは `--no-default-exclude` で解除する。**付け忘れると読んでしまう形ではなく、明示したときだけ読む形にしてある。**
+
 ### 編集する
 
 ```powershell

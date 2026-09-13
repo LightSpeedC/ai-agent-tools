@@ -20,8 +20,9 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$Exe = if ($Target) { $Target } else { Join-Path $Root 'text-cs.exe' }
-$ConvExe = Join-Path $Root 'convert-encoding-cs.exe'
+# 既定は移植版（ランチャー経由）。C# 版を見るときは -Target で名指しする
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'text.cmd' }
+$ConvExe = Join-Path $Root 'convert-encoding.cmd'
 $Work = Join-Path $Root 'tmp\text-test'
 
 $script:Pass = 0
@@ -72,7 +73,7 @@ function Assert-Equal { param([string]$Name, $Expected, $Actual) if ($Expected -
 function Assert-Match { param([string]$Name, [string]$Text, [string]$Needle) if ($Text.Contains($Needle)) { Write-Ok $Name } else { Write-Ng $Name ('「' + $Needle + '」が無い') } }
 
 # ---------------------------------------------------------------
-if (-not (Test-Path $Exe)) { Write-Host "[NG] text.exe がありません。build-text-cs.cmd を先に実行してください。" -ForegroundColor Red; exit 2 }
+if (-not (Test-Path $Exe)) { Write-Host ("[NG] 対象がありません: " + $Exe + "  C# 版を見るなら build-text-cs.cmd を先に実行してください。") -ForegroundColor Red; exit 2 }
 if (Test-Path $Work) { Remove-Item -Recurse -Force $Work }
 New-Item -ItemType Directory -Force $Work | Out-Null
 
@@ -163,6 +164,30 @@ Assert-True 'find: バイナリを飛ばす' (-not ($r.Out -like '*f.bin*')) 'f.
 
 $r = Run-Text @('find', '名前', '--path', $Work, '--recurse', '--bare')
 Assert-Match 'find: --bare は grep 素形' $r.Out 'c.reg:1:'
+
+<#
+	既定で外すフォルダ（i260913-02）
+
+	tmp ・ etc ・ node_modules ・ .git を素通ししていたため、--recurse を
+	素で撃つと会話ログ（etc/history/jsonl）まで読んでいた。
+	**共通ルール「.gitignore で除外されたものは読まない」を破る。**
+	check-markdown ・ check-contrast は既にこの 4 つを既定で外している。
+#>
+foreach ($d in @('tmp', 'etc', 'node_modules', '.git')) {
+	New-Item -ItemType Directory -Path (Join-Path $Work $d) -Force | Out-Null
+	[System.IO.File]::WriteAllText((Join-Path $Work ($d + '\hidden.txt')), "既定で外すフォルダの中`n", (New-Object System.Text.UTF8Encoding($false)))
+}
+
+$r = Run-Text @('find', '既定で外すフォルダ', '--path', $Work, '--recurse')
+Assert-Equal 'find: 既定で外すフォルダだけなら一致なし' 1 $r.Code
+foreach ($d in @('tmp', 'etc', 'node_modules', '.git')) {
+	Assert-True ('find: 既定で ' + $d + ' を外す') (-not ($r.Out -like ('*' + $d + '*'))) ($d + ' が出た')
+}
+
+# 明示すれば戻せる。意図して見たいときの逃げ道を残す
+$r = Run-Text @('find', '既定で外すフォルダ', '--path', $Work, '--recurse', '--no-default-exclude')
+Assert-Equal 'find: --no-default-exclude で見る' 0 $r.Code
+Assert-Match 'find: --no-default-exclude なら tmp も出る' $r.Out 'hidden.txt'
 
 Write-Host ''
 Write-Host '=== text edit ===' -ForegroundColor Cyan

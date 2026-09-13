@@ -11,6 +11,18 @@ import { Args, out, resolve, show } from './files.ts';
 
 const ValueOpts = new Set(['--path', '--include', '--exclude', '--exclude-dir', '--from']);
 
+/*
+	既定で外すフォルダ。
+
+	素通しにしていたため、--recurse を素で撃つと etc/history/jsonl の
+	会話ログまで読んでいた（i260913-02）。**共通ルール
+	「.gitignore で除外されたものは原則として読まない／出力に含めない」を破る。**
+
+	check-markdown ・ check-contrast は既にこの 4 つを外している。揃える。
+	意図して見たいときは --no-default-exclude で解除できる。
+*/
+const DefaultExcludeDirs = ['tmp', 'etc', 'node_modules', '.git'];
+
 interface Hit {
 	lineNo: number;
 	content: string;
@@ -43,7 +55,16 @@ export function run(a: string[]): number {
 
 	const inc = globs(args.get('--include'));
 	const exc = globs(args.get('--exclude'));
+
+	/*
+		既定の除外に --exclude-dir を足す。
+		--no-default-exclude を渡したときだけ既定を外す。
+		**足す形にしているので、--exclude-dir を渡しても既定は消えない。**
+	*/
 	const excDir = dirSet(args.get('--exclude-dir'));
+	if (!args.flag('--no-default-exclude', '--no-default-exclude')) {
+		for (const d of DefaultExcludeDirs) { excDir.add(d); }
+	}
 
 	const baseFull = path.resolve(basePath);
 	const baseIsFile = fs.existsSync(basePath) && fs.statSync(basePath).isFile();
