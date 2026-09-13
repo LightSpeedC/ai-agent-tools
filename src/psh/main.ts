@@ -24,7 +24,7 @@
 	  ・対象が無い・引数が無いときは 2 で止める。黙って成功しない
 */
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 
 /** 引数の誤り・対象が無い。html2md 系の契約に合わせる */
@@ -111,7 +111,41 @@ function decode(buf: Buffer | null): string {
 	}
 }
 
-function main(): number {
+type RunResult = { status: number | null; stdout: Buffer; stderr: Buffer; error?: Error };
+
+/*
+	PowerShell を走らせて、出た分をすべて受け取る。
+
+	shell: false（既定）で起動する。配列のまま渡るので、空白や記号を含む
+	引数が割れたり、別の意味に解釈されたりしない。
+
+	**同期版（spawnSync）は使わない。**返るまでこのプロセスの非同期処理が
+	1 つも進まないため。
+
+	標準入力はすぐ閉じる。**閉じないと、相手が入力を待って止まったままになる。**
+	Claude Code の Bash ツールは対話的な入力を返せないので、待たれても答えが無い
+	（ai-chat-lite 側で、入力待ちのプロセスが 10 時間残った例がある）。
+*/
+function run(exe: string, args: string[]): Promise<RunResult> {
+	return new Promise((resolve) => {
+		const child = spawn(exe, args);
+		const out: Buffer[] = [];
+		const err: Buffer[] = [];
+
+		child.stdin.end();
+		child.stdout.on('data', (d: Buffer) => { out.push(d); });
+		child.stderr.on('data', (d: Buffer) => { err.push(d); });
+
+		child.on('error', (e: Error) => {
+			resolve({ status: null, stdout: Buffer.concat(out), stderr: Buffer.concat(err), error: e });
+		});
+		child.on('close', (code: number | null) => {
+			resolve({ status: code, stdout: Buffer.concat(out), stderr: Buffer.concat(err) });
+		});
+	});
+}
+
+async function main(): Promise<number> {
 	let args = process.argv.slice(2);
 
 	/*
@@ -165,17 +199,15 @@ function main(): number {
 		pwshArgs = base.concat(['-File', script], args.slice(1));
 	}
 
-	// shell: false（既定）で起動する。配列のまま渡るので、
-	// 空白や記号を含む引数が割れたり、別の意味に解釈されたりしない
-	const r = spawnSync(exe, pwshArgs, { encoding: 'buffer' });
+	const r = await run(exe, pwshArgs);
 
 	if (r.error != null) {
 		console.error('[NG] ' + exe + ' を起動できません: ' + r.error.message);
 		return ExitBadArgs;
 	}
 
-	const out = decode(r.stdout as Buffer | null);
-	const err = decode(r.stderr as Buffer | null);
+	const out = decode(r.stdout);
+	const err = decode(r.stderr);
 	if (out.length > 0) { process.stdout.write(out); }
 	if (err.length > 0) { process.stderr.write(err); }
 
@@ -183,4 +215,4 @@ function main(): number {
 	return r.status == null ? ExitBadArgs : r.status;
 }
 
-process.exit(main());
+main().then((code) => process.exit(code));

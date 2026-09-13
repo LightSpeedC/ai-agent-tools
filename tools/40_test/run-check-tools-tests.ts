@@ -110,6 +110,22 @@ for (const tool of ['check-contrast', 'check-markdown']) {
 	assertEqual(tool + ' 値の無い --path は 2', 2, r.code);
 
 	/*
+		8b. 待ち時間の上限（--timeout）
+
+		check-contrast は node の子プロセスで Playwright を回す。
+		**返らなくなると、そこで止まったままになる。**
+		ai-chat-lite-reviewer が同じ形で 2 本の抜け殻を残している
+		（入力待ちのまま 10 時間）。上限を渡せることだけ確かめる
+	*/
+	if (tool === 'check-contrast') {
+		r = runTs(tool, ['--help']);
+		assertIncludes(tool + ' --timeout が使い方に出る', '--timeout', r.out);
+
+		r = runTs(tool, ['--timeout', 'abc', '--path', work]);
+		assertEqual(tool + ' --timeout に数でない値は 2', 2, r.code);
+	}
+
+	/*
 		9. ps1 版と同じ結果か
 
 		移植で落ちるのは処理の本体ではなく、比較や既定値の食い違い。

@@ -23,7 +23,7 @@
 	計画は notes/10_plan/p260912-01-check-public.html。
 */
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { parseArgs, type OptionSpec } from '../lib/args.ts';
@@ -192,19 +192,42 @@ function usage(toStdout: boolean): void {
 	write('当たった値そのものは画面に出しません。');
 }
 
+/*
+	git を走らせて標準出力を受け取る。
+
+	**同期版（spawnSync）は使わない。**返るまでこのプロセスの非同期処理が
+	1 つも進まないため。git はすぐ返るが、同期で書くと形が揃わない。
+
+	標準入力はすぐ閉じる。閉じないと、相手が入力を待って止まったままになる
+	（資格情報の入力を求められる場面がある）。
+*/
+function git(dir: string, args: string[]): Promise<{ status: number | null; stdout: string }> {
+	return new Promise((resolve) => {
+		const child = spawn('git', ['-C', dir, ...args]);
+		let stdout = '';
+		child.stdin.end();
+		child.stdout.setEncoding('utf8');
+		child.stdout.on('data', (d: string) => { stdout += d; });
+		// 標準エラーは読み捨てる。git の外で走らせたときの案内が出るだけ
+		child.stderr.on('data', () => { });
+		child.on('error', () => { resolve({ status: null, stdout: '' }); });
+		child.on('close', (code: number | null) => { resolve({ status: code, stdout }); });
+	});
+}
+
 /** git が追跡しているファイルを聞く。git の外なら null */
-function gitFiles(dir: string): string[] | null {
-	const r = spawnSync('git', ['-C', dir, '-c', 'core.quotepath=false', 'ls-files'], { encoding: 'utf8' });
-	if (r.status !== 0 || r.stdout == null) { return null; }
+async function gitFiles(dir: string): Promise<string[] | null> {
+	const r = await git(dir, ['-c', 'core.quotepath=false', 'ls-files']);
+	if (r.status !== 0) { return null; }
 	return r.stdout.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
 }
 
 /** git の author。設定が無ければ空 */
-function gitAuthor(dir: string): string[] {
+async function gitAuthor(dir: string): Promise<string[]> {
 	const out: string[] = [];
 	for (const key of ['user.name', 'user.email']) {
-		const r = spawnSync('git', ['-C', dir, 'config', key], { encoding: 'utf8' });
-		if (r.status === 0 && r.stdout != null) {
+		const r = await git(dir, ['config', key]);
+		if (r.status === 0) {
 			const v = r.stdout.trim();
 			if (v.length > 0) { out.push(v); }
 		}
@@ -268,7 +291,7 @@ function loadWords(file: string): string[] | null {
 		.map((s) => s.toLowerCase());
 }
 
-function main(): number {
+async function main(): Promise<number> {
 	const parsed = parseArgs(process.argv.slice(2), Specs, Defaults);
 	if (parsed.help) {
 		usage(true);
@@ -296,7 +319,7 @@ function main(): number {
 
 	// ---- 対象を集める ----
 	let files: string[];
-	const tracked = all ? null : gitFiles(target);
+	const tracked = all ? null : await gitFiles(target);
 	if (tracked != null) {
 		files = tracked.map((f) => path.join(target, f))
 			.filter((f) => isTextTarget(f));
@@ -331,7 +354,7 @@ function main(): number {
 	// git の author。名前をリストに書かずに済む
 	let authors: string[] = [];
 	if (skip.indexOf('author') < 0) {
-		authors = gitAuthor(target).map((s) => s.toLowerCase());
+		authors = (await gitAuthor(target)).map((s) => s.toLowerCase());
 	}
 
 	console.log('  対象: ' + files.length + ' ファイル');
@@ -387,4 +410,4 @@ function main(): number {
 	return ExitFound;
 }
 
-process.exit(main());
+main().then((code) => process.exit(code));

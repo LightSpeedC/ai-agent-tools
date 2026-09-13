@@ -15,7 +15,7 @@
 	PowerShell 版（check-contrast.ps1）からの移植。出力と終了コードは揃える。
 */
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,6 +34,7 @@ const Specs: OptionSpec[] = [
 	{ name: 'min', kind: 'number', short: 'm', aliases: ['-Min'] },
 	{ name: 'exclude', kind: 'string', short: 'e', aliases: ['-Exclude'] },
 	{ name: 'playwright-root', kind: 'string', aliases: ['-PlaywrightRoot'] },
+	{ name: 'timeout', kind: 'number' },
 ];
 
 const Defaults = {
@@ -42,6 +43,8 @@ const Defaults = {
 	min: 1.5,
 	exclude: '\\\\(tmp|etc|node_modules|\\.git|contrast)\\\\',
 	'playwright-root': 'N:/PlayWright',
+	// 待ち時間の上限（秒）。ブラウザの起動を含むので長めに取る
+	timeout: 300,
 };
 
 function usage(toStdout: boolean): void {
@@ -55,6 +58,7 @@ function usage(toStdout: boolean): void {
 	write('  -m, --min <比>            これを下回るものを報告する。既定 1.5');
 	write('  -e, --exclude <正規表現>  除外するパス');
 	write('      --playwright-root <パス>  Playwright 共有環境の置き場');
+	write('      --timeout <秒>        計測の待ち時間の上限。既定 300');
 	write('  -h, --help                この使い方を出す');
 	write('');
 	write('対象はオプション名を付けずに置いてもかまいません（check-contrast . -r）。');
@@ -71,7 +75,49 @@ function pad(s: string, width: number): string {
 type Issue = { ratio: number; tag: string; cls: string; color: string; background: string; text: string };
 type Result = { file: string; issues?: Issue[]; error?: string };
 
-function main(): number {
+type RunResult = { status: number | null; timedOut: boolean; stdout: string; stderr: string };
+
+/*
+	子プロセスを走らせて、出た分をすべて受け取る。
+
+	**同期版（spawnSync）は使わない。**返るまでこのプロセスの非同期処理が
+	1 つも進まないため。いまは待つ相手が 1 本だけだが、同期で書くと
+	並行して計測する形へ進むときに全部書き直すことになる。
+
+	上限を付ける。ブラウザが返らなくなったときに止まったままにしないため。
+	実際に ai-chat-lite 側で、入力待ちのプロセスが 10 時間残った例がある。
+*/
+function runCjs(cjs: string, inputPath: string, timeoutSec: number): Promise<RunResult> {
+	return new Promise((resolve) => {
+		const child = spawn('node', [cjs, inputPath]);
+		let stdout = '';
+		let stderr = '';
+		let timedOut = false;
+
+		const timer = setTimeout(() => {
+			timedOut = true;
+			child.kill();
+		}, timeoutSec * 1000);
+
+		child.stdout.setEncoding('utf8');
+		child.stderr.setEncoding('utf8');
+		child.stdout.on('data', (d: string) => { stdout += d; });
+		child.stderr.on('data', (d: string) => { stderr += d; });
+
+		// node が起動できないなど、走らせる前に失敗した
+		child.on('error', (e: Error) => {
+			clearTimeout(timer);
+			resolve({ status: null, timedOut, stdout, stderr: stderr + e.message });
+		});
+
+		child.on('close', (code: number | null) => {
+			clearTimeout(timer);
+			resolve({ status: code, timedOut, stdout, stderr });
+		});
+	});
+}
+
+async function main(): Promise<number> {
 	const parsed = parseArgs(process.argv.slice(2), Specs, Defaults);
 	if (parsed.help) {
 		usage(true);
@@ -88,6 +134,7 @@ function main(): number {
 	const min = Number(parsed.values['min']);
 	const exclude = String(parsed.values['exclude']);
 	const playwrightRoot = String(parsed.values['playwright-root']);
+	const timeoutSec = Number(parsed.values['timeout']);
 
 	console.log('=== HTML のコントラスト実測（ブラウザで描画して計測） ===');
 
@@ -148,13 +195,18 @@ function main(): number {
 	}), 'utf8');
 
 	// cjs は CommonJS のため node で走らせる（bun でも動くが、揃えて node にする）
-	const r = spawnSync('node', [cjs, inputPath], { encoding: 'utf8' });
-	if (r.status !== 0 || r.stdout == null || r.stdout.length === 0) {
+	const r = await runCjs(cjs, inputPath, timeoutSec);
+
+	if (r.timedOut) {
+		console.log('計測が ' + timeoutSec + ' 秒で終わりませんでした');
+		console.log('  --timeout で延ばせます。ブラウザが起動できているかも確かめてください。');
+		return ExitBadArgs;
+	}
+
+	if (r.status !== 0 || r.stdout.length === 0) {
 		console.log('計測に失敗しました');
-		if (r.stderr != null) {
-			for (const line of r.stderr.split('\n')) {
-				if (line.trim().length > 0) { console.log('  ' + line.trimEnd()); }
-			}
+		for (const line of r.stderr.split('\n')) {
+			if (line.trim().length > 0) { console.log('  ' + line.trimEnd()); }
 		}
 		return ExitBadArgs;
 	}
@@ -220,4 +272,4 @@ function main(): number {
 	return 1;
 }
 
-process.exit(main());
+main().then((code) => process.exit(code));

@@ -331,6 +331,8 @@ html2md --root . --dry-run</code></pre>
 
 	<p>ブラウザは PlayWright 共有環境を借りる。<strong>自プロジェクトに Playwright を入れる必要はない。</strong></p>
 
+	<p><strong>計測には待ち時間の上限がある</strong>（既定 300 秒・<code>--timeout</code> で変えられる）。ブラウザが返らなくなったときに、<strong>止まったままにならないため。</strong>上限で打ち切られたときは、その旨と延ばし方を出す。</p>
+
 	<h2>公開前に、出してはいけないものが混ざっていないか</h2>
 
 <pre><code class="language-shell">check-public                      # カレントのプロジェクトを見る
