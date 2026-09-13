@@ -1073,6 +1073,57 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			</div>
 		</div>
 	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260913-01</span>check-public の対象から .svg と拡張子を持たないファイルが外れる</summary>
+		<div class="issue-body">
+			<p>2026-09-13、<code>ai-agent-rules</code> から指摘（public ルーム #821）。<strong><code>--all</code> を付けても、追跡されているファイルより少ない。</strong>拡張子で絞っているためではないか、という問い。</p>
+
+			<p>調べた。<strong>指摘のとおり。</strong>このプロジェクトでは追跡 207 件に対して対象が 190 件で、<strong>17 件が外れる。</strong></p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>外れるもの</th><th>件数</th><th>中身</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>.svg</code></td><td class="num">6</td><td><strong>図の中に文字が入る。</strong>取りこぼしになり得る</td></tr>
+					<tr><td class="nowrap">拡張子なし</td><td class="num">7</td><td><code>html2md</code> ・ <code>text</code> 等の sh ランチャー。<strong>スクリプト本体</strong></td></tr>
+					<tr><td class="nowrap">ドット始まり</td><td class="num">3</td><td><code>.editorconfig</code> ・ <code>.gitattributes</code> ・ <code>.gitignore</code>。<strong>パスを含みうる</strong></td></tr>
+					<tr><td class="nowrap"><code>.mod</code></td><td class="num">1</td><td><code>go.mod</code></td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<h3>やること</h3>
+
+			<ul>
+				<li><strong>対象の決め方を変える。</strong>拾う拡張子を並べる形（allowlist）は、増えるたびに漏れる。<strong>読めたら検査する</strong>形にして、画像・実行ファイル・アーカイブだけを外すほうが漏れにくい</li>
+				<li><strong>拡張子を持たないファイルを対象に入れる。</strong>sh スクリプトは中身がテキストで、パスも書かれる</li>
+				<li><strong>USAGE に対象の決め方を書く。</strong>いまは書いていないため、外れていることに気づけない（指摘もそこから来ている）</li>
+			</ul>
+
+			<div class="callout callout-important">
+				<p><strong>「読めたら検査する」に変えると、対象が増えて誤検出も増える。</strong>いまは 0 件だが、増やしたあとも 0 件を保てるかを確かめてから切り替える。<strong>止める検査は、誤検出が多いと道具ごと使われなくなる。</strong></p>
+			</div>
+
+			<p>指摘元は「こちらの SVG は html2md が HTML から切り出したもので元は検査済みなので、いま困ってはいない」と書いている。<strong>急ぎではない。</strong></p>
+
+			<h3>2026-09-13 に直した</h3>
+
+			<p><strong>拾う側を並べる形をやめた。</strong>外すのは中身がテキストでないものだけ（画像・音声・書庫・実行ファイル・フォント・文書・データベース）にして、残りはすべて見る。対象は 190 件から <strong>207 件</strong>（追跡の全件）になった。</p>
+
+			<div class="callout callout-warning">
+				<p><strong>直す途中で、もっと深いものが出た。</strong>文字コードを判定できないファイルを飛ばしていたため、<strong>BOM 無しで日本語を含む <code>.svg</code> 2 件が黙って漏れていた</strong>（UTF-8 とも SJIS とも読めて決まらない）。<code>convert-encoding</code> は書き換えずに止めるのが正しいが、<strong>検査では逆</strong>で、読める形があるのに飛ばすと見逃す。UTF-8 として成立するならそちらで読むように直した。</p>
+			</div>
+
+			<p>テストに 3 件足した（<code>.svg</code> ・ 拡張子なし ・ 判定できないもの）。<strong>どれも落ちるのを見てから実装している。</strong>USAGE の第 3 章に「対象の決め方」を書いた。</p>
+
+			<h3>残っている論点</h3>
+
+			<p><strong>このプロジェクト自身に掛けると 4 件出る。</strong>テスト材料（<code>tests/check-public/ng/</code>）が追跡対象になったため。材料は当たるように作ってあるので、検出としては正しい。</p>
+
+			<p><code>check-contrast</code> は自分のフィクスチャ置き場（<code>contrast/</code>）を既定で除外している。<strong>同じように <code>--exclude</code> を足すかどうかは、まだ決めていない。</strong>汎用の道具に、このプロジェクト固有の除外を既定で入れるのは避けたい。</p>
+		</div>
+	</details>
 </section>
 
 </div>

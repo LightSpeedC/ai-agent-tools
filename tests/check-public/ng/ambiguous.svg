@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60" role="img" aria-label="ch01 の図 C:\Users\sato">
+			<defs>
+				<linearGradient id="i1" x1="0" y1="1" x2="0" y2="0">
+					<stop offset="0" stop-color="hsl(280,78%,25%)"/>
+					<stop offset="1" stop-color="hsl(280,58%,55%)"/>
+				</linearGradient>
+			</defs>
+	<rect width="100%" height="100%" fill="#ffffff"/>
+			<rect x="10" y="10" width="180" height="40" fill="url(#i1)" stroke="#d9dfe8"/>
+			<text x="100" y="35" fill="#fff">ch01</text>
+		</svg>

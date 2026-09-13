@@ -27,7 +27,7 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { parseArgs, type OptionSpec } from '../lib/args.ts';
-import { detect } from '../lib/detector.ts';
+import { detect, isValidUtf8 } from '../lib/detector.ts';
 import { decode } from '../lib/codec.ts';
 
 /** 指摘あり。ほかの検査ツールと同じ契約 */
@@ -49,12 +49,37 @@ const Defaults = {
 	all: false,
 };
 
-/** 見る拡張子。バイナリは飛ばす */
-const Extensions = [
-	'.cs', '.ts', '.js', '.mjs', '.cjs', '.ps1', '.psm1', '.md', '.html', '.htm',
-	'.cmd', '.bat', '.txt', '.json', '.jsonc', '.yml', '.yaml', '.xml', '.css',
-	'.scss', '.sql', '.py', '.rb', '.go', '.rs', '.java', '.reg', '.ini', '.toml',
+/*
+	見ないもの。
+
+	**拾う拡張子を並べる形にしない。**その形だと、並べ忘れたものが黙って
+	外れ、外れていることは出力を見ても分からない。実際 .svg（図の中に文字が
+	入る）と、拡張子を持たない sh のランチャーが外れていた（i260913-01）。
+
+	外すのは中身がテキストでないものだけにして、残りは読めるかどうかで決める。
+	読めなければ detect が null を返すので、そこで飛ばす。
+*/
+const BinaryExtensions = [
+	// 画像
+	'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico', '.webp', '.tif', '.tiff', '.psd',
+	// 音声・動画
+	'.mp3', '.mp4', '.wav', '.avi', '.mov', '.wmv', '.m4a', '.webm',
+	// 書庫
+	'.zip', '.gz', '.bz2', '.xz', '.7z', '.rar', '.tar', '.cab',
+	// 実行ファイルと中間物
+	'.exe', '.dll', '.pdb', '.so', '.dylib', '.bin', '.obj', '.lib', '.o',
+	// フォント
+	'.ttf', '.otf', '.woff', '.woff2', '.eot',
+	// 文書
+	'.pdf', '.docx', '.xlsx', '.pptx', '.doc', '.xls', '.ppt',
+	// データベース
+	'.db', '.sqlite', '.mdb',
 ];
+
+/** 中身がテキストとして読めそうか。拡張子を持たないものも通す */
+function isTextTarget(file: string): boolean {
+	return BinaryExtensions.indexOf(path.extname(file).toLowerCase()) < 0;
+}
 
 const SkipDirs = ['.git', 'node_modules', 'tmp', 'etc', 'dist', '_releases'];
 
@@ -201,7 +226,7 @@ function walkAll(dir: string, out: string[]): void {
 			walkAll(full, out);
 			continue;
 		}
-		if (e.isFile() && Extensions.indexOf(path.extname(e.name).toLowerCase()) >= 0) {
+		if (e.isFile() && isTextTarget(e.name)) {
 			out.push(full);
 		}
 	}
@@ -215,8 +240,18 @@ function readLines(file: string): string[] | null {
 	} catch {
 		return null;
 	}
-	const kind = detect(bytes);
-	if (kind == null) { return null; }
+	let kind = detect(bytes);
+	if (kind == null) {
+		/*
+			BOM 無しで日本語を含むと、UTF-8 とも SJIS とも読めて判定できない。
+			**変換なら書き換えずに止めるのが正しいが、検査では逆。**
+			読める形があるのに飛ばすと、黙って検査から漏れる
+			（実際に日本語入りの .svg 2 件が漏れていた）。
+			UTF-8 として成立するならそちらで読む。
+		*/
+		if (isValidUtf8(bytes)) { kind = 'utf8'; }
+		else { return null; }
+	}
 	try {
 		return decode(bytes, kind).split(/\r?\n/);
 	} catch {
@@ -264,7 +299,7 @@ function main(): number {
 	const tracked = all ? null : gitFiles(target);
 	if (tracked != null) {
 		files = tracked.map((f) => path.join(target, f))
-			.filter((f) => Extensions.indexOf(path.extname(f).toLowerCase()) >= 0);
+			.filter((f) => isTextTarget(f));
 	}
 	else {
 		const found: string[] = [];

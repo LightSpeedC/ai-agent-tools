@@ -358,6 +358,21 @@ check-public --word-list _ng.txt  # 除外語リストを指定する</code></pr
 
 	<p><strong>見るのは git が追跡しているファイルだけ。</strong><code>.gitignore</code> で外したものは公開されないため、見れば必ず誤検出になる（除外語リスト自身がそこにある）。<code>--all</code> で全部を見られる。</p>
 
+	<h3>対象の決め方</h3>
+
+	<p><strong>拾う拡張子を並べる形にしていない。</strong>外すのは中身がテキストでないものだけ（画像・音声・書庫・実行ファイル・フォント・文書・データベース）で、<strong>残りはすべて見る。</strong></p>
+
+	<ul>
+		<li><strong>拡張子を持たないファイルも見る</strong>（<code>html2md</code> ・ <code>text</code> のような sh のランチャー）</li>
+		<li><strong><code>.svg</code> も見る。</strong>図の中に文字が入る</li>
+		<li><strong>SJIS ・ UTF-16 も取りこぼさない。</strong>ここを外すと <code>cmd</code> ・ <code>reg</code> だけが検査されない状態になる</li>
+		<li><strong>文字コードを判定できないものも、UTF-8 として読めるなら見る。</strong>BOM 無しで日本語を含むファイルは UTF-8 とも SJIS とも読めて決まらない。<code>convert-encoding</code> は書き換えずに止めるが、<strong>検査では逆で、読める形があるのに飛ばすと黙って漏れる</strong></li>
+	</ul>
+
+	<div class="callout callout-warning">
+		<p><strong>拾う側を並べると、並べ忘れたものが黙って外れる。</strong>外れていることは出力を見ても分からない。実際に <code>.svg</code> 6 件と sh のランチャー 7 件が漏れていた（他プロジェクトからの指摘で判明）。</p>
+	</div>
+
 	<p>除外語リストは<strong>先頭 <code>_</code> のファイルを既定にする</strong>（<code>_public-ng-words.txt</code>）。リスト自体が機密になるため、共通ルールにより全階層が Git 管理外になる置き方を採る。<strong>リストが無ければ、その項目を飛ばしたことを画面に出す。</strong>黙っては通さない。</p>
 
 	<h2>どちらも既定で除外するフォルダがある</h2>

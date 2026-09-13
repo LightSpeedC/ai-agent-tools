@@ -96,6 +96,26 @@ assertTrue(
 const hitLines = r.out.split('\n').filter((l) => /sample\.md:\d+/.test(l));
 assertEqual('6 当たるのは 4 箇所だけ', 4, hitLines.length);
 
+/*
+	6b. 拡張子で絞らない（i260913-01）
+
+	拾う拡張子を並べる形にしていたため、.svg と拡張子を持たないファイルが
+	外れていた。**図の中の文字も、sh のランチャーも、テキストで中身が読める。**
+	外れていることは、出力を見ても分からない
+*/
+assertTrue('6b .svg も見る', r.out.includes('figure.svg:'), r.out.slice(0, 300));
+assertTrue('6b 拡張子の無いファイルも見る', r.out.includes('launcher:'), r.out.slice(0, 300));
+
+/*
+	6c. 文字コードを判定できないファイルも見る
+
+	BOM 無しで日本語を含むと、UTF-8 とも SJIS とも読めて判定できない。
+	**変換なら書き換えずに止めるのが正しいが、検査では逆。**
+	読める形があるのに飛ばすと、黙って漏れる。
+	ambiguous.svg は convert-encoding が「判定できません」と返す材料
+*/
+assertTrue('6c 判定できないファイルも見る', r.out.includes('ambiguous.svg:'), r.out.slice(0, 400));
+
 // ---- 7. --skip で項目を外せる ----
 r = run([path.join(cases, 'ng'), '--all', '--skip', 'mail', '--skip', 'path', '--skip', 'secret', '--skip', 'script']);
 assertEqual('7 全部外せば 0 になる', 0, r.code);

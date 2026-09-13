@@ -1,0 +1,4 @@
+#!/bin/sh
+# check-public のテスト用。拡張子を持たないファイルも検査されることを確かめる材料。
+# sh のランチャー（html2md ・ text 等）はこの形で、中身はテキスト。
+echo "連絡先: hanako.suzuki@example-corp.jp"
