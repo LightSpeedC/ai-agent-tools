@@ -20,10 +20,17 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
+<#
+	NodeTarget を持つものは node でも回す。
+
+	本番のランチャーは bun を優先するため、bun が入っている環境では
+	**node で 1 ケースも回らない**。移植版は node でも動くことになっているので、
+	そちらでも確かめる（runners/ の当て木を -Target に渡す）。
+#>
 $Suites = @(
-	@{ Name = 'html2md'; Script = 'run-tests.ps1' },
-	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1' },
-	@{ Name = 'text'; Script = 'run-text-tests.ps1' },
+	@{ Name = 'html2md'; Script = 'run-tests.ps1'; NodeTarget = 'runners\html2md-node.cmd' },
+	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },
+	@{ Name = 'text'; Script = 'run-text-tests.ps1'; NodeTarget = 'runners\text-node.cmd' },
 	# psh のテストだけ ts で書いてある。道具自体が PowerShell を呼ぶため、
 	# テストまで ps1 にすると道具が壊れたときにテストも動かせない
 	@{ Name = 'psh'; Script = 'run-psh-tests.ts' },
@@ -50,6 +57,16 @@ $TsRunners = @()
 if (Get-Command bun -ErrorAction SilentlyContinue) { $TsRunners += 'bun' }
 if (Get-Command node -ErrorAction SilentlyContinue) { $TsRunners += 'node' }
 
+<#
+	bun が入っているか。
+
+	**node は必ずある前提**（このプロジェクトの大前提）。
+	bun が無ければランチャーは node に落ちるため、既定の 1 周がそのまま
+	node になる。**そのとき 2 周目を回すと、同じものを 2 回見ることになる。**
+#>
+$HasBun = [bool](Get-Command bun -ErrorAction SilentlyContinue)
+$FirstRunner = if ($HasBun) { 'bun' } else { 'node' }
+
 $failed = @()
 
 foreach ($suite in $Suites) {
@@ -75,8 +92,24 @@ foreach ($suite in $Suites) {
 		continue
 	}
 
+	# 既定で回す。ランチャーが bun を優先するので、bun があれば bun
+	Write-Host ('--- ' + $suite.Name + '（' + $FirstRunner + '）') -ForegroundColor DarkGray
 	& $path
-	if ($LASTEXITCODE -ne 0) { $failed += $suite.Name }
+	if ($LASTEXITCODE -ne 0) { $failed += ($suite.Name + '（' + $FirstRunner + '）') }
+
+	# node でも回す。bun が無ければ上が既に node なので、そのときは回さない
+	if ($HasBun -and $suite.ContainsKey('NodeTarget')) {
+		$target = Join-Path $PSScriptRoot $suite.NodeTarget
+		if (Test-Path -LiteralPath $target) {
+			Write-Host ('--- ' + $suite.Name + '（node）') -ForegroundColor DarkGray
+			& $path -Target $target
+			if ($LASTEXITCODE -ne 0) { $failed += ($suite.Name + '（node）') }
+		}
+		else {
+			Write-Host ('node 用の当て木がありません: ' + $target) -ForegroundColor Red
+			$failed += ($suite.Name + '（node）')
+		}
+	}
 }
 
 # このリポジトリ自身が文字コードと改行の規約を守っているかを見る。
@@ -84,7 +117,8 @@ foreach ($suite in $Suites) {
 Write-Host ''
 Write-Host '=== 文字コードと改行の検査 ===' -ForegroundColor Cyan
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-& (Join-Path $Root 'convert-encoding-cs.exe') $Root --check
+# 移植版を呼ぶ。C# 版は突き合わせ用で、ビルドしていない環境もある
+& (Join-Path $Root 'convert-encoding.cmd') $Root --check
 if ($LASTEXITCODE -ne 0) { $failed += '文字コードと改行' }
 
 Write-Host ''

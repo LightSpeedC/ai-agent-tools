@@ -10,10 +10,13 @@
 	設定は root の tsconfig.json。対象は src/ 配下と tools/40_test/ の ts。
 
 	tsc は root の node_modules に入れる（typescript と @types/node の 2 つ）。
-	無ければ bun install を促して 2 で止まる。**黙って成功しない。**
+	無ければ npm install を促して 2 で止まる。**黙って成功しない。**
+
+	入れるのは npm。**node は必ずある前提**（このプロジェクトの大前提）で、
+	bun は入っていないことがある。
 
 .PARAMETER Install
-	node_modules が無いときに bun install まで行う。
+	node_modules が無いときに npm install まで行う。
 #>
 [CmdletBinding()]
 param(
@@ -48,13 +51,13 @@ Write-Host ''
 
 if ($null -eq $Tsc) {
 	if ($Install) {
-		Write-Host '  tsc がありません。bun install で入れます'
+		Write-Host '  tsc がありません。npm install で入れます'
 		Push-Location $Root
-		try { & bun install } finally { Pop-Location }
+		try { & npm install } finally { Pop-Location }
 		$Tsc = Find-Tsc
 	}
 	else {
-		Write-Host '  tsc がありません。root で bun install を実行してください' -ForegroundColor Red
+		Write-Host '  tsc がありません。root で npm install を実行してください' -ForegroundColor Red
 		exit 2
 	}
 }

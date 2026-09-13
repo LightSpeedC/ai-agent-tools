@@ -23,7 +23,8 @@ $ErrorActionPreference = 'Stop'
 
 # tools/40_test/ に置くため、2 階層上がプロジェクトルート
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$Exe = if ($Target) { $Target } else { Join-Path $Root 'convert-encoding-cs.exe' }
+# 既定は移植版（ランチャー経由）。C# 版を見るときは -Target で名指しする
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'convert-encoding.cmd' }
 $Work = Join-Path $Root 'tmp\convert-encoding-test'
 
 $script:Pass = 0
@@ -148,7 +149,7 @@ Write-Host ''
 Write-Host '=== convert-encoding のテスト ===' -ForegroundColor Cyan
 
 if (-not (Test-Path -LiteralPath $Exe)) {
-	Write-Host ('convert-encoding.exe がありません。build-convert-encoding-cs.cmd を実行してください') -ForegroundColor Red
+	Write-Host ('対象がありません。C# 版を見るなら build-convert-encoding-cs.cmd を実行してください') -ForegroundColor Red
 	exit 2
 }
 

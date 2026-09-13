@@ -39,7 +39,8 @@ $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $CasesDir = Join-Path $Root 'tests\cases'
 $GoldenDir = Join-Path $Root 'tests\golden'
 $WorkRoot = Join-Path $Root 'tmp\test-run'
-$Exe = if ($Target) { $Target } else { Join-Path $Root 'html2md-cs.exe' }
+# 既定は移植版（ランチャー経由）。C# 版を見るときは -Target で名指しする
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'html2md.cmd' }
 
 # ケースごとに「変換後の Markdown に出ているべき文字列」を並べる。
 # ここに書いたものが 1 つでも欠けたら失敗にする。
@@ -186,7 +187,8 @@ Write-Host ''
 Write-Host '=== html2md のテスト ===' -ForegroundColor Cyan
 
 if (-not (Test-Path -LiteralPath $Exe)) {
-	Write-Host ('html2md.exe がありません。build-html2md-cs.cmd を実行してください: ' + $Exe) -ForegroundColor Red
+	Write-Host ('対象がありません: ' + $Exe) -ForegroundColor Red
+	Write-Host '  移植版なら bun か node が要ります。C# 版を見るなら build-html2md-cs.cmd を先に実行してください。'
 	exit 2
 }
 
