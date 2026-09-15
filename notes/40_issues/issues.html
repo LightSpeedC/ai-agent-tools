@@ -815,7 +815,8 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260908-03</span>low（約 25 件・軽微）</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>個別に挙がっていた 4 件は解消済みと確認した（i260910-03 の5）。README のツール表・text 一式・ビルド節の記載漏れと、閉じた課題 i260907-01 の <code>.exe</code> 表記が 3 本の cmd に残る件は、62ab2e4 で直っていたことを現物確認。<code>check-contrast -Recurse</code> が自リポジトリで常に 4 件 exit 1 になる件は、自己診断用フィクスチャ <code>contrast/selftest.html</code>（意図してコントラスト不良を作ってある）を <code>-Recurse</code> の巻き込みだったため、既定の除外パターンに <code>contrast</code> を追加して直した（直接指定すれば従来どおり検出する）。強調内の空白が Trim で落ちて語が繋がる件は、<code>Emphasis.Resolve</code>（exe）・<code>Resolve-Emphasis</code>（ps1）で <code>&lt;strong&gt;a &lt;/strong&gt;b</code> のような内側末尾の空白が捨てられ <code>**a**b</code> になっていたのを確認し、前後の空白を記法の外側へ出すよう直した（回帰テスト追加）。</p>
-			<p><span class="badge b-none">未</span>残り約 21 件は未検証。詳細はレビュー #649 の low 節。</p>
+			<p><span class="badge b-ok">済</span>2026-09-16、<a href="../01_research/i260908-04-review649.html">保存したレビュー #649</a>の low 節と照らし、他の課題で既に解消済みと確認できる分をさらに 2 件消し込んだ。<code>outside</code>・<code>svgvar</code> の期待値が空だった件は <span class="no">i260910-02</span> の 10・11 で埋めた。<code>.editorconfig</code>・<code>.gitattributes</code>・<code>.vscode/settings.json</code> が無い件は <span class="no">i260908-02</span> の「設定ファイル一式」で揃えた。</p>
+			<p><span class="badge b-none">未</span><strong>残り約 19 件は個別の裏取りをしていない。</strong>原文は保存済みのレビューに残っており、着手するときはそこから拾う: build 系 cmd が 3 本に分かれ 1 本しか手に入らない旨が資料に無い／check-* の終了コード表が資料と合わない／run-all-tests.ps1 は 1 本が例外で落ちると残りが走らない（→ ざっと読んだ限り、通常の非ゼロ終了は $failed に積んで継続する作りだが、キャッチしていない例外なら止まりうる。要実測）／run-tests.ps1 が検査の指摘（exit 1）を成功として扱う／章番号が section 順でなく h1 順／check-markdown が非公開フォルダの md も GitHub へ送る／書き込みの原子性がツール間で不揃い／html2md が入力 html の文字コードを検査しない／USAGE が2文書をリンクでなくパス文字列で指す／README の CSS の章コメントが古い／text 章に受け取り側 UTF-8 の注意書きが無い／資料の h3 以下の段の説明が表と決着で違う／html-class-rules.html の章採番の説明が実装と食い違う。</p>
 		</div>
 	</details>
 
