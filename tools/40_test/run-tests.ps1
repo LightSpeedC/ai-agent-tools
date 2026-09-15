@@ -166,6 +166,16 @@ $Expect = @{
 		# 実在しないパス扱いになり .html のまま残っていた）
 		'[クエリ付き](b.md?x=1)'
 	)
+	'figure-extra' = @(
+		# figure 専用の正規表現扱いをやめ、一般の convertBlocks に合流させた。
+		# img・2個目以降の svg・p・figcaption のどれも失われないこと
+		# （i260908-04 の判断が要ったもの1。figure の中身が消える）
+		'![FIGUREEXTRAIMG スクリーンショット](shot.png)',
+		'![1枚目]',
+		'![2枚目]',
+		'FIGUREEXTRAPARA 補足の段落',
+		'FIGUREEXTRACAP 図のキャプション'
+	)
 	'svg-viewbox-comma' = @(
 		# viewBox がカンマ区切りでも width/height を付けられる
 		# （i260908-04 の表・SVG・強調・検査8。空白決め打ちだと付かない）

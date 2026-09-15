@@ -246,6 +246,12 @@ export class Converter {
 				// dl の外に単独で置かれた dt・dd も同じ
 				case 'dt':
 				case 'dd':
+				// figure も同じ経路に合流させる。以前は最初の svg と figcaption だけを
+				// 正規表現で拾い、それ以外（img・2個目以降の svg・p・table 等）を
+				// 黙って捨てていた（i260908-04）。svg は一般の 'svg' ケースが、
+				// img はインライン変換が、figcaption は地の文として、それぞれ既に
+				// 正しく扱えるため、特別扱いをやめるだけで直る
+				case 'figure':
 					outBlocks.push(...this.convertBlocks(block.inner, ctx));
 					break;
 
@@ -277,20 +283,6 @@ export class Converter {
 				case 'div':
 					this.convertDiv(block, classes, ctx, outBlocks);
 					break;
-
-				case 'figure': {
-					const svgM = /<svg\b[\s\S]*?<\/svg>/.exec(block.outer);
-					if (svgM != null) {
-						const info = exportSvg(svgM[0], ctx);
-						outBlocks.push('![' + info.label + '](images/' + info.fileName + ')');
-					}
-					const capM = /<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/.exec(block.outer);
-					if (capM != null) {
-						const cap = this.inline.convert(capM[1], anchors, false);
-						if (cap.length > 0) { outBlocks.push(cap); }
-					}
-					break;
-				}
 
 				case 'svg': {
 					const info = exportSvg(block.outer, ctx);
