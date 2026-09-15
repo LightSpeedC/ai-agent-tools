@@ -320,10 +320,11 @@
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260830-09</span>章間ナビを冒頭にも出す ［中］</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-09</span>章間ナビを冒頭にも出す ［中］</summary>
 		<div class="issue-body">
 			<p><code>&lt;footer&gt;</code> の内容は末尾に出るが、冒頭には出ない。900 行を超える章があり、次の章へ行くのに末尾までスクロールすることになる。</p>
 			<p>ナビを持たないページ（README）には出さない判定が要る。要求元は「前章」「次章」「目次に戻る」を含むかで判定している。</p>
+			<p><span class="badge b-ok">済</span><strong>html2md の変換仕様としてではなく、HTML を書くときの取り決めとして解決済みだった。</strong>共通ルール「学習資料の作成ルール」の「資料間のリンク」に「本文（<code>.wrap</code>）の先頭とフッターの両方に、前へ・次へ・目次の3つのバッジを置く。上下で同じ内容にする」と既に定められている。html2md は HTML の構造をそのまま変換するだけなので、ナビを冒頭にも出すかどうかは自動判定の対象ではなく、<strong>執筆時に両方へ置くかどうかで決まる</strong>。「ナビを持たないページには出さない」判定も、単に該当ページの HTML に置かないだけで済み、変換側の判定ロジックは要らない。README のような単独ページ（前後リンクを持たない）は元々このルールの対象外。</p>
 		</div>
 	</details>
 
@@ -665,7 +666,7 @@ $sub = Convert-Blocks ...</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260912-04</span>convert-encoding のテストが、ごくまれに書き込み失敗（exit 5）で落ちる</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260912-04</span>convert-encoding のテストが、ごくまれに書き込み失敗（exit 5）で落ちる</summary>
 		<div class="issue-body">
 			<p><code>run-convert-encoding-tests.ps1</code> のケースが<strong>再現しない形で 1 件だけ落ちる</strong>ことがある。2026-09-12 に 4 回観測（ケース 8 ・ 5g ・ 40 ・ 9）。<strong>毎回ちがうケースで、直後の再実行では通る</strong>（同日に 4 回連続で全件成功も確認）。</p>
 
@@ -685,16 +686,22 @@ $sub = Convert-Blocks ...</code></pre>
 			<h3>やること</h3>
 
 			<ul>
-				<li><span class="badge b-none">未</span>失敗時のメッセージに例外の種類を残す（いまは <code>ex.Message</code> だけ）</li>
+				<li><span class="badge b-ok">済</span>失敗時のメッセージに例外の種類を残す（いまは <code>ex.Message</code> だけ）</li>
 				<li><span class="badge b-none">未</span><code>File.Replace</code> の失敗を数回だけ待って再試行するか決める。<strong>握りつぶすのは避ける</strong></li>
-				<li><span class="badge b-none">未</span>失敗したケースの終了コードと標準エラーをテスト側でも残す。<strong>いまは <code>*&gt; $null</code> で捨てているため、落ちたときに手掛かりが無い</strong></li>
+				<li><span class="badge b-ok">済</span>失敗したケースの終了コードと標準エラーをテスト側でも残す。<strong>いまは <code>*&gt; $null</code> で捨てているため、落ちたときに手掛かりが無い</strong></li>
 			</ul>
 
 			<div class="callout callout-warning">
 				<p><strong>テストが「たまに落ちる」状態を放置しない。</strong>本物の失敗を見逃す方向に効く。</p>
 			</div>
 
-			<p><span class="badge b-none">未</span><strong>記録の補足。</strong>この課題は C# 版（<code>WriteAtomic</code>・<code>File.Replace</code>）を前提に書かれているが、<strong>本番の実装は既に TypeScript 版（<code>src/convert-encoding/main.ts</code> の <code>writeAtomic</code>）に移っている</strong>。TS 版は <code>fs.renameSync</code> を使っており、書き込み経路自体が違う。1（例外の種類）は、Node の fs 例外は <code>message</code> に <code>EPERM</code> 等のコードを含むのが通例のため、TS 版では既に一定満たしている可能性がある。<strong>非再現の不具合で確実な検証ができないため、TS 版で再度実測してから判断するのが妥当</strong>。2（リトライ方針）・3（失敗時の手掛かり保存）は判断・実装とも未着手のまま残す。</p>
+			<p><span class="badge b-ok">済</span><strong>記録の補足。</strong>この課題は C# 版（<code>WriteAtomic</code>・<code>File.Replace</code>）を前提に書かれているが、<strong>本番の実装は既に TypeScript 版（<code>src/convert-encoding/main.ts</code> の <code>writeAtomic</code>）に移っている</strong>。TS 版は <code>fs.renameSync</code> を使っており、書き込み経路自体が違う。</p>
+
+			<p><span class="badge b-ok">済</span>2026-09-16、1（例外の種類）を実測して確認した。Node の fs 例外は <code>message</code> に <code>ENOENT</code>・<code>EPERM</code> 等のコードを必ず含む（<code>renameSync</code> を強制的に失敗させて実測）。<code>main.ts</code> の <code>'書き込みに失敗しました: ' + (e as Error).message</code> は既にこのコードを含んでおり、<strong>追加の実装は不要</strong>。</p>
+
+			<p><span class="badge b-ok">済</span>3（失敗時の手掛かり保存）も直した。<code>run-convert-encoding-tests.ps1</code> の <code>Invoke-Exe</code> が出力を <code>*&gt; $null</code> で捨てていたのを、<code>$script:LastExeOutput</code> に残すよう変更。<code>Write-Ng</code> が失敗を報告するときに最初の1回だけ添えて表示し、消費する（無関係な後続の失敗には出てこない）。142 件すべて成功を確認。</p>
+
+			<p><span class="badge b-none">未</span>2（リトライ方針）だけが残る。<strong>何回・どれだけ待って再試行するか</strong>は決め方が複数あり（1回だけ即再試行、Nミリ秒待って複数回、等）、非再現の不具合のため効果測定も難しい。判断待ち。</p>
 		</div>
 	</details>
 

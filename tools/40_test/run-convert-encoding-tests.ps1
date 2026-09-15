@@ -96,16 +96,21 @@ function Measure-Eol {
 	return [pscustomobject]@{ CrLf = $crlf; Lf = $lf; Cr = $cr }
 }
 
-# exe を実行して終了コードを返す。出力は捨てる
+# exe を実行して終了コードを返す。
+#
+# 出力は $script:LastExeOutput に残す（失敗の手掛かり。i260912-04）。
+# Write-Ng が最初の1回だけ表示して消費するので、無関係な後続の失敗には
+# 出てこない。
 function Invoke-Exe {
 	param([string[]]$Arguments)
 	# 5.1 では ErrorActionPreference=Stop のとき native の stderr 出力が
 	# 停止エラーになる。想定内の [NG] 出力で落ちないよう一時的に Continue にする。
 	$old = $ErrorActionPreference
 	$ErrorActionPreference = 'Continue'
-	& $Exe @Arguments *> $null
+	$out = & $Exe @Arguments 2>&1
 	$code = $LASTEXITCODE
 	$ErrorActionPreference = $old
+	$script:LastExeOutput = ($out | Out-String).Trim()
 	return $code
 }
 
@@ -119,6 +124,11 @@ function Write-Ng {
 	param([string]$Name, [string]$Detail)
 	$script:Fail++
 	Write-Host ('  [NG] ' + $Name + '  ' + $Detail) -ForegroundColor Red
+	# 直前の Invoke-Exe の出力があれば、最初の失敗にだけ添えて消費する
+	if ($script:LastExeOutput) {
+		Write-Host ('        出力: ' + $script:LastExeOutput) -ForegroundColor DarkYellow
+		$script:LastExeOutput = $null
+	}
 }
 
 function Assert-Equal {
