@@ -894,6 +894,10 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<div class="callout callout-important">
 				<p><strong>記述の是正（判断が要る）。</strong>上の修正方針（隣接判定の組み替え）を現在の TypeScript 実装（<code>emphasis.ts</code>・<code>inline.ts</code>）で追ってみたところ、<strong>「末尾」パターンは直せても「中間」パターンは直らない</strong>ことが分かった。「中間」（<code>&lt;strong&gt;… &lt;span class="badge"&gt;x&lt;/span&gt; …&lt;/strong&gt;</code>）では、バッジ自身が外側のどのセンチネルにも隣接しないため、隣接判定をいくら精緻にしても<strong>バッジ単体が独立して <code>**x**</code> に確定してしまう</strong>。これが外側の <code>**…**</code> と衝突し、同じ種類の強調が入れ子になった markdown（<code>**… **x** …**</code>）ができて崩れる。<strong>根本原因は「隣接しているか」ではなく「同じ種類の強調に入れ子で囲まれているか」</strong>。直すには、外側に同種のペアが未解決のまま残っている（隣接の有無を問わず）ときは <code>**</code> ではなく <code>&lt;strong&gt;</code> タグで出す、という判定に組み替える必要がある。<strong>生成物の記法（** か タグか）が変わる範囲が当初の想定より広がるため、実装せず記録だけ残す。</strong></p>
 			</div>
+
+			<div class="callout callout-tip">
+				<p><span class="badge b-none">未</span><strong>2026-09-16、別解を検討した。</strong>タグへ落とす以外に、<strong>入れ子の内側だけ <code>__</code>（アンダースコア2つ）へ記法を替える</strong>という手がある。CommonMark は <code>**</code> と <code>__</code> を別種の区切りとして扱うため、<code>**外側 __内側__ 続き**</code> は入れ子として正しく解釈される（<code>&lt;strong&gt;外側 &lt;strong&gt;内側&lt;/strong&gt; 続き&lt;/strong&gt;</code>）。先頭・末尾・中間のどのパターンでも Markdown の記法のまま表現でき、<strong>HTML タグへ落とすより自然</strong>（このプロジェクトは、記法で表現できない場合の最終手段としてのみタグを使う方針）。ただし<strong>この関数（<code>emphasis.ts</code>）は既に2度不具合を起こしている</strong>ため、実装するなら <code>check-markdown</code> で GitHub の実レンダラ確認を通してからにすべきで、今回は知見の記録だけに留める。</p>
+			</div>
 		</div>
 	</details>
 
