@@ -1,0 +1,71 @@
+﻿<#
+	他の PC でも ai-agent-tools を使えるように、実行に最低限必要なファイルだけを
+	_releases/ai-agent-tools/ へ集める。
+
+	含めるもの: ランチャー（拡張子なし + .cmd）・実行に使う src 配下・
+	contrast/（check-contrast が呼ぶ Playwright 側）・USAGE-FOR-PROJECTS・
+	最小の package.json（"type": "module" だけ）・個人用セッション起動
+	スクリプト（cc.cmd・cx.cmd・n.cmd・nn.cmd。単体の cmd で src 依存なし）
+
+	含めないもの: テスト・tools・notes・.git・node_modules・bun.lock・
+	tsconfig.json・*.exe（C# 移植版のビルド成果物）・src 内の C# 移植ソース
+	（ConvertEncodingCs・Html2MdCs・TextCs）・移行前の PowerShell 版
+	（check-contrast-ps.ps1・check-markdown-ps.ps1）・このプロジェクト自身の
+	ビルド用 cmd（build-*-cs.cmd）
+
+	毎回 _releases/ai-agent-tools/ を作り直す。世代は残さない。
+	出力先は .gitignore の "_*" で除外済み（追加の設定は要らない）。
+#>
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+$ErrorActionPreference = 'Stop'
+
+$root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+$target = Join-Path $root '_releases/ai-agent-tools'
+
+if (Test-Path $target) {
+	Remove-Item $target -Recurse -Force
+}
+New-Item -ItemType Directory -Path $target -Force | Out-Null
+
+# ランチャー（拡張子なし + .cmd）
+$launchers = @(
+	'html2md', 'html2md.cmd',
+	'text', 'text.cmd',
+	'convert-encoding', 'convert-encoding.cmd',
+	'psh', 'psh.cmd',
+	'check-markdown', 'check-markdown.cmd',
+	'check-public', 'check-public.cmd',
+	'check-contrast', 'check-contrast.cmd',
+	'cc.cmd', 'cx.cmd', 'n.cmd', 'nn.cmd'
+)
+foreach ($name in $launchers) {
+	Copy-Item (Join-Path $root $name) (Join-Path $target $name)
+}
+
+# 実行に使う src 配下（C# 移植ソースは含めない）
+$srcDirs = @('lib', 'html2md', 'text', 'convert-encoding', 'check-markdown', 'check-contrast', 'check-public', 'psh')
+foreach ($dir in $srcDirs) {
+	Copy-Item (Join-Path $root "src/$dir") (Join-Path $target "src/$dir") -Recurse
+}
+
+# check-contrast が呼ぶ Playwright 側
+Copy-Item (Join-Path $root 'contrast') (Join-Path $target 'contrast') -Recurse
+
+# 使う側の案内（読むのはこれだけでよい）
+Copy-Item (Join-Path $root 'USAGE-FOR-PROJECTS.md') (Join-Path $target 'USAGE-FOR-PROJECTS.md')
+Copy-Item (Join-Path $root 'USAGE-FOR-PROJECTS.html') (Join-Path $target 'USAGE-FOR-PROJECTS.html')
+
+# 最小の package.json（devDependencies は実行に要らない。"type": "module" だけ要る）
+$pkg = [ordered]@{
+	name = 'ai-agent-tools'
+	private = $true
+	type = 'module'
+	description = 'HTML → Markdown 変換と、文字コード・テキスト操作の共有ツール'
+}
+$json = $pkg | ConvertTo-Json
+[System.IO.File]::WriteAllText((Join-Path $target 'package.json'), $json, (New-Object System.Text.UTF8Encoding($false)))
+
+$fileCount = (Get-ChildItem $target -Recurse -File).Count
+Write-Host "配布物を生成しました: $target"
+Write-Host "ファイル数: $fileCount"
