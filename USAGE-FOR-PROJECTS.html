@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>html2md を他のプロジェクトから使う</title>
+<title>ai-agent-tools を他のプロジェクトから使う</title>
 <style>
 	:root{
 		--navy1:#12224d; --navy2:#2f5fbf;
@@ -146,20 +146,20 @@
 
 <div class="titlebar">
 	<div class="inner">
-		<h1>html2md を他のプロジェクトから使う</h1>
-		<p class="lead">HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-12</p>
+		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
+		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-13</p>
 	</div>
 </div>
 
 <div class="wrap">
 
-<p class="backlink"><a href="README.html">← html2md</a> ／ <a href="notes/10_plan/html2md-tag-spec.html">タグ対応仕様</a> ／ <a href="notes/90_rules/html-class-rules.html">クラス名の取り決め</a></p>
+<p class="backlink"><a href="README.html">← ai-agent-tools</a> ／ <a href="notes/10_plan/html2md-tag-spec.html">タグ対応仕様</a> ／ <a href="notes/90_rules/html-class-rules.html">クラス名の取り決め</a></p>
 
 <div class="toc">
 	<h2>目次</h2>
 	<ol>
-		<li class="ch01"><a href="#ch01">7 つのコマンド</a></li>
+		<li class="ch01"><a href="#ch01">使えるコマンド</a></li>
 		<li class="ch02"><a href="#ch02">html2md で変換する</a></li>
 		<li class="ch03"><a href="#ch03">検証する</a></li>
 		<li class="ch04"><a href="#ch04">文字コードと改行を直す</a></li>
@@ -170,7 +170,7 @@
 </div>
 
 <section class="ch01" id="ch01">
-	<h1>7 つのコマンド</h1>
+	<h1>使えるコマンド</h1>
 
 	<p><strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。</p>
 
@@ -193,7 +193,7 @@
 
 	<h2>中身が TypeScript に変わった（2026-09-12）</h2>
 
-	<p><strong>6 つとも TypeScript になった。</strong><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> は C# の exe から、<code>check-contrast</code> ・ <code>check-markdown</code> は PowerShell から移した。<code>psh</code> は最初から TypeScript である。</p>
+	<p><strong>どれも TypeScript で書いてある。</strong><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> は C# の exe から、<code>check-contrast</code> ・ <code>check-markdown</code> は PowerShell から移した。<code>psh</code> ・ <code>check-public</code> は最初から TypeScript である。</p>
 
 	<p>呼び出し方・出力の中身は変えていない。<strong>使う側の書き換えは要らない</strong>（<code>check-〜</code> のオプションだけ <code>--</code> へ寄せたが、古い形も受ける）。</p>
 
@@ -323,7 +323,7 @@ html2md --root . --dry-run</code></pre>
 
 <pre><code class="language-shell">check-contrast . --recurse</code></pre>
 
-	<p><strong>オプションは 6 つとも同じ形</strong>（<code>--path</code> ・ <code>-p</code> ・ 名前を付けない対象）。この 2 つは以前 PowerShell 製で <code>-Path</code> 形式だったが、<strong>TypeScript へ移して <code>--</code> へ寄せた。</strong>古い形も当面は受ける。</p>
+	<p><strong>オプションはどれも同じ形</strong>（<code>--path</code> ・ <code>-p</code> ・ 名前を付けない対象）。この 2 つは以前 PowerShell 製で <code>-Path</code> 形式だったが、<strong>TypeScript へ移して <code>--</code> へ寄せた。</strong>古い形も当面は受ける。</p>
 
 	<p>移す前の PowerShell 版は <code>check-contrast-ps.ps1</code> ・ <code>check-markdown-ps.ps1</code> として残してある。<strong>突き合わせ用で、ふだん呼ぶものではない。</strong></p>
 
@@ -657,7 +657,7 @@ psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる</code></
 </div>
 
 <footer>
-	<p><a href="README.html">← html2md</a></p>
+	<p><a href="README.html">← ai-agent-tools</a></p>
 </footer>
 
 </body>

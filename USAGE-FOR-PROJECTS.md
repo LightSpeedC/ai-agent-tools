@@ -1,14 +1,14 @@
-# html2md を他のプロジェクトから使う
+# ai-agent-tools を他のプロジェクトから使う
 
-HTML から Markdown を生成し、双方を検証する。自プロジェクトには何もインストールしない。
+HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-09-12
+> 📅 作成: 2026-09-04 / 更新: 2026-09-13
 
-[← html2md](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
+[← ai-agent-tools](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
 ## 目次
 
-1. [7 つのコマンド](#1-7-つのコマンド)
+1. [使えるコマンド](#1-使えるコマンド)
 2. [html2md で変換する](#2-html2md-で変換する)
 3. [検証する](#3-検証する)
 4. [文字コードと改行を直す](#4-文字コードと改行を直す)
@@ -16,7 +16,7 @@ HTML から Markdown を生成し、双方を検証する。自プロジェク�
 6. [PowerShell を呼ぶ（psh）](#6-powershell-を呼ぶpsh)
 7. [つまずきやすいところ](#7-つまずきやすいところ)
 
-## 1. 7 つのコマンド
+## 1. 使えるコマンド
 
 <strong>このフォルダは PATH に入っている。パスを書かずに名前だけで呼べる。</strong>自プロジェクトに何かをインストールする必要はなく、ランチャーを置く必要もない。
 
@@ -34,7 +34,7 @@ HTML から Markdown を生成し、双方を検証する。自プロジェク�
 
 ### 中身が TypeScript に変わった（2026-09-12）
 
-**6 つとも TypeScript になった。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-contrast` ・ `check-markdown` は PowerShell から移した。`psh` は最初から TypeScript である。
+**どれも TypeScript で書いてある。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-contrast` ・ `check-markdown` は PowerShell から移した。`psh` ・ `check-public` は最初から TypeScript である。
 
 呼び出し方・出力の中身は変えていない。**使う側の書き換えは要らない**（`check-〜` のオプションだけ `--` へ寄せたが、古い形も受ける）。
 
@@ -153,7 +153,7 @@ Markdown を GitHub のレンダラに投げ、返る HTML に `**` が記号の
 check-contrast . --recurse
 ```
 
-**オプションは 6 つとも同じ形**（`--path` ・ `-p` ・ 名前を付けない対象）。この 2 つは以前 PowerShell 製で `-Path` 形式だったが、<strong>TypeScript へ移して `--` へ寄せた。</strong>古い形も当面は受ける。
+**オプションはどれも同じ形**（`--path` ・ `-p` ・ 名前を付けない対象）。この 2 つは以前 PowerShell 製で `-Path` 形式だったが、<strong>TypeScript へ移して `--` へ寄せた。</strong>古い形も当面は受ける。
 
 移す前の PowerShell 版は `check-contrast-ps.ps1` ・ `check-markdown-ps.ps1` として残してある。**突き合わせ用で、ふだん呼ぶものではない。**
 
@@ -454,4 +454,4 @@ Markdown の日付は変換で引き継がれる。**個別に管理しない。
 
 html2md 側に手を入れる場合、<strong>出力が `tests/golden/` の期待値と一致することを `tools/40_test/run-tests.cmd` が検査している。</strong>出力を変える修正なら落ちるので、差分を目で確かめてから期待値を作り直す。
 
-[← html2md](README.md)
+[← ai-agent-tools](README.md)
