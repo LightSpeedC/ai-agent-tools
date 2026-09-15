@@ -224,7 +224,9 @@ export function resolveLink(baseDir: string, href: string): string | null {
 	if (href == null || href.length === 0) { return null; }
 	if (/^(https?:|mailto:|tel:)/.test(href)) { return null; }
 	if (href.startsWith('#')) { return null; }
-	const target = href.split('#')[0];
+	// クエリ文字列も落とす。付けたままだと "page.html?x=1" という
+	// 実在しないパスとして解決され、実在チェックに当たらない（i260908-04 の変換エンジン3）
+	const target = href.split(/[#?]/)[0];
 	if (target.length === 0) { return null; }
 	try {
 		return path.resolve(baseDir, target);

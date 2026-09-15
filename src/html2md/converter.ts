@@ -220,11 +220,15 @@ export class Converter {
 				case 'section': {
 					// 章のクラスは配下の SVG が var() を解決するのに使う
 					const prevClass = ctx.chapterClass;
+					// 入れ子の section を抜けたとき、外側がまだ section の中であることを
+					// 忘れない（i260908-04 の変換エンジン2。無条件に false へ戻すと、
+					// 入れ子から戻った直後の見出しレベル計算が章の外扱いになっていた）
+					const prevInSection = ctx.inSection;
 					const found = findChapterClass(classes);
 					if (found.length > 0) { ctx.chapterClass = found; }
 					ctx.inSection = true;
 					outBlocks.push(...this.convertBlocks(block.inner, ctx));
-					ctx.inSection = false;
+					ctx.inSection = prevInSection;
 					ctx.chapterClass = prevClass;
 					break;
 				}

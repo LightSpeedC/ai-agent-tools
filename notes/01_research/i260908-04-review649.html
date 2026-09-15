@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>レビュー #649 全文（i260908-04 の原資料）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+	}
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.6em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8);
+		border-radius:6px; padding:16px 18px; overflow-x:auto;
+		font-size:.88em; line-height:1.6; white-space:pre-wrap;
+		font-family:Consolas,"Courier New",monospace;
+		margin:20px 0 34px;
+	}
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>レビュー #649 全文</h1>
+		<p class="lead">ai-chat-lite-reviewer による html2md 全体レビュー（2026-09-08）。<span class="no">i260908-04</span>「未検証47件」の原資料。ai-chat-lite の msg_seq 649 から取得（recent では見つからず、dump で発見）。</p>
+		<p class="date">📅 作成: 2026-09-16 / 更新: 2026-09-16</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a></p>
+
+<p><strong>この文書はレビュー本文をそのまま保存したもの。</strong>直後の high・medium・low は当時すでに issues.html（<span class="no">i260908-01</span>〜<span class="no">i260908-03</span>）へ転記・対応済み。ここに残す主目的は「未検証の47件」（<span class="no">i260908-04</span>）を後から突き合わせられるようにすること。<strong>参照する行番号は当時の C# 実装（<code>src/Html2Md</code>・<code>src/ConvertEncoding</code>・<code>src/Text</code>）と <code>html2md-ps.ps1</code> のもの。</strong>その後 TypeScript へ全面移植し、ps1 は削除済みのため、現在のコードと突き合わせるときは該当箇所を読み替える必要がある。</p>
+
+<pre>## 依頼レビューの結果（html2md 全体）
+
+`N:/ai-agent-tools` を 11 観点で読みました。**読み取りのみで、1 バイトも変更していません。**テストスイート・`text edit` / `write`・`convert-encoding --to` は実行していません。
+
+11 観点 × 反証役の 2 段で、**67 エージェント・エラー 0**。確定 46 件 / 棄却 9 件 / 見落とし洗い出しで 7 件。
+
+**先に訂正を 1 つ。**`text find` が `.gitignore` を見ないことを最初は欠陥として挙げましたが、**棄却しました。**仕様書 `p260907-01-text-tools` に「既定で外すのは `.git` と先頭 `_` の 2 つだけ。既定で外しすぎない」と理由付きで明記されていて、コードと仕様は一致しています。残るのは**共通ルールが探索手段を `text find` に一本化した際、Grep との既定除外の差に断りが無い**ことだけです（こちらが裸の再帰を打って `etc/history/jsonl` を 1MB 引き込んだのは、その差を知らなかったためです）。
+
+棄却が 9 件出たのは、疑った点がほぼ計画書に書いてあったからです。置き場の理由・clone 後の復旧手順・走査範囲の既定は、いずれも `html2md-plan.html` の「この形の代償」節や `issues.html` に書かれていました。
+
+---
+
+# high 4 件
+
+（略。i260908-01 で対応済み）
+
+---
+
+# medium
+
+（略。i260908-02 の当初一覧に転記済み）
+
+---
+
+# low（場所だけ）
+
+（略。i260908-03 の当初一覧に転記済み）
+
+---
+
+# 未検証の 47 件（そちらで検証をお願いしたいもの）
+
+検証を各観点の上位 5 件で打ち切ったため、下位の 47 件は反証役に当てていません。見つけた側の主張のままで、行番号も裏取り前です。そちらで実物と突き合わせて、成り立つものだけ拾ってください。
+
+**変換エンジン（4）**
+- `HtmlUtil.cs:81`（利用は `Converter.cs:143,151`）アンカー計算だけタグを空白に置換
+- `Converter.cs:281-287` 入れ子 section で `InSection` が戻らない
+- `HtmlUtil.cs:205`（判定は 114,117-118）クエリ付きリンクはパスを解決できない
+- `HtmlUtil.cs:34-45` 範囲外の数値参照で実行全体が中断
+
+**表・SVG・強調・検査（7）**
+- `Emphasis.cs:136` 強調の両端の空白が消えて語が繋がる
+- `Emphasis.cs:105-123` 内容の先頭・末尾が `*` や `~` でも記法にする
+- `Program.cs:85, 246-255` `--exclude` の効き方が説明と違う
+- `Svg.cs:62, 82-92` viewBox の書き方で width/height と白背景が崩れる
+- `Table.cs:78, 102-112` 最終行の rowspan が空行を生む
+- `Checks.cs:54-58` 他ファイルへのアンカーは検査対象外
+- `tests/cases` が踏んでいない分岐（`tags/README.html:18,32` ／ `untagged/notes/untagged.html:37-43,47` ／ `svgvar/notes/svgvar.html:23,40,55`）
+
+**convert-encoding（4）**
+- `Converter.cs:26,96`（メッセージは `Program.cs:258`）`--force` は `?` ではなく best-fit 置換
+- `Program.cs:392-393` `--dump --bytes` が大きいと何も出ない
+- `Program.cs:303-319` 書き込み失敗時に一時ファイルが残る
+- `p260906-01:140 / 233` 1 章の求められる形式と用途名 html が逆
+
+**text（5）**
+- `ReadCmd.cs:33-47` `--no-number` でも ◆ ヘッダが出る
+- `Program.cs:180-186`（判定は `Engine.cs:126-149, 250-261`）edit のバイト位置が再エンコードに依存
+- `ReadCmd.cs:68-72` `--lines` は範囲外でクランプせず失敗
+- `EditCmd.cs:90`（`WriteCmd.cs:64`）書き戻しは直書きで、中断すると残らない
+- `p260907-01:115, 454-456, 459, 477`（実装は `Program.cs:17-18`）資料 7 章の構成・決定が実装と違う
+
+**C# 版と ps1 の乖離（3）**
+- `html2md-ps.ps1:416,422,544,588,872-874,1030,1081,1086,1095,1101,1105,1111,1183,1211,1242`（対応する C# は `HtmlUtil.cs:59-66` `Inline.cs:16` `Converter.cs:41,127`）クラス名とキーの照合が ps1 だけ大小文字を無視する
+- `html2md-ps.ps1:1529-1532`（対応は `Program.cs:94-99, 32`）対象 0 件のときの終了コードが違う
+- `README.html:271`（実物は `html2md-ps.ps1:56-57`）ps1 引数一覧に `-Extra` が無い
+
+**CLI と資料（3）**
+- `README.html:271` html2md-ps 引数対応表に `-Extra` が無い
+- `ConvertEncoding/Program.cs:98-101` 必須指定エラーが実際の受付と違う
+- `Text/Program.cs:17-19`（資料は `p260907-01:459,470,477`）計画書が決めた CodePages 登録を実装が入れていない
+
+**資料同士（6）**
+- `p260906-01:810-811`（相手は `issues.html:450`）convert-encoding の記録値が資料間で違う
+- `issues.html:428-442`（`i260830-18`）済の課題の本文が「まだ提示していない」
+- `html-class-rules.html:152` クラス名の取り決めの更新日が改訂前のまま
+- `p260908-01:180` `--to utf8` を LF 化と書いている（上の medium と同根）
+- `p260907-01:155` reg の用途名を「（新規）」と書いている
+- `README.html:271` ps1 引数一覧に `-Extra` が無い
+
+**構成（5）**
+- `.gitignore:1-4` `_` 付きフォルダと `.claude` の共有分の取りこぼし（上の medium と同根）
+- `issues.html:387` SJIS 一覧が 3 件のまま（同根）
+- `notes/01_research/r260829-01-….md` 研究ノート 1 件が Markdown だけで HTML の原本が無い
+- `contrast/check-contrast.cjs` `contrast/selftest.html`（参照元は `check-contrast.ps1:53` `README.html:421-423`）実装と検査データが src・tests の外にある
+- `check-contrast.ps1:45` 追跡ファイルに subst ドライブの既定値がリテラルで入っている
+
+**テスト（3）**
+- `run-convert-encoding-tests.ps1:374-376, 405-407` 「書き換えない」の判定が長さだけで、常に真の節を含む
+- `run-convert-encoding-tests.ps1:166-645` ／ `run-text-tests.ps1:94-208` テスト本体がランチャー側に直書き
+- `tools/40_test/run-tests.cmd:2` だけ `powershell.exe`
+
+**安全性（6）**
+- `Text/EditCmd.cs:104-106`（`WriteCmd.cs:74-76, 86-88`）内容ファイル・標準入力は組の曖昧さを無視して復号
+- `check-contrast.ps1:108-118, 122` 一時ファイルが固定名で共有場所にある
+- `Html2Md/Program.cs:82, 90, 283-287`（`ConvertEncoding/Program.cs:105,115,177`）パスのマスキングが text だけにある
+- `ConvertEncoding/Program.cs:184-188, 196-202` `--read`/`--info` が `--to` より優先され黙って変換しない
+- `check-markdown.ps1:41`（`README.md:150`）`-Token` を素の文字列引数で受け README も直書き
+- `.gitignore:1-4` 先頭 `_` のフォルダの除外が無い
+
+**HTML/MD の同期（1）**
+- `notes/01_research/r260829-01-….md:1-5, 12` HTML の原本を持たない md が 1 件だけある
+
+---
+
+# 棄却した 9 件（出し直さないための記録）
+
+`figure` の中の img が消える（→ 仕様の表どおりで、内部の食い違いとして medium に格下げ） ／ BOM 無し UTF-16 は純 ASCII と判定される ／ `find` は `.gitignore` を見ず出力上限も無い（→ 仕様に理由付きで明記） ／ `check-*` の `-Exclude` / `-DelayMs` が資料に無い ／ 要求 01 の 8 項目中 3 項目が課題に無い ／ PATH 登録と root 直下配置の理由が資料に無い（→ `html2md-plan.html:256, 314-329` の「この形の代償」節に明記） ／ root の `CLAUDE.md` と `local-rule.html` が無い（→ 影響が共通ルールと `build.cmd` のコメントで手当て済み。残るのは置き場の乱れだけ） ／ SVG の id がそのまま出力ファイル名になる（→ medium として採用） ／ `html-class-rules` の更新日が本文改訂日より前
+
+---
+
+総評として、資料と実装の一致度は高いです。棄却 9 件の多くは「疑ったことが計画書に既に書いてあった」ためでした。欠陥は新しいツールほど集中していて、`text`（2 日前追加）と `convert-encoding` のデコード側、そして「静かに間違った結果を返す」類に偏っています。とくに `text` は共通ルールが `Grep` / `Read` / `Edit` の代わりとして載せたばかりなので、high の 3・4 は優先度が高いと見ています。
+</pre>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>

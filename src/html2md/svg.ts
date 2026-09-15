@@ -53,7 +53,9 @@ export function exportSvg(svgHtml: string, ctx: ConvertContext): SvgResult {
 	const font = getAttr(openTag, 'font-family');
 	let w = '';
 	let h = '';
-	const vb = /^\s*[\d.\-]+\s+[\d.\-]+\s+([\d.]+)\s+([\d.]+)\s*$/.exec(viewBox);
+	// 区切りは空白だけでなくカンマも許す（SVG の viewBox 仕様どおり。
+	// i260908-04 の変換エンジン8。空白決め打ちだとカンマ区切りで width/height が付かない）
+	const vb = /^\s*[\d.\-]+[\s,]+[\d.\-]+[\s,]+([\d.]+)[\s,]+([\d.]+)\s*$/.exec(viewBox);
 	if (vb != null) {
 		w = vb[1];
 		h = vb[2];

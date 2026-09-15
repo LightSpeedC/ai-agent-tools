@@ -693,6 +693,8 @@ $sub = Convert-Blocks ...</code></pre>
 			<div class="callout callout-warning">
 				<p><strong>テストが「たまに落ちる」状態を放置しない。</strong>本物の失敗を見逃す方向に効く。</p>
 			</div>
+
+			<p><span class="badge b-none">未</span><strong>記録の補足。</strong>この課題は C# 版（<code>WriteAtomic</code>・<code>File.Replace</code>）を前提に書かれているが、<strong>本番の実装は既に TypeScript 版（<code>src/convert-encoding/main.ts</code> の <code>writeAtomic</code>）に移っている</strong>。TS 版は <code>fs.renameSync</code> を使っており、書き込み経路自体が違う。1（例外の種類）は、Node の fs 例外は <code>message</code> に <code>EPERM</code> 等のコードを含むのが通例のため、TS 版では既に一定満たしている可能性がある。<strong>非再現の不具合で確実な検証ができないため、TS 版で再度実測してから判断するのが妥当</strong>。2（リトライ方針）・3（失敗時の手掛かり保存）は判断・実装とも未着手のまま残す。</p>
 		</div>
 	</details>
 
@@ -821,8 +823,39 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260908-04</span>未検証 47 件（要検証）</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>2026-09-08 に一部を検証・修正: <code>text read --no-number</code> の ◆ ヘッダ抑止／<code>convert-encoding --dump --bytes</code> の int オーバーフロー／<code>text find</code> の位置引数パス／<code>text edit</code>/<code>write</code> の原子的書き込み。<code>--lines</code> 範囲外は仕様上エラーで据え置き、<code>--force</code> のメッセージ文言は要精査（低）。</p>
-			<p><span class="badge b-none">未</span>残り（html2md 変換エンジン・表/SVG・ps1 乖離・資料同士の不一致など）は未検証。</p>
-			<p>reviewer が反証にかけていない下位の指摘。<strong>行番号も裏取り前</strong>なので、実物と突き合わせて成り立つものだけ拾う。変換エンジン 4・表/SVG/強調/検査 7・convert-encoding 4・text 5・ps1 乖離 3・CLI/資料 3・資料同士 6・構成 5・テスト 3・安全性 6・同期 1。全文はレビュー #649。</p>
+			<p>reviewer が反証にかけていない下位の指摘。<strong>行番号も裏取り前</strong>なので、実物と突き合わせて成り立つものだけ拾う。変換エンジン 4・表/SVG/強調/検査 7・convert-encoding 4・text 5・ps1 乖離 3・CLI/資料 3・資料同士 6・構成 5・テスト 3・安全性 6・同期 1。全文は<a href="../01_research/i260908-04-review649.html">レビュー #649</a>（保存済み）。</p>
+
+			<p><span class="badge b-ok">済</span>2026-09-16 に全 47 件を検証した。原資料はレビュー当時の C# 版（<code>src/Html2Md</code> 等）・PowerShell 版（<code>html2md-ps.ps1</code>）を前提にしているが、その後 TypeScript へ全面移植され ps1 は削除済みのため、<strong>現在の実装（<code>src/html2md</code>・<code>src/convert-encoding</code>・<code>src/text</code> 配下の .ts）に読み替えて突き合わせた。</strong>ps1 の乖離 3 件はこの移植で前提ごと消滅（該当なし）。残り 44 件のうち、23 件は既に解消済み（過去の対応・移植そのものによる消滅を含む）と確認し、7 件をその場で直した。残り 14 件は現行でも成立するが、判断・追加調査・対応コストの見合いから今回は見送り、記録に残す。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>#</th><th>指摘</th><th>直した内容</th></tr></thead>
+				<tbody>
+					<tr><td class="num">変換2</td><td>入れ子 section で <code>inSection</code> が戻らない</td><td><code>converter.ts</code> の section 処理で <code>chapterClass</code> と同様に退避・復元するよう修正。<code>tests/cases/nested-section</code> を新設（修正前に落ちることを確認済み）</td></tr>
+					<tr><td class="num">変換3</td><td>クエリ付きリンクはパスを解決できない</td><td><code>htmlutil.ts</code> の <code>resolveLink</code> でクエリ文字列も <code>#</code> と同様に切り落とすよう修正。<code>tests/cases/query-link</code> を新設</td></tr>
+					<tr><td class="num">表/SVG8</td><td>viewBox がカンマ区切りだと width/height が付かない</td><td><code>svg.ts</code> の正規表現をカンマ区切りにも対応させた。<code>tests/cases/svg-viewbox-comma</code> を新設</td></tr>
+					<tr><td class="num">安全性5</td><td><code>check-contrast</code> の一時ファイルが固定名で同時実行時に衝突する</td><td><code>src/check-contrast/main.ts</code> でファイル名に <code>crypto.randomUUID()</code> を含め、使用後に削除するよう修正（ps1 側の元指摘は該当なしだが、移植後の TS 版に同型の問題が見つかった）</td></tr>
+					<tr><td class="num">安全性7</td><td><code>--to</code> が <code>--read</code>/<code>--info</code> と併用すると黙って無視される</td><td><code>--from hex</code> と同じ扱いで明示的に拒否するよう <code>convert-encoding/main.ts</code> を修正。回帰テスト2件追加</td></tr>
+					<tr><td class="num">資料</td><td><code>p260906-01</code> 1章の表が「html・md・その他」を1行にまとめ、html は BOM 付きなのに「BOM なし」と書いていた</td><td>html と md・その他の行を分け、実装（<code>spec.ts</code>）どおりに直した</td></tr>
+					<tr><td class="num">資料</td><td><code>p260907-01:155</code> の <code>reg</code> 用途名が「（新規＝未実装）」のまま</td><td><code>--to reg</code> は実装済みのため、他の行と同じ表記に直した</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p>全テスト成功（html2md 20・convert-encoding 142、bun・node とも）を確認。</p>
+
+			<p><span class="badge b-none">未</span><strong>現行でも成立するが、今回は対応しない（判断・追加調査が要る、または対応コストが見合わない）:</strong></p>
+			<ul>
+				<li>変換1: 見出しアンカー計算（<code>getPlainText</code>）と実際の見出しテキスト生成（<code>inline.convert</code>）が別経路で、badge・リンクを含む見出しでアンカーがずれうる。直すには両経路を揃える設計変更が要る</li>
+				<li>表/SVG6: 強調したい文字列の先頭・末尾がそれ自体 <code>*</code>/<code>~</code> のとき、エスケープせず記法にしてしまう（<code>***重要***</code> のような曖昧な出力になる）。CommonMark のエスケープ方針を決める必要がある</li>
+				<li>表/SVG9: 表の最終行だけに残る <code>rowspan</code> が、実在しない空行を生む。<code>table.ts</code> の行数計算を直す必要があるが、表ロジック全体への影響を見てから着手したい</li>
+				<li>text6: <code>text edit</code> の書き換え位置が「デコード済みテキストを再エンコードしてバイト長を数える」方式で、対象範囲より前に不正なバイト列があると位置がずれる可能性がある（C# 版から変わらず引き継いだ設計）。実際に再現するかは動かして確認しないと分からない（要追加調査）</li>
+				<li>資料: <code>p260906-01</code>（93件）と <code>issues.html</code> の <code>i260906-01</code>（79件）が、同じ2026-09-06時点のテスト件数を違う数で記録している。現在の件数（140件）はどちらとも一致せず増えているため、当時どちらが正しかったかは判断できない</li>
+				<li>構成: <code>notes/01_research/r260829-01-….md</code> が HTML 原本を持たず md だけで存在する（ドキュメントは HTML で作る、というルールに反する）。作り直すには内容の構成を要するため見送り</li>
+				<li>テスト: <code>run-convert-encoding-tests.ps1</code> の「書き換えない」判定の一部（ケース16・20・27・46）が、内容ではなくバイト長だけで比べている。同じ長さで中身だけ変わる書き込み漏れは検出できない。直すには該当テストをまとめて見直す必要がある</li>
+				<li>安全性: html2md がフルパスをマスキングしない件（<code>--root</code> の絶対パスがそのまま出る）は、<span class="no">i260910-03</span> に既に「出力仕様の変更に当たるため判断が要る」として記録済み。今回はそちらと同一の指摘として一本化する</li>
+				<li>安全性: <code>check-markdown</code> の <code>--Token</code> をコマンドライン引数の平文で受ける設計（シェル履歴・プロセス一覧に残りうる）。実装と資料は一致しており不具合ではないが、設計としての是非は判断が要る</li>
+			</ul>
 		</div>
 	</details>
 </section>
@@ -849,6 +882,10 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				</tbody>
 			</table></div>
 			<p><code>tests/cases/badge/README.html</code> の既存 4 行はこの 3 パターンを 1 件も踏んでおらず、テストが穴を見逃していた。<strong>直すには「バッジが本体の後ろに空白を足す」処理自体を、外側の未解決ペアの有無を見てから行うよう組み替える必要がある</strong>（touchesOuterSameKind の判定タイミングと、バッジの空白付与のタイミングの順序が絡む）。回帰リスクがあるため、次に着手する。</p>
+
+			<div class="callout callout-important">
+				<p><strong>記述の是正（判断が要る）。</strong>上の修正方針（隣接判定の組み替え）を現在の TypeScript 実装（<code>emphasis.ts</code>・<code>inline.ts</code>）で追ってみたところ、<strong>「末尾」パターンは直せても「中間」パターンは直らない</strong>ことが分かった。「中間」（<code>&lt;strong&gt;… &lt;span class="badge"&gt;x&lt;/span&gt; …&lt;/strong&gt;</code>）では、バッジ自身が外側のどのセンチネルにも隣接しないため、隣接判定をいくら精緻にしても<strong>バッジ単体が独立して <code>**x**</code> に確定してしまう</strong>。これが外側の <code>**…**</code> と衝突し、同じ種類の強調が入れ子になった markdown（<code>**… **x** …**</code>）ができて崩れる。<strong>根本原因は「隣接しているか」ではなく「同じ種類の強調に入れ子で囲まれているか」</strong>。直すには、外側に同種のペアが未解決のまま残っている（隣接の有無を問わず）ときは <code>**</code> ではなく <code>&lt;strong&gt;</code> タグで出す、という判定に組み替える必要がある。<strong>生成物の記法（** か タグか）が変わる範囲が当初の想定より広がるため、実装せず記録だけ残す。</strong></p>
+			</div>
 		</div>
 	</details>
 
@@ -872,7 +909,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p><span class="badge b-ok">済</span>2026-09-10 に 1 件目（details/summary の ps1 未反映）を直した。<code>Get-NormalizedText</code> の除去一覧に <code>details</code>・<code>summary</code> を追加し、<code>tests/cases/tags</code>・<code>untagged</code> の <code>details</code> を含むケースで exe/ps1 の検査結果が一致することを確認（i260910-02 のテスト強化で検出された）。</p>
 			<p><span class="badge b-ok">済</span>3・4・5・6・7 も直した。<code>check-markdown.ps1</code> の対象パス不在を <code>check-contrast.ps1</code> と同じ終了2に揃えた（3）。chapters の ttl リンク化を、ttl を実際に囲む a だけから href を取るように直した（4、テスト追加）。i260908-03・i260906-01・i260907-02・i260830-18 の記録を現状に合わせた（5〜7、詳細は各課題を参照）。text-tools 仕様書の記述も実装に合わせた（1、テスト件数含む）。</p>
 			<ul>
-				<li>バッジ・callout の解釈語彙が exe と ps1 で違う（ps1 は ok/good/done 等の別名も受け、callout は前方一致で拾う）。html-class-rules.html は「b-ok/b-ng/b-warn/b-none の4つだけが予約語」と定めており、ps1 の別名受け入れはこの仕様とは食い違う。ただし ps1 側のコメントに「既存プロジェクトの命名をまとめて受けられるようにしている」とあり、他プロジェクトの実コンテンツが依存している可能性がある。<strong>ps1 を仕様どおりに絞るかどうかは、既存コンテンツへの影響を含めて利用者の判断を待つ（要判断）</strong></li>
+				<li><span class="badge b-ok">済</span>バッジ・callout の解釈語彙が exe と ps1 で違う件は<strong>消滅した。</strong><code>html2md-ps.ps1</code> が <span class="no">i260912-02</span> で削除され、比較対象の ps1 自体が無くなったため（判断は不要になった）</li>
 				<li>絶対パスのマスキングが 3 本で不揃い（text は伏せるが html2md・convert-encoding は生のパスを出す）。<strong>出力仕様の変更に当たるため利用者の判断を待つ（要判断）</strong></li>
 				<li><code>run-all-tests.ps1</code> が <code>check-contrast</code> ・ <code>check-markdown</code> を含まない（#732 の low。2026-09-12 に現物で確認し、束ねているのは html2md ・ convert-encoding ・ text の 3 本）。<strong>足すと 1 回まわすたびに GitHub の API（60 回/時）とブラウザの起動が要る。含めるかどうかは判断が要る</strong></li>
 			</ul>
@@ -1141,7 +1178,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260913-02</span>text find --recurse が既定で tmp ・ etc を舐める</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260913-02</span>text find --recurse が既定で tmp ・ etc を舐める</summary>
 		<div class="issue-body">
 			<p>2026-09-13、<code>ai-agent-rules</code> から報告（public ルーム #831）。<strong>共通ルール「名前を変えたら全体を検査する」に従って <code>text find --recurse</code> を素で撃ったところ、<code>etc/history/jsonl</code> のセッションログ（11.8 MB）に当たり、過去の会話が出力に出た。</strong></p>
 
@@ -1166,6 +1203,8 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p><strong>C は採らない。</strong>報告元が書いているとおり「新ルールが <code>--recurse</code> を指示しているので、付け忘れる人は増える」。<strong>付け忘れたときに黙って会話ログを読む形は、道具の側が悪い。</strong></p>
 
 			<p>A は後方互換を壊す（<code>tmp/</code> を探していた呼び出しが当たらなくなる）。ただし <code>tmp/</code> ・ <code>etc/</code> を意図して探す場面は少なく、<strong>破る側の害のほうが大きい。</strong></p>
+
+			<p><span class="badge b-ok">済</span><strong>記録の是正。</strong>A 案は既に実装・テストとも揃っていた（<code>src/text/find.ts</code> の <code>DefaultExcludeDirs</code>、<code>tools/40_test/run-text-tests.ps1</code> の「既定で外すフォルダ（i260913-02）」節）。記録の更新だけが漏れていたため、実測（テスト62件成功）のうえで済に直す。</p>
 		</div>
 	</details>
 </section>

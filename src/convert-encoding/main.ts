@@ -398,6 +398,12 @@ function main(argv: string[]): number {
 
 	const text = decode(source, fromKind);
 
+	// --to は --read/--info と併用すると黙って無視されていた。
+	// --from hex と同じ扱いで、はっきり拒否する（i260908-04 の CLI と資料7）
+	if ((read || info) && toText != null) {
+		return fail(ExitBadArgs, '--to と --read/--info は併用できません（--read/--info だけを行います）。');
+	}
+
 	// 中身を読むだけ
 	if (read) {
 		out(text);

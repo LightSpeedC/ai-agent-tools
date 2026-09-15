@@ -16,6 +16,7 @@
 */
 
 import { spawn } from 'node:child_process';
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -184,9 +185,11 @@ async function main(): Promise<number> {
 	console.log('');
 
 	// ---- 計測する ----
+	// ファイル名は実行ごとに変える。固定名だと、同時に 2 つ動かしたとき
+	// 片方の入力をもう片方が上書きしてしまう（i260908-04 の安全性 5）
 	const tmpDir = path.join(root, 'tmp');
 	if (!fs.existsSync(tmpDir)) { fs.mkdirSync(tmpDir, { recursive: true }); }
-	const inputPath = path.join(tmpDir, 'contrast-input.json');
+	const inputPath = path.join(tmpDir, 'contrast-input.' + crypto.randomUUID().replace(/-/g, '') + '.json');
 
 	fs.writeFileSync(inputPath, JSON.stringify({
 		files: targets,
@@ -196,6 +199,7 @@ async function main(): Promise<number> {
 
 	// cjs は CommonJS のため node で走らせる（bun でも動くが、揃えて node にする）
 	const r = await runCjs(cjs, inputPath, timeoutSec);
+	try { fs.unlinkSync(inputPath); } catch { /* 消せなくても計測結果には影響しない */ }
 
 	if (r.timedOut) {
 		console.log('計測が ' + timeoutSec + ' 秒で終わりませんでした');

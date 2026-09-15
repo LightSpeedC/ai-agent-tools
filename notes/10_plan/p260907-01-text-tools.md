@@ -2,7 +2,7 @@
 
 SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。文字コードと改行の組を判定して、そのまま読み書きする
 
-> 📅 作成: 2026-09-07 / 更新: 2026-09-12
+> 📅 作成: 2026-09-07 / 更新: 2026-09-16
 
 [← html2md](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)
 
@@ -38,7 +38,7 @@ Claude Code の標準ツールは、UTF-8 以外のファイルで壊れる。SJ
 | 組 | 主な用途 | convert-encoding の用途名 |
 |---|---|---|
 | `sjis/crlf` | cmd・bat | `--to cmd` |
-| `utf16le/crlf` | reg | （新規） |
+| `utf16le/crlf` | reg | `--to reg` |
 | `utf8bom/crlf` | ps1 | `--to ps1` |
 | `utf8bom/lf` | html | `--to html` |
 | `utf8/lf` | md・その他 | （既定） |

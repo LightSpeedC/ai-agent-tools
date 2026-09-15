@@ -870,6 +870,13 @@ $before = [System.IO.File]::ReadAllText($phx)
 Assert-Equal 'med --read + --from hex は拒否' 1 (Invoke-Exe @($phx, '--read', '--from', 'hex'))
 Assert-Equal 'med 併用拒否で元ファイルは不変' $before ([System.IO.File]::ReadAllText($phx))
 
+# --to は --read/--info と併用すると黙って無視されていた（i260908-04 の CLI と資料7）。
+# --from hex と同じ形ではっきり拒否する
+$pri = New-Case 'read-info-to.txt'
+New-TextFile $pri 'ABC' $EncUtf8
+Assert-Equal 'med --read + --to は拒否' 1 (Invoke-Exe @($pri, '--read', '--to', 'sjis'))
+Assert-Equal 'med --info + --to は拒否' 1 (Invoke-Exe @($pri, '--info', '--to', 'sjis'))
+
 # ---------------------------------------------------------------
 # 後片付けと結果
 # ---------------------------------------------------------------

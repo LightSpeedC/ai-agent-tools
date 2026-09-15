@@ -2,7 +2,7 @@
 
 文字コードと改行を変換するコマンドライン ツール
 
-> 📅 作成: 2026-09-06 / 更新: 2026-09-12
+> 📅 作成: 2026-09-06 / 更新: 2026-09-16
 
 [← html2md](../../README.md) ／ [課題](../40_issues/issues.html)
 
@@ -25,7 +25,8 @@
 |---|---|
 | ps1 | BOM 付き UTF-8 ＋ CRLF |
 | cmd・bat | SJIS（CP932）＋ CRLF |
-| html・md・その他 | BOM なし UTF-8 ＋ LF |
+| html | BOM 付き UTF-8 ＋ LF |
+| md・その他 | BOM なし UTF-8 ＋ LF |
 
 ### いま何が起きているか
 
