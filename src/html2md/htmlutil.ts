@@ -5,6 +5,7 @@
 	正規表現だけで解析するため、対象は自分たちで書いた整形済みの HTML に限る。
 */
 
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 /** 実体参照を文字に戻す。&amp; は他を壊さないよう最後に処理する */
@@ -128,7 +129,10 @@ export function convertLinkTarget(href: string, baseDir: string | null,
 	const resolved = resolveLink(baseDir, href);
 	if (resolved == null) { return href; }
 	const full = resolved.toLowerCase();
-	if (!convertedPages.has(full)) { return href; }
+	// 今回の対象集合に入っていれば、変換後にできると仮定してよい。入っていなくても、
+	// 既に生成済みの .md がディスク上にあれば同じに扱う（個別・部分実行を繰り返しても、
+	// 一度生成しきれば結果が変わらないようにするため。i260910-04 の C 案）
+	if (!convertedPages.has(full) && !mdFileExists(resolved)) { return href; }
 
 	const hashIdx = href.indexOf('#');
 	if (hashIdx >= 0 && crossAnchors != null) {
@@ -226,6 +230,16 @@ export function resolveLink(baseDir: string, href: string): string | null {
 		return path.resolve(baseDir, target);
 	} catch {
 		return null;
+	}
+}
+
+/** 対応する .md がディスク上に既に実在するか（今回の対象集合に無いページの既存生成物を拾うため） */
+function mdFileExists(htmlPath: string): boolean {
+	const mdPath = htmlPath.replace(/\.[^.\\/]*$/, '') + '.md';
+	try {
+		return fs.existsSync(mdPath);
+	} catch {
+		return false;
 	}
 }
 

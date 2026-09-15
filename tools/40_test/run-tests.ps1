@@ -147,6 +147,12 @@ $Expect = @{
 		'[もう 1 つのページ](other.md)',
 		'[外にあるページ](../extra/outside.html)'
 	)
+	'existing-md' = @(
+		# リンク先（探索フォルダの外）が今回の対象集合に無くても、.md が既に
+		# ディスク上にあれば .md にする（i260910-04 の C 案。extra/other.md が
+		# 前回の実行で既に生成済み、という想定のフィクスチャ）
+		'[既存ページ](../extra/other.md)'
+	)
 	'icon-link' = @(
 		# アイコンだけのリンクは、代替テキストから記号に置き換える（i260912-05）。
 		# 置き換えの対応は共通ルール「資料間のリンク」が定める
@@ -258,6 +264,7 @@ foreach ($c in $cases) {
 		'extra'   = @('WORKMARK')      # ルート直下でも --extra で名指ししていないページ
 		'badge'   = @('****', 'BADGEWSTRONG**続きです')   # 二重の **（#715）／strong 内末尾の空白を Trim で捨てて語が繋がる（i260910-03）
 		'outside'  = @('OUTSIDEMARK')   # 探索フォルダの外のページは変換されない
+		'existing-md' = @('(../extra/other.html)')   # 既存の .md があるのに .html のままでは退行（i260910-04）
 		'chapters' = @('[03. リンクなしタイトル]', 'SKIPCHAPTER')   # ttl が誤ってリンク化されない（i260910-03）／chapters の md-skip の li は行ごと落ちる（i260911-01）
 		'toc-dl'   = @('TOCSKIP', 'DLSKIP', '3. [')   # 目次・定義リスト・章の md-skip（i260911-01）
 		# summary の中に ** を残さない／md-flat では details タグを出さない（決着 12）

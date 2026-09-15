@@ -880,14 +880,29 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-none">未</span><span class="no">i260910-04</span>リンクの拡張子判定と --dir の既定を見直すか（要判断）</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260910-04</span>リンクの拡張子判定と --dir の既定を見直す（C 案で決定）</summary>
 		<div class="issue-body">
 			<p>ai-chat-lite（<code>public</code> #739、ai-chat-lite からの依頼）: 2 件とも「エラーは出ないが生成物が静かに劣化する」という報告。</p>
 			<ol>
 				<li><strong>リンクの拡張子を「今回の変換対象か」ではなく「対応する .md が実在するか」で決めてほしい。</strong>いまは渡さなかった html への相対リンクが <code>.html</code> のままになるが、その <code>.md</code> が既に実在することがある（同じ HTML から、渡す引数次第で違う Markdown ができる）。リンク先が今回の対象に入っていないことを警告に出す案も添えられている。</li>
 				<li><strong><code>--dir</code> を既定（<code>notes</code>）へ足す形にしてほしい（または警告を出す）。</strong>いまは <code>--dir docs</code> だけを渡すと既定の <code>notes</code> が対象から外れ、<code>notes</code> 配下へのリンクが一括で <code>.html</code> に戻る。それでも「指摘なし」で完了する。</li>
 			</ol>
-			<p>どちらも<strong>いまの「変換はファイルごとに独立、対象集合は今回の実行で決める」という設計の前提に触れる</strong>変更で、判断が要る。1 はファイルシステムを都度確認する形に変える必要があり、生成済みとはいえ古い <code>.md</code> を指してしまう副作用も考えられる。2 は既定を変える後方互換の話になる。<strong>直すかどうかは利用者の判断を待つ。</strong></p>
+			<p>どちらも<strong>いまの「変換はファイルごとに独立、対象集合は今回の実行で決める」という設計の前提に触れる</strong>変更で、判断が要る。1 はファイルシステムを都度確認する形に変える必要があり、生成済みとはいえ古い <code>.md</code> を指してしまう副作用も考えられる。2 は既定を変える後方互換の話になる。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>案</th><th>判定基準</th><th>結果</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap">A（現状）</td><td>今回の対象集合に入っているかだけ</td><td>この issue の指摘（#739）が起きる。<code>--dir</code> を渡し忘れると、既に生成済みの <code>.md</code> へのリンクまで <code>.html</code> に戻る</td></tr>
+					<tr><td class="nowrap">B（存在チェックのみ）</td><td>ディスク上に <code>.md</code> が実在するかだけ</td><td>初回の一括変換で、まだディスクに書かれていない対象同士の相互リンクが <code>.html</code> のまま残りうる（書き出し順序に依存するため）</td></tr>
+					<tr><td class="nowrap">C（採用）</td><td>対象集合に入っている <strong>または</strong> ディスク上に実在する</td><td>初回の一括変換・生成済みへの部分実行のどちらも正しく解決する。一度生成しきれば、以降は部分実行しても結果が変わらない</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p><strong>C 案を採用する。</strong>A では issue の指摘が解決せず、B では初回の一括変換自体が壊れうるため。C にも残る副作用は、元の HTML を更新したのに今回の対象に含めないと古い <code>.md</code> を指してしまう点（A・B 双方に共通する話で、C 固有の新しい欠点ではない）。初めて個別・部分実行だけで全ファイルを揃える場合は、複数回の実行を経て収束する（1 回ですべてのリンクが埋まるとは限らない）。</p>
+
+			<p><span class="badge b-ok">済</span>実装した。<code>convertLinkTarget</code>（<code>htmlutil.ts</code>）の判定を「対象集合に入っている」だけから、<strong>入っていなくても対応する <code>.md</code> がディスク上に実在すれば同じに扱う</strong>形に変えた（<code>mdFileExists</code> を追加）。テストケース <code>tests/cases/existing-md</code> を新設し、探索フォルダの外に既存の <code>.md</code> だけを置いたフィクスチャで、今回の対象に無いリンクが正しく <code>.md</code> に解決することを確認（修正前のコードで実際に落ちることも確認済み）。<code>run-tests.ps1</code>・<code>run-all-tests.ps1</code> とも bun・node 双方で全件成功。<code>--dir</code> の既定変更（2 の代替案）は、この修正で症状が消えるため見送った。</p>
 		</div>
 	</details>
 </section>
