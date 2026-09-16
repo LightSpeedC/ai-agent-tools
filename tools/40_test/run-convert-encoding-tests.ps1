@@ -70,6 +70,17 @@ function Get-Bytes {
 	return [System.IO.File]::ReadAllBytes($Path)
 }
 
+# バイト列が完全に一致するか。長さだけの比較は、同じ長さのまま中身だけ
+# 書き換わった場合を見逃す（i260908-04 のテスト1）
+function Test-SameBytes {
+	param([byte[]]$A, [byte[]]$B)
+	if ($A.Length -ne $B.Length) { return $false }
+	for ($i = 0; $i -lt $A.Length; $i++) {
+		if ($A[$i] -ne $B[$i]) { return $false }
+	}
+	return $true
+}
+
 # 先頭が指定のバイト列で始まるか
 function Test-Prefix {
 	param([byte[]]$Bytes, [byte[]]$Prefix)
@@ -389,7 +400,7 @@ New-TextFile $p ("困った" + [char]::ConvertFromUtf32(0x1F600) + "です") $En
 $before = Get-Bytes $p
 Assert-Equal '16 終了コード' 4 (Invoke-Exe @($p, '--to', 'cmd'))
 $after = Get-Bytes $p
-Assert-True '16 書き換えない' ((Measure-Object -InputObject $before.Length).Count -eq 1 -and $before.Length -eq $after.Length) ('' + $after.Length + ' バイト')
+Assert-True '16 書き換えない' (Test-SameBytes $before $after) ('' + $after.Length + ' バイト')
 
 # 17. 同上に --force  →  ? に置き換えて変換する
 $p = New-Case 'c17.txt'
@@ -420,7 +431,7 @@ New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
 $before = Get-Bytes $p
 Assert-Equal '20 終了コード' 3 (Invoke-Exe @($p, '--to', 'ps1'))
 $after = Get-Bytes $p
-Assert-Equal '20 書き込まない' $before.Length $after.Length
+Assert-True '20 書き込まない' (Test-SameBytes $before $after) ('' + $after.Length + ' バイト')
 
 # 21. 誤判定するファイルに --from を付ける  →  指定に従う
 $p = New-Case 'c21.txt'
@@ -462,7 +473,7 @@ $before = Get-Bytes $p
 $out = (& $Exe $p --read) -join "`n"
 Assert-Equal '27 中身が返る' $Body $out
 $after = Get-Bytes $p
-Assert-Equal '27 書き換えない' $before.Length $after.Length
+Assert-True '27 書き換えない' (Test-SameBytes $before $after) ('' + $after.Length + ' バイト')
 
 # 28. UTF-16 LE のファイルを --read  →  中身が返る
 $p = New-Case 'c28.txt'
@@ -548,9 +559,11 @@ Write-Host '[16 進での表示]' -ForegroundColor Cyan
 # 46. 3 バイトを --dump  →  「41 80 42」。ファイルは変わらない
 $p = New-Case 'c46.txt'
 New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
+$before = Get-Bytes $p
 $out = (& $Exe $p --dump).Trim()
 Assert-Equal '46 16 進が返る' '41 80 42' $out
-Assert-Equal '46 書き換えない' 3 (Get-Bytes $p).Length
+$after = Get-Bytes $p
+Assert-True '46 書き換えない' (Test-SameBytes $before $after) ('' + $after.Length + ' バイト')
 
 # 47. --offset 1 --bytes 1  →  2 バイト目だけ
 $p = New-Case 'c47.txt'
