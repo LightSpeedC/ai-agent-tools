@@ -866,12 +866,13 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 
 			<p><span class="badge b-ok">済</span>「テスト: <code>run-convert-encoding-tests.ps1</code> の『書き換えない』判定がバイト長だけ」も 2026-09-16 に直した。ケース16・20・27・46が <code>$before.Length -eq $after.Length</code> のみで比べており、同じ長さで中身だけ変わる書き込み漏れを検出できなかった（46 は <code>$before</code> すら取っていなかった）。<code>Test-SameBytes</code>（全バイトを1バイトずつ比較）を追加し、4ケースとも置き換えた。全ケース成功（142件）を確認。</p>
 
+			<p><span class="badge b-ok">済</span>「表/SVG6: 強調内容の先頭・末尾が <code>*</code>/<code>~</code> 自体のとき曖昧になる」も 2026-09-16 に解決した。標準的な CommonMark のエスケープ（<code>\*</code>）で対処できると判断し、選択肢は実質1つに絞れた。境界の1文字だけ <code>\</code> でエスケープする <code>escapeMarkBoundary</code> を <code>emphasis.ts</code> に追加した（内側はそのまま。境界以外は元々曖昧にならない）。<code>tests/cases/emphasis-boundary-mark</code> を新設し、修正前に実際に <code>***重要***</code>・<code>~~~取消~~~</code> という曖昧な出力になることを確認してから直した。<strong>この関数は過去に不具合を起こした経緯があるため、<code>check-markdown</code> で GitHub の実レンダラでの表示も確認済み。</strong>自プロジェクトの再変換でも差分なし。</p>
+
 			<p><span class="badge b-ok">済</span>「表/SVG9: rowspan が実在しない空行を生む」も 2026-09-16 に解決した。<code>rowCount</code> は本来「実際の <code>&lt;tr&gt;</code> の数」（<code>rows.length</code>）と常に一致するはずなのに、<code>rowspan</code> から数え直していたため、実際の行数を超える指定（HTML の誤り）のとき実在しない行まで数えてしまっていた。<code>rowCount</code> を <code>rows.length</code> で直接持つよう単純化し、実在しない行への展開は捨てるようにした。<code>tests/cases/table-rowspan-overflow</code> を新設。修正前に実際に空行が2件出ることを確認してから直した。</p>
 
 			<p><span class="badge b-none">未</span><strong>現行でも成立するが、今回は対応しない（判断・追加調査が要る、または対応コストが見合わない）:</strong></p>
 			<ul>
 				<li>変換1: 見出しアンカー計算（<code>getPlainText</code>）と実際の見出しテキスト生成（<code>inline.convert</code>）が別経路で、badge・リンクを含む見出しでアンカーがずれうる。直すには両経路を揃える設計変更が要る</li>
-				<li>表/SVG6: 強調したい文字列の先頭・末尾がそれ自体 <code>*</code>/<code>~</code> のとき、エスケープせず記法にしてしまう（<code>***重要***</code> のような曖昧な出力になる）。CommonMark のエスケープ方針を決める必要がある</li>
 				<li>資料: <code>p260906-01</code>（93件）と <code>issues.html</code> の <code>i260906-01</code>（79件）が、同じ2026-09-06時点のテスト件数を違う数で記録している。現在の件数（140件）はどちらとも一致せず増えているため、当時どちらが正しかったかは判断できない</li>
 				<li>構成: <code>notes/01_research/r260829-01-….md</code> が HTML 原本を持たず md だけで存在する（ドキュメントは HTML で作る、というルールに反する）。作り直すには内容の構成を要するため見送り</li>
 				<li>安全性: <code>check-markdown</code> の <code>--Token</code> をコマンドライン引数の平文で受ける設計（シェル履歴・プロセス一覧に残りうる）。実装と資料は一致しており不具合ではないが、設計としての是非は判断が要る</li>

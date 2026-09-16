@@ -66,6 +66,25 @@ function markOf(kind: number): string {
 	return '~~';
 }
 
+/** 記法の区切りに使う1文字（strong・em は *、del は ~） */
+function markChar(kind: number): string {
+	return kind === KindDel ? '~' : '*';
+}
+
+/**
+ * 中身の先頭・末尾がマーク文字そのものだと、記号が3つ以上並んで
+ * 曖昧になる（<strong>*重要*</strong> を ** で囲むと ***重要*** になる）。
+ * 境界の1文字だけ \ でエスケープする。内側（境界以外）はそのまま
+ * （そこは元々曖昧にならない）。
+ */
+function escapeMarkBoundary(inner: string, ch: string): string {
+	if (inner.length === 0) { return inner; }
+	let s = inner;
+	if (s[0] === ch) { s = '\\' + s; }
+	if (s[s.length - 1] === ch && s[s.length - 2] !== '\\') { s = s.slice(0, -1) + '\\' + ch; }
+	return s;
+}
+
 function tagOf(kind: number): string {
 	if (kind === KindStrong) { return 'strong'; }
 	if (kind === KindEm) { return 'em'; }
@@ -169,7 +188,10 @@ function resolveInner(text: string, forceTags: boolean): string {
 		} else if (!forceTags &&
 			canEmphasize(prefix + leadWs + inner + trailWs + suffix, prefix.length + leadWs.length, inner.length)) {
 			const mark = markOf(openKind);
-			rep = mark + inner + mark;
+			// 中身の先頭・末尾がマークと同じ文字だと、記号が3つ以上並んで
+			// 曖昧になる（***重要*** 等）。境界の1文字だけエスケープする
+			// （i260908-04 の表・SVG6）
+			rep = mark + escapeMarkBoundary(inner, markChar(openKind)) + mark;
 		} else {
 			const tag = tagOf(openKind);
 			rep = '<' + tag + '>' + inner + '</' + tag + '>';
