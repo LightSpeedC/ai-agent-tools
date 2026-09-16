@@ -230,6 +230,17 @@ Assert-Equal 'edit: --new-file が両方妥当なら拒否 終了 3' 3 $r.Code
 $r = Run-Text @('edit', $fTarget, '--old-file', $fAmbig, '--new', 'y')
 Assert-Equal 'edit: --old-file が両方妥当なら拒否 終了 3' 3 $r.Code
 
+# 読めないバイトがあると置換位置がずれるため、edit を止める（i260908-04）。
+# A + 不正な SJIS 2 バイト（85 40）+ 改行 + B + 改行。2 行目（B）を書き換えようと
+# すると、1 行目の不正バイトを再エンコードした長さが元と食い違い、実際とは
+# 違う位置を切ってしまう
+$fBadSjis = Join-Path $Work 'bad-sjis.txt'
+New-RawFile $fBadSjis @(0x41, 0x85, 0x40, 0x0A, 0x42, 0x0A)
+$before = Get-Bytes $fBadSjis
+$r = Run-Text @('edit', $fBadSjis, '--from', 'sjis', '--lines', '2-2', '--new', 'X')
+Assert-Equal 'edit: 読めないバイトがあれば拒否 終了 2' 2 $r.Code
+Assert-True 'edit: 拒否時は元ファイルが不変' ((Get-Bytes $fBadSjis) -join ',' -eq ($before -join ',')) '書き換わった'
+
 # --old が複数一致でエラー
 $fMulti = Join-Path $Work 'multi.txt'
 New-TextFile $fMulti "foo`nfoo`n" $EncUtf8

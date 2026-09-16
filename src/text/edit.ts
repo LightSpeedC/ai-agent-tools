@@ -13,6 +13,7 @@ import {
 } from './files.ts';
 import { parseLines } from './read.ts';
 import { sameBytes } from '../lib/codec.ts';
+import { findUndecodable } from '../lib/detector.ts';
 
 const ValueOpts = new Set([
 	'--from', '--lines', '--digest', '--old', '--old-file', '--new', '--new-file',
@@ -29,6 +30,16 @@ export function run(a: string[]): number {
 		throw new ToolError(3,
 			'UTF-8 と SJIS の両方で妥当で組を決められません。--from で明示してください: ' + show(p));
 	}
+	// 読めないバイトがあると、置換位置の計算（デコード後の文字位置を再エンコード
+	// してバイト位置に戻す）が実際のバイト位置とずれる。読めない箇所より後ろを
+	// 編集すると、対象と違う位置を切ってしまう（i260908-04）
+	const badAt = findUndecodable(bytes, combo.enc);
+	if (badAt >= 0) {
+		throw new ToolError(2, combo.enc + ' として読めないバイトがあります（'
+			+ badAt + ' バイト目）。書き換え位置がずれるおそれがあるため止めます。'
+			+ ' --from で組を明示するか、convert-encoding で先に直してください。');
+	}
+
 	const text = decode(bytes, combo.enc);
 	const lines = splitLines(text);
 	const eol = eolToString(combo.eol);
