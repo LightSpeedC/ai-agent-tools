@@ -176,28 +176,21 @@
 </section>
 
 <section class="ch03" id="ch03">
-	<h1>機能範囲（要判断）</h1>
-	<p>本家 <code>less</code> の機能をどこまで持たせるか。2 案ある。</p>
+	<h1>機能範囲（決定）</h1>
+	<p><strong>A（最小限のページング）を採用。あわせて上下スクロールを追加する。</strong>2026-09-17 決定。</p>
 
-	<h2>A（推奨）— 最小限のページング</h2>
 	<ul>
-		<li>1 画面分ずつ表示し、<code>Space</code>／<code>Enter</code> で次ページ、<code>q</code> で終了</li>
-		<li>検索・行番号・戻りスクロールは持たない</li>
-		<li>標準出力がパイプ／端末でない（リダイレクト先がファイル等）ときは、ページングせずそのまま流す</li>
+		<li><code>q</code> — 終了</li>
+		<li><code>Space</code> — 1 画面分下</li>
+		<li><code>Enter</code>／<code>↓</code> — 1 行下</li>
+		<li><code>↑</code> — 1 行上</li>
+		<li><code>PageDown</code> — 画面の高さの 2/3 くらい下</li>
+		<li><code>PageUp</code> — 画面の高さの 2/3 くらい上</li>
 	</ul>
-	<p>今回困っているのは「化けずに読める」ことで、<code>more</code> の置き換えとして最小限で足りる。実装・検証の範囲が狭く、早く使い始められる。</p>
-
-	<h2>B — 本家 less 相当</h2>
-	<ul>
-		<li>上下スクロール（<code>↑</code>／<code>↓</code>／<code>j</code>／<code>k</code>）</li>
-		<li><code>/</code> による検索、<code>n</code> で次候補</li>
-		<li><code>g</code>／<code>G</code> で先頭・末尾へ</li>
-		<li>行番号表示（<code>-N</code> 相当）</li>
-	</ul>
-	<p>使い勝手は本家に近づくが、キー入力処理・画面再描画のロジックが増え、検証の手間も増える。</p>
+	<p>検索・行番号・<code>g</code>/<code>G</code>（先頭・末尾へ）は今回持たない（B の残り）。標準出力がパイプ／端末でない（リダイレクト先がファイル等）ときは、ページングせずそのまま流す。</p>
 
 	<div class="callout">
-		<p><strong>暫定と恒久</strong>: A を先に作り、実際に使ってみて不足を感じた機能だけ B から個別に足す運用でもよい（一度に全部作らない）。</p>
+		<p><strong>暫定と恒久</strong>: 検索・行番号等、今回見送った機能は、実際に使ってみて不足を感じたら個別に足す（一度に全部作らない）。</p>
 	</div>
 </section>
 
@@ -206,13 +199,31 @@
 	<h2>入力</h2>
 	<ul>
 		<li>標準入力からパイプで受け取る（<code>html2md | less</code> の形）</li>
-		<li>ファイル引数も受ける（<code>less foo.md</code>）か、パイプ専用にするかは A/B と別に決める。<strong>まずパイプ専用でよい</strong>（用途は「他コマンドの出力を見る」ため）</li>
+		<li>ファイル引数は今回持たない。<strong>まずパイプ専用</strong>（用途は「他コマンドの出力を見る」ため）</li>
 	</ul>
+
+	<div class="callout callout-important">
+		<h3>キー入力の取得元（上下スクロール追加で新たに要る論点）</h3>
+		<p><strong><code>cmd | less</code> の形では、<code>process.stdin</code> はデータそのもの（パイプ）で埋まっており、キー入力には使えない。</strong>先頭を1画面表示するだけの案（Space/Enter/qだけ）ならデータを読み終えた後に <code>process.stdin</code> を使い回せたが、<strong>上下スクロールは表示中も随時キーを受けるため、データ用のストリームとキー入力用のストリームを分ける必要がある。</strong></p>
+		<p>Windows ではコンソール入力を <code>CONIN$</code>（自プロセスのコンソール入力バッファを指す予約名）で直接開けるので、<code>process.stdin</code> とは別にこれを開き、Node の <code>tty.ReadStream</code> でラップして <code>setRawMode(true)</code> にする。</p>
+		<pre><code class="language-typescript">const fd = fs.openSync('\\\\.\\CONIN$', 'r');
+const key = new tty.ReadStream(fd);
+key.setRawMode(true);</code></pre>
+		<p><strong>開けなければ（コンソールが無い環境）、スクロール操作を諦めて素通しにする</strong>（下記「開けないとき」）。</p>
+	</div>
+
+	<div class="callout callout-warning">
+		<p><strong>実装時に踏んだ落とし穴。</strong>素の <code>'CONIN$'</code> を渡すと、Node がカレントフォルダからの相対パス（例: <code>N:\ai-agent-tools\CONIN$</code>）として解決してしまい、<code>ENOENT</code> で失敗する（Bash・PowerShell 両方の実環境で実測）。<strong>Win32 のデバイス名前空間 <code>\\.\</code> を前置する</strong>と正しく開け、<code>isTTY</code> も <code>true</code> になる。</p>
+	</div>
+
 	<h2>ページング</h2>
 	<ul>
-		<li><code>process.stdout.rows</code> で端末の行数を取り、1 画面分の行数を決める（既定は端末サイズ、取得できなければ 24 行）</li>
-		<li><code>process.stdin.setRawMode(true)</code> でキー入力を 1 文字ずつ受け取る</li>
-		<li>標準出力が端末でない（<code>process.stdout.isTTY</code> が false）ときはページングせずそのまま出力する</li>
+		<li>標準入力を全部読み切ってから始める（戻りスクロールのため、全行をメモリに持つ）</li>
+		<li><code>process.stdout.rows</code> で端末の行数を取り、1 画面分の行数を決める（取得できなければ 24 行）</li>
+		<li>表示位置は「先頭からの行オフセット（<code>top</code>）」1 つで持つ。キー操作は <code>top</code> を動かして再描画するだけ</li>
+		<li>再描画は画面クリア（<code>\x1b[2J\x1b[H</code>）してから <code>top</code> 〜 <code>top+高さ</code> を出す。最下行にステータス（<code>-- less (NN%) --</code>）を出す</li>
+		<li><code>top</code> は <code>0</code> 〜 <code>行数-画面高さ</code> の範囲にクランプする</li>
+		<li>標準出力が端末でない（<code>process.stdout.isTTY</code> が false）とき、または <code>CONIN$</code> を開けないときは、ページングせずそのまま出力する</li>
 	</ul>
 	<h2>終了コード</h2>
 	<div class="tablewrap">
@@ -230,8 +241,8 @@
 	<h1>テスト方針</h1>
 	<p>キー入力を伴う対話的な画面遷移は自動テストにしにくい。<strong>切り分けて考える。</strong></p>
 	<ul>
-		<li><strong>自動テストにする</strong>: 1 画面分の行数計算、ページ分割ロジック、<code>isTTY</code> が false のときにページングせず素通しする経路</li>
-		<li><strong>手動確認にとどめる</strong>: 実際のキー入力（<code>Space</code>／<code>q</code> 等）による画面遷移、日本語を含む長文での表示崩れの有無</li>
+		<li><strong>自動テストにする</strong>: 1 画面分の行数計算、<code>top</code> のクランプ（範囲外に動かそうとしても止まる）、<code>isTTY</code> が false のときにページングせず素通しする経路</li>
+		<li><strong>手動確認にとどめる</strong>: 実際のキー入力（<code>Space</code>・<code>Enter</code>・矢印・<code>PageUp</code>/<code>PageDown</code>・<code>q</code>）による画面遷移、<code>CONIN$</code> が開けること自体、日本語を含む長文での表示崩れの有無</li>
 	</ul>
 	<p>置き場は他ツールと同じ<code>tools/40_test/run-less-tests.ps1</code>（＋同名の cmd）。</p>
 </section>

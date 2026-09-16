@@ -11,14 +11,15 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(233.3,78%,25%); --accent2:hsl(233.3,58%,55%); --soft:hsl(233.3,28%,95%); }
-	.ch03{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
-	.ch04{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
-	.ch05{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
-	.ch06{ --accent:hsl(46.7,78%,25%);  --accent2:hsl(46.7,58%,55%);  --soft:hsl(46.7,28%,95%); }
-	.ch07{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	/* 章のアクセント色（8 章 / 色相 280 → 0 を 40 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(240,78%,25%); --accent2:hsl(240,58%,55%); --soft:hsl(240,28%,95%); }
+	.ch03{ --accent:hsl(200,78%,25%); --accent2:hsl(200,58%,55%); --soft:hsl(200,28%,95%); }
+	.ch04{ --accent:hsl(160,78%,25%); --accent2:hsl(160,58%,55%); --soft:hsl(160,28%,95%); }
+	.ch05{ --accent:hsl(120,78%,25%); --accent2:hsl(120,58%,55%); --soft:hsl(120,28%,95%); }
+	.ch06{ --accent:hsl(80,78%,25%);  --accent2:hsl(80,58%,55%);  --soft:hsl(80,28%,95%); }
+	.ch07{ --accent:hsl(40,78%,25%);  --accent2:hsl(40,58%,55%);  --soft:hsl(40,28%,95%); }
+	.ch08{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -148,7 +149,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-13</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-17</p>
 	</div>
 </div>
 
@@ -165,7 +166,8 @@
 		<li class="ch04"><a href="#ch04">文字コードと改行を直す</a></li>
 		<li class="ch05"><a href="#ch05">文字コードを問わず読む・探す・書く（text）</a></li>
 		<li class="ch06"><a href="#ch06">PowerShell を呼ぶ（psh）</a></li>
-		<li class="ch07"><a href="#ch07">つまずきやすいところ</a></li>
+		<li class="ch07"><a href="#ch07">ページングして読む（less）</a></li>
+		<li class="ch08"><a href="#ch08">つまずきやすいところ</a></li>
 	</ol>
 </div>
 
@@ -185,6 +187,7 @@
 			<tr><td class="nowrap"><code>text</code></td><td>SJIS・UTF-16 でも壊さず<strong>読む・探す・編集する・書く</strong>（Read・Grep・Edit・Write の代わり）</td></tr>
 			<tr><td class="nowrap"><code>check-public</code></td><td>公開前に、<strong>外に出してはいけないもの</strong>が混ざっていないかを見る</td></tr>
 			<tr><td class="nowrap"><code>psh</code></td><td>PowerShell を呼び、出力を <strong>UTF-8 に直して流す</strong>（第 6 章）</td></tr>
+			<tr><td class="nowrap"><code>less</code></td><td>UTF-8 セーフなページャー。DOS の <code>more</code> の文字化けを避ける（第 7 章）</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -619,6 +622,30 @@ psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる</code></
 </section>
 
 <section class="ch07" id="ch07">
+	<h1>ページングして読む（less）</h1>
+
+	<p><strong>DOS の <code>more</code> へ UTF-8 の出力をパイプすると文字化けする。</strong>PowerShell・.NET 系の出力コードページ問題の受け手側（第 6 章と根が同じ）。<code>less</code> は UTF-8 のまま画面に収まる分だけ表示する。</p>
+
+<pre><code class="language-shell">html2md | less</code></pre>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>キー</th><th>動き</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>q</code></td><td>終了</td></tr>
+			<tr><td class="nowrap"><code>Space</code></td><td>1 画面分下</td></tr>
+			<tr><td class="nowrap"><code>Enter</code> ・ <code>↓</code></td><td>1 行下</td></tr>
+			<tr><td class="nowrap"><code>↑</code></td><td>1 行上</td></tr>
+			<tr><td class="nowrap"><code>PageDown</code></td><td>画面の高さの 2/3 くらい下</td></tr>
+			<tr><td class="nowrap"><code>PageUp</code></td><td>画面の高さの 2/3 くらい上</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>出力先が端末でない（ファイルへのリダイレクト等）ときは、ページングせずそのまま流す。<strong>パイプ専用で、ファイル引数は受けない。</strong>検索・行番号表示は今回持たない。</p>
+</section>
+
+<section class="ch08" id="ch08">
 	<h1>つまずきやすいところ</h1>
 
 	<h2>Markdown を直接編集しない</h2>

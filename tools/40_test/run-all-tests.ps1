@@ -41,6 +41,9 @@ $Suites = @(
 	@{ Name = 'check ツール'; Script = 'run-check-tools-tests.ts' },
 	# 公開前の検査。誤検出の件数まで見る（拾いすぎると道具ごと使われなくなる）
 	@{ Name = 'check-public'; Script = 'run-check-public-tests.ts' },
+	# UTF-8 セーフなページャー。対話操作（キー入力での画面遷移）は
+	# 自動化せず、出力先が端末でないときの素通し経路だけを確かめる
+	@{ Name = 'less'; Script = 'run-less-tests.ts' },
 	# 型チェック。bun も node も型を見ないため、ここでしか食い違いが出ない
 	@{ Name = '型チェック'; Script = 'run-tsc-tests.ps1' }
 )
