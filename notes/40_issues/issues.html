@@ -1003,7 +1003,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p><span class="badge b-none">未</span>残り4件。いずれも判断か追加調査が要る:</p>
 			<ul>
 				<li>2. text の <code>--from</code>/<code>--to</code> が「convert-encoding と同じ語彙」と資料に書くが、実装は文字コード名5語だけで用途名（<code>cmd</code> 等）を受けない。<code>--to utf8</code> の改行挙動も convert-encoding と違う。<strong>text 側に用途名を足すか、資料の説明を弱めるかの選択</strong></li>
-				<li>5. <span class="no">i260910-03</span> の内訳に #732 の low 2 件（<code>run-all-tests.ps1</code> が check-contrast/check-markdown を含まない／issues.html の3行が共通ルールと食い違う）が入っていない。記録の是正。<strong>後者は元の指摘が手元に無く、何が食い違うのか特定できていない</strong></li>
+				<li>5. <span class="no">i260910-03</span> の内訳に #732 の low 2 件（<code>run-all-tests.ps1</code> が check-contrast/check-markdown を含まない／issues.html の3行が共通ルールと食い違う）が入っていない。<span class="badge b-ok">済</span>前者は元々 <span class="no">i260910-03</span> に記録済みだったと確認した（#732 由来である旨をここに追記して紐付けた）。<strong>後者は元の指摘が手元に無く、何が食い違うのか特定できていない</strong></li>
 				<li>9b. check-contrast/check-markdown が<strong>除外で落ちた件数を画面に出さない</strong>。出すかどうかと、どう出すかの判断</li>
 				<li>10. text のバイナリ判定（<code>LooksBinary</code>）が <code>find</code> にしか繋がっておらず、<code>edit</code>/<code>write</code> はバイナリでも Ambiguous（終了3）しか見ない。書き戻し経路にバイナリ拒否を足すかどうかの判断</li>
 			</ul>
