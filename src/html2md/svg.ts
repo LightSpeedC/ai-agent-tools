@@ -22,8 +22,11 @@ export function exportSvg(svgHtml: string, ctx: ConvertContext): SvgResult {
 
 	ctx.figIndex++;
 	const id = getAttr(openTag, 'id');
+	// id 付きもページ名を前置する。id は「そのページの中で」一意なだけなので、
+	// 前置しないと別ページの同じ id と images/ の同じファイルを取り合って
+	// 無警告で上書きし合う（i260908-02。id 無しの側は元々前置していた）
 	const fileName = id.length > 0
-		? id + '.svg'
+		? ctx.basePrefix + '-' + id + '.svg'
 		: ctx.basePrefix + '-fig' + String(ctx.figIndex).padStart(2, '0') + '.svg';
 
 	let body = open != null ? svgHtml.substring(open[0].length) : svgHtml;

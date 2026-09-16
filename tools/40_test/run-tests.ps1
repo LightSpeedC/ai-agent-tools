@@ -166,6 +166,14 @@ $Expect = @{
 		# 実在しないパス扱いになり .html のまま残っていた）
 		'[クエリ付き](b.md?x=1)'
 	)
+	'svg-id-collision' = @(
+		# 別ページの svg が同じ id でも、ファイル名にページ名が前置され
+		# 衝突しない（i260908-02。id 付きだけページ名を前置していなかった）
+		'(images/a-shared.svg)',
+		'(images/b-shared.svg)',
+		'fill="#111111"',
+		'fill="#222222"'
+	)
 	'figure-extra' = @(
 		# figure 専用の正規表現扱いをやめ、一般の convertBlocks に合流させた。
 		# img・2個目以降の svg・p・figcaption のどれも失われないこと
