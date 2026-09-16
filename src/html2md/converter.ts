@@ -199,17 +199,41 @@ export class Converter {
 		let i = 0;
 
 		for (;;) {
-			const m = BlockTags.exec(html.substring(i));
+			// a は「段落の外に単独」のときだけブロックにする（仕様どおり）。
+			// 単独かどうかを確かめずに拾うと、地の文の途中にあるリンクまで
+			// 切り出され、またいで掛かる strong 等の閉じタグが対岸に残されて
+			// 消えていた（i260908-04）。単独でなければこの a はここでは拾わず、
+			// 直後から探し直す（地の文としてまとめて後段に流れる）
+			let searchFrom = i;
+			let m: RegExpExecArray | null;
+			let start = -1;
+			let tag = '';
+			let block: Block = { outer: '', inner: '' };
+			for (;;) {
+				m = BlockTags.exec(html.substring(searchFrom));
+				if (m == null) { break; }
+				const candStart = searchFrom + m.index;
+				const candTag = m[1].toLowerCase();
+				const candBlock = getBlock(html, candStart, candTag);
+				if (candTag === 'a') {
+					const before = html.substring(i, candStart);
+					const afterEnd = findNextBlockStart(html, candStart + candBlock.outer.length);
+					const after = html.substring(candStart + candBlock.outer.length, afterEnd);
+					if (getPlainText(before).trim().length > 0 || getPlainText(after).trim().length > 0) {
+						searchFrom = candStart + candBlock.outer.length;
+						continue;
+					}
+				}
+				start = candStart; tag = candTag; block = candBlock;
+				break;
+			}
 			if (m == null) {
 				// 最後のブロックより後ろに残ったテキスト
 				this.addInlineText(html.substring(i), ctx, outBlocks);
 				break;
 			}
-			const start = i + m.index;
 			// ブロックの手前に地の文がある場合、それも 1 段落として出す
 			this.addInlineText(html.substring(i, start), ctx, outBlocks);
-			const tag = m[1].toLowerCase();
-			const block = getBlock(html, start, tag);
 			i = start + block.outer.length;
 			const openTag = getOpenTag(block.outer);
 			const classes = getClassList(openTag);
@@ -428,6 +452,17 @@ export class Converter {
 		// .wrap や .inner のような位置合わせだけのラッパは中身をそのまま処理する
 		outBlocks.push(...this.convertBlocks(block.inner, ctx));
 	}
+}
+
+/**
+ * a が「段落の外に単独」かどうかを見るための先読み。
+ * 次のブロックタグが始まる位置（無ければ末尾）を返すだけで、その候補自体が
+ * さらに単独でない a かどうかまでは追わない（近似で十分。二重に単独でない
+ * a が連続する入力は現実的に考えにくい）。
+ */
+function findNextBlockStart(html: string, fromIndex: number): number {
+	const m = BlockTags.exec(html.substring(fromIndex));
+	return m == null ? html.length : fromIndex + m.index;
 }
 
 /**
