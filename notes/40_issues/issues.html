@@ -705,8 +705,8 @@ $sub = Convert-Blocks ...</code></pre>
 		</div>
 	</details>
 
-	<details open>
-		<summary><span class="badge b-warn">着手</span><span class="no">i260912-06</span>PowerShell ツールが使えない。exe の標準出力が CP932 で Bash から化ける</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260912-06</span>PowerShell ツールが使えない。exe の標準出力が CP932 で Bash から化ける</summary>
 		<div class="issue-body">
 			<p>2026-09-12 に発覚。PowerShell ツールがセッションで無効になり、Bash から exe を呼んだところ<strong>日本語が化けた。</strong>バイト列で確かめた結果は次のとおり。</p>
 
@@ -777,7 +777,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<ul>
 				<li><span class="badge b-ok">済</span><strong>exe 側を UTF-8 に揃えるかどうか</strong>——<strong>揃えずに移植した。</strong>捨てる予定のコードに手を入れるより、移すほうが早く根本解決する</li>
 				<li><span class="badge b-ok">済</span><strong>Bun へ移して根本から消した。</strong><code>convert-encoding</code> ・ <code>text</code> ・ <code>html2md</code> の 3 本とも TypeScript になり、<strong>Bash から直接呼んでも化けない</strong>（実測）。進め方と結果は <a href="../10_plan/p260912-02-bun移植.html">bun への移植</a></li>
-				<li><span class="badge b-none">未</span><strong>psh を消す時期。</strong>PowerShell ツールが戻れば要らなくなる</li>
+				<li><span class="badge b-ok">済</span><strong>psh を消す時期は取り下げ。</strong>ずっと残す（利用者の判断）</li>
 			</ul>
 		</div>
 	</details>
