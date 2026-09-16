@@ -872,7 +872,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 
 			<p><span class="badge b-none">未</span><strong>現行でも成立するが、今回は対応しない（判断・追加調査が要る、または対応コストが見合わない）:</strong></p>
 			<ul>
-				<li>変換1: 見出しアンカー計算（<code>getPlainText</code>）と実際の見出しテキスト生成（<code>inline.convert</code>）が別経路で、badge・リンクを含む見出しでアンカーがずれうる。直すには両経路を揃える設計変更が要る</li>
+				<li><span class="badge b-warn">着手</span>変換1: 見出しアンカー計算（<code>getPlainText</code>）と実際の見出しテキスト生成（<code>inline.convert</code>）が別経路で、badge・リンクを含む見出しでアンカーがずれうる。直すには両経路を揃える設計変更が要る。<strong>2026-09-17、A案（アンカー計算でも inline.convert を通し、結果から Markdown の記法を剥がす）で決定。実装は保留（優先作業のため後回し）</strong></li>
 				<li>資料: <code>p260906-01</code>（93件）と <code>issues.html</code> の <code>i260906-01</code>（79件）が、同じ2026-09-06時点のテスト件数を違う数で記録している。現在の件数（140件）はどちらとも一致せず増えているため、当時どちらが正しかったかは判断できない</li>
 				<li>構成: <code>notes/01_research/r260829-01-….md</code> が HTML 原本を持たず md だけで存在する（ドキュメントは HTML で作る、というルールに反する）。作り直すには内容の構成を要するため見送り</li>
 				<li>安全性: <code>check-markdown</code> の <code>--Token</code> をコマンドライン引数の平文で受ける設計（シェル履歴・プロセス一覧に残りうる）。実装と資料は一致しており不具合ではないが、設計としての是非は判断が要る</li>
