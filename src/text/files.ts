@@ -6,8 +6,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as os from 'node:os';
 import * as crypto from 'node:crypto';
+import { maskHome } from '../lib/paths.ts';
 import type { Combo, EncKind } from './engine.ts';
 import {
 	ToolError, computeDigest, detectCombo, encodeRaw,
@@ -145,17 +145,9 @@ export function sizeOf(p: string): number {
 	return fs.statSync(p).size;
 }
 
-/** 表示用にユーザープロファイルを ~ に伏せる */
+/** 表示用にユーザープロファイルを ~ に伏せる（実体は lib/paths.ts で共有） */
 export function show(p: string): string {
-	const home = os.homedir();
-	let s = p.replace(/\\/g, '/');
-	if (home != null && home.length > 0) {
-		const h = home.replace(/\\/g, '/');
-		if (s.toLowerCase().startsWith(h.toLowerCase())) {
-			s = '~' + s.substring(h.length);
-		}
-	}
-	return s;
+	return maskHome(p);
 }
 
 export { computeDigest };

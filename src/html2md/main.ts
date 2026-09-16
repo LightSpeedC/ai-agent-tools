@@ -13,6 +13,7 @@ import * as path from 'node:path';
 import { Converter, buildAnchorsFromHtml, isMdSkipPage } from './converter.ts';
 import type { ConvertResult } from './context.ts';
 import { testExtraText, testHtmlLinks, testMdLinks, testUpdatedDate } from './checks.ts';
+import { maskHome } from '../lib/paths.ts';
 
 const Usage =
 	'HTML → Markdown 変換\n'
@@ -101,7 +102,7 @@ function main(argv: string[]): number {
 	out('');
 	out('=== HTML → Markdown 変換 ===');
 	if (dryRun) { out('（--dry-run: ファイルは書き出しません）'); }
-	out('対象ルート: ' + root);
+	out('対象ルート: ' + maskHome(root));
 	out('探索フォルダ: ' + dirs.join(', ') + (noReadme ? '' : ' と README.html'));
 
 	const targets = collectTargets(root, dirs, excludes, noReadme, extras);
