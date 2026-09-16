@@ -64,18 +64,21 @@ export class ListTableConverter {
 		const numCount = new Map<number, number>();
 		const dataCount = new Map<number, number>();
 		let maxCol = 0;
-		let rowCount = 0;
+		// 行数は実際の <tr>（中身が空の行は rows に積んでいないので既に除かれている）
+		// と常に一致する。rowspan から数え直すと、実際の行数を超える指定（HTML の
+		// 誤り）のとき、実在しない行まで数えてしまい空行が出る（i260908-04）
+		const rowCount = rows.length;
 
 		for (let r = 0; r < rows.length; r++) {
 			let c = 0;
 			for (const cell of rows[r]) {
 				while (grid.has(key(r, c))) { c++; }
 				for (let dr = 0; dr < cell.rowSpan; dr++) {
+					const rr = r + dr;
+					if (rr >= rowCount) { break; }   // 実在しない行への展開は捨てる
 					for (let dc = 0; dc < cell.colSpan; dc++) {
-						const rr = r + dr;
 						const cc = c + dc;
 						grid.set(key(rr, cc), (dr === 0 && dc === 0) ? cell.text : '');
-						if (rr + 1 > rowCount) { rowCount = rr + 1; }
 					}
 				}
 				// 数値列の判定はヘッダを除いたデータ行だけで行う
