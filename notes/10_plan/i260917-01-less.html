@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>less 計画</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>less 計画</h1>
+		<p class="lead">UTF-8 出力を DOS の <code>more</code> で受けると文字化けする問題を、UTF-8 セーフなページャーで解決する。</p>
+		<p class="date">📅 作成: 2026-09-17 / 更新: 2026-09-17</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">背景</a></li>
+		<li class="ch02"><a href="#ch02">実装方式（決定済み）</a></li>
+		<li class="ch03"><a href="#ch03">機能範囲（要判断）</a></li>
+		<li class="ch04"><a href="#ch04">詳細仕様</a></li>
+		<li class="ch05"><a href="#ch05">テスト方針</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>背景</h1>
+	<p>html2md・convert-encoding・text 等の出力を DOS の <code>more</code> コマンドへパイプしてページングすると、UTF-8 の出力が CP932 として読まれて文字化けする。<code>more</code> は Windows 標準の .NET／PowerShell 系が持つ「出力コードページ問題」の受け手側で、<a href="../40_issues/issues.html">課題 i260912-06</a> と根が同じ。</p>
+	<p>UTF-8 セーフなページャー（<code>less</code>）を新設する。</p>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>実装方式（決定済み）</h1>
+	<p><strong>TypeScript（bun 優先・node 予備）にする。</strong>他ツール（html2md・text・convert-encoding・psh・check-*）と同じ理由で、Node・Bun は常に UTF-8 で出すため。C#／PowerShell を選ぶと、この課題そのものを再び踏む。</p>
+	<p>置き場・呼び方は他ツールと同じ形に揃える。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ファイル</th><th>役割</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>less</code></td><td>sh 入口。bun を優先、無ければ node で <code>src/less/main.ts</code> を実行</td></tr>
+			<tr><td class="nowrap"><code>less.cmd</code></td><td>cmd 入口。同じ振り分け</td></tr>
+			<tr><td class="nowrap"><code>src/less/main.ts</code></td><td>本体</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>機能範囲（要判断）</h1>
+	<p>本家 <code>less</code> の機能をどこまで持たせるか。2 案ある。</p>
+
+	<h2>A（推奨）— 最小限のページング</h2>
+	<ul>
+		<li>1 画面分ずつ表示し、<code>Space</code>／<code>Enter</code> で次ページ、<code>q</code> で終了</li>
+		<li>検索・行番号・戻りスクロールは持たない</li>
+		<li>標準出力がパイプ／端末でない（リダイレクト先がファイル等）ときは、ページングせずそのまま流す</li>
+	</ul>
+	<p>今回困っているのは「化けずに読める」ことで、<code>more</code> の置き換えとして最小限で足りる。実装・検証の範囲が狭く、早く使い始められる。</p>
+
+	<h2>B — 本家 less 相当</h2>
+	<ul>
+		<li>上下スクロール（<code>↑</code>／<code>↓</code>／<code>j</code>／<code>k</code>）</li>
+		<li><code>/</code> による検索、<code>n</code> で次候補</li>
+		<li><code>g</code>／<code>G</code> で先頭・末尾へ</li>
+		<li>行番号表示（<code>-N</code> 相当）</li>
+	</ul>
+	<p>使い勝手は本家に近づくが、キー入力処理・画面再描画のロジックが増え、検証の手間も増える。</p>
+
+	<div class="callout">
+		<p><strong>暫定と恒久</strong>: A を先に作り、実際に使ってみて不足を感じた機能だけ B から個別に足す運用でもよい（一度に全部作らない）。</p>
+	</div>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>詳細仕様</h1>
+	<h2>入力</h2>
+	<ul>
+		<li>標準入力からパイプで受け取る（<code>html2md | less</code> の形）</li>
+		<li>ファイル引数も受ける（<code>less foo.md</code>）か、パイプ専用にするかは A/B と別に決める。<strong>まずパイプ専用でよい</strong>（用途は「他コマンドの出力を見る」ため）</li>
+	</ul>
+	<h2>ページング</h2>
+	<ul>
+		<li><code>process.stdout.rows</code> で端末の行数を取り、1 画面分の行数を決める（既定は端末サイズ、取得できなければ 24 行）</li>
+		<li><code>process.stdin.setRawMode(true)</code> でキー入力を 1 文字ずつ受け取る</li>
+		<li>標準出力が端末でない（<code>process.stdout.isTTY</code> が false）ときはページングせずそのまま出力する</li>
+	</ul>
+	<h2>終了コード</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th class="num">コード</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="num">0</td><td>正常に最後まで表示、または <code>q</code> で終了</td></tr>
+			<tr><td class="num">2</td><td>引数の誤り</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>テスト方針</h1>
+	<p>キー入力を伴う対話的な画面遷移は自動テストにしにくい。<strong>切り分けて考える。</strong></p>
+	<ul>
+		<li><strong>自動テストにする</strong>: 1 画面分の行数計算、ページ分割ロジック、<code>isTTY</code> が false のときにページングせず素通しする経路</li>
+		<li><strong>手動確認にとどめる</strong>: 実際のキー入力（<code>Space</code>／<code>q</code> 等）による画面遷移、日本語を含む長文での表示崩れの有無</li>
+	</ul>
+	<p>置き場は他ツールと同じ<code>tools/40_test/run-less-tests.ps1</code>（＋同名の cmd）。</p>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>
