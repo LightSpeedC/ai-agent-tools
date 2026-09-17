@@ -170,6 +170,7 @@
 			<tr><td class="nowrap"><code>less</code></td><td>sh 入口。bun を優先、無ければ node で <code>src/less/main.ts</code> を実行</td></tr>
 			<tr><td class="nowrap"><code>less.cmd</code></td><td>cmd 入口。同じ振り分け</td></tr>
 			<tr><td class="nowrap"><code>src/less/main.ts</code></td><td>本体</td></tr>
+			<tr><td class="nowrap"><code>src/less/bun-ffi.d.ts</code></td><td>型チェック専用の最小限のアンビエント宣言（<code>Bun</code>・<code>bun:ffi</code>）。下記「Bun では動かない」を参照</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -205,15 +206,30 @@
 	<div class="callout callout-important">
 		<h3>キー入力の取得元（上下スクロール追加で新たに要る論点）</h3>
 		<p><strong><code>cmd | less</code> の形では、<code>process.stdin</code> はデータそのもの（パイプ）で埋まっており、キー入力には使えない。</strong>先頭を1画面表示するだけの案（Space/Enter/qだけ）ならデータを読み終えた後に <code>process.stdin</code> を使い回せたが、<strong>上下スクロールは表示中も随時キーを受けるため、データ用のストリームとキー入力用のストリームを分ける必要がある。</strong></p>
-		<p>Windows ではコンソール入力を <code>CONIN$</code>（自プロセスのコンソール入力バッファを指す予約名）で直接開けるので、<code>process.stdin</code> とは別にこれを開き、Node の <code>tty.ReadStream</code> でラップして <code>setRawMode(true)</code> にする。</p>
-		<pre><code class="language-typescript">const fd = fs.openSync('\\\\.\\CONIN$', 'r');
-const key = new tty.ReadStream(fd);
-key.setRawMode(true);</code></pre>
+		<p>取得方法が Node と Bun で異なる（下記の落とし穴を参照）ため、<code>KeySource</code>（<code>onData</code>／<code>close</code> の2つだけを持つ）という共通の形に抽象化し、<code>page()</code> 側はどちらの処理系かを意識しない。</p>
+		<pre><code class="language-typescript">interface KeySource {
+	onData(cb: (chunk: string) =&gt; void): void;
+	close(): void;
+}</code></pre>
 		<p><strong>開けなければ（コンソールが無い環境）、スクロール操作を諦めて素通しにする</strong>（下記「開けないとき」）。</p>
 	</div>
 
 	<div class="callout callout-warning">
-		<p><strong>実装時に踏んだ落とし穴。</strong>素の <code>'CONIN$'</code> を渡すと、Node がカレントフォルダからの相対パス（例: <code>N:\ai-agent-tools\CONIN$</code>）として解決してしまい、<code>ENOENT</code> で失敗する（Bash・PowerShell 両方の実環境で実測）。<strong>Win32 のデバイス名前空間 <code>\\.\</code> を前置する</strong>と正しく開け、<code>isTTY</code> も <code>true</code> になる。</p>
+		<p><strong>実装時に踏んだ落とし穴（1）。</strong>素の <code>'CONIN$'</code> を渡すと、Node がカレントフォルダからの相対パス（例: <code>N:\ai-agent-tools\CONIN$</code>）として解決してしまい、<code>ENOENT</code> で失敗する（Bash・PowerShell 両方の実環境で実測）。<strong>Win32 のデバイス名前空間 <code>\\.\</code> を前置する</strong>と正しく開け、<code>isTTY</code> も <code>true</code> になる。</p>
+	</div>
+
+	<div class="callout callout-caution">
+		<p><strong>実装時に踏んだ落とし穴（2）。</strong><code>isTTY</code> が <code>true</code> を返しても、<code>setRawMode</code> が成功するとは限らない。読み取り専用（<code>'r'</code>）で <code>CONIN$</code> を開くと、Node では <code>setRawMode</code> が <code>EPERM</code> で落ちる。Windows の <code>SetConsoleMode</code> は書き込みアクセスも要るため、<strong><code>'r+'</code>（読み書き）で開く</strong>必要がある。この不具合は手動確認（<code>isTTY</code> が <code>true</code> になることだけ）をもって「動く」と判断してしまい、利用者が実際にパイプ経由で実行するまで見つからなかった。</p>
+		<p><strong>Bun では <code>'r'</code> ／ <code>'r+'</code> ／ <code>'w+'</code> ／ <code>'a+'</code> のどのモードで開いても直らない。</strong><code>setRawMode</code> が Node とは別のメッセージ（「TTY ではない」）で失敗し続ける（4モードとも実測）。Node は <code>'r+'</code> ／ <code>'w+'</code> でだけ成功しており、アクセス権の問題ではなく、<strong>Bun の Windows 向け <code>node:tty</code> 実装が、標準入出力（fd 0/1/2）以外の fd を raw mode 対応の TTY として扱わない</strong>という実装上の制約だと見られる（Bun の Issue 追跡でも Windows の Terminal/PTY 関連機能が未対応・制限ありと記載されている）。</p>
+		<p><strong>回避策: <code>node:tty</code> を経由せず、MS-CRT（<code>msvcrt.dll</code>）の <code>_kbhit</code> / <code>_getch</code> を <code>bun:ffi</code> で直接呼ぶ。</strong>これらはコンソールを直接読む実装のため、標準入力がパイプで埋まっていても影響を受けない（<code>echo ... | bun test.mjs</code> の形で実測）。<code>Win32 Console API</code>（<code>ReadConsoleInputW</code> 等）を直接叩く方式も前例がある（<a href="https://github.com/ObscuritySRL/bun-win32">bun-win32</a>、外部パッケージとして公開されている）が、<code>CreateFileW</code> でハンドルを開き、<code>SetConsoleMode</code> を保存・復元し、<code>INPUT_RECORD</code>（共用体）をバイト列から自前でデコードする必要があり、実装量が大きい。<code>_kbhit</code>/<code>_getch</code> はコンソールのモード管理を CRT 側がやってくれるため、外部パッケージへの依存無しで数十行で済む。</p>
+		<pre><code class="language-typescript">const { dlopen, FFIType } = await import('bun:ffi');
+const { symbols } = dlopen('msvcrt.dll', {
+	_kbhit: { args: [], returns: FFIType.i32 },
+	_getch: { args: [], returns: FFIType.i32 },
+});</code></pre>
+		<p>矢印・PageUp/Down は「拡張キー」で、<code>_getch()</code> が <code>0</code> か <code>0xE0</code> を返した後、もう一度 <code>_getch()</code> を呼ぶとスキャンコード（↑72／↓80／PgUp73／PgDn81）が来る（MS-CRT の昔からの仕様）。<code>handleKey()</code> が読める ANSI エスケープ列（<code>'\x1b[A'</code> 等）に変換してから渡すことで、Node 側と同じ解釈ロジックをそのまま使い回せる。</p>
+		<p><code>bun:ffi</code> の型は <code>bun-types</code> を依存に追加せず、使う分だけ <code>src/less/bun-ffi.d.ts</code> に自前で宣言した（外部パッケージへの依存を増やさない方針に合わせた）。</p>
+		<p>実行時にどちらの処理系かを見分けるのは <code>typeof Bun !== 'undefined'</code>（Bun がグローバルに注入する <code>Bun</code> オブジェクトの有無で判定）。<strong>これがこのプロジェクトで初めて、シェルの入口ではなく main.ts 自身が実行時にランタイムを判断するコード</strong>になる（他ツールは入口スクリプトの <code>command -v bun</code>／<code>where bun</code> だけで振り分けており、本体は Node の API だけで両対応している）。</p>
 	</div>
 
 	<h2>ページング</h2>
@@ -225,6 +241,20 @@ key.setRawMode(true);</code></pre>
 		<li><code>top</code> は <code>0</code> 〜 <code>行数-画面高さ</code> の範囲にクランプする</li>
 		<li>標準出力が端末でない（<code>process.stdout.isTTY</code> が false）とき、または <code>CONIN$</code> を開けないときは、ページングせずそのまま出力する</li>
 	</ul>
+
+	<div class="callout callout-important">
+		<h3>再描画のちらつき（未対応・実装予定）</h3>
+		<p>実機確認で判明。<strong>今の <code>render()</code> は移動量の大小によらず、キーを押すたびに画面全体をクリアしてから毎回全部描き直している。</strong>↓キー（1行スクロール）のように変化が小さいときでも画面全体が点滅する。</p>
+		<p><strong>対処案（差分更新にする）。2026-09-17、利用者の指示で下記の形に決定。</strong></p>
+		<ul>
+			<li><strong>下方向（<code>top</code> が増える）は常にスクロール方式にする</strong>（↓・Space・PageDown のすべて）。カーソルを最下行に置いた状態で、新しく見える行の数だけ改行＋テキストを出す。改行のたびに端末が自然に1行分スクロールする（既存の内容はそのまま上へ押し出される）ため、移動量が画面の高さを超えていても同じやり方で書ける</li>
+			<li><strong>↑（矢印、1行）だけスクロール方式にする</strong>。<code>\x1bM</code>（Reverse Index）でカーソル位置を起点に逆方向へ1行分スクロールし、最上行にできた空行へ新しく見える行を書く</li>
+			<li><strong>PageUp は今までどおり全画面クリア＋再描画のままにする。</strong>Reverse Index を複数行分繰り返す形は端末依存の懸念があり、もともと大きく動くキーなので点滅も気にならない</li>
+			<li><strong>ステータス行</strong>（画面最下行の <code>-- less (NN%) --</code>）は、スクロール方式でも毎回その場で上書きする（<code>\x1b[&lt;行&gt;;1H</code> でカーソルを合わせ、<code>\x1b[2K</code> で消してから書く）</li>
+			<li><strong>端に達していて実際には動かないとき（先頭で↑／末尾で↓等）は、何も出力しない。</strong><code>move()</code> の先頭で <code>clampTop</code> 後の値が現在の <code>top</code> と同じなら、再描画・ステータス更新とも行わず即座に戻る</li>
+		</ul>
+		<p><code>render()</code>／<code>move()</code> だけの変更で済み、<code>handleKey()</code>・<code>KeySource</code> は影響を受けない。</p>
+	</div>
 	<h2>終了コード</h2>
 	<div class="tablewrap">
 	<table>
@@ -242,8 +272,11 @@ key.setRawMode(true);</code></pre>
 	<p>キー入力を伴う対話的な画面遷移は自動テストにしにくい。<strong>切り分けて考える。</strong></p>
 	<ul>
 		<li><strong>自動テストにする</strong>: 1 画面分の行数計算、<code>top</code> のクランプ（範囲外に動かそうとしても止まる）、<code>isTTY</code> が false のときにページングせず素通しする経路</li>
-		<li><strong>手動確認にとどめる</strong>: 実際のキー入力（<code>Space</code>・<code>Enter</code>・矢印・<code>PageUp</code>/<code>PageDown</code>・<code>q</code>）による画面遷移、<code>CONIN$</code> が開けること自体、日本語を含む長文での表示崩れの有無</li>
+		<li><strong>手動確認にとどめる</strong>: 実際のキー入力（<code>Space</code>・<code>Enter</code>・矢印・<code>PageUp</code>/<code>PageDown</code>・<code>q</code>）による画面遷移、<code>CONIN$</code> が開けること自体、日本語を含む長文での表示崩れの有無、<strong>Bun での <code>_kbhit</code>/<code>_getch</code> によるキー入力（拡張キーのデコードを含む）</strong></li>
 	</ul>
+	<div class="callout">
+		<p><strong>自動テストの構造上の限界。</strong>自動テストは <code>spawnSync</code> で標準出力をパイプに捕まえるため <code>process.stdout.isTTY</code> が常に <code>false</code> になり、キー入力を読む経路（<code>openNodeKeySource</code>／<code>openBunKeySource</code>）そのものに一度も到達しない。<code>bun:ffi</code> での <code>dlopen</code>・<code>_kbhit()</code> 呼び出しが例外を出さないこと（標準入力をパイプで埋めた状態でも）は手元で個別に確認したが、これはテストスイートには組み込めておらず、実際のキー入力による画面遷移は利用者による実機確認が要る。</p>
+	</div>
 	<p>置き場は他ツールと同じ<code>tools/40_test/run-less-tests.ps1</code>（＋同名の cmd）。</p>
 </section>
 

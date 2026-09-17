@@ -73,7 +73,7 @@ async function main(argv: string[]): Promise<number> {
 		return ExitOk;
 	}
 
-	const keyStream = openKeyStream();
+	const keyStream = await openKeyStream();
 	if (keyStream == null) {
 		// コンソール入力を開けない環境では、操作を諦めて素通しにする
 		out(lines.join('\n') + (lines.length > 0 ? '\n' : ''));
@@ -84,23 +84,93 @@ async function main(argv: string[]): Promise<number> {
 }
 
 /**
- * キー入力の取得元を開く。標準入力はパイプのデータで埋まっている
- * （cmd | less の形）ため使えない。Windows のコンソール入力は
- * CONIN$（自プロセスのコンソール入力バッファを指す予約名）で
- * 直接開ける。開けなければ null を返す（コンソールが無い環境）。
+ * キー入力の取得元。標準入力はパイプのデータで埋まっている
+ * （cmd | less の形）ため使えず、コンソールから直接読む。
+ * Node と Bun で取得方法が違うため、この形に抽象化する。
  */
-function openKeyStream(): tty.ReadStream | null {
+interface KeySource {
+	onData(cb: (chunk: string) => void): void;
+	close(): void;
+}
+
+/**
+ * Node 向け。Windows のコンソール入力は CONIN$（自プロセスのコンソール
+ * 入力バッファを指す予約名）で直接開ける。開けなければ null を返す
+ * （コンソールが無い環境）。
+ */
+function openNodeKeySource(): KeySource | null {
 	try {
 		// 素の 'CONIN$' は Node がカレントフォルダからの相対パスとして
 		// 解決してしまい、Windows の予約名として扱われない（実測で確認）。
 		// Win32 のデバイス名前空間 \\.\ を付けると正しく開ける
-		const fd = fs.openSync('\\\\.\\CONIN$', 'r');
+		//
+		// 読み取り専用（'r'）で開くと isTTY は true を返すのに setRawMode が
+		// EPERM で失敗する。Windows の SetConsoleMode は書き込みアクセスも
+		// 要るため、'r+'（読み書き）で開く（実測で確認）
+		const fd = fs.openSync('\\\\.\\CONIN$', 'r+');
 		const stream = new tty.ReadStream(fd);
 		if (!stream.isTTY) { return null; }
-		return stream;
+		return {
+			onData(cb) {
+				stream.on('data', (c: Buffer) => cb(c.toString('utf8')));
+				stream.setRawMode(true);
+				stream.resume();
+			},
+			close() {
+				stream.setRawMode(false);
+				stream.removeAllListeners('data');
+				stream.pause();
+			},
+		};
 	} catch {
 		return null;
 	}
+}
+
+// _getch の拡張キー（矢印・PageUp/Down）は、1 回目が 0 か 0xE0 を返した後、
+// 2 回目の呼び出しでスキャンコードが来る（MS-CRT の昔からの仕様）。
+// handleKey がそのまま読める ANSI エスケープ列に変換しておく
+const ScanCode: Record<number, string> = { 72: '\x1b[A', 80: '\x1b[B', 73: '\x1b[5~', 81: '\x1b[6~' };
+
+/**
+ * Bun 向け。tty.ReadStream に CONIN$ を包んでも setRawMode が
+ * 「TTY ではない」で失敗し、書き込みアクセスを足しても直らない
+ * （Node とは別の失敗で、実測で確認。Bun の Windows 向け TTY 実装の
+ * 制約と見られる。計画 notes/10_plan/i260917-01-less.html を参照）。
+ *
+ * node:tty を経由せず、MS-CRT（msvcrt.dll）の _kbhit / _getch を
+ * bun:ffi で直接呼ぶ。これらはコンソールを直接読む実装のため、
+ * 標準入力がパイプで埋まっていても影響を受けない（実測で確認）。
+ */
+async function openBunKeySource(): Promise<KeySource | null> {
+	try {
+		const { dlopen, FFIType } = await import('bun:ffi');
+		const { symbols } = dlopen('msvcrt.dll', {
+			_kbhit: { args: [], returns: FFIType.i32 },
+			_getch: { args: [], returns: FFIType.i32 },
+		});
+		let timer: ReturnType<typeof setInterval> | null = null;
+		return {
+			onData(cb) {
+				timer = setInterval(() => {
+					while (symbols._kbhit()) {
+						const c = symbols._getch();
+						const s = (c === 0 || c === 0xe0) ? ScanCode[symbols._getch()] : String.fromCharCode(c);
+						if (s != null) { cb(s); }
+					}
+				}, 30);
+			},
+			close() {
+				if (timer != null) { clearInterval(timer); }
+			},
+		};
+	} catch {
+		return null;
+	}
+}
+
+function openKeyStream(): Promise<KeySource | null> {
+	return typeof Bun !== 'undefined' ? openBunKeySource() : Promise.resolve(openNodeKeySource());
 }
 
 /** 画面の高さ（表示に使う行数）。ステータス行の 1 行を引く */
@@ -116,7 +186,7 @@ function clampTop(top: number, lineCount: number, height: number): number {
 	return top > max ? max : top;
 }
 
-function page(lines: string[], key: tty.ReadStream): Promise<number> {
+function page(lines: string[], key: KeySource): Promise<number> {
 	return new Promise((resolve) => {
 		let top = 0;
 
@@ -137,9 +207,7 @@ function page(lines: string[], key: tty.ReadStream): Promise<number> {
 		}
 
 		function finish(code: number): void {
-			key.setRawMode(false);
-			key.removeAllListeners('data');
-			key.pause();
+			key.close();
 			out('\x1b[2J\x1b[H');
 			resolve(code);
 		}
@@ -147,8 +215,8 @@ function page(lines: string[], key: tty.ReadStream): Promise<number> {
 		// 1 回のイベントに複数キー分入ってくることがあるので、1 つずつ読む。
 		// エスケープシーケンスの途中で切れたら、続きが来るまで持ち越す
 		let pending = '';
-		key.on('data', (chunk: string | Buffer) => {
-			pending += chunk.toString('utf8');
+		key.onData((chunk) => {
+			pending += chunk;
 			for (;;) {
 				const used = handleKey(pending);
 				if (used <= 0) { break; }
@@ -170,8 +238,6 @@ function page(lines: string[], key: tty.ReadStream): Promise<number> {
 			return 1;   // 知らない入力は 1 文字読み捨てる
 		}
 
-		key.setRawMode(true);
-		key.resume();
 		render();
 	});
 }
