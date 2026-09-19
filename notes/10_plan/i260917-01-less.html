@@ -134,7 +134,7 @@
 	<div class="inner">
 		<h1>less 計画</h1>
 		<p class="lead">UTF-8 出力を DOS の <code>more</code> で受けると文字化けする問題を、UTF-8 セーフなページャーで解決する。</p>
-		<p class="date">📅 作成: 2026-09-17 / 更新: 2026-09-17</p>
+		<p class="date">📅 作成: 2026-09-17 / 更新: 2026-09-19</p>
 	</div>
 </div>
 
@@ -182,13 +182,15 @@
 
 	<ul>
 		<li><code>q</code> — 終了</li>
-		<li><code>Space</code> — 1 画面分下</li>
+		<li><code>Space</code>／<code>PageDown</code> — 画面の高さの 3/4 くらい下</li>
 		<li><code>Enter</code>／<code>↓</code> — 1 行下</li>
 		<li><code>↑</code> — 1 行上</li>
-		<li><code>PageDown</code> — 画面の高さの 2/3 くらい下</li>
-		<li><code>PageUp</code> — 画面の高さの 2/3 くらい上</li>
+		<li><code>PageUp</code> — 画面の高さの 3/4 くらい上</li>
 	</ul>
 	<p>検索・行番号・<code>g</code>/<code>G</code>（先頭・末尾へ）は今回持たない（B の残り）。標準出力がパイプ／端末でない（リダイレクト先がファイル等）ときは、ページングせずそのまま流す。</p>
+	<div class="callout">
+		<p><span class="badge b-ok">済</span>2026-09-19、利用者の指示で移動量を変更。<code>Space</code> は当初「1画面分」だったが、<code>PageDown</code> と同じ「画面の高さの 3/4 くらい」に統一。<code>PageUp</code>／<code>PageDown</code> の移動量も 2/3 → 3/4 に変更。あわせてステータス行にキー一覧を追加（下記「詳細仕様」を参照）。</p>
+	</div>
 
 	<div class="callout">
 		<p><strong>暫定と恒久</strong>: 検索・行番号等、今回見送った機能は、実際に使ってみて不足を感じたら個別に足す（一度に全部作らない）。</p>
@@ -237,24 +239,92 @@ const { symbols } = dlopen('msvcrt.dll', {
 		<li>標準入力を全部読み切ってから始める（戻りスクロールのため、全行をメモリに持つ）</li>
 		<li><code>process.stdout.rows</code> で端末の行数を取り、1 画面分の行数を決める（取得できなければ 24 行）</li>
 		<li>表示位置は「先頭からの行オフセット（<code>top</code>）」1 つで持つ。キー操作は <code>top</code> を動かして再描画するだけ</li>
-		<li>再描画は画面クリア（<code>\x1b[2J\x1b[H</code>）してから <code>top</code> 〜 <code>top+高さ</code> を出す。最下行にステータス（<code>-- less (NN%) --</code>）を出す</li>
+		<li>再描画は画面クリア（<code>\x1b[2J\x1b[H</code>）してから <code>top</code> 〜 <code>top+高さ</code> を出す。最下行にステータス行を出す。2026-09-19、利用者の指示でキー一覧を含む形にした: <code>-- less (NN%) q で終了 | Page Up | ↑ | ↓・Enter | Page Down・Space --</code>（2026-09-19 に <code>Space・Page Down</code> から並び順を修正）</li>
 		<li><code>top</code> は <code>0</code> 〜 <code>行数-画面高さ</code> の範囲にクランプする</li>
 		<li>標準出力が端末でない（<code>process.stdout.isTTY</code> が false）とき、または <code>CONIN$</code> を開けないときは、ページングせずそのまま出力する</li>
 	</ul>
 
 	<div class="callout callout-important">
-		<h3>再描画のちらつき（未対応・実装予定）</h3>
-		<p>実機確認で判明。<strong>今の <code>render()</code> は移動量の大小によらず、キーを押すたびに画面全体をクリアしてから毎回全部描き直している。</strong>↓キー（1行スクロール）のように変化が小さいときでも画面全体が点滅する。</p>
-		<p><strong>対処案（差分更新にする）。2026-09-17、利用者の指示で下記の形に決定。</strong></p>
+		<h3>再描画のちらつき</h3>
+		<p>実機確認で判明。<strong>それまでの <code>render()</code> は移動量の大小によらず、キーを押すたびに画面全体をクリアしてから毎回全部描き直していた。</strong>↓キー（1行スクロール）のように変化が小さいときでも画面全体が点滅する。</p>
+		<p><span class="badge b-ok">済</span>2026-09-18、利用者の指示で下記の形に実装した（差分更新にする）。</p>
 		<ul>
-			<li><strong>下方向（<code>top</code> が増える）は常にスクロール方式にする</strong>（↓・Space・PageDown のすべて）。カーソルを最下行に置いた状態で、新しく見える行の数だけ改行＋テキストを出す。改行のたびに端末が自然に1行分スクロールする（既存の内容はそのまま上へ押し出される）ため、移動量が画面の高さを超えていても同じやり方で書ける</li>
-			<li><strong>↑（矢印、1行）だけスクロール方式にする</strong>。<code>\x1bM</code>（Reverse Index）でカーソル位置を起点に逆方向へ1行分スクロールし、最上行にできた空行へ新しく見える行を書く</li>
-			<li><strong>PageUp は今までどおり全画面クリア＋再描画のままにする。</strong>Reverse Index を複数行分繰り返す形は端末依存の懸念があり、もともと大きく動くキーなので点滅も気にならない</li>
-			<li><strong>ステータス行</strong>（画面最下行の <code>-- less (NN%) --</code>）は、スクロール方式でも毎回その場で上書きする（<code>\x1b[&lt;行&gt;;1H</code> でカーソルを合わせ、<code>\x1b[2K</code> で消してから書く）</li>
+			<li><strong>下方向（<code>top</code> が増える）は常にスクロール方式にする</strong>（↓・Enter・Space・PageDown のすべて）。<code>scrollDown()</code> がカーソルを最下行に置いてから、新しく見える行の数だけ改行＋テキストを出す。改行のたびに端末が自然に1行分スクロールする（既存の内容はそのまま上へ押し出される）ため、移動量が画面の高さを超えていても同じやり方で書ける</li>
+			<li><strong>↑（矢印、1行）だけスクロール方式にする</strong>。<code>scrollUp()</code> が <code>\x1bM</code>（Reverse Index）でカーソルを最上行に固定した状態から逆方向へ1行分スクロールし、最上行にできた空行へ新しく見える行を書く</li>
+			<li><strong>PageUp は今までどおり全画面クリア＋再描画のままにする</strong>（<code>move()</code> に渡す <code>strategy</code> を <code>'redraw'</code> にする）。Reverse Index を複数行分繰り返す形は端末依存の懸念があり、もともと大きく動くキーなので点滅も気にならない</li>
+			<li><strong>ステータス行</strong>（画面最下行の <code>-- less (NN%) --</code>）は、スクロール方式でも <code>writeStatus()</code> が毎回その場で上書きする（<code>\x1b[&lt;行&gt;;1H</code> でカーソルを合わせ、<code>\x1b[2K</code> で消してから書く）</li>
 			<li><strong>端に達していて実際には動かないとき（先頭で↑／末尾で↓等）は、何も出力しない。</strong><code>move()</code> の先頭で <code>clampTop</code> 後の値が現在の <code>top</code> と同じなら、再描画・ステータス更新とも行わず即座に戻る</li>
 		</ul>
-		<p><code>render()</code>／<code>move()</code> だけの変更で済み、<code>handleKey()</code>・<code>KeySource</code> は影響を受けない。</p>
+		<p><code>render()</code>／<code>move()</code> だけの変更で済み、<code>handleKey()</code>・<code>KeySource</code> は影響を受けない。<code>tools/40_test/run-less-tests.ts</code>（bun・node とも8件）と型チェックは通したが、<strong>実際の画面遷移（ちらつきが無くなったか、各キーの見た目）は自動化できないため、利用者による実機での確認が要る。</strong></p>
 	</div>
+
+	<div class="callout callout-caution">
+		<h3>実装時に踏んだ落とし穴（3）: スクロール範囲を区切らないとスクロールしない</h3>
+		<p>実機確認で判明。<strong>↓キー・Enter を押しても表示が進まず、ステータス行の％表示だけが増えた。</strong>原因は、画面が「コンテンツ h 行＋ステータス行 1 行」の計 h+1 行を使っているのに、<code>scrollDown()</code> は「コンテンツの最終行（h 行目）」にカーソルを置いて改行していた点。<strong>そこは端末にとって画面の最終行ではない</strong>（1行下にステータス行がある）ため、改行してもスクロールは起きず、カーソルがステータス行へ動いてそこへ新しい行のテキストを上書きしていた。</p>
+		<p><span class="badge b-ok">済</span>2026-09-19 に修正。<strong>DECSTBM（<code>\x1b[1;h r</code>）でスクロール範囲をコンテンツ用の h 行だけに限定する</strong>（<code>setScrollRegion()</code>、ページング開始時に1回設定）。この範囲内でだけ改行・Reverse Index が正しくスクロールし、範囲外のステータス行は影響を受けない。終了時（<code>finish()</code>）に <code>resetScrollRegion()</code>（<code>\x1b[r</code>）で画面全体に戻す。</p>
+		<p><span class="badge b-ok">済</span>あわせて、<strong><code>q</code> で終了したときの画面クリアを無くした</strong>（利用者の指示）。ページャーの最後の表示をそのまま残し、カーソルをステータス行の下へ移して改行するだけにする。</p>
+	</div>
+
+	<div class="callout callout-caution">
+		<h3>実装時に踏んだ落とし穴（4）: スクロール範囲を区切っても、書き方次第でステータス行が残る</h3>
+		<p>実機確認で判明。落とし穴（3）の修正後、<strong><code>Enter</code> を押すとステータス行が消えずに残ったまま画面がスクロールしていった。</strong>原因は <code>scrollDown()</code> の書き方: 改行（<code>\n</code>）を先に出してからテキストを書いており、(1) 改行だけでは列が先頭に戻らない（<code>\n</code> は CR を含まない）ため、複数行分では列がずれる、(2) 書く前に行末までクリアしていないため、スクロールが確実に起きていない場合や、新しい行が前の内容より短い場合に文字が残る。</p>
+		<p><span class="badge b-ok">済</span>2026-09-19、利用者の指示で修正。<strong>「行頭へ戻す（<code>\r</code>）→行末までクリア（<code>\x1b[K</code>）→テキストを書く→<code>\r\n</code>で次行へ」の順にする。</strong>スクロール範囲の最終行（h 行目）に最初に1回だけ位置決めした後は、各行を書くたびの <code>\r\n</code> で自動的に次の行の先頭（同じくスクロール範囲の最終行）へ戻るため、ループ内で毎回位置決めし直す必要はない。<code>scrollUp()</code> にも同じ理由で行頭復帰＋行末クリアを追加した。</p>
+		<p><span class="badge b-ok">済</span>2026-09-19、150桁端末での実機確認で <strong>↓・Enter とも乱れなく動くことを確認</strong>。</p>
+	</div>
+
+	<div class="callout callout-caution">
+		<h3>実装時に踏んだ落とし穴（8）: スクロール（LF）を書き込みの後にすると、書いたばかりの内容が1行押し上げられる</h3>
+		<p>実機確認で判明。<strong>下方向へ動くたび、最下行に空行が1行できる。上方向（<code>scrollUp</code>）では起きない。</strong>原因は落とし穴（4）の修正で採った順序（「クリア→書く→<code>\r\n</code>」）そのもの: <strong>LF（スクロール）がテキストを書いた「後」に起きるため、書いたばかりの内容までスクロール範囲の中で1行分押し上げられ、最下行が空いたまま残る。</strong><code>scrollUp()</code> は逆に「まず Reverse Index でスクロールしてから書く」順だったため、この問題が起きていなかった（実機で報告されるまで気づかなかった）。</p>
+		<p><span class="badge b-ok">済</span>2026-09-19 に修正。<strong><code>scrollDown()</code> も <code>scrollUp()</code> と同じ「スクロールを先に、書くのを後に」の順にする。</strong>各行を「<code>\r\n</code>（行頭へ戻して次行へ＝スクロール）→行末までクリア→テキスト」の順で書く。スクロールで生まれた空行に書き込むだけになるため、書いたばかりの内容が押し上げられることが無くなる。テスト（bun・node とも8件成功）・型チェック・全体テストは確認済みだが、<strong>画面遷移の見た目そのものは自動化できないため、利用者による実機での再確認が要る。</strong></p>
+	</div>
+
+	<div class="callout">
+		<h3>PageUp もスクロール方式にする（機能追加）</h3>
+		<p><span class="badge b-ok">済</span>2026-09-19、利用者の指示で <code>scrollUp()</code> を複数行に対応させ、<code>PageUp</code> も全画面再描画（<code>'redraw'</code>）ではなくスクロール方式にした。<strong>画面の下寄りに来る行から先に書く</strong>（後から挿す行ほど上に押し出されるため、逆順で書くと最終的に上から正しい順に並ぶ）。<code>move()</code> の <code>strategy</code> 引数と <code>'redraw'</code> 分岐、<code>render()</code> は<strong>今後また使う予定があるため残した</strong>（利用者の指示。既定値は <code>'scroll'</code> にし、呼び出し側は省略できる）。テスト（bun・node とも8件成功）・型チェック・全体テストは確認済みだが、<strong>画面遷移の見た目そのものは自動化できないため、利用者による実機での確認が要る。</strong></p>
+	</div>
+
+	<div class="callout callout-caution">
+		<h3>実装時に踏んだ落とし穴（5）: 初回表示・PageUp でステータス行が1行上にずれる</h3>
+		<p>実機確認で判明。<strong>最初の表示、および PageUp（<code>'redraw'</code> 方式）のあと、ステータス行が画面の最下行ではなく下から2行目に出る。</strong>原因は落とし穴（4）と同種: <code>render()</code> がコンテンツを書き終えたあと、改行（<code>\n</code>）だけでステータス行へ移っていた。改行は列を先頭へ戻さないため、コンテンツの最終行の文字数ぶんカーソルが右にずれたまま次の行へ移り、そこから書いたステータス行の反転表示が桁あふれして自動折り返しを起こし、見た目上1行分ずれていた。</p>
+		<p><span class="badge b-ok">済</span>2026-09-19 に修正。<strong><code>render()</code> のステータス行書き込みを、絶対位置で書く <code>writeStatus()</code> に置き換えた</strong>（重複していたステータス行の組み立てロジックも一本化）。テスト（bun・node とも8件成功）・型チェック・全体テストは確認済みだが、<strong>画面遷移の見た目そのものは自動化できないため、利用者による実機での再確認が済むまで「済」にはしない。</strong></p>
+	</div>
+
+	<div class="callout callout-caution">
+		<h3>実装時に踏んだ落とし穴（6）: Bun はコンソールの出力コードページを UTF-8 にしない</h3>
+		<p>実機確認で判明。<strong><code>less -h | less</code> で使い方の説明（全て日本語）が文字化けした</strong>（UTF-8 のバイト列が CP932 として解釈される典型的な化け方）。原因は、<strong>Node は Windows のコンソール出力コードページを自動的に UTF-8（65001）に設定するが、Bun はしない</strong>こと。<code>less</code> の対話ページングは bun 優先のため、これまでの実機確認（<code>aichat -h</code> 等）でも実は同じ問題を踏んでいたが、内容の大半が ASCII で CP932 と UTF-8 の解釈結果が同じだったため気づかれなかった。</p>
+		<p><span class="badge b-ok">済</span>2026-09-19 に修正。Bun のキー入力設定（<code>openBunKeySource()</code>）の中で、<code>bun:ffi</code> から <code>kernel32.dll</code> の <code>SetConsoleOutputCP(65001)</code> を明示的に呼ぶ（<code>_kbhit</code>/<code>_getch</code> と同じ手法の延長）。失敗しても対話ページング自体は続ける（別の try/catch にする）。テスト（bun・node とも8件成功）・型チェック・全体テストは確認済み。</p>
+	</div>
+
+	<div class="callout callout-caution">
+		<h3>実装時に踏んだ落とし穴（7）: ヘルプの桁揃えを手で数えたスペースで決め打ちしていた</h3>
+		<p>実機確認で判明。<code>↓・Enter</code>（矢印・中点・英単語が混在するラベル）の行だけ、他の行と桁が揃っていなかった。原因は <strong>手でスペースを数えて決め打ちしていた</strong>ことで、ラベルの並び順を変えたときに数え直しを忘れた。加えて、<code>↓</code>・<code>・</code>・<code>↑</code> の表示幅（この端末では全角＝2桁として描画される）を最初から正しく知らず、実機で試すまで分からなかった。</p>
+		<p><span class="badge b-ok">済</span>2026-09-19 に修正。<strong>表示幅を計算する <code>displayWidth()</code>（ASCII・半角ｶﾀｶﾅは1桁、それ以外は2桁）と、それで桁を揃える <code>pad()</code> を実装し、<code>Usage</code> の組み立てをこれで行うようにした。</strong>ラベルの文字を今後変更しても自動的に桁が揃う。共通ルールにも「全角・半角混在のテキストを桁揃えするとき」を追記し、ai-chat-lite の public ルームへ周知した（他プロジェクトでも同じ不具合が起きないようにするため）。テスト（bun・node とも8件成功）・型チェック・全体テストは確認済み。</p>
+	</div>
+
+	<div class="callout">
+		<h3>終了時・末尾の表示（機能追加）</h3>
+		<ul>
+			<li><span class="badge b-ok">済</span>2026-09-19、利用者の指示で <code>q</code> 終了時、反転表示のステータス行を消し、通常色（反転無し）の終了メッセージ「<code>-- less 終了 --</code>」に置き換えた（<code>finish()</code>）</li>
+			<li><span class="badge b-ok">済</span>同日、実データの最終行に到達したことが分かるよう、反転表示の <code>[EOF]</code> を表示するようにした。<strong>末尾に改行が無いまま終わっている場合は最終行の末尾へ「[改行なし] [EOF]」を続けて書く</strong>（同じ行に収まるため別行を要らない）。<strong>改行ありで終わる場合は、最終行の次に来る（本来空行の）1行に <code>[EOF]</code> だけを出す</strong>（利用者の指示）</li>
+		</ul>
+		<p>テスト（bun・node とも8件成功）・型チェック・全体テストは確認済みだが、<strong>実機での見た目の確認は済んでいない。</strong></p>
+	</div>
+
+	<div class="callout callout-caution">
+		<p><strong>実装時に踏んだ落とし穴。</strong>「改行ありで終わる場合」の <code>[EOF]</code> を、最初は「画面に余裕（h 行に届いていない）があるときだけ追加する」形で実装したところ、<strong>実データがちょうど画面いっぱいになる回で表示されない</strong>不具合が出た（実機で報告）。<span class="badge b-ok">済</span><strong><code>[EOF]</code> を「実データの後ろに続くもう1行（仮想行）」として扱い、<code>lines.length</code> の代わりに <code>virtualLength = lines.length + (改行ありなら1)</code> を <code>clampTop</code>・表示範囲の計算にそのまま使う形に直した</strong>。スクロール量の計算に自然に混ざるため、「余裕があるときだけ」のような特別扱いが要らなくなった。ステータス行の％表示は実データの行数（<code>lines.length</code>）のまま変えていない（仮想行を含めると 100% に達するタイミングがずれるため）。</p>
+	</div>
+
+	<div class="callout callout-warning">
+		<h3>桁数を超える長い行の折り返し（未対応・設計のみ）</h3>
+		<p>実機確認で判明（<code>aichat -h</code> の出力に端末の桁数を超える行があると疑われる）。<strong>今の実装は「<code>lines[]</code> の1要素＝画面の1行」を前提に、すべての行番号・カーソル位置（<code>scrollDown</code>／<code>scrollUp</code>／<code>render</code>／スクロール範囲）を計算している。</strong>1行が端末の桁数（例: 140桁のコンソールで140桁超）を超えると、端末側で自動的に2行以上へ折り返されて表示されるため、この前提が崩れ、以降の行番号がずれる。</p>
+		<p><strong>対処案。</strong></p>
+		<ul>
+			<li><strong>A: 長い行は表示幅に収まるように切り詰める（横スクロールなし）。</strong>実装は単純だが、はみ出した内容が読めなくなる</li>
+			<li><strong>B（採用）: 折り返しを許容し、1論理行が何画面行を使うかを計算に入れる。</strong>2026-09-19、利用者の指示で採用。スクロール量・カーソル位置の計算を、論理行ベースから画面行（表示行）ベースへ組み替える必要があり、実装量は A より大きい</li>
+		</ul>
+		<p><strong>未実装。</strong>まず150桁の端末で再現を確認してから、B の詳細設計を詰めて実装する。着手は今回のスクロール修正の確認が済んでからでよい（利用者の指示）。</p>
+	</div>
+
 	<h2>終了コード</h2>
 	<div class="tablewrap">
 	<table>

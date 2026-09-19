@@ -15,19 +15,41 @@ import { parseArgs } from '../lib/args.ts';
 const ExitOk = 0;
 const ExitBadArgs = 2;
 
+/**
+ * 表示幅を数える（ASCII・半角ｶﾀｶﾅは1桁、それ以外は2桁。実機で確認済み）。
+ * 手でスペースを数えて決め打ちすると、ラベルを変えたときに数え直しを
+ * 忘れて桁がずれる（実際に踏んだ。共通ルール「全角・半角混在のテキストを
+ * 桁揃えするとき」を参照）
+ */
+function displayWidth(s: string): number {
+	let w = 0;
+	for (const ch of s) {
+		const c = ch.codePointAt(0) ?? 0;
+		w += (c < 0x80 || (c >= 0xff61 && c <= 0xff9f)) ? 1 : 2;
+	}
+	return w;
+}
+
+/** label を target 桁まで空白で埋める */
+function pad(label: string, target: number): string {
+	return label + ' '.repeat(Math.max(1, target - displayWidth(label)));
+}
+
+const KeyColumn = 11;
+
 const Usage =
 	'UTF-8 セーフなページャー（DOS more の文字化けを避ける）\n'
 	+ '\n'
 	+ '  <コマンド> | less\n'
 	+ '\n'
-	+ '  q          終了\n'
-	+ '  Space      1 画面分下\n'
-	+ '  Enter・↓   1 行下\n'
-	+ '  ↑          1 行上\n'
-	+ '  PageDown   画面の高さの 2/3 くらい下\n'
-	+ '  PageUp     画面の高さの 2/3 くらい上\n'
+	+ '  ' + pad('q', KeyColumn) + '終了\n'
+	+ '  ' + pad('Space', KeyColumn) + '画面の高さの 3/4 くらい下\n'
+	+ '  ' + pad('↓・Enter', KeyColumn) + '1 行下\n'
+	+ '  ' + pad('↑', KeyColumn) + '1 行上\n'
+	+ '  ' + pad('PageDown', KeyColumn) + '画面の高さの 3/4 くらい下\n'
+	+ '  ' + pad('PageUp', KeyColumn) + '画面の高さの 3/4 くらい上\n'
 	+ '\n'
-	+ '  --help     この説明を表示する\n'
+	+ '  ' + pad('--help', KeyColumn) + 'この説明を表示する\n'
 	+ '\n'
 	+ '  出力先が端末でない（リダイレクト等）ときは、ページングせず\n'
 	+ '  そのまま流す。パイプ専用で、ファイル引数は受けない。\n';
@@ -59,6 +81,13 @@ function splitLines(text: string): string[] {
 	return body.split('\n');
 }
 
+/** 末尾に改行があったか（空入力は判定不要なので true にしておく） */
+function hasTrailingNewline(text: string): boolean {
+	if (text.length === 0) { return true; }
+	const t = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+	return t.endsWith('\n');
+}
+
 async function main(argv: string[]): Promise<number> {
 	const parsed = parseArgs(argv, [], {});
 	if (parsed.help) { out(Usage); return ExitOk; }
@@ -80,7 +109,7 @@ async function main(argv: string[]): Promise<number> {
 		return ExitOk;
 	}
 
-	return page(lines, keyStream);
+	return page(lines, keyStream, hasTrailingNewline(text));
 }
 
 /**
@@ -145,6 +174,19 @@ const ScanCode: Record<number, string> = { 72: '\x1b[A', 80: '\x1b[B', 73: '\x1b
 async function openBunKeySource(): Promise<KeySource | null> {
 	try {
 		const { dlopen, FFIType } = await import('bun:ffi');
+
+		// Node は Windows のコンソール出力コードページを自動で UTF-8（65001）に
+		// 設定するが、Bun はしない。ASCII 主体の内容では区別が付かないが、
+		// 日本語主体の内容では CP932 として解釈され文字化けする（実測で確認：
+		// `less -h | less` で使い方の説明が全て化けた）。明示的に設定する。
+		// 失敗しても対話ページング自体は続ける（別の try/catch にする）
+		try {
+			const { symbols: kernel32 } = dlopen('kernel32.dll', {
+				SetConsoleOutputCP: { args: [FFIType.i32], returns: FFIType.i32 },
+			});
+			kernel32.SetConsoleOutputCP(65001);
+		} catch { /* 失敗しても続行する */ }
+
 		const { symbols } = dlopen('msvcrt.dll', {
 			_kbhit: { args: [], returns: FFIType.i32 },
 			_getch: { args: [], returns: FFIType.i32 },
@@ -186,29 +228,126 @@ function clampTop(top: number, lineCount: number, height: number): number {
 	return top > max ? max : top;
 }
 
-function page(lines: string[], key: KeySource): Promise<number> {
+function page(lines: string[], key: KeySource, hasTrailingNewline: boolean): Promise<number> {
 	return new Promise((resolve) => {
 		let top = 0;
 
+		const EofMarker = '\x1b[7m[EOF]\x1b[0m';
+
+		/**
+		 * 改行ありで終わる場合、[EOF] を「実データの後ろに続くもう1行」として
+		 * 数える。スクロール量・top の可動範囲（clampTop）の計算にそのまま
+		 * 混ぜられるため、「画面に余裕があるときだけ表示する」ような特別扱いが
+		 * 要らない（実データがちょうど画面いっぱいになる回でも、この仮想行の
+		 * ぶんだけ普通に1行分スクロールして表示できる）
+		 */
+		const virtualLength = lines.length + (hasTrailingNewline ? 1 : 0);
+
+		/**
+		 * 表示する行のテキスト。idx は lines.length（＝仮想行）まで受け付ける。
+		 * 改行が無いまま終わっている実データの最終行にだけ、末尾へ
+		 * 「[改行なし] [EOF]」を付け足す（同じ行に収まるため仮想行を増やさない）
+		 */
+		function displayLine(idx: number): string {
+			if (idx === lines.length) { return EofMarker; }
+			const text = lines[idx];
+			if (idx !== lines.length - 1 || hasTrailingNewline) { return text; }
+			return text + ' [改行なし] ' + EofMarker;
+		}
+
+		/** ステータス行の文字列（前後の反転表示の記号は含まない） */
+		function statusText(): string {
+			const h = pageHeight();
+			const shown = Math.min(top + h, lines.length);
+			const pct = lines.length === 0 ? 100 : Math.round((shown / lines.length) * 100);
+			return '-- less (' + pct + '%) q で終了 | Page Up | ↑ | ↓・Enter | Page Down・Space --';
+		}
+
 		function render(): void {
 			const h = pageHeight();
-			const view = lines.slice(top, top + h);
+			const view: string[] = [];
+			for (let i = 0; i < h && top + i < virtualLength; i++) { view.push(displayLine(top + i)); }
 			out('\x1b[2J\x1b[H');
 			out(view.join('\n'));
 			if (view.length < h) { out('\n'.repeat(h - view.length)); }
-			const shown = Math.min(top + h, lines.length);
-			const pct = lines.length === 0 ? 100 : Math.round((shown / lines.length) * 100);
-			out('\n\x1b[7m-- less (' + pct + '%) q で終了 --\x1b[0m');
+			// 最後に書いたコンテンツ行の文字数ぶんカーソルが右にずれたままのことがあり
+			// （改行だけでは列が先頭に戻らない）、絶対位置で書く writeStatus() に任せる
+			writeStatus();
 		}
 
-		function move(delta: number): void {
-			top = clampTop(top + delta, lines.length, pageHeight());
-			render();
+		/** ステータス行だけをその場で上書きする（スクロール方式で使う） */
+		function writeStatus(): void {
+			out('\x1b[' + (pageHeight() + 1) + ';1H\x1b[2K\x1b[7m' + statusText() + '\x1b[0m');
+		}
+
+		/**
+		 * スクロール範囲をコンテンツ用の h 行だけに限定する（DECSTBM）。
+		 * 画面はコンテンツ h 行＋ステータス行 1 行の計 h+1 行を使っており、
+		 * 範囲を区切らないと「コンテンツの最終行」は端末にとって画面の
+		 * 最終行ではない（1行下にステータス行がある）ため、そこで改行しても
+		 * スクロールせずカーソルがステータス行へ動くだけになる（実機で確認）。
+		 * 範囲を区切れば、その中だけが正しくスクロールしステータス行は動かない
+		 */
+		function setScrollRegion(): void {
+			out('\x1b[1;' + pageHeight() + 'r');
+		}
+
+		/** スクロール範囲を画面全体に戻す（終了時に呼ぶ） */
+		function resetScrollRegion(): void {
+			out('\x1b[r');
+		}
+
+		/**
+		 * 下方向のスクロール。最終行（h 行目）の先頭へ置いてから、新しく見える
+		 * 行の数だけ「CRLF→行末までクリア→テキスト」を繰り返す。
+		 * **スクロール（LF）を先に、書くのを後にする**のが要点。逆（書いてから
+		 * LF）にすると、LF がスクロール範囲の下端で起きたときに「書いたばかりの
+		 * 内容」まで1行分押し上げられてしまい、最下行が空のまま残る
+		 * （実機で報告）。CR で必ず行頭へ戻すため、複数行分でも列がずれない
+		 */
+		function scrollDown(newTop: number): void {
+			const h = pageHeight();
+			const revealCount = newTop - top;
+			out('\x1b[' + h + ';1H');
+			for (let i = 0; i < revealCount; i++) {
+				// \x1b[K はカーソル位置から行末までしか消さないため、
+				// 念のため先頭へ戻してから消す（列がずれていた場合の保険）
+				out('\r\n\x1b[K' + displayLine(top + h + i));
+			}
+			top = newTop;
+			writeStatus();
+		}
+
+		/**
+		 * 上方向のスクロール。Reverse Index（\x1bM）は、カーソルが最上行に
+		 * あるときだけ逆方向へ1行スクロールし、最上行に空行を作る。
+		 * 複数行分は、画面の下寄りに来る行から先に書く（後から挿す行ほど
+		 * 上に押し出されるため、逆順で書くと最終的に上から正しい順に並ぶ）
+		 */
+		function scrollUp(newTop: number): void {
+			const revealCount = top - newTop;
+			out('\x1b[H');
+			for (let i = revealCount - 1; i >= 0; i--) {
+				out('\x1bM\r\x1b[K' + displayLine(newTop + i));
+			}
+			top = newTop;
+			writeStatus();
+		}
+
+		function move(delta: number, strategy: 'redraw' | 'scroll' = 'scroll'): void {
+			const newTop = clampTop(top + delta, virtualLength, pageHeight());
+			// 端に達していて実際には動かないときは、何も描き直さない
+			if (newTop === top) { return; }
+			if (strategy === 'redraw') { top = newTop; render(); return; }
+			if (newTop > top) { scrollDown(newTop); } else { scrollUp(newTop); }
 		}
 
 		function finish(code: number): void {
 			key.close();
-			out('\x1b[2J\x1b[H');
+			resetScrollRegion();
+			// 画面クリアはしない。反転表示のステータス行は消し、
+			// 通常色（反転無し）の終了メッセージに置き換える
+			out('\x1b[' + (pageHeight() + 1) + ';1H\x1b[2K-- less 終了 --\n');
 			resolve(code);
 		}
 
@@ -227,17 +366,18 @@ function page(lines: string[], key: KeySource): Promise<number> {
 		function handleKey(s: string): number {
 			if (s.length === 0) { return 0; }
 			if (s[0] === 'q' || s[0] === 'Q' || s[0] === '\x03') { finish(ExitOk); return s.length; }
-			if (s[0] === ' ') { move(pageHeight()); return 1; }
+			if (s[0] === ' ') { move(Math.round(pageHeight() * 3 / 4)); return 1; }
 			if (s[0] === '\r' || s[0] === '\n') { move(1); return 1; }
 			if (s.startsWith('\x1b[A')) { move(-1); return 3; }
 			if (s.startsWith('\x1b[B')) { move(1); return 3; }
-			if (s.startsWith('\x1b[5~')) { move(-Math.round(pageHeight() * 2 / 3)); return 4; }
-			if (s.startsWith('\x1b[6~')) { move(Math.round(pageHeight() * 2 / 3)); return 4; }
+			if (s.startsWith('\x1b[5~')) { move(-Math.round(pageHeight() * 3 / 4)); return 4; }
+			if (s.startsWith('\x1b[6~')) { move(Math.round(pageHeight() * 3 / 4)); return 4; }
 			// ESC の直後で、続きがまだ来ていない可能性がある短い断片は待つ
 			if (s[0] === '\x1b' && s.length < 4) { return 0; }
 			return 1;   // 知らない入力は 1 文字読み捨てる
 		}
 
+		setScrollRegion();
 		render();
 	});
 }
