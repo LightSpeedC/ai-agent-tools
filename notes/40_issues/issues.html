@@ -1265,6 +1265,32 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p><span class="badge b-ok">済</span><strong>記録の是正。</strong>A 案は既に実装・テストとも揃っていた（<code>src/text/find.ts</code> の <code>DefaultExcludeDirs</code>、<code>tools/40_test/run-text-tests.ps1</code> の「既定で外すフォルダ（i260913-02）」節）。記録の更新だけが漏れていたため、実測（テスト62件成功）のうえで済に直す。</p>
 		</div>
 	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">未</span><span class="no">i260921-01</span>md-flat の details 展開で id が失われ、課題間リンクが折れる</summary>
+		<div class="issue-body">
+			<p>2026-09-19、<code>ai-chat-lite</code> から報告（public ルーム #914、待受けを張り直した際に読んだ）。<strong><code>md-flat</code> を付けた <code>details</code> を数十件含む一覧ページ（この課題一覧のような形）を変換すると、内部の課題間リンク（<code>href="#i260830-09"</code> 形式）がほぼ全滅する</strong>とのこと。報告元の実測: 同じファイルで <code>md-flat</code> 無しなら内部リンク切れ 0 件、有りだと 100 件超。</p>
+
+			<h3>調べた</h3>
+
+			<p><strong>報告のとおり。</strong><code>src/html2md/converter.ts</code> の <code>convertDetails()</code> は、<code>md-flat</code> のとき <code>summary</code> のテキストを <code>## </code> 見出しへ展開するだけで、元の <code>&lt;details id="..."&gt;</code>（<code>&lt;section&gt;</code>／<code>&lt;li&gt;</code> 等が持つ課題番号の <code>id</code>）を一切受け取っていない（呼び出し元 <code>convertBlocks()</code> も <code>inner</code> と <code>class</code> しか渡していない）。GitHub 側は見出しテキストを正規化した文字列から自動でアンカーを作るため、<code>「## <span class="badge b-ok">済</span> i260830-09 …」</code>のような見出しは <code>#i260830-09</code> という短いアンカーにならず、元の <code>id</code> を指すリンクが軒並み外れる。</p>
+
+			<div class="callout callout-important">
+				<p><strong>このファイル（<code>issues.html</code> 自身）も対象。</strong> <code>&lt;details&gt;</code> に <code>md-flat</code> は付けていないため今は影響を受けていないが、課題間リンク（<span class="no">i260910-02</span> 等）を多用する構造そのものが、将来 <code>md-flat</code> を付けた瞬間に同じ壊れ方をする位置にある。</p>
+			</div>
+
+			<h3>直し方（判断待ち）</h3>
+
+			<p>報告元も「修正の方向性は判断をお任せします」としている。<strong>生成される Markdown の形が変わる</strong>（このツールを使う全プロジェクトに影響する）ため、共通ルール「判断が要るもの」に該当し、ここでは実装しない。</p>
+
+			<ul>
+				<li><strong>A: 見出しの直前に明示アンカーを差し込む。</strong>Markdown 中に <code>&lt;a id="i260830-09"&gt;&lt;/a&gt;</code>（生 HTML）を1行足してから <code>## </code> 見出しを続ける。GitHub は Markdown 内の生 HTML の <code>id</code> をアンカーとして解決するため、既存の <code>href="#i260830-09"</code> がそのまま生きる。<code>convertDetails()</code> に元要素の <code>id</code> 属性を渡す必要がある（呼び出し元の追加対応も要る）</li>
+				<li>B: リンク側を書き換える。<code>href="#i260830-09"</code> を GitHub のスラッグ生成規則に合わせて動的に付け替える。バッジ・記号（<span class="badge b-ok">済</span> 等）を含む見出しの正規化規則を追随させ続ける必要があり、GitHub 側の仕様変更に弱い</li>
+			</ul>
+
+			<p>A の方が実装が閉じており壊れにくいと見ているが、<strong>選ぶのは利用者の判断</strong>とする。</p>
+		</div>
+	</details>
 </section>
 
 </div>
