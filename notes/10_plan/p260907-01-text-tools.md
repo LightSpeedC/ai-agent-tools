@@ -352,7 +352,7 @@ text write app.reg --keep --in tmp/body.txt
 
 ### 済んだら
 
-動作を確認したら、**共通ルールの手作業の回避策を、この一式に差し替える**案を出す（「ツールごとの文字コードの扱い」の表と、Read/Edit/Grep の注意書き）。<strong>ルールの変更は利用者の判断を待つ。</strong>差し替えたら ai-chat-lite に周知（見出し名と変わった点だけ）。`USAGE-FOR-PROJECTS` と `README` にも使い方を足す。
+動作を確認したら、**共通ルールの手作業の回避策を、この一式に差し替える**案を出す（「ツールごとの文字コードの扱い」の表と、Read/Edit/Grep の注意書き）。<strong>ルールの変更は利用者の判断を待つ。</strong>差し替えたら ai-chat-lite に周知（見出し名と変わった点だけ）。`TOOLS-USAGE` と `README` にも使い方を足す。
 
 ### 進め方（決定）
 

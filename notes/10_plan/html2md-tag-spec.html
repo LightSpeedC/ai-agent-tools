@@ -629,9 +629,9 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 
 	<h3>反映するルール文書</h3>
 
-	<p>実装後、次の 3 か所に反映する: <code>html-class-rules.html</code>（クラス名の正式追加）、<code>~/.claude/CLAUDE.md</code> のクラス名一覧、<code>USAGE-FOR-PROJECTS.html</code>（使い方）。反映後 ai-chat-lite で周知し、要求元プロジェクトに HTML の書き換え（<code>no</code>→<code>part</code>、<code>data-columns</code> の追加）を依頼する。</p>
+	<p>実装後、次の 3 か所に反映する: <code>html-class-rules.html</code>（クラス名の正式追加）、<code>~/.claude/CLAUDE.md</code> のクラス名一覧、<code>TOOLS-USAGE.html</code>（使い方）。反映後 ai-chat-lite で周知し、要求元プロジェクトに HTML の書き換え（<code>no</code>→<code>part</code>、<code>data-columns</code> の追加）を依頼する。</p>
 
-	<p><span class="badge b-ok">済</span>2026-09-09 に実装した。<code>Table.cs</code>（<code>ListTableConverter.ConvertChapters</code>）と <code>html2md-ps.ps1</code>（<code>Convert-Chapters</code>）に両対応で追加し、<code>Checks.cs</code> の「HTML に無い文言」検査に <code>data-columns</code> を aria-label と同じ扱いで足した。テストケース <code>tests/cases/chapters</code> を新仕様に更新し、全テスト成功。<code>html-class-rules.html</code>・<code>USAGE-FOR-PROJECTS.html</code> は反映済み。<code>~/.claude/CLAUDE.md</code> への反映は利用者の判断を待つ。</p>
+	<p><span class="badge b-ok">済</span>2026-09-09 に実装した。<code>Table.cs</code>（<code>ListTableConverter.ConvertChapters</code>）と <code>html2md-ps.ps1</code>（<code>Convert-Chapters</code>）に両対応で追加し、<code>Checks.cs</code> の「HTML に無い文言」検査に <code>data-columns</code> を aria-label と同じ扱いで足した。テストケース <code>tests/cases/chapters</code> を新仕様に更新し、全テスト成功。<code>html-class-rules.html</code>・<code>TOOLS-USAGE.html</code> は反映済み。<code>~/.claude/CLAUDE.md</code> への反映は利用者の判断を待つ。</p>
 
 	<div class="callout callout-caution">
 		<p><strong>不具合（同日中に修正）。</strong>初回実装は <code>ttl</code> の <code>href</code> を自前で <code>"[text](href)"</code> と組み立てており、<code>.md</code> 置換・他ファイルのアンカー張り替えを行う共通経路を素通りしていた。要求元プロジェクトから ai-chat-lite（#699）で報告を受け、<code>ttl</code> の生の中身を合成 <code>&lt;a&gt;</code> に包んで <code>inline.Convert</code> に通す形に直した。テストケースに実在するリンク先ファイルを足し、<code>.md</code> 置換が効くことを確認する回帰を追加した。</p>
