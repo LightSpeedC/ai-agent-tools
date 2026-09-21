@@ -3,7 +3,7 @@
 	_releases/ai-agent-tools/ へ集める。
 
 	含めるもの: ランチャー（拡張子なし + .cmd）・実行に使う src 配下・
-	contrast/（check-contrast が呼ぶ Playwright 側）・USAGE-FOR-PROJECTS・
+	contrast/（check-contrast が呼ぶ Playwright 側）・TOOLS-USAGE・
 	最小の package.json（"type": "module" だけ）・個人用セッション起動
 	スクリプト（cc.cmd・cx.cmd・n.cmd・nn.cmd。単体の cmd で src 依存なし）
 
@@ -53,8 +53,8 @@ foreach ($dir in $srcDirs) {
 Copy-Item (Join-Path $root 'contrast') (Join-Path $target 'contrast') -Recurse
 
 # 使う側の案内（読むのはこれだけでよい）
-Copy-Item (Join-Path $root 'USAGE-FOR-PROJECTS.md') (Join-Path $target 'USAGE-FOR-PROJECTS.md')
-Copy-Item (Join-Path $root 'USAGE-FOR-PROJECTS.html') (Join-Path $target 'USAGE-FOR-PROJECTS.html')
+Copy-Item (Join-Path $root 'TOOLS-USAGE.md') (Join-Path $target 'TOOLS-USAGE.md')
+Copy-Item (Join-Path $root 'TOOLS-USAGE.html') (Join-Path $target 'TOOLS-USAGE.html')
 
 # 最小の package.json（devDependencies は実行に要らない。"type": "module" だけ要る）
 $pkg = [ordered]@{
