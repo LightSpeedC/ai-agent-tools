@@ -722,7 +722,7 @@ where bun &gt;nul 2&gt;&amp;1
 if %errorlevel%==0 goto :bun
 where node &gt;nul 2&gt;&amp;1
 if %errorlevel%==0 goto :node
-echo [NG] bun か node が要ります
+echo [NG] bun か node が必要です
 exit /b 2
 
 :bun
@@ -753,7 +753,7 @@ if command -v node &gt;/dev/null 2&gt;&amp;1; then
 	exit $?
 fi
 
-echo "[NG] bun か node が要ります" &gt;&amp;2
+echo "[NG] bun か node が必要です" &gt;&amp;2
 exit 2</code></pre>
 
 	<div class="callout">

@@ -17,5 +17,5 @@ if command -v node >/dev/null 2>&1; then
 	exit $?
 fi
 
-echo "[NG] bun か node が要ります" >&2
+echo "[NG] bun か node が必要です" >&2
 exit 2

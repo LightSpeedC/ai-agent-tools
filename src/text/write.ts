@@ -29,7 +29,7 @@ export function run(a: string[]): number {
 		enc = v.enc;
 		eol = v.eol;
 	} else if (keep) {
-		if (!exists(p)) { throw new ToolError(2, '--keep は既存ファイルが要ります: ' + show(p)); }
+		if (!exists(p)) { throw new ToolError(2, '--keep は既存ファイルが必要です: ' + show(p)); }
 		const cur = readBytes(p);
 		const c = resolve(cur, args.get('--from'));
 		if (c.ambiguous) {

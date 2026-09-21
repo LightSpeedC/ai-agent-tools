@@ -248,7 +248,7 @@ Write-Host '=== html2md のテスト ===' -ForegroundColor Cyan
 
 if (-not (Test-Path -LiteralPath $Exe)) {
 	Write-Host ('対象がありません: ' + $Exe) -ForegroundColor Red
-	Write-Host '  移植版なら bun か node が要ります。C# 版を見るなら build-html2md-cs.cmd を先に実行してください。'
+	Write-Host '  移植版なら bun か node が必要です。C# 版を見るなら build-html2md-cs.cmd を先に実行してください。'
 	exit 2
 }
 

@@ -12,7 +12,7 @@ where bun >nul 2>&1
 if %errorlevel%==0 goto :bun
 where node >nul 2>&1
 if %errorlevel%==0 goto :node
-echo [NG] bun ‚© node ‚ª—v‚è‚Ü‚·
+echo [NG] bun ‚© node ‚ª•K—v‚Å‚·
 exit /b 2
 
 :bun

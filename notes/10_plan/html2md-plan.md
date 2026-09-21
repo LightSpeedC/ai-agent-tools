@@ -317,7 +317,7 @@ where bun >nul 2>&1
 if %errorlevel%==0 goto :bun
 where node >nul 2>&1
 if %errorlevel%==0 goto :node
-echo [NG] bun か node が要ります
+echo [NG] bun か node が必要です
 exit /b 2
 
 :bun
@@ -349,7 +349,7 @@ if command -v node >/dev/null 2>&1; then
 	exit $?
 fi
 
-echo "[NG] bun か node が要ります" >&2
+echo "[NG] bun か node が必要です" >&2
 exit 2
 ```
 

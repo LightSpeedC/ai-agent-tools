@@ -27,7 +27,7 @@ namespace TextTool
 			}
 			else if (keep)
 			{
-				if (!File.Exists(path)) { throw new ToolError(2, "--keep は既存ファイルが要ります: " + Files.Show(path)); }
+				if (!File.Exists(path)) { throw new ToolError(2, "--keep は既存ファイルが必要です: " + Files.Show(path)); }
 				byte[] cur = Files.ReadBytes(path);
 				Combo c = Files.Resolve(cur, args.Get("--from"));
 				if (c.Ambiguous)
