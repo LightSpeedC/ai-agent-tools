@@ -203,6 +203,7 @@
 	<ul>
 		<li>標準入力からパイプで受け取る（<code>html2md | less</code> の形）</li>
 		<li>ファイル引数は今回持たない。<strong>まずパイプ専用</strong>（用途は「他コマンドの出力を見る」ため）</li>
+		<li><span class="badge b-ok">済</span>2026-09-21、利用者の指示で追加。<strong>入力の文字コードは <code>convert-encoding</code>・<code>text</code> と同じ判定（<code>src/lib/detector.ts</code> の <code>detect()</code>）で自動判定する</strong>（UTF-8・SJIS・UTF-16 等）。決められない（両方妥当な非 ASCII を含む等）ときは UTF-8 として読む。テスト（bun・node とも10件成功）・型チェック・全体テストは確認済み</li>
 	</ul>
 
 	<div class="callout callout-important">
@@ -301,6 +302,63 @@ const { symbols } = dlopen('msvcrt.dll', {
 		<p><span class="badge b-ok">済</span>2026-09-19 に修正。<strong>表示幅を計算する <code>displayWidth()</code>（ASCII・半角ｶﾀｶﾅは1桁、それ以外は2桁）と、それで桁を揃える <code>pad()</code> を実装し、<code>Usage</code> の組み立てをこれで行うようにした。</strong>ラベルの文字を今後変更しても自動的に桁が揃う。共通ルールにも「全角・半角混在のテキストを桁揃えするとき」を追記し、ai-chat-lite の public ルームへ周知した（他プロジェクトでも同じ不具合が起きないようにするため）。テスト（bun・node とも8件成功）・型チェック・全体テストは確認済み。</p>
 	</div>
 
+	<div class="callout callout-caution">
+		<h3>実装時に踏んだ落とし穴（8）: エスケープシーケンスの文字化け（調査中・原因は Bun ランタイム自体の可能性が高い）</h3>
+		<p>2026-09-21、利用者から実機での報告: <strong>ときどき <code>less</code> 実行時にエスケープシーケンスの文字がそのまま表示される。2回目の実行では直る。</strong><code>psls claude.exe | less</code>（<code>psls</code> が埋め込む太字・色付けのエスケープシーケンスを含む）で再現。</p>
+
+		<h4>直った部分（済）</h4>
+		<ul>
+			<li><strong>Bun は <code>ENABLE_VIRTUAL_TERMINAL_PROCESSING</code>（コンソールがエスケープシーケンスを解釈するモード）を自動で有効化しない。</strong>共通処理 <code>src/lib/win-console.ts</code> の <code>enableWindowsConsoleVt()</code> で明示的に有効化し、終了時に元へ戻すようにした（<code>less</code>・<code>psls</code> 両方で使う）</li>
+			<li><strong><code>finish()</code> が、コンソール状態を元へ戻す <code>key.close()</code> を、終了メッセージを書く <code>out()</code> より先に呼んでいたため、終了メッセージだけが化けていた。</strong><code>out()</code> を先に呼ぶ順序に直した</li>
+		</ul>
+		<p><span class="badge b-ok">済</span>2026-09-21 に修正。上記2点は実機で確認済み。</p>
+
+		<h4>直っていない部分（未解決・Bun 自体のバグと断定）</h4>
+		<p><span class="badge b-warn">未</span>最終的に、利用者が実機で次の最小再現を確定させた。</p>
+<pre><code class="language-shell">chcp 932
+bun -e "console.log('日本語')" | bun -e "process.stdin.pipe(process.stdout)"
+chcp</code></pre>
+		<div class="tablewrap">
+		<table>
+			<thead><tr><th>開始コードページ</th><th>組み合わせ</th><th>結果</th></tr></thead>
+			<tbody>
+				<tr><td rowspan="4">65001</td><td>node → node</td><td>正常（コードページも不変）</td></tr>
+				<tr><td>node → bun</td><td>正常（コードページも不変）</td></tr>
+				<tr><td>bun → node</td><td>正常（コードページも不変）</td></tr>
+				<tr><td>bun → bun</td><td>正常（コードページも不変）</td></tr>
+				<tr><td rowspan="4">932</td><td>node → node</td><td>正常（コードページも不変）</td></tr>
+				<tr><td>node → bun</td><td>正常（コードページも不変）</td></tr>
+				<tr><td>bun → node</td><td>正常（コードページも不変）</td></tr>
+				<tr><td><strong>bun → bun</strong></td><td><strong>文字化けする。実行後コードページが 65001 に変わる</strong></td></tr>
+			</tbody>
+		</table>
+		</div>
+		<p><strong>結論。</strong>「<code>less</code>・<code>psls</code> 固有の問題」ではなく、<strong>「Bun で書いたプログラム同士をパイプで繋ぎ、かつ開始時のコンソールのコードページが UTF-8（65001）でない」ときに、Bun ランタイム自体が起こす文字化け</strong>だった。<code>bun:ffi</code>・<code>less</code>／<code>psls</code> のコードは一切関係ない（このプロジェクトのコードを一切含まない最小再現で確定）。実行後にコードページが 65001 に変わる副作用も、この Bun 側の処理が原因と見られる。</p>
+		<p>Bun の公式リリースノートに近い症状の修正記録がある（<a href="https://bun.com/blog/bun-v1.3.4">Bun v1.3.4 リリースノート</a>: 「Windows console codepage not being properly saved and restored, which could cause garbled text on non-English Windows systems when using <code>bunx</code>」）。ただしこれは <code>bunx</code> 経由に限定された記述で、手元の <code>v1.4.2</code>（1.3.4 より新しい）の変更点にはこの話題への言及が無く、<strong>今回の再現条件（<code>bunx</code> を使わない、Bun スクリプト同士のパイプ）がこの修正の対象に含まれるかは確認できていない。</strong></p>
+		<p>実運用でも結論と整合する例を確認済み: <strong><code>aichat -h | less</code>（<code>aichat</code> は Rust 製 exe、Bun ではない）は問題なく表示される。</strong>「Bun 同士」でなければ起きないという結論と一致する。</p>
+		<p><span class="badge b-ok">済</span>2026-09-21、<a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a> として Issue を提出済み。Bun 側の対応待ちのため、このプロジェクト側では未解決のまま残る。</p>
+	</div>
+
+	<div class="callout callout-caution">
+		<h3>実装時に踏んだ落とし穴（9）: Windows PowerShell 5.1 は、Bun とは無関係に別の理由で全部化ける</h3>
+		<p>2026-09-21、利用者が pwsh 7 と Windows PowerShell 5.1（同一マシン、cmd.exe とは別の端末）で <code>node</code>・<code>bun</code> の全組み合わせ（<code>node→node</code> ／ <code>node→bun</code> ／ <code>bun→node</code> ／ <code>bun→bun</code>）× コードページ（932・65001）を実測。</p>
+		<p><strong>pwsh 7 は cmd.exe と同じ結果。</strong><code>bun→bun</code> かつ開始コードページが 932 のときだけ化け、終了後コードページが 65001 に変わる。他は全組み合わせ・両コードページとも正常。上記「落とし穴（8）」の結論（Bun ランタイム自体の bun-to-bun 限定のバグ）が pwsh 7 でも裏付けられた。</p>
+		<p><strong>Windows PowerShell 5.1 はまったく別の症状。</strong><code>node→node</code> を含む<strong>4 組み合わせすべて</strong>が、932・65001 どちらの開始コードページでも <code>??????</code>（全角文字が疑問符に置換）に化ける。先頭に BOM（<code>﻿</code>）が出力に混ざる。コードページは実行後も変化しない（Bun のバグに見られた「65001 へ変わる」副作用も無い）。<strong><code>node→node</code> でも化けるため、これは Bun のバグではなく、Windows PowerShell 5.1 のネイティブコマンド間パイプ自体に起因する別の問題</strong>である（原因は未検証。5.1 の既定の <code>$OutputEncoding</code> がパイプ経由で干渉している可能性はあるが、実測で確かめていないため断定しない）。</p>
+		<p><span class="badge b-ok">済</span>2026-09-21、利用者の実機は cmd.exe を直接使用しており Windows PowerShell 5.1 経由ではないことを確認済み（このセッションの別ターンで確認）。5.1 の症状は別問題として、今回の bun-to-bun 調査からは切り離す。</p>
+	</div>
+
+	<div class="callout">
+		<h3>この課題の結末: less は Bun を使わない（psls は対象外）</h3>
+		<p><span class="badge b-ok">済</span>2026-09-21、利用者の判断。上記「落とし穴（8）」の Bun 自体のバグ（bun-to-bun パイプで文字化け）が実機で繰り返し発生し、Bun 側の修正を待つ運用は現実的でないと判断。化けるのは <strong>bun 同士のパイプ</strong>だけ（実測済み）のため、<strong><code>less</code> の起動を node 専用にすれば、<code>psls | less</code>（bun→node）は安全になる。</strong></p>
+		<p><strong>採用した範囲。</strong><code>less</code>・<code>less.cmd</code> のランチャーから bun の分岐を削除し、node 専用にした（<code>src/less/main.ts</code> 本体は node・bun 両対応のまま変更していない。テストは両ランタイムで引き続き実行する）。<strong><code>psls</code> は対象外</strong>（<code>bun:ffi</code> で Win32 API を直接叩いており node 版が無いため、bun のまま残す。詳細と理由は <a href="../40_issues/issues.html">課題 i260917-01</a> を参照）。<code>psls</code> 単体の実行（他コマンドとパイプで bun 同士を繋がない使い方）では、この Bun のバグは発火しない。</p>
+	</div>
+
+	<div class="callout callout-important">
+		<h3>コードページ（SetConsoleOutputCP）は無意味だった: ConPTY の仕様</h3>
+		<p><strong>コードページの有効化・復元は当初セットで実装していたが、途中で無意味と判明したため削除した。</strong>実機での切り分け（<code>bun:ffi</code> 経由・PowerShell の P/Invoke 経由のどちらで <code>SetConsoleOutputCP(65001)</code> を呼んでも、成功は返るが外部の <code>chcp</code> に反映されない）により、<strong>Bun 固有の問題ではなく、この環境では呼んでも効果が無い API</strong> と判断した。日本語がそのまま出せているのはこの呼び出しのおかげではなかった。</p>
+		<p><strong>原因を検索して特定した。</strong>Windows Terminal 等が使う <strong>ConPTY（疑似コンソール）の仕様</strong>で、「ConPTY のチャンネルは常に UTF-8 で、コードページの変換は疑似コンソールの内部で行われる」ため、<code>SetConsoleOutputCP</code> で変えた値が外側（本物のターミナル）には伝わらない（<a href="https://github.com/microsoft/terminal/issues/9174">microsoft/terminal #9174</a>）。同様の報告が PowerShell 本体側にもある（<a href="https://github.com/PowerShell/PowerShell/issues/14941">PowerShell/PowerShell #14941</a>）。<strong>Bun・この環境固有の不具合ではなく、ConPTY 経由のターミナル全般で起きる仕様</strong>という結論。</p>
+	</div>
+
 	<div class="callout">
 		<h3>終了時・末尾の表示（機能追加）</h3>
 		<ul>
@@ -315,14 +373,33 @@ const { symbols } = dlopen('msvcrt.dll', {
 	</div>
 
 	<div class="callout callout-warning">
-		<h3>桁数を超える長い行の折り返し（未対応・設計のみ）</h3>
+		<h3>桁数を超える長い行の折り返し（未対応）</h3>
 		<p>実機確認で判明（<code>aichat -h</code> の出力に端末の桁数を超える行があると疑われる）。<strong>今の実装は「<code>lines[]</code> の1要素＝画面の1行」を前提に、すべての行番号・カーソル位置（<code>scrollDown</code>／<code>scrollUp</code>／<code>render</code>／スクロール範囲）を計算している。</strong>1行が端末の桁数（例: 140桁のコンソールで140桁超）を超えると、端末側で自動的に2行以上へ折り返されて表示されるため、この前提が崩れ、以降の行番号がずれる。</p>
 		<p><strong>対処案。</strong></p>
 		<ul>
 			<li><strong>A: 長い行は表示幅に収まるように切り詰める（横スクロールなし）。</strong>実装は単純だが、はみ出した内容が読めなくなる</li>
 			<li><strong>B（採用）: 折り返しを許容し、1論理行が何画面行を使うかを計算に入れる。</strong>2026-09-19、利用者の指示で採用。スクロール量・カーソル位置の計算を、論理行ベースから画面行（表示行）ベースへ組み替える必要があり、実装量は A より大きい</li>
 		</ul>
-		<p><strong>未実装。</strong>まず150桁の端末で再現を確認してから、B の詳細設計を詰めて実装する。着手は今回のスクロール修正の確認が済んでからでよい（利用者の指示）。</p>
+		<p><strong>B の詳細設計（2026-09-19、まだ未実装）。</strong></p>
+		<ul>
+			<li><strong>端末の折り返し自体は「行末ちょうどで CRLF なら改行するだけ、1桁でもはみ出せば先に折り返してから続きを出す」という、pending wrap（DECAWM）の動作</strong>（実機で確認済み）。この動作に頼らず、こちら側で先に折り返しを計算して「画面行」を作っておく</li>
+			<li><strong>表示幅は既存の <code>displayWidth()</code>（ASCII・半角ｶﾀｶﾅ＝1桁、それ以外＝2桁）をそのまま使う</strong></li>
+			<li><strong>右端に1桁しか残っていない位置へ2桁文字（漢字等）を表示しようとするときは、その1桁へ空白を入れてから折り返す</strong>（利用者の指示）。端末の pending wrap が「置けない文字は次の行へ送る」のと同じ結果になり、2桁文字が桁の途中で分断されない</li>
+			<li><strong>この折り返し済みの「画面行」を、<code>lines[]</code> とは別の配列としてあらかじめ持っておく</strong>（利用者の指示：「空白(CRLF)いれてある状況と同様に仮想行を持っておく」）。<code>scrollDown</code>／<code>scrollUp</code>／<code>render</code>／<code>clampTop</code>／<code>virtualLength</code> は、今の <code>lines[]</code> の代わりにこの画面行配列を参照する形に置き換える（<code>displayLine()</code> 経由の <code>[EOF]</code>／<code>[改行なし]</code> は、画面行配列の最後の要素に対して同じロジックで付ける）</li>
+			<li><strong>端末の桁数（<code>process.stdout.columns</code>）が変わったら作り直す必要がある</strong>が、リサイズの検知は今回のツールでは未対応（別の話として残す）</li>
+		</ul>
+		<p><strong>未実装。</strong>着手は今回の一連の修正の確認が済んでからでよい（利用者の指示）。</p>
+	</div>
+
+	<div class="callout">
+		<h3>追加機能の候補（未実装・提案のみ）</h3>
+		<p>2026-09-19、利用者から提案。<strong>まだ実装していない。</strong></p>
+		<ul>
+			<li><strong>h: ヘルプ画面への切り替え。</strong>何かキーを押せば元の表示に戻る。実装案（利用者の指示）: ヘルプの内容を仮想行の配列として持ち、表示中の配列をヘルプ用のものへ入れ替えて <code>render()</code>（<code>'redraw'</code>）する。戻すときは元の配列に入れ替えてまた <code>render()</code> する</li>
+			<li><strong>n: 行番号表示のトグル。</strong>各行の先頭に「<code>123456: </code>」の形で行番号を付ける。もう一度 <code>n</code> で元に戻る。実装案（利用者の指示）: 行番号付きの仮想行配列を持ち、入れ替えて <code>render()</code> する。この配列は<strong>初めて <code>n</code> が押されたときに生成する</strong>（毎回作り直さない）</li>
+			<li><strong>E: コンソールウィンドウをリサイズしたときの動きに対応する。</strong>2026-09-19、利用者から提案。Node・Bun とも <code>process.stdout</code> の <code>'resize'</code> イベントでリサイズを検知できる。対応が要る箇所: (1) <code>setScrollRegion()</code> はページング開始時に1回だけ設定しており、リサイズ後は古い行数のまま範囲が残る。イベント発生時に <code>pageHeight()</code> を取り直して張り直す必要がある。(2) 上の「桁数を超える長い行の折り返し」（B）を実装した場合、折り返しは端末の桁数（<code>process.stdout.columns</code>）に依存するため、リサイズ時に折り返し済みの仮想行配列を作り直す必要がある。<strong>B に依存する部分があるため、着手順は B → E が自然</strong></li>
+		</ul>
+		<p>どちらも「表示する行の配列を入れ替えて <code>redraw</code> する」という同じ仕組みが使える。上記の「桁数を超える長い行の折り返し」で行配列を <code>lines[]</code> から独立させる設計にするなら、その仕組みとも相性がよい（先に折り返しの設計を固めてから、この2つに着手する方が手戻りが少ない可能性がある）。</p>
 	</div>
 
 	<h2>終了コード</h2>

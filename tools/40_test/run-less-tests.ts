@@ -10,6 +10,7 @@
 import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { encode } from '../../src/lib/codec.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
@@ -38,7 +39,7 @@ function assertTrue(name: string, value: boolean, detail: string): void {
 }
 
 /** less を、いま走っている処理系でそのまま呼ぶ。標準出力はパイプで捕まえるため isTTY は false になる */
-function run(args: string[], input: string): { code: number; out: string; err: string } {
+function run(args: string[], input: string | Uint8Array): { code: number; out: string; err: string } {
 	const runner = process.argv[0];
 	const r = spawnSync(runner, [tool, ...args], { encoding: 'utf8', input });
 	return { code: r.status ?? -1, out: r.stdout ?? '', err: r.stderr ?? '' };
@@ -75,6 +76,15 @@ console.log('');
 	const r = run([], '');
 	assertEqual('空入力: 終了 0', 0, r.code);
 	assertEqual('空入力: 出力も空', '', r.out);
+}
+
+// 入力の文字コードを自動判定する（SJIS のバイト列を渡しても正しく読める）
+{
+	const text = 'SJISテスト\n異体字・半角ｶﾅも含む\n';
+	const sjisBytes = encode(text, 'sjis');
+	const r = run([], sjisBytes);
+	assertEqual('SJIS 入力: 終了 0', 0, r.code);
+	assertEqual('SJIS 入力を自動判定して正しく読む', text, r.out);
 }
 
 // 改行の正規化（CRLF・CR 混在でも LF に揃えて出す。末尾の改行は1個だけ）

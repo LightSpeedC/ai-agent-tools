@@ -1,21 +1,19 @@
 #!/bin/sh
 # less: UTF-8 セーフなページャー。DOS の more の文字化けを避ける。
-# 中身は src/less/main.ts。bun を優先し、無ければ node で走らせる。
+# 中身は src/less/main.ts。node で走らせる（bun は使わない。
+# 計画 notes/10_plan/i260917-01-less.html の「落とし穴（8）」を参照:
+# bun 同士をパイプで繋ぐと Bun ランタイム自体が文字化けを起こす
+# 未解決のバグがあるため）。
 #
 # exec の次の行には来ない。exec はプロセスを置き換えるためで、
 # exec 自体が失敗したときもシェルごと終わる。
 # それでも exit を書くのは、分岐がここで終わることを目で追えるようにするため。
 dir=$(dirname "$0")
 
-if command -v bun >/dev/null 2>&1; then
-	exec bun "$dir/src/less/main.ts" "$@"
-	exit $?
-fi
-
 if command -v node >/dev/null 2>&1; then
 	exec node "$dir/src/less/main.ts" "$@"
 	exit $?
 fi
 
-echo "[NG] bun か node が要ります" >&2
+echo "[NG] node が必要です" >&2
 exit 2

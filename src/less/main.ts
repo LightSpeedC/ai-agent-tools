@@ -5,12 +5,18 @@
 	文字化けする（i260912-06 と根が同じ、出力コードページ問題の受け手側）。
 	標準入力を読み、画面に収まる分だけ表示してキー操作を待つ。
 
+	入力の文字コードは convert-encoding・text と同じ判定（src/lib/detector.ts）で
+	自動判定する（UTF-8・SJIS・UTF-16 等）。決められないときは UTF-8 として読む。
+
 	計画: notes/10_plan/i260917-01-less.html
 */
 
 import * as fs from 'node:fs';
 import * as tty from 'node:tty';
 import { parseArgs } from '../lib/args.ts';
+import { enableWindowsConsoleVt } from '../lib/win-console.ts';
+import { detect } from '../lib/detector.ts';
+import { decode } from '../lib/codec.ts';
 
 const ExitOk = 0;
 const ExitBadArgs = 2;
@@ -35,7 +41,7 @@ function pad(label: string, target: number): string {
 	return label + ' '.repeat(Math.max(1, target - displayWidth(label)));
 }
 
-const KeyColumn = 11;
+const KeyColumn = 18;
 
 const Usage =
 	'UTF-8 セーフなページャー（DOS more の文字化けを避ける）\n'
@@ -43,10 +49,9 @@ const Usage =
 	+ '  <コマンド> | less\n'
 	+ '\n'
 	+ '  ' + pad('q', KeyColumn) + '終了\n'
-	+ '  ' + pad('Space', KeyColumn) + '画面の高さの 3/4 くらい下\n'
+	+ '  ' + pad('PageDown・Space', KeyColumn) + '画面の高さの 3/4 くらい下\n'
 	+ '  ' + pad('↓・Enter', KeyColumn) + '1 行下\n'
 	+ '  ' + pad('↑', KeyColumn) + '1 行上\n'
-	+ '  ' + pad('PageDown', KeyColumn) + '画面の高さの 3/4 くらい下\n'
 	+ '  ' + pad('PageUp', KeyColumn) + '画面の高さの 3/4 くらい上\n'
 	+ '\n'
 	+ '  ' + pad('--help', KeyColumn) + 'この説明を表示する\n'
@@ -63,12 +68,21 @@ function fail(message: string): number {
 	return ExitBadArgs;
 }
 
-/** 標準入力を全部読み切る（戻りスクロールのため、全行をメモリに持つ） */
+/**
+ * 標準入力を全部読み切る（戻りスクロールのため、全行をメモリに持つ）。
+ * 文字コードは convert-encoding・text と同じ判定（src/lib/detector.ts）で
+ * 自動判定する。決められない（両方妥当な非 ASCII を含む等）ときは
+ * UTF-8 として読む（このツールの既定であり、名前の由来でもあるため）
+ */
 function readStdin(): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const chunks: Buffer[] = [];
 		process.stdin.on('data', (c: Buffer) => { chunks.push(c); });
-		process.stdin.on('end', () => { resolve(Buffer.concat(chunks).toString('utf8')); });
+		process.stdin.on('end', () => {
+			const bytes = new Uint8Array(Buffer.concat(chunks));
+			const kind = detect(bytes) ?? 'utf8';
+			resolve(decode(bytes, kind));
+		});
 		process.stdin.on('error', reject);
 	});
 }
@@ -175,17 +189,10 @@ async function openBunKeySource(): Promise<KeySource | null> {
 	try {
 		const { dlopen, FFIType } = await import('bun:ffi');
 
-		// Node は Windows のコンソール出力コードページを自動で UTF-8（65001）に
-		// 設定するが、Bun はしない。ASCII 主体の内容では区別が付かないが、
-		// 日本語主体の内容では CP932 として解釈され文字化けする（実測で確認：
-		// `less -h | less` で使い方の説明が全て化けた）。明示的に設定する。
-		// 失敗しても対話ページング自体は続ける（別の try/catch にする）
-		try {
-			const { symbols: kernel32 } = dlopen('kernel32.dll', {
-				SetConsoleOutputCP: { args: [FFIType.i32], returns: FFIType.i32 },
-			});
-			kernel32.SetConsoleOutputCP(65001);
-		} catch { /* 失敗しても続行する */ }
+		// Windows コンソールの VT100 エスケープ解釈を明示的に有効化する
+		// （Bun では既定で無効なことを実機で確認済み。失敗しても
+		// 対話ページング自体は続ける）。終了時に元へ戻す
+		const restoreConsole = await enableWindowsConsoleVt();
 
 		const { symbols } = dlopen('msvcrt.dll', {
 			_kbhit: { args: [], returns: FFIType.i32 },
@@ -204,6 +211,7 @@ async function openBunKeySource(): Promise<KeySource | null> {
 			},
 			close() {
 				if (timer != null) { clearInterval(timer); }
+				restoreConsole();
 			},
 		};
 	} catch {
@@ -343,11 +351,14 @@ function page(lines: string[], key: KeySource, hasTrailingNewline: boolean): Pro
 		}
 
 		function finish(code: number): void {
-			key.close();
 			resetScrollRegion();
 			// 画面クリアはしない。反転表示のステータス行は消し、
-			// 通常色（反転無し）の終了メッセージに置き換える
+			// 通常色（反転無し）の終了メッセージに置き換える。
+			// コンソール状態を元へ戻す key.close() より先に書く
+			// （先に戻すと、この書き込み自体が化ける・エスケープシーケンスが
+			// そのまま文字として出る。実機で確認済み）
 			out('\x1b[' + (pageHeight() + 1) + ';1H\x1b[2K-- less 終了 --\n');
+			key.close();
 			resolve(code);
 		}
 
