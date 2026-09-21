@@ -44,6 +44,9 @@ $Suites = @(
 	# UTF-8 セーフなページャー。対話操作（キー入力での画面遷移）は
 	# 自動化せず、出力先が端末でないときの素通し経路だけを確かめる
 	@{ Name = 'less'; Script = 'run-less-tests.ts' },
+	# プロセス一覧（ツリー表示）。bun:ffi 必須で node には代わりが無いため、
+	# node で走らせたときは「bun が必要です」で終わることだけ確かめる
+	@{ Name = 'psls'; Script = 'run-psls-tests.ts' },
 	# 型チェック。bun も node も型を見ないため、ここでしか食い違いが出ない
 	@{ Name = '型チェック'; Script = 'run-tsc-tests.ps1' }
 )
@@ -82,7 +85,7 @@ foreach ($suite in $Suites) {
 
 	if ($suite.Script -like '*.ts') {
 		if ($TsRunners.Count -eq 0) {
-			Write-Host ('bun か node が要ります: ' + $suite.Script) -ForegroundColor Red
+			Write-Host ('bun か node が必要です: ' + $suite.Script) -ForegroundColor Red
 			$failed += $suite.Name
 			continue
 		}

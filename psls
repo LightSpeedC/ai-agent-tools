@@ -1,0 +1,18 @@
+#!/bin/sh
+# psls: プロセス一覧をツリー表示する。中身は src/process-list/psls-main.ts。
+#
+# bun:ffi で Windows のプロセス情報を直接取得するため、bun が要る
+# （node には bun:ffi の代わりが無いため、node 予備は無い）。
+#
+# exec の次の行には来ない。exec はプロセスを置き換えるためで、
+# exec 自体が失敗したときもシェルごと終わる。
+# それでも exit を書くのは、分岐がここで終わることを目で追えるようにするため。
+dir=$(dirname "$0")
+
+if command -v bun >/dev/null 2>&1; then
+	exec bun "$dir/src/process-list/psls-main.ts" "$@"
+	exit $?
+fi
+
+echo "[NG] bun が必要です" >&2
+exit 2

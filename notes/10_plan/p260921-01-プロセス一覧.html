@@ -1,0 +1,387 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>psls 計画</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（7 章 / 色相 280 → 0 を 46.7 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(233.3,78%,25%); --accent2:hsl(233.3,58%,55%); --soft:hsl(233.3,28%,95%); }
+	.ch03{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch04{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
+	.ch05{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch06{ --accent:hsl(46.7,78%,25%);  --accent2:hsl(46.7,58%,55%);  --soft:hsl(46.7,28%,95%); }
+	.ch07{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>psls 計画</h1>
+		<p class="lead">プロセス一覧を「pid 開始時刻 (経過時間) exe コマンド行」の形で表示し、キーワードで絞り込める CLI ツール。親子関係のツリー表示も持つ。</p>
+		<p class="date">📅 作成: 2026-09-21 / 更新: 2026-09-21</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">背景</a></li>
+		<li class="ch02"><a href="#ch02">実装方式（要判断）</a></li>
+		<li class="ch03"><a href="#ch03">機能範囲</a></li>
+		<li class="ch04"><a href="#ch04">詳細仕様</a></li>
+		<li class="ch05"><a href="#ch05">テスト方針</a></li>
+		<li class="ch06"><a href="#ch06">機能拡張（未実装・設計）</a></li>
+		<li class="ch07"><a href="#ch07">物理メモリ使用量の表示</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>背景</h1>
+	<p>プロセスの調査（テスト用サーバーが残っていないか、目的のプロセスの PID・起動時刻・実行ファイル・コマンドライン全体を確かめたい等）で、毎回 <code>Get-CimInstance Win32_Process</code> 等を手で打っている。決まった形式で一覧・絞り込みができる道具を作る。</p>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>実装方式（要判断）</h1>
+	<p>プロセスの起動時刻・実行ファイルパス・コマンドライン全体を取るには、Windows では WMI（<code>Win32_Process</code>）が最も直接的で、これは PowerShell の領分。一方このプロジェクトの他の CLI ツール（<code>html2md</code>・<code>text</code>・<code>convert-encoding</code>・<code>less</code>・<code>check-contrast</code> 等）は全て TypeScript（bun/node）で統一されている。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>案</th><th>やり方</th><th>長所</th><th>短所</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nowrap">A（却下）</td>
+				<td>TypeScript 本体。生データの取得だけ <code>psh</code> 経由で PowerShell（<code>Get-CimInstance Win32_Process</code>）に投げる</td>
+				<td>他ツールと同じ入口の形に揃えられる</td>
+				<td>2026-09-21、利用者の判断で却下。PowerShell を子プロセスとして毎回起動する分、重い・遅い</td>
+			</tr>
+			<tr>
+				<td class="nowrap"><strong>B（採用）</strong></td>
+				<td>TypeScript 本体。<code>bun:ffi</code>（Node は未対応。下記参照）で kernel32.dll を直接呼び、プロセスの列挙・情報取得を行う。<code>less</code> の <code>_kbhit</code>/<code>_getch</code>／<code>SetConsoleOutputCP</code> と同じ手法の延長</td>
+				<td>子プロセスを起動しない。外部パッケージへの依存も無い</td>
+				<td>Windows API を直接扱う分、実装量が多い（下記「コマンドライン全体の取得」を参照）</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><strong>2026-09-21、利用者の指示で B（FFI）を採用。</strong></p>
+
+	<div class="callout callout-important">
+		<h3>コマンドライン全体の取得は、他の項目より難度が高い</h3>
+		<p>PID・実行ファイルパス・起動時刻は、比較的単純な documented API で取れる。</p>
+		<ul>
+			<li><strong>プロセスの列挙</strong>: <code>CreateToolhelp32Snapshot</code> + <code>Process32FirstW</code>/<code>Process32NextW</code>（PID・実行ファイル名（パスなし）・親 PID が取れる）</li>
+			<li><strong>実行ファイルのフルパス</strong>: <code>OpenProcess</code> でハンドルを取り、<code>QueryFullProcessImageNameW</code></li>
+			<li><strong>起動時刻</strong>: 同じハンドルで <code>GetProcessTimes</code>（<code>FILETIME</code> で返る）</li>
+		</ul>
+		<p><strong>2026-09-21、検索して見つけた、より単純で壊れにくい方法を採用。</strong><code>ntdll.dll</code> の <code>NtQueryInformationProcess</code> には <code>ProcessCommandLineInformation</code>（値 60）という専用の問い合わせ種別があり、これを使うとコマンドラインを<strong>1回の呼び出しで <code>UNICODE_STRING</code>（長さ2つ＋ポインタ）1つとして直接</strong>受け取れる。PEB → <code>RTL_USER_PROCESS_PARAMETERS</code> → <code>CommandLine</code> と自分でたどる必要が無い。</p>
+		<ol>
+			<li><code>OpenProcess</code>（<strong><code>PROCESS_QUERY_LIMITED_INFORMATION</code> だけでよい</strong>。<code>PROCESS_VM_READ</code> は不要）でハンドルを取る</li>
+			<li><code>NtQueryInformationProcess</code>（<code>ProcessCommandLineInformation</code> = 60）を呼ぶ。返る <code>UNICODE_STRING</code> をそのまま読めばコマンドライン文字列になる</li>
+		</ol>
+		<p><strong>利点（PEB を自分でたどる方式との比較）。</strong></p>
+		<ul>
+			<li><strong>読む構造体が <code>UNICODE_STRING</code> 1つだけになる</strong>（<code>RTL_USER_PROCESS_PARAMETERS</code> 内のオフセットを知る必要が無い）</li>
+			<li><strong>ビット数（32/64bit）の違いを NTDLL 側が内部で吸収する</strong>ため、自分でビット数分岐を書かなくてよい</li>
+			<li><strong>要る権限が低い</strong>（<code>PROCESS_VM_READ</code> 不要）ため、開けるプロセスが増える</li>
+		</ul>
+		<p><strong>制約。</strong></p>
+		<ul>
+			<li><strong>権限。</strong>それでも開けないプロセス（管理者権限のプロセス・保護されたプロセス等）はある。<strong>その行はコマンドラインを取れないものとして扱う</strong>（エラーで落とさない）</li>
+			<li><strong>undocumented API。</strong>この情報種別自体は Microsoft の正式文書（<code>winternl.h</code> のリファレンス）には載っていないが、Windows 8.1 以降で広く使われており安定している</li>
+			<li><strong>Windows 8.1 未満は非対応。</strong>このプロジェクトの実行環境では影響が無いと見ている</li>
+		</ul>
+		<p>取れないプロセスがあっても、pid・実行ファイル・起動時刻だけは出す（コマンドライン欄だけ <code>-</code> にする）方針でよいか確認したい。</p>
+	</div>
+
+	<div class="callout">
+		<p><strong>ツール名: <code>psls</code>。</strong>2026-09-21、<code>pslist</code> から変更。<code>pslist</code> は Debian/Linux の既存コマンド（man page あり）、および Windows の Sysinternals <code>PsList</code>（用途もほぼ同じ）と衝突することが検索で判明したため。<code>psls</code> は Linux の一般的なコマンド・このプロジェクト内のどちらとも衝突しないことを確認済み。</p>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>機能範囲</h1>
+	<ul>
+		<li><strong>既定でツリー表示にする</strong>（2026-09-21、利用者の指示。<code>--tree</code> のような別オプションではなく、通常の実行がそのままツリー表示になる）</li>
+		<li>引数（キーワード）を1つ渡すと、それを含む行だけに絞り込む（大小文字は区別しない）。<strong>一致したプロセスの祖先を残し、先祖からツリーの形を保ったまま表示する</strong>（子だけ表示して親が消えるとツリーとして読めなくなるため）</li>
+		<li><strong>キーワードに一致した行は太字にする</strong>（利用者の指示）。ツリーの中で該当プロセスがどれかを目立たせる</li>
+		<li>1行の形式: <code>&lt;pid&gt; &lt;開始時刻&gt; (&lt;経過時間&gt;) &lt;exe&gt; &lt;ツリーの罫線＋インデント&gt;&lt;コマンド行&gt;</code>。<strong>ツリーの罫線・インデントは exe とコマンド行の間に置く</strong>（利用者の指示）。pid・開始時刻・経過時間・exe の列は深さに関わらず桁が揃ったままになる</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>詳細仕様</h1>
+	<h2>データの取得</h2>
+	<ul>
+		<li><code>bun:ffi</code> で <code>kernel32.dll</code>（<code>CreateToolhelp32Snapshot</code>／<code>Process32FirstW</code>／<code>Process32NextW</code>／<code>OpenProcess</code>／<code>QueryFullProcessImageNameW</code>／<code>GetProcessTimes</code>）と <code>ntdll.dll</code>（<code>NtQueryInformationProcess</code>、<code>ProcessCommandLineInformation</code> でコマンドライン全体を1回で取る）を直接呼ぶ</li>
+		<li>コマンドラインを取得できないプロセス（権限不足）はコマンドライン欄を <code>-</code> にする。pid・実行ファイル・起動時刻は出す</li>
+	</ul>
+
+	<div class="callout callout-warning">
+		<h3>bun:ffi は Bun 専用。Node では動かせない</h3>
+		<p><code>less</code> は Bun で <code>tty.ReadStream</code> が使えないときの回避策として <code>bun:ffi</code> を使ったが、Node 側には <code>tty.ReadStream</code> という代替経路があった。<strong>このツールはプロセス情報の取得そのものを <code>bun:ffi</code> に頼るため、Node 側の代替が無い。</strong>Node の追加パッケージ（<code>ffi-napi</code> 等）を入れれば可能だが、外部パッケージへの依存を増やさない方針に反する。</p>
+		<p><strong>この案では、このツールは bun が無い環境では動かせない</strong>（<code>node</code> で実行すると「bun が必要です」のようなメッセージで終了する形にする）。他ツールの「bun 優先・node 予備」という構成とは違う扱いになる点を認識しておきたい。</p>
+	</div>
+	<h2>表示形式</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>形式</th><th>例</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">開始時刻</td><td><code>yyyy/mm/dd hh:mm:ss</code>（JST）</td><td class="nowrap"><code>2026/09/21 09:15:32</code></td></tr>
+			<tr><td class="nowrap">経過時間</td><td><code>d日 hh:mm:ss</code>（1日未満は日を省く）</td><td class="nowrap"><code>(01:23:45)</code> ／ <code>(2日 03:00:10)</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>これらの書式は決め打ちの案。確認のうえで変更してよい。</p>
+	<h2>キーワード絞り込み</h2>
+	<ul>
+		<li>組み立てた1行の文字列（pid・時刻・exe・コマンド行すべて）に対して、大小文字を区別せず部分一致で絞り込む</li>
+	</ul>
+	<h2>ツリー表示</h2>
+	<ul>
+		<li>親子関係は <code>Process32FirstW</code>/<code>Process32NextW</code>（<code>PROCESSENTRY32W</code>）が返す親 PID（<code>th32ParentProcessID</code>）でそのまま組み立てられる。追加の API 呼び出しは不要</li>
+		<li>親 PID が既に終了している・存在しない場合（親が先に終わった等）は、そのプロセスをツリーの根として扱う</li>
+		<li>循環参照（親子関係がループする）は理屈上起きないはずだが、念のため深さの上限を設けて無限ループを防ぐ</li>
+		<li>キーワード絞り込みと併用したときは、一致したプロセスの祖先を辿って残す（一致しないプロセスも、子孫に一致があれば表示する）</li>
+	</ul>
+	<h2>ツリーの罫線・太字（2026-09-21、利用者の指示）</h2>
+	<ul>
+		<li><strong>罫線・インデントは exe の列とコマンド行の間に置く。</strong><code>pid</code>・開始時刻・経過時間・exe の列は、ツリーの深さに関わらず桁が揃う（罫線が伸びるのはコマンド行の手前だけ）</li>
+		<li>罫線は一般的なツリー表示の記号を使う: 兄弟がまだ続く祖先の縦棒は <code>│ </code>、兄弟が最後まで終わった祖先は空白 <code>  </code>、自分が最後の子でない場合は <code>├─</code>、最後の子なら <code>└─</code>（根のプロセスは罫線無し）</li>
+		<li><strong>キーワードに一致した行を太字（<code>\x1b[1m</code>）にする。</strong>祖先として表示しているだけの行（一致していない）は通常表示のまま</li>
+	</ul>
+	<div class="callout">
+		<p><strong>表示イメージ（案）。</strong></p>
+		<pre><code class="language-text">1000  2026/09/21 09:00:00 (10:00:00)  explorer.exe  explorer.exe
+2000  2026/09/21 09:10:00 (09:50:00)  cmd.exe       ├─ cmd.exe
+3000  2026/09/21 09:15:00 (09:45:00)  node.exe      │ └─ node script.js</code></pre>
+		<p>（<code>node</code> で絞り込んだ場合、太字になるのは3行目のみ。1・2行目は祖先として残る）</p>
+	</div>
+	<h2>置き場</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ファイル</th><th>役割</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>psls</code></td><td>sh 入口。bun で <code>src/process-list/psls-main.ts</code> を実行。bun が無ければ「bun が必要です」で終了（node 予備は無し）</td></tr>
+			<tr><td class="nowrap"><code>psls.cmd</code></td><td>cmd 入口。同じ振り分け</td></tr>
+			<tr><td class="nowrap"><code>src/process-list/psls-main.ts</code></td><td>本体。<strong>2026-09-21、利用者の指示で <code>src/psls</code> から変更</strong>（他ツールは入口名と <code>src/</code> のフォルダ名が一致するが、このツールだけ違う構成になる）。<strong>同日、ファイル名も <code>main.ts</code> から <code>psls-main.ts</code> へ変更</strong>（利用者の指示）</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>テスト方針</h1>
+	<p>FFI で直接プロセスを列挙するため、他ツールと同じ「対象を直接 import しない、<code>spawnSync</code> で本物の <code>psls</code> を起動して確かめる」黒箱テストになる。<code>Get-CimInstance</code> のような差し替え可能な入力は無く、実行するたびに変わる本物のプロセス一覧を相手にする。</p>
+	<ul>
+		<li><strong>自動テストにする</strong>: <code>--help</code>、知らないオプション、自分自身（<code>bun</code>／<code>node</code>）が今まさに実行中であることを利用して、キーワード絞り込み（例: <code>bun</code>）で該当行が1件以上出ること、絞り込みが大小文字を区別しないこと、出力の各行が期待する形式（<code>pid 開始時刻 (経過時間) exe コマンド行</code>）に一致すること（正規表現で検証）、ツリー表示で親子のインデントの深さが親 PID の関係と一致すること</li>
+		<li><strong>手動確認にとどめる</strong>: 実際のプロセス一覧が正しく取れているか（自分自身のプロセス等で目視確認）、権限で取れないプロセスの扱い</li>
+	</ul>
+	<p>置き場は他ツールと同じ <code>tools/40_test/run-psls-tests.ts</code>。</p>
+
+	<div class="callout callout-caution">
+		<p><strong>実装時に踏んだ落とし穴。</strong>コマンドライン全体の中に改行が埋め込まれているプロセスがあった（複数行のシェルスクリプトを引数に渡している等）。<strong>1プロセス＝1行の前提が崩れ、ツリーの見た目が壊れる。</strong>コマンドライン中の改行は空白に置き換えて1行に収めるよう修正した（実機でのテストで発見）。</p>
+	</div>
+
+	<div class="callout">
+		<p><span class="badge b-ok">済</span>2026-09-21 に実装した（<code>psls</code>・<code>psls.cmd</code>・<code>src/process-list/psls-main.ts</code>）。<code>bun:ffi</code> の型は <code>less</code> と共有できる形に一本化し（<code>src/lib/bun-ffi.d.ts</code>）、<code>src/less/bun-ffi.d.ts</code> は統合して消した。<code>tools/40_test/run-psls-tests.ts</code>（bun 10件・node 4件、いずれも成功）・型チェック・全体テストは確認済み。<strong>ツリーの見た目そのもの（罫線の位置・深さ）は実機での目視確認が要る。</strong></p>
+	</div>
+</section>
+
+<section class="ch06" id="ch06">
+	<h1>機能拡張（未実装・設計）</h1>
+	<p>2026-09-21、利用者から3件の拡張案。<strong>まだ実装していない。</strong>オプション名の検討を含めてここに設計をまとめる。</p>
+
+	<h2>1. exe 欄は既定でパス名を省略する</h2>
+	<ul>
+		<li><strong>既定はファイル名だけ</strong>（<code>a.exe</code>）にする。フルパスを見たいときは新しいオプションを渡す</li>
+		<li><strong>オプション名（案）: <code>-f</code> / <code>--full-path</code></strong>。渡すとフルパスで表示する（今の既定の動き）</li>
+		<li><strong>引数の扱い</strong>: <code>-</code> または <code>--</code> で始まるものはオプション、それ以外の1つはキーワードとして扱う（今までどおり）。<code>parseArgs</code>（<code>src/lib/args.ts</code>）はこの形をそのまま扱えるので、オプション定義を1つ足すだけでよい</li>
+	</ul>
+
+	<h2>2. 各欄の桁を全行で揃え、コマンド行は端末幅に収まるよう切り詰める</h2>
+	<ul>
+		<li><strong>pid・開始時刻・経過時間・exe（3の <code>*N</code> 付きも含む）の各欄は、表示する行の中での最大幅に揃えてパディングする。</strong>今は pid だけ固定6桁で他は揃っていない</li>
+		<li><strong>コマンド行は、端末の桁数（<code>process.stdout.columns</code>）からそれまでの欄・罫線の幅を引いた残りに収まるよう切り詰める</strong>（超えた分は末尾を省略記号（<code>...</code> 等）に置き換える）。端末でない出力先（リダイレクト等）のときは <code>columns</code> が取れないため、既定の幅（160）を使う</li>
+		<li><strong>切り詰めない（全部表示する）オプション（案）: <code>--no-trim</code></strong>。渡すと端末幅を無視してコマンドライン全体を出す</li>
+	</ul>
+
+	<h2>3. 同名で別パスの exe は番号で区別する</h2>
+	<ul>
+		<li>exe 欄をファイル名だけで表示する（既定）とき、<strong>同じファイル名で違うフルパスのプロセスが2つ以上あれば、それぞれに <code>*1</code>・<code>*2</code>…を振って区別する</strong>（例: <code>a.exe *1</code>／<code>a.exe *2</code>）</li>
+		<li><strong>番号は、表示対象（キーワード絞り込み後）に実際に出てくる順（先に見つかった方から）で振る。</strong>絞り込みで消えたパスの分の番号は詰める（欠番を作らない）</li>
+		<li><strong>出力の最後に、ファイル名ごとの対応表を1行にまとめて出す</strong>: <code>a.exe: *1: &lt;パス1&gt;, *2: &lt;パス2&gt;</code>（複数のファイル名で衝突があれば、ファイル名ごとに1行）</li>
+		<li><code>-f</code>/<code>--full-path</code> のときは元々フルパスが見えているので、<strong>この番号付け・対応表は出さない</strong></li>
+	</ul>
+
+	<div class="callout callout-important">
+		<h3>実装順序への影響</h3>
+		<p>2 の「桁を全行で揃える」は、3 の <code>*N</code> 付き exe 欄の幅にも影響する（<code>*N</code> を振った後の文字列の最大幅で揃える必要がある）ため、<strong>3 → 2 の順で組み立てるのが自然</strong>。1（フルパス省略オプション）は独立していて、どちらより先でも後でもよい。</p>
+	</div>
+
+	<p>この設計で進めてよいか確認をお願いします。</p>
+</section>
+
+<section class="ch07" id="ch07">
+	<h1>物理メモリ使用量の表示</h1>
+	<p><span class="badge b-ok">済</span>2026-09-21、利用者の指示で実装。<strong>exe 欄の前に物理メモリ使用量の列を追加した。</strong>実機（管理者モード・一般ユーザーの両方）で取得できることを確認済み。</p>
+	<ul>
+		<li><strong>取得方法。</strong><code>kernel32.dll</code> の <code>K32GetProcessMemoryInfo</code>（<code>PROCESS_MEMORY_COUNTERS</code> の <code>WorkingSetSize</code>）で、そのプロセスが実際に使っている物理メモリ（ワーキングセット）を取る。タスクマネージャーの「メモリ」列と同じ考え方の値</li>
+		<li><strong>表示形式。</strong>1024 未満は B、1024<sup>2</sup> 未満は K、1024<sup>3</sup> 未満は M、それ以上は G。値は小数第1位まで（例: <code>128.0M</code>／<code>1.3G</code>）。<strong>pid・開始時刻・経過時間・exe と同様、表示する行の中での最大幅に揃える</strong></li>
+		<li>列の並び順: <code>&lt;pid&gt; &lt;開始時刻&gt; (&lt;経過時間&gt;) &lt;物理メモリ&gt; &lt;exe&gt; &lt;ツリーの罫線＋インデント&gt;&lt;コマンド行&gt;</code>（利用者の指示で exe の前に置く）</li>
+		<li><strong>取れない場合の表示。</strong>物理メモリ欄・exe 欄は <code>-</code>、コマンド行欄は <code>(-)</code>（利用者の指示。経過時間欄の <code>(-)</code> と揃えた）</li>
+	</ul>
+
+	<div class="callout callout-warning">
+		<h3>退行: 権限を1つ足しただけで既存の取得まで巻き添えで壊れた</h3>
+		<p><strong>原因。</strong><code>GetProcessMemoryInfo</code> は <code>PROCESS_VM_READ</code> を要るため、既存の <code>OpenProcess</code>（exe・起動時刻・コマンドライン取得用、<code>PROCESS_QUERY_LIMITED_INFORMATION</code>）にこの権限を足して1つのハンドルで済まそうとした。<strong><code>OpenProcess</code> は要求した権限を <u>すべて</u> 満たせないとハンドル自体を返さない</strong>ため、<code>PROCESS_VM_READ</code> が通らないプロセスでは、管理者権限でも exe・起動時刻・コマンドラインまで一緒に取れなくなった（利用者が実機で発見）。</p>
+		<p><strong>修正。</strong>メモリ取得専用に別ハンドルを開く形に分離した。メモリ側だけが取れなくても、他の項目の取得には影響しない。</p>
+	</div>
+
+	<div class="callout">
+		<h3>管理者モードでの取得範囲を広げる: SeDebugPrivilege</h3>
+		<p>管理者として実行しても、既定の <code>OpenProcess</code> は DACL ベースの通常のアクセスチェックしか行わないため、SYSTEM 権限のプロセス等は <code>PROCESS_VM_READ</code> を拒否される。<strong>自プロセスのトークンで <code>SeDebugPrivilege</code> を有効化する</strong>と、DACL に関わらずほぼ任意のプロセスを開けるようになる（タスクマネージャーを管理者で実行したときに全プロセスのメモリが見える仕組みと同じ）。</p>
+		<ul>
+			<li><code>advapi32.dll</code> の <code>OpenProcessToken</code> → <code>LookupPrivilegeValueW</code>（<code>"SeDebugPrivilege"</code>）→ <code>AdjustTokenPrivileges</code> を、起動時に1回だけ呼ぶ</li>
+			<li><strong>一般ユーザーには副作用が無い。</strong>この特権は既定で管理者グループのトークンにしか割り当てられておらず、一般ユーザーでは <code>OpenProcessToken</code>／<code>AdjustTokenPrivileges</code> が静かに失敗するだけ（<code>try/catch</code> で囲み、失敗しても他の取得には影響しない）。有効化は自プロセスのトークンだけに、そのプロセスが終了するまで効く一時的なもの</li>
+			<li><strong>例外は Protected Process（Light）</strong>（<code>Secure System</code>・<code>Registry</code> 等）。カーネルレベルの保護のため、<code>SeDebugPrivilege</code> があっても開けない</li>
+		</ul>
+		<p>実機（管理者モード）で、この特権を有効化した状態でメモリが取得できることを確認済み。</p>
+	</div>
+
+	<div class="callout">
+		<h3>コンソール出力（コードページ・色付け）は less と共通の対処</h3>
+		<p>2026-09-21、利用者から実機での報告（<code>psls claude.exe | less</code> で発生）。<code>less</code> と同じ原因（Bun はコンソール出力コードページも VT100 エスケープ解釈も自動で有効化しない）のため、共通処理 <code>src/lib/win-console.ts</code> の <code>enableWindowsConsoleVt()</code> に一本化して両方で使う形にした。詳細・実機確認の経緯は<a href="i260917-01-less.html">less の計画</a>の「落とし穴（8）」を参照。</p>
+	</div>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>
