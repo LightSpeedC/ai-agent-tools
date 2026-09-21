@@ -1,1 +1,2 @@
-cmd /k n
+call n
+start "%CD%" n
