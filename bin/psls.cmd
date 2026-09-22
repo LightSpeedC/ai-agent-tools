@@ -10,5 +10,5 @@ echo [NG] bun ‚ª•K—v‚Å‚·
 exit /b 2
 
 :bun
-bun "%~dp0src\process-list\psls-main.ts" %*
+bun "%~dp0..\src\process-list\psls-main.ts" %*
 exit /b %errorlevel%

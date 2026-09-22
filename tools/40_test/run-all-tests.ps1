@@ -124,7 +124,7 @@ Write-Host ''
 Write-Host '=== 文字コードと改行の検査 ===' -ForegroundColor Cyan
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 # 移植版を呼ぶ。C# 版は突き合わせ用で、ビルドしていない環境もある
-& (Join-Path $Root 'convert-encoding.cmd') $Root --check
+& (Join-Path $Root 'bin\convert-encoding.cmd') $Root --check
 if ($LASTEXITCODE -ne 0) { $failed += '文字コードと改行' }
 
 Write-Host ''

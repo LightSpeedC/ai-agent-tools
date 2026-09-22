@@ -14,9 +14,9 @@ echo [NG] bun ‚© node ‚ª•K—v‚Å‚·
 exit /b 2
 
 :bun
-bun "%~dp0src\check-markdown\main.ts" %*
+bun "%~dp0..\src\check-markdown\main.ts" %*
 exit /b %errorlevel%
 
 :node
-node "%~dp0src\check-markdown\main.ts" %*
+node "%~dp0..\src\check-markdown\main.ts" %*
 exit /b %errorlevel%

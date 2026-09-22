@@ -274,7 +274,7 @@ html2md --root . --dry-run</code></pre>
 
 	<h3>ビルド</h3>
 
-	<p><code>build-html2md-cs.cmd</code> を実行する。Roslyn の <code>csc.exe</code> があればそれを使い、無ければ .NET Framework 4.8 の <code>csc.exe</code> を使う。標準搭載版は C# 5 相当なので、文字列補間や <code>out var</code> は書けない。</p>
+	<p><code>tools/20_build/build-html2md-cs.cmd</code> を実行する。Roslyn の <code>csc.exe</code> があればそれを使い、無ければ .NET Framework 4.8 の <code>csc.exe</code> を使う。標準搭載版は C# 5 相当なので、文字列補間や <code>out var</code> は書けない。</p>
 
 	<p><strong>ビルドの入口はツールごとに 1 本。</strong>名前は<strong>ツール名と処理系</strong>で付ける（<code>build-&lt;ツール&gt;-&lt;処理系&gt;.cmd</code>）。移植版が増えても、どれを作る入口か名前で分かる。</p>
 

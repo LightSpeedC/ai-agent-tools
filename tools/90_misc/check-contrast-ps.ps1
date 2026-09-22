@@ -120,10 +120,13 @@ while ($i -lt $args.Count) {
 
 $ErrorActionPreference = 'Stop'
 
+# tools/90_misc/ に置くため、2 階層上がプロジェクトルート
+$ProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+
 Write-Host '=== HTML のコントラスト実測（ブラウザで描画して計測） ===' -ForegroundColor Cyan
 
 # ---- 前提の確認 ----
-$cjs = Join-Path $PSScriptRoot 'contrast\check-contrast.cjs'
+$cjs = Join-Path $ProjectRoot 'contrast\check-contrast.cjs'
 if (-not (Test-Path -LiteralPath $cjs)) {
 	Write-Host "検査スクリプトが見つかりません: $cjs" -ForegroundColor Red
 	exit 2
@@ -178,7 +181,7 @@ if ($redirects -gt 0) {
 Write-Host ''
 
 # ---- 計測する ----
-$tmpDir = Join-Path $PSScriptRoot 'tmp'
+$tmpDir = Join-Path $ProjectRoot 'tmp'
 if (-not (Test-Path -LiteralPath $tmpDir)) { New-Item -ItemType Directory -Path $tmpDir | Out-Null }
 $inputPath = Join-Path $tmpDir 'contrast-input.json'
 $errPath = Join-Path $tmpDir 'contrast-stderr.txt'

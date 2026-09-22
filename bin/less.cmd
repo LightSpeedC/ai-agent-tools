@@ -15,5 +15,5 @@ echo [NG] node ‚ª•K—v‚Å‚·
 exit /b 2
 
 :node
-node "%~dp0src\less\main.ts" %*
+node "%~dp0..\src\less\main.ts" %*
 exit /b %errorlevel%

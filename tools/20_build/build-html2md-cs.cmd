@@ -33,7 +33,7 @@ echo コンパイラ: %CSC%
 echo.
 
 "%CSC%" /nologo /target:exe /platform:anycpu /optimize+ /warnaserror- /utf8output ^
-	/out:"%~dp0html2md-cs.exe" "%~dp0src\Html2MdCs\*.cs"
+	/out:"%~dp0..\..\html2md-cs.exe" "%~dp0..\..\src\Html2MdCs\*.cs"
 
 if errorlevel 1 (
 	echo.
@@ -43,5 +43,5 @@ if errorlevel 1 (
 
 echo.
 echo [OK] html2md-cs.exe を作成しました
-for %%f in ("%~dp0html2md-cs.exe") do echo      サイズ: %%~zf バイト
+for %%f in ("%~dp0..\..\html2md-cs.exe") do echo      サイズ: %%~zf バイト
 exit /b 0

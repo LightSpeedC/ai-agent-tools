@@ -673,7 +673,7 @@ notes/10_plan/plan.html      utf8+lf     → html は utf8bom+lf
 | 置き場 | 内容 |
 |---|---|
 | src/ConvertEncoding/*.cs | ソース |
-| build-convert-encoding-cs.cmd | ビルド（build-html2md-cs.cmd と同じ構造） |
+| tools/20_build/build-convert-encoding-cs.cmd | ビルド（build-html2md-cs.cmd と同じ構造） |
 | convert-encoding.exe | 成果物。root 直下 |
 | tests/ | テスト |
 
@@ -687,7 +687,7 @@ notes/10_plan/plan.html      utf8+lf     → html は utf8bom+lf
 | 置き場 | 内容 |
 |---|---|
 | src/ConvertEncoding/ | `Program.cs` `Spec.cs` `Detector.cs` `Converter.cs` |
-| build-convert-encoding-cs.cmd | `build-html2md-cs.cmd` と同じ構造。Roslyn を探し、無ければ Windows 標準の csc を使う |
+| tools/20_build/build-convert-encoding-cs.cmd | `build-html2md-cs.cmd` と同じ構造。Roslyn を探し、無ければ Windows 標準の csc を使う |
 | convert-encoding.exe | root 直下。15,360 バイト |
 | tools/40_test/run-convert-encoding-tests.ps1 | 6 章のケースを実行する。**93 件すべて成功** |
 

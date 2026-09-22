@@ -1,8 +1,6 @@
 #!/bin/sh
-# psls: プロセス一覧をツリー表示する。中身は src/process-list/psls-main.ts。
-#
-# bun:ffi で Windows のプロセス情報を直接取得するため、bun が要る
-# （node には bun:ffi の代わりが無いため、node 予備は無い）。
+# html2md: HTML ドキュメントから Markdown を生成する。
+# 中身は src/html2md/main.ts。bun を優先し、無ければ node で走らせる。
 #
 # exec の次の行には来ない。exec はプロセスを置き換えるためで、
 # exec 自体が失敗したときもシェルごと終わる。
@@ -10,9 +8,14 @@
 dir=$(dirname "$0")
 
 if command -v bun >/dev/null 2>&1; then
-	exec bun "$dir/src/process-list/psls-main.ts" "$@"
+	exec bun "$dir/../src/html2md/main.ts" "$@"
 	exit $?
 fi
 
-echo "[NG] bun が必要です" >&2
+if command -v node >/dev/null 2>&1; then
+	exec node "$dir/../src/html2md/main.ts" "$@"
+	exit $?
+fi
+
+echo "[NG] bun か node が必要です" >&2
 exit 2

@@ -28,7 +28,7 @@ if (Test-Path $target) {
 }
 New-Item -ItemType Directory -Path $target -Force | Out-Null
 
-# ランチャー（拡張子なし + .cmd）
+# ランチャー（拡張子なし + .cmd）。bin/ 配下に置く
 $launchers = @(
 	'html2md', 'html2md.cmd',
 	'text', 'text.cmd',
@@ -39,8 +39,9 @@ $launchers = @(
 	'check-contrast', 'check-contrast.cmd',
 	'cc.cmd', 'cx.cmd', 'n.cmd', 'nn.cmd'
 )
+New-Item -ItemType Directory -Path (Join-Path $target 'bin') -Force | Out-Null
 foreach ($name in $launchers) {
-	Copy-Item (Join-Path $root $name) (Join-Path $target $name)
+	Copy-Item (Join-Path $root "bin/$name") (Join-Path $target "bin/$name")
 }
 
 # 実行に使う src 配下（C# 移植ソースは含めない）

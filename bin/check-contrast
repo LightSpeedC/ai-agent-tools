@@ -1,6 +1,6 @@
 #!/bin/sh
-# check-public: 公開前に、外に出してはいけないものが混ざっていないかを見る。
-# 中身は src/check-public/main.ts。bun を優先し、無ければ node で走らせる。
+# check-contrast: HTML の配色をブラウザで実測して確かめる。
+# 中身は src/check-contrast/main.ts。bun を優先し、無ければ node で走らせる。
 #
 # exec の次の行には来ない。exec はプロセスを置き換えるためで、
 # exec 自体が失敗したときもシェルごと終わる。
@@ -8,12 +8,12 @@
 dir=$(dirname "$0")
 
 if command -v bun >/dev/null 2>&1; then
-	exec bun "$dir/src/check-public/main.ts" "$@"
+	exec bun "$dir/../src/check-contrast/main.ts" "$@"
 	exit $?
 fi
 
 if command -v node >/dev/null 2>&1; then
-	exec node "$dir/src/check-public/main.ts" "$@"
+	exec node "$dir/../src/check-contrast/main.ts" "$@"
 	exit $?
 fi
 

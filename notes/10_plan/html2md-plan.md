@@ -121,7 +121,7 @@
 | ファイル | 役割 |
 |---|---|
 | `src\Html2Md\*.cs` | 変換と検査の実装 |
-| `build-html2md-cs.cmd` | `csc.exe` を探して `html2md.exe` をビルドする |
+| `tools/20_build/build-html2md-cs.cmd` | `csc.exe` を探して `html2md.exe` をビルドする |
 | `html2md.exe` | ビルド成果物。各プロジェクトのランチャーが呼ぶ |
 
 ## 5. 日本語の強調が壊れる問題

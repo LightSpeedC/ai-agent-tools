@@ -25,7 +25,7 @@ param(
 	# 期待値を現在の出力で作り直す
 	[switch]$UpdateGolden,
 	# 試す実装。既定は C# の exe。移植版を突き合わせるときに差し替える
-	# （例: -Target (Join-Path $Root 'html2md.cmd')）
+	# （例: -Target (Join-Path $Root 'bin\html2md.cmd')）
 	[string]$Target
 )
 
@@ -40,7 +40,7 @@ $CasesDir = Join-Path $Root 'tests\cases'
 $GoldenDir = Join-Path $Root 'tests\golden'
 $WorkRoot = Join-Path $Root 'tmp\test-run'
 # 既定は移植版（ランチャー経由）。C# 版を見るときは -Target で名指しする
-$Exe = if ($Target) { $Target } else { Join-Path $Root 'html2md.cmd' }
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'bin\html2md.cmd' }
 
 # ケースごとに「変換後の Markdown に出ているべき文字列」を並べる。
 # ここに書いたものが 1 つでも欠けたら失敗にする。
@@ -248,7 +248,7 @@ Write-Host '=== html2md のテスト ===' -ForegroundColor Cyan
 
 if (-not (Test-Path -LiteralPath $Exe)) {
 	Write-Host ('対象がありません: ' + $Exe) -ForegroundColor Red
-	Write-Host '  移植版なら bun か node が必要です。C# 版を見るなら build-html2md-cs.cmd を先に実行してください。'
+	Write-Host '  移植版なら bun か node が必要です。C# 版を見るなら tools\20_build\build-html2md-cs.cmd を先に実行してください。'
 	exit 2
 }
 

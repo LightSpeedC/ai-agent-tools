@@ -1,8 +1,6 @@
 #!/bin/sh
-# PowerShell を呼んで、出力を UTF-8 に直して流す。
-# 中身は src/psh/main.ts。bun を優先し、無ければ node で走らせる。
-#
-# 呼ぶのは powershell（Windows PowerShell 5.1）。pwsh（7）ではない。
+# check-markdown: Markdown が GitHub で意図どおりに表示されるかを実測する。
+# 中身は src/check-markdown/main.ts。bun を優先し、無ければ node で走らせる。
 #
 # exec の次の行には来ない。exec はプロセスを置き換えるためで、
 # exec 自体が失敗したときもシェルごと終わる。
@@ -10,12 +8,12 @@
 dir=$(dirname "$0")
 
 if command -v bun >/dev/null 2>&1; then
-	exec bun "$dir/src/psh/main.ts" "$@"
+	exec bun "$dir/../src/check-markdown/main.ts" "$@"
 	exit $?
 fi
 
 if command -v node >/dev/null 2>&1; then
-	exec node "$dir/src/psh/main.ts" "$@"
+	exec node "$dir/../src/check-markdown/main.ts" "$@"
 	exit $?
 fi
 

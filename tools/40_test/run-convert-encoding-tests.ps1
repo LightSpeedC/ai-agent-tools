@@ -24,7 +24,7 @@ $ErrorActionPreference = 'Stop'
 # tools/40_test/ に置くため、2 階層上がプロジェクトルート
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 # 既定は移植版（ランチャー経由）。C# 版を見るときは -Target で名指しする
-$Exe = if ($Target) { $Target } else { Join-Path $Root 'convert-encoding.cmd' }
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'bin\convert-encoding.cmd' }
 $Work = Join-Path $Root 'tmp\convert-encoding-test'
 
 $script:Pass = 0
@@ -842,7 +842,7 @@ Write-Host '[実際のファイルでの往復]' -ForegroundColor Cyan
 
 # このプロジェクトの実ファイルを複製し、往復させてバイト列が戻ることを見る
 $pairs = @(
-	@{ Name = 'build-html2md-cs.cmd'; Src = (Join-Path $Root 'build-html2md-cs.cmd'); To = 'cmd' },
+	@{ Name = 'build-html2md-cs.cmd'; Src = (Join-Path $Root 'tools\20_build\build-html2md-cs.cmd'); To = 'cmd' },
 	# 日本語を多く含む大きめの ps1 を選ぶ。往復で 1 バイトでも変われば落ちる
 	@{ Name = 'run-tests.ps1'; Src = (Join-Path $Root 'tools\40_test\run-tests.ps1'); To = 'ps1' }
 )

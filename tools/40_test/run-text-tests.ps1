@@ -12,7 +12,7 @@
 [CmdletBinding()]
 param(
 	# 試す実装。既定は C# の exe。移植版を突き合わせるときに差し替える
-	# （例: -Target (Join-Path $Root 'text.cmd')）
+	# （例: -Target (Join-Path $Root 'bin\text.cmd')）
 	[string]$Target
 )
 
@@ -21,8 +21,8 @@ $ErrorActionPreference = 'Stop'
 
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 # 既定は移植版（ランチャー経由）。C# 版を見るときは -Target で名指しする
-$Exe = if ($Target) { $Target } else { Join-Path $Root 'text.cmd' }
-$ConvExe = Join-Path $Root 'convert-encoding.cmd'
+$Exe = if ($Target) { $Target } else { Join-Path $Root 'bin\text.cmd' }
+$ConvExe = Join-Path $Root 'bin\convert-encoding.cmd'
 $Work = Join-Path $Root 'tmp\text-test'
 
 $script:Pass = 0

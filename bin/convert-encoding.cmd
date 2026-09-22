@@ -1,6 +1,6 @@
 @echo off
-rem html2md: HTML ドキュメントから Markdown を生成する。
-rem 中身は src\html2md\main.ts。bun を優先し、無ければ node で走らせる。
+rem ファイルの文字コードと改行を変換する。
+rem 中身は src\convert-encoding\main.ts。bun を優先し、無ければ node で走らせる。
 rem
 rem if ( ) のブロックの中で %errorlevel% を書かないこと。
 rem ブロックを解析した時点で展開されるため、実行前の値（0）が返る。
@@ -14,9 +14,9 @@ echo [NG] bun か node が必要です
 exit /b 2
 
 :bun
-bun "%~dp0src\html2md\main.ts" %*
+bun "%~dp0..\src\convert-encoding\main.ts" %*
 exit /b %errorlevel%
 
 :node
-node "%~dp0src\html2md\main.ts" %*
+node "%~dp0..\src\convert-encoding\main.ts" %*
 exit /b %errorlevel%

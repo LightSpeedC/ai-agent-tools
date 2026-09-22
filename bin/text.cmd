@@ -1,8 +1,8 @@
 @echo off
-rem check-public: 公開前に、外に出してはいけないものが混ざっていないかを見る。
-rem 中身は src\check-public\main.ts。bun を優先し、無ければ node で走らせる。
+rem text: 文字コード対応テキスト・ツール一式（read / find / edit / write）。
+rem 中身は src\text\main.ts。bun を優先し、無ければ node で走らせる。
 rem
-rem if ( ) のブロックの中で %errorlevel% を見ないこと。
+rem if ( ) のブロックの中で %errorlevel% を書かないこと。
 rem ブロックを解析した時点で展開されるため、実行前の値（0）が返る。
 rem 分岐は goto で行い、終了コードはブロックの外で読む。
 setlocal
@@ -14,9 +14,9 @@ echo [NG] bun か node が必要です
 exit /b 2
 
 :bun
-bun "%~dp0src\check-public\main.ts" %*
+bun "%~dp0..\src\text\main.ts" %*
 exit /b %errorlevel%
 
 :node
-node "%~dp0src\check-public\main.ts" %*
+node "%~dp0..\src\text\main.ts" %*
 exit /b %errorlevel%

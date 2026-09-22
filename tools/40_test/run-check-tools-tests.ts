@@ -57,7 +57,7 @@ function runTs(tool: string, args: string[]): { code: number; out: string } {
 
 /** ps1 版を powershell で呼ぶ。突き合わせ用 */
 function runPs(tool: string, args: string[]): { code: number; out: string } {
-	const script = path.join(root, tool + '-ps.ps1');
+	const script = path.join(root, 'tools', '90_misc', tool + '-ps.ps1');
 	const r = spawnSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, ...args], { encoding: 'utf8' });
 	return { code: r.status ?? -1, out: (r.stdout ?? '') + (r.stderr ?? '') };
 }
