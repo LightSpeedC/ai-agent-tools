@@ -674,7 +674,7 @@ notes/10_plan/plan.html      utf8+lf     → html は utf8bom+lf
 |---|---|
 | src/ConvertEncoding/*.cs | ソース |
 | tools/20_build/build-convert-encoding-cs.cmd | ビルド（build-html2md-cs.cmd と同じ構造） |
-| convert-encoding.exe | 成果物。root 直下 |
+| convert-encoding.exe | 成果物。**2026-09-22、利用者の指示で dist/ へ移動** |
 | tests/ | テスト |
 
 > [!NOTE]

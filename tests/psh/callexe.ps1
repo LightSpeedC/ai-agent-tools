@@ -15,4 +15,4 @@ param()
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
 Write-Host 'ここは PowerShell の出力です'
-& (Join-Path $root 'convert-encoding-cs.exe') --help
+& (Join-Path $root 'dist\convert-encoding-cs.exe') --help

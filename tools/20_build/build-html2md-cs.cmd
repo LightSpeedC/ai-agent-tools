@@ -32,8 +32,10 @@ if not exist "%CSC%" (
 echo コンパイラ: %CSC%
 echo.
 
+if not exist "%~dp0..\..\dist" mkdir "%~dp0..\..\dist"
+
 "%CSC%" /nologo /target:exe /platform:anycpu /optimize+ /warnaserror- /utf8output ^
-	/out:"%~dp0..\..\html2md-cs.exe" "%~dp0..\..\src\Html2MdCs\*.cs"
+	/out:"%~dp0..\..\dist\html2md-cs.exe" "%~dp0..\..\src\Html2MdCs\*.cs"
 
 if errorlevel 1 (
 	echo.
@@ -42,6 +44,6 @@ if errorlevel 1 (
 )
 
 echo.
-echo [OK] html2md-cs.exe を作成しました
-for %%f in ("%~dp0..\..\html2md-cs.exe") do echo      サイズ: %%~zf バイト
+echo [OK] dist\html2md-cs.exe を作成しました
+for %%f in ("%~dp0..\..\dist\html2md-cs.exe") do echo      サイズ: %%~zf バイト
 exit /b 0

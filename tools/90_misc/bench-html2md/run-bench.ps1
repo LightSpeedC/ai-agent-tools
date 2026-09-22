@@ -153,7 +153,7 @@ $results = @()
 
 # --- 本物どうし（変換・検査・SVG 切り出しまで行う） ---
 $w = New-Work 'cs'
-$results += Measure-Impl 'C#   exe（本物）' $w (Join-Path $root 'html2md-cs.exe') @('--root', $w, '--dir', 'notes') $csSources '//'
+$results += Measure-Impl 'C#   exe（本物）' $w (Join-Path $root 'dist\html2md-cs.exe') @('--root', $w, '--dir', 'notes') $csSources '//'
 
 $w = New-Work 'node-main'
 $results += Measure-Impl 'node .ts（本物）' $w 'node' @($mainTs, '--root', $w, '--dir', 'notes') $tsSources '//'
