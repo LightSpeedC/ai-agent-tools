@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import * as Emphasis from './emphasis.ts';
 import {
 	buildCssVars, decodeEntities, extractBody, findChapterClass,
-	getAnchor, getAttr, getBlock, getClassList, getOpenTag,
+	getAnchor, getAnchorText, getAttr, getBlock, getClassList, getOpenTag,
 	getPlainText, hasClass, isMdSkipPage, stripNonContent,
 } from './htmlutil.ts';
 import type { Block } from './htmlutil.ts';
@@ -499,14 +499,14 @@ function buildAnchorMap(body: string): Map<string, string> {
 		no++;
 		const id = getAttr(getOpenTag(block.outer), 'id');
 		if (id.length === 0) { continue; }
-		const title = getPlainText(h1[1]);
+		const title = getAnchorText(h1[1]);
 		map.set(id, getAnchor(no + '. ' + title));
 	}
 	// h2 / h3 に id が振られている場合も拾う
 	for (const m of body.matchAll(/<h([23])\b([^>]*)>([\s\S]*?)<\/h\1>/g)) {
 		const id = getAttr('<h' + m[1] + m[2] + '>', 'id');
 		if (id.length === 0 || map.has(id)) { continue; }
-		map.set(id, getAnchor(getPlainText(m[3])));
+		map.set(id, getAnchor(getAnchorText(m[3])));
 	}
 	collectFlatDetailsAnchors(body, map, null);
 	return map;
@@ -539,7 +539,7 @@ function collectFlatDetailsAnchors(html: string, map: Map<string, string>, ances
 				const id = ownId.length > 0 ? ownId : (ancestorId ?? '');
 				if (id.length > 0 && !map.has(id)) {
 					const sm = /<summary\b[^>]*>([\s\S]*?)<\/summary>/i.exec(block.inner);
-					if (sm != null) { map.set(id, getAnchor(getPlainText(sm[1]))); }
+					if (sm != null) { map.set(id, getAnchor(getAnchorText(sm[1]))); }
 				}
 			}
 		}

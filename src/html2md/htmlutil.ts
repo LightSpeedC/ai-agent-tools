@@ -92,6 +92,26 @@ export function getPlainText(html: string): string {
 }
 
 /**
+ * 見出しのアンカー計算専用（i260903-02）。タグは消すだけで、タグの境界に
+ * 空白を挿さない。
+ *
+ * `getPlainText()` はタグをすべて空白 1 個に置き換えるため、
+ * `見出し（<code>-c</code>を廃止）` のように前後に空白の無いインライン要素が
+ * あると、実際には隣接しているはずの文字の間に余計な空白が生まれる。
+ * `getAnchor()` はその空白をハイフンに変えるため、`-c` 自身が持つハイフンと
+ * 連続して `--c` のような二重ハイフンになり、GitHub が実際に生成するアンカー
+ * とずれる。GitHub 側は見出しのレンダリング後のテキストをそのまま使うため、
+ * タグの境界だからといって空白は入らない。
+ */
+export function getAnchorText(html: string): string {
+	if (html == null || html.length === 0) { return ''; }
+	let t = html.replace(/<[^>]+>/g, '');
+	t = decodeEntities(t);
+	t = t.replace(/\s+/g, ' ');
+	return t.trim();
+}
+
+/**
  * GitHub の見出しアンカーを見出しテキストから求める。
  * 小文字化 → 記号を落とす → 空白 1 文字をハイフン 1 個にする。
  */
