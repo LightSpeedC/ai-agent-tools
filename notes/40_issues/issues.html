@@ -1280,7 +1280,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details open>
-		<summary><span class="badge b-warn">着手</span><span class="no">i260921-01</span>md-flat の details 展開で id が失われ、課題間リンクが折れる</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260921-01</span>md-flat の details 展開で id が失われ、課題間リンクが折れる</summary>
 		<div class="issue-body">
 			<p>2026-09-19、<code>ai-chat-lite</code> から報告（public ルーム #914、待受けを張り直した際に読んだ）。<strong><code>md-flat</code> を付けた <code>details</code> を数十件含む一覧ページ（この課題一覧のような形）を変換すると、内部の課題間リンク（<code>href="#i260830-09"</code> 形式）がほぼ全滅する</strong>とのこと。報告元の実測: 同じファイルで <code>md-flat</code> 無しなら内部リンク切れ 0 件、有りだと 100 件超。</p>
 
@@ -1307,7 +1307,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p>利用者の判断: <strong>1-A</strong>（上記の拡張マップ方式を採用）、<strong>2 広げる（B: <code>&lt;details&gt;</code> 自身に <code>id</code> が無くても、直接くるむ <code>&lt;li&gt;</code>／<code>&lt;section&gt;</code> の <code>id</code> を拾う）</strong>、<strong>3 テスト追加</strong>。</p>
 			<p><span class="badge b-ok">済</span><code>src/html2md/converter.ts</code> の <code>buildAnchorMap()</code> に <code>collectFlatDetailsAnchors()</code> を追加。<code>section</code>・<code>li</code>・<code>div</code>・<code>ul</code>・<code>ol</code> を辿りながら「直近の id 持ちの li/section」を運び、<code>md-flat</code> の <code>details</code> に着いた時点で自分の <code>id</code> が無ければそれを使う。テストケース <code>tests/cases/flat-details-anchor/</code>（直接 id・section 経由 id の両方）を新設し、<code>tools/40_test/run-tests.ps1</code> に登録。全体テスト・型チェック・文字コード検査は確認済み。</p>
 			<p><strong>実装時に踏んだ落とし穴。</strong>最初 <code>&lt;li id="..."&gt;&lt;details class="md-flat"&gt;</code>（<code>li</code> で <code>details</code> をくるむ形）でテストを書いたが、このプロジェクトの実装では <code>li</code> の中身は見出しへ展開されず地の文として1行にまとめられる仕様だった（<code>md-flat</code> の対象外）。<code>section</code> でくるむ形に直してテストを作り直した。</p>
-			<p><span class="badge b-warn">未</span><strong>まだ「済」にはしない。</strong>報告元（<code>ai-chat-lite</code>、public ルーム #989）に実装内容を返信し、<strong>依頼元での検証を経て OK が出た時点で「済」にする</strong>。</p>
+			<p><span class="badge b-ok">済</span>2026-09-23、報告元（<code>ai-chat-lite</code>、public ルーム #1037）が実際のページで検証し、アンカー切れが0件になったことを確認。OK が出たため「済」にする。</p>
 		</div>
 	</details>
 
@@ -1329,7 +1329,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details>
-		<summary><span class="badge b-warn">着手</span><span class="no">i260923-01</span>見出しに隣接する code 等で、アンカーのハイフンが連続する</summary>
+		<summary><span class="badge b-ok">済</span><span class="no">i260923-01</span>見出しに隣接する code 等で、アンカーのハイフンが連続する</summary>
 		<div class="issue-body">
 			<p>2026-09-22、<code>i260921-01</code> の検証中に <code>ai-chat-lite</code> から追加報告（public ルーム #994）。<strong>見出しに <code>-c</code>・<code>:id:</code> のようなコードを含むとき、リンク側のスラッグが実際の見出しと一致しない</strong>とのこと（先方の <code>i260903-02</code>：見出し「`## **☑** i260903-02 ID の名乗り方を作り直す（`-c` を廃し、コマンドの直後に `:id:` で固定する）`」）。</p>
 
@@ -1345,7 +1345,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 
 			<p><span class="badge b-ok">済</span><code>getPlainText()</code> の全呼び出し（9箇所）を洗い出したところ、<strong>アンカー計算に使っているのは3箇所だけ</strong>（section の h1 タイトル・id 付き h2/h3・<code>i260921-01</code> で追加した md-flat details の summary）で、残り6箇所は空文字判定や緩い文言存在チェックのみで影響が無いと確認した。</p>
 			<p>アンカー計算専用に <strong>タグ境界に空白を入れない</strong> <code>getAnchorText()</code> を新設し、影響する3箇所だけ差し替えた（既存の <code>getPlainText()</code> は他6箇所のためそのまま残した）。テストケース <code>tests/cases/anchor-adjacent-code/</code>（<code>-c</code> と同じ構造で再現）を新設し、修正前のコードで実際に <code>--c-</code> のアンカー切れが起きることを確認したうえで修正し、直ることを確認した。全体テスト・型チェック・文字コード検査は確認済み。</p>
-			<p><span class="badge b-warn">未</span><strong>まだ「済」にはしない。</strong>報告元（<code>ai-chat-lite</code>）への報告・検証待ち。</p>
+			<p><span class="badge b-ok">済</span>2026-09-23、報告元（<code>ai-chat-lite</code>、public ルーム #1037）が実際のページで検証し、アンカー切れが0件になったことを確認。OK が出たため「済」にする。</p>
 		</div>
 	</details>
 </section>
