@@ -508,7 +508,45 @@ function buildAnchorMap(body: string): Map<string, string> {
 		if (id.length === 0 || map.has(id)) { continue; }
 		map.set(id, getAnchor(getPlainText(m[3])));
 	}
+	collectFlatDetailsAnchors(body, map, null);
 	return map;
+}
+
+/**
+ * md-flat の details（summary が見出しに展開される）の id → 見出しアンカー（i260921-01）。
+ *
+ * id は details 自身が持つとは限らず、直接くるむ li・section が持つこともある
+ * （課題一覧のように「1件 = li > details」という形にする資料があるため）。
+ * section・li・div・ul・ol を辿りながら「直近の id 持ちの li/section」を運び、
+ * details に着いた時点で自分の id が無ければそれを使う。
+ */
+function collectFlatDetailsAnchors(html: string, map: Map<string, string>, ancestorId: string | null): void {
+	let i = 0;
+	for (;;) {
+		const m = /<(section|li|details|div|ul|ol)\b/i.exec(html.substring(i));
+		if (m == null) { break; }
+		const tag = m[1].toLowerCase();
+		const start = i + m.index;
+		const block = getBlock(html, start, tag);
+		i = start + block.outer.length;
+
+		const openTag = getOpenTag(block.outer);
+		const ownId = getAttr(openTag, 'id');
+
+		if (tag === 'details') {
+			const classes = getClassList(openTag);
+			if (hasClass(classes, 'md-flat')) {
+				const id = ownId.length > 0 ? ownId : (ancestorId ?? '');
+				if (id.length > 0 && !map.has(id)) {
+					const sm = /<summary\b[^>]*>([\s\S]*?)<\/summary>/i.exec(block.inner);
+					if (sm != null) { map.set(id, getAnchor(getPlainText(sm[1]))); }
+				}
+			}
+		}
+
+		const nextAncestorId = (tag === 'li' || tag === 'section') && ownId.length > 0 ? ownId : ancestorId;
+		collectFlatDetailsAnchors(block.inner, map, nextAncestorId);
+	}
 }
 
 function convertPre(blockInner: string): string {

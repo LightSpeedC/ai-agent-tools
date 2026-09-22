@@ -1280,7 +1280,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details open>
-		<summary><span class="badge b-warn">未</span><span class="no">i260921-01</span>md-flat の details 展開で id が失われ、課題間リンクが折れる</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260921-01</span>md-flat の details 展開で id が失われ、課題間リンクが折れる</summary>
 		<div class="issue-body">
 			<p>2026-09-19、<code>ai-chat-lite</code> から報告（public ルーム #914、待受けを張り直した際に読んだ）。<strong><code>md-flat</code> を付けた <code>details</code> を数十件含む一覧ページ（この課題一覧のような形）を変換すると、内部の課題間リンク（<code>href="#i260830-09"</code> 形式）がほぼ全滅する</strong>とのこと。報告元の実測: 同じファイルで <code>md-flat</code> 無しなら内部リンク切れ 0 件、有りだと 100 件超。</p>
 
@@ -1301,7 +1301,21 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li>B: リンク側を書き換える。<code>href="#i260830-09"</code> を GitHub のスラッグ生成規則に合わせて動的に付け替える。バッジ・記号（<span class="badge b-ok">済</span> 等）を含む見出しの正規化規則を追随させ続ける必要があり、GitHub 側の仕様変更に弱い</li>
 			</ul>
 
-			<p>A の方が実装が閉じており壊れにくいと見ているが、<strong>選ぶのは利用者の判断</strong>とする。</p>
+			<p>A の方が実装が閉じており壊れにくいと見ていたが、実装時にコードを読み直したところ、<strong>このプロジェクトは既に「見出しの id → 実際に生成されるアンカー」を事前計算するマップ（<code>buildAnchorMap()</code>）を持っており、<code>&lt;section&gt;</code> の h1 と id 付き <code>&lt;h2&gt;</code>/<code>&lt;h3&gt;</code> は既にこの経路でリンクが正しく張り替わっている</strong>ことが分かった。案A（生 Markdown に <code>&lt;a id&gt;</code> を追加）は生成される Markdown の中身が変わるが、<strong>この既存のマップを <code>md-flat</code> の <code>&lt;details&gt;</code> にも拡張する形なら、生成される Markdown は一切変えずに直せる</strong>（見出し自体の出力は変わらず、それを指すリンクの <code>href</code> だけが正しいアンカーへ書き換わる）。</p>
+
+			<h3>決定・実装（2026-09-22）</h3>
+			<p>利用者の判断: <strong>1-A</strong>（上記の拡張マップ方式を採用）、<strong>2 広げる（B: <code>&lt;details&gt;</code> 自身に <code>id</code> が無くても、直接くるむ <code>&lt;li&gt;</code>／<code>&lt;section&gt;</code> の <code>id</code> を拾う）</strong>、<strong>3 テスト追加</strong>。</p>
+			<p><span class="badge b-ok">済</span><code>src/html2md/converter.ts</code> の <code>buildAnchorMap()</code> に <code>collectFlatDetailsAnchors()</code> を追加。<code>section</code>・<code>li</code>・<code>div</code>・<code>ul</code>・<code>ol</code> を辿りながら「直近の id 持ちの li/section」を運び、<code>md-flat</code> の <code>details</code> に着いた時点で自分の <code>id</code> が無ければそれを使う。テストケース <code>tests/cases/flat-details-anchor/</code>（直接 id・section 経由 id の両方）を新設し、<code>tools/40_test/run-tests.ps1</code> に登録。全体テスト・型チェック・文字コード検査は確認済み。</p>
+			<p><strong>実装時に踏んだ落とし穴。</strong>最初 <code>&lt;li id="..."&gt;&lt;details class="md-flat"&gt;</code>（<code>li</code> で <code>details</code> をくるむ形）でテストを書いたが、このプロジェクトの実装では <code>li</code> の中身は見出しへ展開されず地の文として1行にまとめられる仕様だった（<code>md-flat</code> の対象外）。<code>section</code> でくるむ形に直してテストを作り直した。</p>
+			<p><span class="badge b-warn">未</span><strong>まだ「済」にはしない。</strong>報告元（<code>ai-chat-lite</code>、public ルーム #989）に実装内容を返信し、<strong>依頼元での検証を経て OK が出た時点で「済」にする</strong>。</p>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">未</span><span class="no">i260922-02</span>check-contrast を PlayWright へ一本化する提案</summary>
+		<div class="issue-body">
+			<p>2026-09-22、<code>PlayWright</code> から相談（public ルーム #991）。<strong><code>check-contrast</code> を PlayWright 側が同名・同仕様で丸ごと引き取りたい</strong>とのこと。既に試験的に PlayWright 側で <code>bin/check-contrast</code> を用意済みで、このプロジェクト側の <code>check-contrast</code> 一式（<code>src/check-contrast/</code>・<code>contrast/</code>・<code>check-contrast.cmd</code>・<code>check-contrast-ps.ps1</code>）を廃止してよいか許可を求めている。詳細は <code>PlayWright</code> の計画書（<code>notes/10_plan/i260922-01-check-contrast-移行.html</code>、プロジェクト外のため直接参照はしない）とのこと。</p>
+			<p><strong>受けるかどうかを含めて未決。</strong>他プロジェクトへの機能移管という大きな判断のため、利用者の判断を待つ。</p>
 		</div>
 	</details>
 </section>

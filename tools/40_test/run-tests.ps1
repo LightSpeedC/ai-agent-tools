@@ -110,6 +110,13 @@ $Expect = @{
 		'(#1-この文書の概要)',                              # 同一ファイル内のアンカー張り替え（従来どおり）
 		'(docs/target.md#2-実行ポリシー-なぜ動かないのか)'  # 他ファイルへのアンカーがリンク先の見出しアンカーへ張り替わる
 	)
+	'flat-details-anchor' = @(
+		# md-flat の details 自身の id、および details をくるむ section の id
+		# （details 自身に id が無いとき）の両方を拾い、見出しへのリンクが
+		# 正しいアンカーへ張り替わること（i260921-01）
+		'(#済-直接-id-の不具合)',
+		'(#済-section-経由の不具合)'
+	)
 	'md-skip' = @(
 		'KEEPMARK',                # meta が無いページは変換される
 		'ELEMKEEP1',               # class="md-skip" が無い li は残る（i260908-02）
