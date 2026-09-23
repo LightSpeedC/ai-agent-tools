@@ -12,14 +12,14 @@ cd /d N:\
 @if exist "..\*%~1*" (
 	cls
 	cd "..\*%~1*"
-	start "codex" codex resume --last
+	start "codex" codex-trusted resume --last
 ) else if exist "*%~1*" (
 	cls
 	cd "*%~1*"
-	start "codex" codex resume --last
+	start "codex" codex-trusted resume --last
 ) else (
 	cls
 	md "%YMD%-%~1"
 	cd "%YMD%-%~1"
-	start "codex" codex
+	start "codex" codex-trusted
 )
