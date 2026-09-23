@@ -3,15 +3,18 @@
 	_releases/ai-agent-tools/ へ集める。
 
 	含めるもの: ランチャー（拡張子なし + .cmd）・実行に使う src 配下・
-	contrast/（check-contrast が呼ぶ Playwright 側）・TOOLS-USAGE・
-	最小の package.json（"type": "module" だけ）・個人用セッション起動
-	スクリプト（cc.cmd・cx.cmd・n.cmd・nn.cmd。単体の cmd で src 依存なし）
+	TOOLS-USAGE・最小の package.json（"type": "module" だけ）・個人用
+	セッション起動スクリプト（cc.cmd・cx.cmd・n.cmd・nn.cmd。単体の cmd
+	で src 依存なし）
 
 	含めないもの: テスト・tools・notes・.git・node_modules・bun.lock・
 	tsconfig.json・*.exe（C# 移植版のビルド成果物）・src 内の C# 移植ソース
 	（ConvertEncodingCs・Html2MdCs・TextCs）・移行前の PowerShell 版
-	（check-contrast-ps.ps1・check-markdown-ps.ps1）・このプロジェクト自身の
-	ビルド用 cmd（build-*-cs.cmd）
+	（check-markdown-ps.ps1）・このプロジェクト自身のビルド用 cmd
+	（build-*-cs.cmd）
+
+	check-contrast は i260922-02 で PlayWright 側へ一本化したため、
+	ランチャー・src・contrast/ とも含めない。
 
 	毎回 _releases/ai-agent-tools/ を作り直す。世代は残さない。
 	出力先は .gitignore の "_*" で除外済み（追加の設定は要らない）。
@@ -36,7 +39,6 @@ $launchers = @(
 	'psh', 'psh.cmd',
 	'check-markdown', 'check-markdown.cmd',
 	'check-public', 'check-public.cmd',
-	'check-contrast', 'check-contrast.cmd',
 	'cc.cmd', 'cx.cmd', 'n.cmd', 'nn.cmd'
 )
 New-Item -ItemType Directory -Path (Join-Path $target 'bin') -Force | Out-Null
@@ -45,13 +47,10 @@ foreach ($name in $launchers) {
 }
 
 # 実行に使う src 配下（C# 移植ソースは含めない）
-$srcDirs = @('lib', 'html2md', 'text', 'convert-encoding', 'check-markdown', 'check-contrast', 'check-public', 'psh')
+$srcDirs = @('lib', 'html2md', 'text', 'convert-encoding', 'check-markdown', 'check-public', 'psh')
 foreach ($dir in $srcDirs) {
 	Copy-Item (Join-Path $root "src/$dir") (Join-Path $target "src/$dir") -Recurse
 }
-
-# check-contrast が呼ぶ Playwright 側
-Copy-Item (Join-Path $root 'contrast') (Join-Path $target 'contrast') -Recurse
 
 # 使う側の案内（読むのはこれだけでよい）
 Copy-Item (Join-Path $root 'TOOLS-USAGE.md') (Join-Path $target 'TOOLS-USAGE.md')

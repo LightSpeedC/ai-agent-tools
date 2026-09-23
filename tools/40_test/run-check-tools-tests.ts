@@ -1,8 +1,11 @@
 /*
-	check-contrast ・ check-markdown のテスト。
+	check-markdown のテスト。
 
-	この 2 つは PowerShell で書かれていたものを TypeScript へ移した。
+	PowerShell で書かれていたものを TypeScript へ移した。
 	ps1 版は check-〜-ps.ps1 として突き合わせ用に残してある。
+
+	check-contrast は i260922-02 で PlayWright 側へ一本化した
+	（このプロジェクト側の実装は削除済み）ため対象から外した。
 
 	見るのは 2 つ。
 
@@ -69,8 +72,8 @@ console.log('');
 if (fs.existsSync(work)) { fs.rmSync(work, { recursive: true, force: true }); }
 fs.mkdirSync(work, { recursive: true });
 
-for (const tool of ['check-contrast', 'check-markdown']) {
-	const ext = tool === 'check-contrast' ? '.html' : '.md';
+for (const tool of ['check-markdown']) {
+	const ext = '.md';
 	const empty = '対象の ' + ext + ' がありません';
 
 	// 1. -- 形式で対象を渡せる
@@ -108,22 +111,6 @@ for (const tool of ['check-contrast', 'check-markdown']) {
 	// 8. 値を取るオプションに値が無ければ 2
 	r = runTs(tool, ['--path']);
 	assertEqual(tool + ' 値の無い --path は 2', 2, r.code);
-
-	/*
-		8b. 待ち時間の上限（--timeout）
-
-		check-contrast は node の子プロセスで Playwright を回す。
-		**返らなくなると、そこで止まったままになる。**
-		ai-chat-lite-reviewer が同じ形で 2 本の抜け殻を残している
-		（入力待ちのまま 10 時間）。上限を渡せることだけ確かめる
-	*/
-	if (tool === 'check-contrast') {
-		r = runTs(tool, ['--help']);
-		assertIncludes(tool + ' --timeout が使い方に出る', '--timeout', r.out);
-
-		r = runTs(tool, ['--timeout', 'abc', '--path', work]);
-		assertEqual(tool + ' --timeout に数でない値は 2', 2, r.code);
-	}
 
 	/*
 		9. ps1 版と同じ結果か

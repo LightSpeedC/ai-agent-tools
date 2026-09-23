@@ -13,10 +13,9 @@
 	}
 	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(210,78%,25%);   --accent2:hsl(210,58%,55%);   --soft:hsl(210,28%,95%); }
-	.ch03{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
-	.ch04{ --accent:hsl(70,78%,25%);    --accent2:hsl(70,58%,55%);    --soft:hsl(70,28%,95%); }
-	.ch05{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -128,7 +127,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。プロジェクトを問わず使う道具の置き場。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-13</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-09-23</p>
 	</div>
 </div>
 
@@ -140,8 +139,7 @@
 		<li class="ch01"><a href="#ch01">このフォルダにあるもの</a></li>
 		<li class="ch02"><a href="#ch02">html2md</a></li>
 		<li class="ch03"><a href="#ch03">check-markdown</a></li>
-		<li class="ch04"><a href="#ch04">check-contrast</a></li>
-		<li class="ch05"><a href="#ch05">convert-encoding</a></li>
+		<li class="ch04"><a href="#ch04">convert-encoding</a></li>
 	</ol>
 </div>
 
@@ -154,14 +152,15 @@
 		<tbody>
 			<tr><td class="nowrap"><code>html2md</code></td><td>HTML から Markdown を生成する。<strong>変換はこれを使う</strong>（実体は <code>html2md.exe</code>）</td></tr>
 			<tr><td class="nowrap"><code>check-markdown</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
-			<tr><td class="nowrap"><code>check-contrast</code></td><td>HTML の文字色と背景色が <strong>読める組み合わせになっているか</strong></td></tr>
 			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、決められた組み合わせへ変換する</td></tr>
 			<tr><td class="nowrap"><code>text</code></td><td>SJIS・UTF-16・UTF-8BOM でも壊さず<strong>読む・探す・編集する・書く</strong>（Read・Grep・Edit・Write の代わり。実体は <code>text.exe</code>）</td></tr>
 		</tbody>
 	</table>
 	</div>
 
-	<p>どちらの検証ツールも、<strong>推測ではなく実物で判定する</strong>。前者は GitHub のレンダラに投げ、後者はブラウザで実際に描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。</p>
+	<p><code>check-markdown</code> は、<strong>推測ではなく実物で判定する</strong>。Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。</p>
+
+	<p>HTML の文字色と背景色が読める組み合わせかを確かめる <code>check-contrast</code> は、PlayWright 共有環境へ一本化した（<a href="notes/40_issues/issues.html">課題 i260922-02</a>）。このプロジェクトからは削除済み。</p>
 
 	<h2>関連する文書</h2>
 
@@ -356,117 +355,6 @@ check-markdown -Path . -Recurse -Token ghp_xxxxx</code></pre>
 </section>
 
 <section class="ch04" id="ch04">
-	<h1>check-contrast</h1>
-
-	<h2>なぜ必要か</h2>
-
-	<p>CSS を読み返しても「白背景に白文字」は見つからない。<strong>CSS は宣言単位で無効化される</strong>ためで、色を CSS 変数で渡していると、変数が未定義のスコープで <code>background</code> だけが落ち、<code>color</code> だけが生き残る。</p>
-
-<pre><code class="language-css">.toc a {
-	background: linear-gradient(100deg, var(--dc), var(--dc2));  /* --dc 未定義 → この宣言だけ無効 */
-	color: #fff;                                                  /* こちらは生き残る */
-}</code></pre>
-
-	<p>背景が消えてページの地色（白）になり、そこに白文字が乗る。ペアで書いたつもりでも片方だけ落ちる。同じ壊れ方をする経路は3つある。</p>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>経路</th><th>起きること</th></tr></thead>
-		<tbody>
-			<tr><td class="nowrap">変数が未定義</td><td>その宣言だけ無効。背景が消えて文字色が残る</td></tr>
-			<tr><td class="nowrap">セレクタが広すぎる</td><td>想定外の要素に片方だけ当たる</td></tr>
-			<tr><td class="nowrap">継承</td><td>親の <code>color</code> を継いだ要素が、別の背景の上に置かれる</td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<h2>使い方</h2>
-
-<pre><code class="language-powershell"># フォルダ配下をまとめて
-check-contrast -Path . -Recurse
-
-# 1 ファイルだけ
-check-contrast -Path .\README.html
-
-# しきい値を変える（既定 1.5）
-check-contrast -Path . -Recurse -Min 2.0</code></pre>
-
-	<p><code>check-contrast.cmd</code> をダブルクリックしてもよい（カレントディレクトリが対象）。</p>
-
-	<p>ブラウザは PlayWright 共有環境のものを使う。場所が違う場合は <code>-PlaywrightRoot</code> で指定する。</p>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>終了コード</th><th>意味</th></tr></thead>
-		<tbody>
-			<tr><td class="num">0</td><td>問題なし</td></tr>
-			<tr><td class="num">1</td><td>読めない配色がある</td></tr>
-			<tr><td class="num">2</td><td><strong>検証できなかった</strong>（Playwright が無い・描画に失敗など）。<strong>「問題なし」ではない</strong></td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<h2>仕組み</h2>
-
-	<p>ブラウザで実際にレンダリングし、テキストを持つ全要素について <code>getComputedStyle</code> から前景色と実効背景色を取得してコントラスト比を計算する。</p>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>項目</th><th>内容</th></tr></thead>
-		<tbody>
-			<tr><td class="nowrap">実効背景色</td><td><code>background-color</code> が透明なら親を遡る。行き当たらなければページの地色（白）</td></tr>
-			<tr><td class="nowrap">グラデーション</td><td>色停止点の<strong>平均色</strong>を使う</td></tr>
-			<tr><td class="nowrap">半透明</td><td>下の色と合成してから比を求める</td></tr>
-			<tr><td class="nowrap">対象外</td><td>SVG（文字色が <code>fill</code> で決まる）、非表示要素、サイズ 0 の要素</td></tr>
-			<tr><td class="nowrap">リダイレクトページ</td><td><code>meta refresh</code> / <code>location.replace</code> は転送先を二重検査するため除外</td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<p><strong>しきい値の既定は 1.5:1。</strong>目的は「読みにくい」ではなく<strong>「読めない」</strong>の検出に絞っている。</p>
-
-	<p>WCAG AA の 4.5:1 で判定すると、100deg のグラデーションでは<strong>文字が1文字も乗っていない右端の色</strong>まで拾ってしまう。実際に試したところ 16 件中 15 件が誤検出で、本当の問題が埋もれた。値を上げてはいけない。</p>
-
-	<h2>検査自体を確かめる</h2>
-
-	<p><strong>検査が壊れていないことを、故意に壊したページで確認してから使う。</strong></p>
-
-<pre><code class="language-powershell">check-contrast -Path .\contrast\selftest.html</code></pre>
-
-	<p><code>contrast\selftest.html</code> には 7 ケースが入っている。4 件が検出され、3 件が検出されなければ正常。</p>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>ケース</th><th>期待</th></tr></thead>
-		<tbody>
-			<tr><td>変数未定義で背景が消えた白文字</td><td class="nowrap">検出（1.00:1）</td></tr>
-			<tr><td>黒背景に黒に近い文字</td><td class="nowrap">検出（1.13:1）</td></tr>
-			<tr><td>淡いグレー同士</td><td class="nowrap">検出（1.10:1）</td></tr>
-			<tr><td>白文字を継承したまま白い箱に入った</td><td class="nowrap">検出（1.00:1）</td></tr>
-			<tr><td>濃い紺のグラデーションに白文字</td><td class="nowrap">検出しない</td></tr>
-			<tr><td>白背景に濃い文字</td><td class="nowrap">検出しない</td></tr>
-			<tr><td>緑のグラデーションに白文字</td><td class="nowrap">検出しない</td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<h2>直し方</h2>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>原因</th><th>直し方</th></tr></thead>
-		<tbody>
-			<tr><td class="nowrap">色の <code>var()</code> が未定義</td><td><code>var(--accent, #12224d)</code> のように<strong>フォールバックを書く</strong></td></tr>
-			<tr><td class="nowrap">配色セレクタが広すぎる</td><td><code>.toc a</code> ではなく <code>.toc ul a</code> のように<strong>要素構造で絞る</strong></td></tr>
-			<tr><td class="nowrap">親から <code>color</code> を継承した</td><td>その要素に <code>color</code> と <code>background</code> を<strong>対で指定する</strong></td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<p><code>color</code> を書く宣言ブロックには <code>background</code> も書く（逆も同じ）。例外は <code>body</code> のみ。</p>
-</section>
-
-<section class="ch05" id="ch05">
 	<h1>convert-encoding</h1>
 
 	<h2>なぜ必要か</h2>

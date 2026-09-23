@@ -171,7 +171,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-12</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-23</p>
 	</div>
 </div>
 
@@ -1316,10 +1316,10 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		<div class="issue-body">
 			<p>2026-09-22、<code>PlayWright</code> から相談（public ルーム #991）。<strong><code>check-contrast</code> を PlayWright 側が同名・同仕様で丸ごと引き取りたい</strong>とのこと。既に試験的に PlayWright 側で <code>bin/check-contrast</code> を用意済みで、このプロジェクト側の <code>check-contrast</code> 一式（<code>src/check-contrast/</code>・<code>contrast/</code>・<code>check-contrast.cmd</code>・<code>check-contrast-ps.ps1</code>）を廃止してよいか許可を求めている。詳細は <code>PlayWright</code> の計画書（<code>notes/10_plan/i260922-01-check-contrast-移行.html</code>、プロジェクト外のため直接参照はしない）とのこと。</p>
 			<p><span class="badge b-ok">済</span>利用者の判断: <strong>受け入れる</strong>。<code>check-contrast</code> はそもそも Playwright が無いと動かせないため、PlayWright 側に一本化するのが自然という理由。<code>#1007</code> で承諾の返信を送信済み。</p>
-			<p><span class="badge b-warn">未</span><strong>こちら側の <code>check-contrast</code> 一式の削除は、PlayWright 側の移行完了の確認が取れてから行う</strong>（利用者の指示。まだ実施しない）。削除対象・手順は以下を予定。</p>
+			<p><span class="badge b-ok">済</span>2026-09-23、<code>ai-chat-lite-reviewer</code> が PlayWright 側の移行を最終確認（public ルーム #1075）。移行元と完全一致するコピー・TypeScript化・テスト引き継ぎ・ランチャー整合、指摘事項すべて解消を確認。<strong>この確認を受け、こちら側の <code>bin/check-contrast</code>・<code>bin/check-contrast.cmd</code> を削除した</strong>（利用者の指示）。これにより PATH 経由ではこちら側が実行されなくなり、移行はいったん完了とする。</p>
+			<p><span class="badge b-warn">未</span>残る削除対象（利用者の判断を待つ）:</p>
 			<ul>
 				<li><code>src/check-contrast/</code>・<code>contrast/</code>（Playwright 側の検証フィクスチャ）</li>
-				<li><code>bin/check-contrast</code>・<code>bin/check-contrast.cmd</code></li>
 				<li><code>tools/90_misc/check-contrast-ps.ps1</code>（参照実装）</li>
 				<li>関連テスト（<code>tools/40_test/run-check-tools-tests.ts</code> 等の check-contrast 部分）</li>
 				<li><code>TOOLS-USAGE.html</code>・<code>README.html</code> の <code>check-contrast</code> の説明（PlayWright 側の案内へ書き換えるか、節を削除するかは実施時に判断）</li>

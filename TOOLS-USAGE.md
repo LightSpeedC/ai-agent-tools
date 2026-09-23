@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-09-21
+> 📅 作成: 2026-09-04 / 更新: 2026-09-23
 
 [← ai-agent-tools](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -26,7 +26,6 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 |---|---|
 | `html2md` | HTML から Markdown を生成し、そのまま検査する |
 | `check-markdown` | 生成した Markdown が **GitHub 上で意図どおりに表示されるか**を実測する |
-| `check-contrast` | HTML の文字色と背景色が **読める組み合わせか**をブラウザで実測する |
 | `convert-encoding` | ファイルの文字コードと改行を、**ファイルの種類ごとに決められた形へ**変換する |
 | `text` | SJIS・UTF-16 でも壊さず**読む・探す・編集する・書く**（Read・Grep・Edit・Write の代わり） |
 | `check-public` | 公開前に、**外に出してはいけないもの**が混ざっていないかを見る |
@@ -34,11 +33,13 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `less` | UTF-8 セーフなページャー。DOS の `more` の文字化けを避ける（第 7 章） |
 | `psls` | プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（第 8 章） |
 
-どちらの検証ツールも<strong>推測せず実物で判定する。</strong>前者は GitHub のレンダラに投げ、後者はブラウザで描画して計測する。ローカルの理屈と実物の表示は一致しないことがある。
+`check-markdown` は<strong>推測せず実物で判定する。</strong>Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。
+
+HTML の文字色と背景色が読める組み合わせかを確かめる `check-contrast` は、PlayWright 共有環境へ一本化した（課題 i260922-02）。このプロジェクトからは削除済み。
 
 ### 中身が TypeScript に変わった（2026-09-12）
 
-**どれも TypeScript で書いてある。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-contrast` ・ `check-markdown` は PowerShell から移した。`psh` ・ `check-public` は最初から TypeScript である。
+**どれも TypeScript で書いてある。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-markdown` は PowerShell から移した。`psh` ・ `check-public` は最初から TypeScript である。
 
 呼び出し方・出力の中身は変えていない。**使う側の書き換えは要らない**（`check-〜` のオプションだけ `--` へ寄せたが、古い形も受ける）。
 
@@ -151,21 +152,9 @@ Markdown を GitHub のレンダラに投げ、返る HTML に `**` が記号の
 
 認証なしは 60 回/時。`--token` を渡すと 5000 回/時になる。
 
-### HTML の色が読める組み合わせか
+**オプションはどれも同じ形**（`--path` ・ `-p` ・ 名前を付けない対象）。以前は PowerShell 製で `-Path` 形式だったが、<strong>TypeScript へ移して `--` へ寄せた。</strong>古い形も当面は受ける。
 
-```shell
-check-contrast . --recurse
-```
-
-**オプションはどれも同じ形**（`--path` ・ `-p` ・ 名前を付けない対象）。この 2 つは以前 PowerShell 製で `-Path` 形式だったが、<strong>TypeScript へ移して `--` へ寄せた。</strong>古い形も当面は受ける。
-
-移す前の PowerShell 版は `check-contrast-ps.ps1` ・ `check-markdown-ps.ps1` として残してある。**突き合わせ用で、ふだん呼ぶものではない。**
-
-ブラウザで実際に描画し、前景色と実効背景色の比を計算する。<strong>1.5:1 未満を 0 件にする。</strong>検出したいのは「白に白」「黒に黒」「色の継承事故」で、値を上げると誤検出に埋もれる。
-
-ブラウザは PlayWright 共有環境を借りる。**自プロジェクトに Playwright を入れる必要はない。**
-
-**計測には待ち時間の上限がある**（既定 300 秒・`--timeout` で変えられる）。ブラウザが返らなくなったときに、<strong>止まったままにならないため。</strong>上限で打ち切られたときは、その旨と延ばし方を出す。
+移す前の PowerShell 版は `check-markdown-ps.ps1` として残してある。**突き合わせ用で、ふだん呼ぶものではない。**
 
 ### 公開前に、出してはいけないものが混ざっていないか
 
@@ -204,14 +193,13 @@ check-public --word-list _ng.txt  # 除外語リストを指定する
 
 除外語リストは**先頭 `_` のファイルを既定にする**（`_public-ng-words.txt`）。リスト自体が機密になるため、共通ルールにより全階層が Git 管理外になる置き方を採る。<strong>リストが無ければ、その項目を飛ばしたことを画面に出す。</strong>黙っては通さない。
 
-### どちらも既定で除外するフォルダがある
+### 既定で除外するフォルダがある
 
-`check-markdown` ・ `check-contrast` は、<strong>次のフォルダを既定で対象から外す。</strong>除外した件数は画面に出ないので、対象が思ったより少ないときはここを疑う。
+`check-markdown` は、<strong>次のフォルダを既定で対象から外す。</strong>除外した件数は画面に出ないので、対象が思ったより少ないときはここを疑う。
 
 | ツール | 既定の除外 |
 |---|---|
 | `check-markdown` | `tmp` ・ `etc` ・ `node_modules` ・ `.git` |
-| `check-contrast` | 上記に加えて `contrast`（自身の出力先） |
 
 `-Exclude` に正規表現を渡すと差し替えられる。**足すのではなく置き換わる**ので、既定の分も要るなら書き足す。
 
@@ -368,7 +356,7 @@ text find 日本語 --path . --recurse --include "*.cmd,*.reg"
 
 #### 既定で外すフォルダ
 
-`find` は **`tmp` ・ `etc` ・ `node_modules` ・ `.git` を見ない**（`check-markdown` ・ `check-contrast` と同じ）。`--exclude-dir` は**この既定に足す**形で、渡しても既定は消えない。
+`find` は **`tmp` ・ `etc` ・ `node_modules` ・ `.git` を見ない**（`check-markdown` と同じ）。`--exclude-dir` は**この既定に足す**形で、渡しても既定は消えない。
 
 > [!CAUTION]
 > <strong>`etc/history/jsonl` には会話ログが入る。</strong>素で `--recurse` を撃つとここまで読み、<strong>過去の会話が出力に出る。</strong>共通ルール「.gitignore で除外されたファイルの取り扱い」を破ることになるため、既定で外してある。
