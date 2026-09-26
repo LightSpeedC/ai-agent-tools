@@ -1,5 +1,4 @@
 @echo off
-@if exist etc\c.bat etc\c.bat
 set YMD=%date:/=%& set Y=%date:~0,4%& set XMD=%date:~5,5%
 set HMSC=%TIME: =0%& call set XHM=%%HMSC:~0,5%%
 if not exist N:\ (
