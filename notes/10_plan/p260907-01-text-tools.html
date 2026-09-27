@@ -104,7 +104,7 @@
 <div class="titlebar"><div class="inner">
 <h1>文字コード対応テキスト・ツール一式</h1>
 <div class="lead">SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。文字コードと改行の組を判定して、そのまま読み書きする</div>
-<div class="date">📅 作成: 2026-09-07 / 更新: 2026-09-16</div>
+<div class="date">📅 作成: 2026-09-07 / 更新: 2026-09-27</div>
 </div></div>
 
 <div class="wrap">
@@ -388,7 +388,7 @@ text edit README.html --old-file tmp/old.txt --new-file tmp/new.txt</code></pre>
 
 <h3>出力形（決定）</h3>
 <p>サクラエディタの grep（ファイル毎）を参考にしつつ簡素にする。<strong>検索フォルダ（<code>◎</code>）→ サブフォルダー（<code>■</code>）→ ファイル（<code>◆</code>）→ 一致行</strong>の入れ子。フルパスは <code>◎ ＋ ■ ＋ ◆</code> に分かれ、<strong>一致行にパスが付かないので読みやすい</strong>。<code>◆</code> 行と一致行の書式は read と共通。<code>◎</code> <code>■</code> <code>◆</code> の値は<strong>ダブルクォートで囲む</strong>（空白や <code>()</code> を含められる）。</p>
-<pre><code>◎"N:/html2md"
+<pre><code>◎"X:/project-name"
   検索="日本語"  対象="*.cmd,*.reg"  再帰
 ■"."
 ◆"build.cmd" [sjis/crlf] size=164 mtime=260907-190000-123
