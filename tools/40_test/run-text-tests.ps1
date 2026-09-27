@@ -17,7 +17,23 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+# コンソールのコードページは変えない（窓に残り、隣のプロセスを化けさせる）。
+# リダイレクトされている分だけ、UTF-8 で読み書きするよう個別に差し替える
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+if ([Console]::IsOutputRedirected) {
+	$w = New-Object System.IO.StreamWriter([Console]::OpenStandardOutput(), $utf8)
+	$w.AutoFlush = $true
+	[Console]::SetOut($w)
+}
+if ([Console]::IsErrorRedirected) {
+	$w = New-Object System.IO.StreamWriter([Console]::OpenStandardError(), $utf8)
+	$w.AutoFlush = $true
+	[Console]::SetError($w)
+}
+if ([Console]::IsInputRedirected) {
+	[Console]::SetIn((New-Object System.IO.StreamReader([Console]::OpenStandardInput(), $utf8)))
+}
 
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 # 既定は移植版（ランチャー経由）。C# 版を見るときは -Target で名指しする

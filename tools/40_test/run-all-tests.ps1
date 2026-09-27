@@ -15,8 +15,22 @@
 [CmdletBinding()]
 param()
 
-# 標準出力を UTF-8 にする。既定は CP932 で、Bash から呼ぶと日本語が化ける
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+# コンソールのコードページは変えない（窓に残り、隣のプロセスを化けさせる）。
+# リダイレクトされている分だけ、UTF-8 で読み書きするよう個別に差し替える
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+if ([Console]::IsOutputRedirected) {
+	$w = New-Object System.IO.StreamWriter([Console]::OpenStandardOutput(), $utf8)
+	$w.AutoFlush = $true
+	[Console]::SetOut($w)
+}
+if ([Console]::IsErrorRedirected) {
+	$w = New-Object System.IO.StreamWriter([Console]::OpenStandardError(), $utf8)
+	$w.AutoFlush = $true
+	[Console]::SetError($w)
+}
+if ([Console]::IsInputRedirected) {
+	[Console]::SetIn((New-Object System.IO.StreamReader([Console]::OpenStandardInput(), $utf8)))
+}
 
 $ErrorActionPreference = 'Stop'
 

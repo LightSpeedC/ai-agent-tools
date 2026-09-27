@@ -171,7 +171,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-23</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-27</p>
 	</div>
 </div>
 
@@ -406,7 +406,7 @@
 <section class="ch04" id="ch04">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 13 件。11 件が解消済み、1 件が着手、1 件が未着手。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 15 件。12 件が解消済み、2 件が着手、1 件が未着手。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
@@ -825,8 +825,62 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p><strong>利用者の指示で、個人用のセッション起動スクリプト（<code>cc.cmd</code>・<code>cx.cmd</code>・<code>n.cmd</code>・<code>nn.cmd</code>）も一緒に <code>bin/</code> へ移した</strong>（本来「他プロジェクトからは呼ばれない補助スクリプト」でルール上は対象外だが、まとめて移す判断）。各ランチャーの <code>src/</code> への相対参照を1階層上に修正し、<code>tools/40_test/</code>・<code>tools/60_release/build-release.ps1</code> の参照も追随させた。</p>
 			<p>あわせて、同じ「開発者専用・公開CLIではない」区分の <code>build-*-cs.cmd</code>（C# 参照実装のビルド起動）を <code>tools/20_build/</code>、<code>check-contrast-ps.ps1</code>・<code>check-markdown-ps.ps1</code>（移行前のPowerShell参照実装）を <code>tools/90_misc/</code> へ移した（利用者の指示）。</p>
 			<p>2026-09-22 に実装完了。全体テスト・型チェック・文字コード検査（このプロジェクト自身と無関係な未追跡ファイル <code>cx.cmd.bak</code> を除く）を確認済み。</p>
-			<p>PATH からプロジェクトルート（<code>C:\work\ai-agent-tools</code>）を外す作業は<strong>利用者自身が行う</strong>（システム全体に影響するため）。</p>
+			<p><span class="badge b-ok">済</span>2026-09-24、利用者が PATH からプロジェクトルート（<code>C:\work\ai-agent-tools</code>）を外した。レジストリ（システム PATH）を確認し、<code>C:\work\ai-agent-tools\bin</code> のみが登録され、プロジェクトルート単独の登録が無いことを確認した。</p>
 			<p><span class="badge b-ok">済</span>C# 参照実装の <code>.exe</code> 3本（<code>convert-encoding-cs.exe</code>・<code>html2md-cs.exe</code>・<code>text-cs.exe</code>、いずれも <code>.gitignore</code> 除外・未追跡）も root から共通ルールの <code>dist/</code>（ビルド出力）へ移した。<code>build-*-cs.cmd</code> の <code>/out:</code> 出力先も <code>dist/</code> に変更し、3本とも実機でビルドが通ることを確認済み。<strong>実装時に踏んだ落とし穴</strong>: <code>tests/psh/callexe.ps1</code>（psh のテスト用フィクスチャ）が <code>convert-encoding-cs.exe</code> を root からの固定パスで直接呼んでおり、移動直後に <code>tools/40_test/run-psh-tests.ts</code> のテストが1件落ちた。パスを <code>dist/</code> 経由に修正して解消（bun・node とも全体テスト成功を確認）。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260927-02</span>共通ルール「コンソールのコードページを変更しない」への対応</summary>
+		<div class="issue-body">
+			<p>2026-09-27、ai-chat-lite で共通ルール更新の周知（public ルーム #1238、<code>20260726-claude-move-folder</code> より）。「標準出力は UTF-8 に揃える」が<strong>「コンソールのコードページを変更しない」に置き換わり、<code>chcp</code>・<code>[Console]::OutputEncoding</code>・<code>Console.OutputEncoding</code>・<code>SetConsoleOutputCP</code>／<code>SetConsoleCP</code>（FFI・P/Invoke 経由も含む）の使用がすべて禁止</strong>になった。新ルールは代わりに、<strong>リダイレクトされている分だけ自分の読み書きを個別に差し替える</strong>方式（C# の <code>Console.SetOut</code> 例が本文に載っている）を求めている。周知本文に「既存の ps1・C# に該当箇所があれば見直しが必要」と明記されていたため、このプロジェクト自身の使用箇所を調査した。</p>
+
+			<h3>調査結果</h3>
+
+			<p><code>text find --recurse</code> で <code>OutputEncoding</code>・<code>SetConsoleOutputCP</code>・<code>SetConsoleCP</code>・<code>chcp</code> を検索。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>言語</th><th>該当箇所</th><th>形</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap">PowerShell（ps1）</td><td>10 ファイル（<code>bin/codex-trusted.ps1</code>、<code>tools/40_test/</code> 5 本、<code>tools/60_release/build-release.ps1</code>、<code>tools/90_misc/check-markdown-ps.ps1</code>、<code>tools/90_misc/bench-*/run-bench.ps1</code> 2 本）</td><td><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8</code> を param 直後に置く形</td></tr>
+					<tr><td class="nowrap">C#</td><td>3 ファイル（<code>src/ConvertEncodingCs/Program.cs</code>・<code>src/Html2MdCs/Program.cs</code>・<code>src/TextCs/Program.cs</code>）</td><td><code>Console.OutputEncoding = Encoding.UTF8;</code> を <code>Main</code> 先頭に置く形</td></tr>
+					<tr><td class="nowrap">TypeScript（bun/node）</td><td>0 件</td><td><code>SetConsoleOutputCP</code> は <code>src/lib/win-console.ts</code> のコメントに言及があるのみで、<strong>実装としては呼んでいない</strong>（下記参照）</td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<div class="callout callout-important">
+				<p><strong>課題 <span class="no">i260917-01</span> の記録と現物が食い違っていた。</strong>記録には「<code>SetConsoleOutputCP(65001)</code> を明示的に呼んで修正」とあるが、現在の <code>src/lib/win-console.ts</code> は逆に「<strong>コードページはここでは扱わない。呼んでも <code>chcp</code> で見える値が変わらないことを実機で確認したため、効かない API として扱っている</strong>」とコメントしている。実装がのちに直され、記録側が古いまま残っていたと見られる。<code>less</code>・<code>psls</code> の日本語表示は VT100 有効化（<code>ENABLE_VIRTUAL_TERMINAL_PROCESSING</code>）によるもので、コードページ変更には依っていない。<strong>TypeScript 側は既に新ルールに沿っている。</strong></p>
+			</div>
+
+			<h3>外部の調査資料（ai-agent-rules 側）による裏付け</h3>
+
+			<p>利用者の指示で <code>ai-agent-rules</code> の <code>notes/01_research/r260927-01-コンソールのコードページ問題.html</code>（このプロジェクトの外のため、詳細は直接参照しない）を確認した。実機検証（cmd の窓・Bash 経由・パイプでの同時実行・Ctrl+C 等）に基づく調査で、新ルールの根拠になっている。要点:</p>
+			<ul>
+				<li><strong>出力コードページの変更はプロセスが終わっても窓に残り、隣の SJIS の cmd・.NET Framework の exe を化けさせる</strong>（実測）。<code>finally</code> で戻す方式も、Ctrl+C・強制終了・パイプでの同時実行では戻せないことがある（後から始めた側が先の側の変更後の値を「元の値」として控えてしまうため）</li>
+				<li><strong>推奨は「窓に触らず、リダイレクトされている分だけ個別に差し替える」方式（新ルール本文の案 A）</strong>。標準出力・標準エラー・標準入力の 3 本は別々に検知・差し替えが要る（<code>IsOutputRedirected</code>／<code>IsErrorRedirected</code>／<code>IsInputRedirected</code> と、対応する <code>SetOut</code>／<code>SetError</code>／<code>SetIn</code>）。<strong>標準エラーだけ差し替え忘れると <code>2&gt;&amp;1</code> で化ける</strong>という実測結果あり</li>
+				<li><strong>ps1（5.1・7 とも）も C# と同じ API で書ける</strong>（<code>[Console]::IsOutputRedirected</code>・<code>[Console]::SetOut</code> 等）。Bash から実測して 3 本とも化けないことを確認済みとのこと（窓での確認は未了、と資料に明記）</li>
+				<li><strong>node は窓に触らない（bun は動いている間だけ窓を変え、終了時に戻す）</strong>ため、<code>less</code>（node 専用ランチャー）はこの問題の対象外。<code>psh</code> はソース自体は窓に触らないが、bun 優先で動くランチャーのため bun 実行時は窓に触れる</li>
+			</ul>
+
+			<h3>決定・実装（2026-09-27）</h3>
+
+			<p>利用者の判断: <strong>C# は資料どおり、PowerShell は案 A（<code>IsOutputRedirected</code> 等を見て個別に差し替える）</strong>。</p>
+
+			<p><span class="badge b-ok">済</span>C#（3 ファイル）: <code>Main</code> 先頭の <code>Console.OutputEncoding = Encoding.UTF8;</code> を、資料のコードそのまま（<code>IsOutputRedirected</code>／<code>IsErrorRedirected</code>／<code>IsInputRedirected</code> を見て <code>SetOut</code>／<code>SetError</code>／<code>SetIn</code> を UTF-8 の <code>StreamWriter</code>／<code>StreamReader</code> に差し替える）に置き換えた。3 本ともビルドが通り、Bash から <code>--help</code> を呼んで日本語が化けないことを実測で確認した。</p>
+
+			<p><span class="badge b-ok">済</span>PowerShell（10 ファイル）: <code>[Console]::OutputEncoding = UTF8</code> の 1 行を、<code>[Console]::IsOutputRedirected</code>／<code>IsErrorRedirected</code>／<code>IsInputRedirected</code> を見て <code>[Console]::SetOut</code>／<code>SetError</code>／<code>SetIn</code> を UTF-8 の <code>StreamWriter</code>／<code>StreamReader</code> に差し替える形に置き換えた。<strong>調査時点では 11 ファイルと数えていたが、実装時に数え直したところ 10 ファイルだった</strong>（件数の訂正）。</p>
+
+			<p><span class="badge b-ok">済</span>全体テスト（bun・node）・型チェック・文字コード検査、いずれも規約どおりで成功。<code>text</code> の C# 版で 6 件失敗が出たが、<strong>変更前のコードに戻して同じ失敗が再現することを確認済み</strong>（<code>find</code> の既定除外フォルダ・<code>edit</code> の読めないバイト拒否が TypeScript 版と食い違う、今回の変更とは無関係の既存の乖離）。<code>check-markdown-ps.ps1</code>・<code>build-release.ps1</code> も個別に実行し、Bash から日本語が化けないことを確認した。</p>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">未</span><span class="no">i260927-01</span>bun 同士のパイプで文字化けする件（oven-sh/bun#43660）の追跡</summary>
+		<div class="issue-body">
+			<p>共通ルール「Bun 同士のパイプは文字化けすることがある（未解決）」で報告済みの <a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a> を追跡する。2026-09-27 時点で issue は open。原因は bot（<code>robobun</code>）により特定済みで、修正 PR <a href="https://github.com/oven-sh/bun/pull/43662">#43662</a>（Windows コンソールへ UTF-16 で書き込み、bun 自身が変更したコードページだけを復元する）が紐づいているが、こちらも open（未マージ）。</p>
+			<p>マージ・リリースされたら、共通ルールの「Bun 同士のパイプは文字化けすることがある（未解決）」を実機で再検証し、解消していれば「未解決」の記述を外す。</p>
 		</div>
 	</details>
 </section>
