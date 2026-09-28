@@ -156,6 +156,14 @@ function Assert-True {
 	if ($Value) { Write-Ok $Name $Detail } else { Write-Ng $Name $Detail }
 }
 
+# --info の出力を 1 つの文字列で返す。判定できずに止まると出力が配列や空になり、
+# -cmatch の結果が真偽値にならずにスクリプトごと落ちるため（i260929-01 で踏んだ）
+function Get-Info {
+	param([string]$Path)
+	$null = Invoke-Exe @($Path, '--info')
+	return [string]$script:LastExeOutput
+}
+
 # ケースごとの作業ファイルを作る
 function New-Case {
 	param([string]$Name)
@@ -395,7 +403,7 @@ Assert-True '13 改行を足さない' ($e.CrLf -eq 0 -and $e.Lf -eq 0) '改行 
 # 14. 純 ASCII のファイル  →  ascii と表示される（判定は utf8 のまま）
 $p = New-Case 'c14.txt'
 New-TextFile $p "abc`ndef" $EncUtf8
-$out = & $Exe $p --info
+$out = Get-Info $p
 Assert-True '14 ascii と表示される' ($out -cmatch 'ascii\s') $out
 
 # 15. 1 バイトのファイル  →  落ちない
@@ -434,7 +442,7 @@ Write-Host '[判定]' -ForegroundColor Cyan
 # 19. SJIS のファイルを --info  →  SJIS と表示される
 $p = New-Case 'c19.txt'
 New-TextFile $p $Body $EncSjis
-$out = & $Exe $p --info
+$out = Get-Info $p
 Assert-True '19 sjis と表示される' ($out -cmatch 'sjis') $out
 
 # 20. 判定できないバイト列  →  終了コード 3。書き込まない
@@ -457,7 +465,7 @@ Assert-Equal '22 終了コード' 2 (Invoke-Exe @((Join-Path $Work 'nothing.txt'
 # 23. UTF-16 LE のファイルを --info  →  UTF16LE と表示される
 $p = New-Case 'c23.txt'
 New-TextFile $p $Body $EncUtf16Le
-$out = & $Exe $p --info
+$out = Get-Info $p
 Assert-True '23 utf16le と表示される' ($out -cmatch 'utf16le') $out
 
 # 24. --from utf8bom を指定して BOM が無い  →  続行する
@@ -474,6 +482,83 @@ Assert-Equal '25 終了コード' 1 (Invoke-Exe @($p, '--to', 'ps1', '--from', '
 $p = New-Case 'c26.txt'
 New-TextFile $p $Body $EncUtf8
 Assert-Equal '26 終了コード' 1 (Invoke-Exe @($p, '--to', 'ebcdic'))
+
+# ---------------------------------------------------------------
+Write-Host ''
+Write-Host '[両方で成立する並び]' -ForegroundColor Cyan
+
+# 仕様書 6 章「両方とも妥当になる並び」の 32〜37 と、i260929-01 で足した 57〜61。
+# UTF-8 と SJIS の両方で成立し非 ASCII を含む並びは、以前は判定せず終了コード 3 で止めていた。
+# 読んだ文字が「よく使う文字」かの割合で決めるようにした（i260929-01）。
+# 57〜61 の期待値は計画書（notes/10_plan/i260929-01-文字コード判定.html）の第 4 章。
+
+# 32. C2 B1（SJIS「ﾂｱ」/ UTF-8「±」）→ sjis。以前は止めていた（i260929-01 で変わった）
+$p = New-Case 'c32.txt'
+New-RawFile $p ([byte[]](0xC2, 0xB1))
+$out = Get-Info $p
+Assert-True '32 C2 B1 は半角カナの sjis と決まる' ($out -cmatch 'sjis') $out
+
+# 33. 同上に --from sjis → SJIS として変換される。半角カタカナが残る
+Assert-Equal '33 --from sjis 終了コード' 0 (Invoke-Exe @($p, '--from', 'sjis', '--to', 'utf8'))
+Assert-Equal '33 半角カタカナが残る' 'ﾂｱ' $EncUtf8.GetString((Get-Bytes $p))
+
+# 34. 同上に --from utf8 → UTF-8 として変換される
+$p = New-Case 'c34.txt'
+New-RawFile $p ([byte[]](0xC2, 0xB1))
+Assert-Equal '34 --from utf8 終了コード' 0 (Invoke-Exe @($p, '--from', 'utf8', '--to', 'utf8bom'))
+Assert-Equal '34 UTF-8 として読まれる' '±' $EncUtf8.GetString((Get-Bytes $p), 3, (Get-Bytes $p).Length - 3)
+
+# 35. 漢字を含む SJIS のファイル → sjis。止まらない
+$p = New-Case 'c35.txt'
+New-TextFile $p $Body $EncSjis
+$out = Get-Info $p
+Assert-True '35 漢字を含む SJIS は sjis' ($out -cmatch 'sjis') $out
+
+# 36. 漢字を含む UTF-8 のファイル → utf8。止まらない
+$p = New-Case 'c36.txt'
+New-TextFile $p $Body $EncUtf8
+$out = Get-Info $p
+Assert-True '36 漢字を含む UTF-8 は utf8' ($out -cmatch 'utf8') $out
+
+# 37. 半角カタカナだけの ｱｲｳｴｵ（B1〜B5）→ sjis。UTF-8 としては不正
+$p = New-Case 'c37.txt'
+New-RawFile $p ([byte[]](0xB1, 0xB2, 0xB3, 0xB4, 0xB5))
+$out = Get-Info $p
+Assert-True '37 ｱｲｳｴｵ は sjis' ($out -cmatch 'sjis') $out
+
+# 57. cx.cmd を UTF-8 にしたもの（報告された再現条件）→ utf8。--to cmd で SJIS に戻せる
+$cxText = "`techo [NG] W: ドライブが見つかりません`r`n"
+$p = New-Case 'c57.cmd'
+New-TextFile $p $cxText $EncUtf8
+$out = Get-Info $p
+Assert-True '57 日本語の UTF-8 は両方成立でも utf8 と決まる' ($out -cmatch 'utf8') $out
+Assert-Equal '57 --to cmd で戻せる 終了コード' 0 (Invoke-Exe @($p, '--to', 'cmd'))
+Assert-True '57 SJIS に戻る' (Test-SameBytes (Get-Bytes $p) $EncSjis.GetBytes($cxText)) ''
+
+# 58. カタカナ語だけの UTF-8 → utf8
+$p = New-Case 'c58.txt'
+New-TextFile $p 'ファイル' $EncUtf8
+$out = Get-Info $p
+Assert-True '58 カタカナ語の UTF-8 は utf8 と決まる' ($out -cmatch 'utf8') $out
+
+# 59. ± を含む日本語の UTF-8 → utf8
+$p = New-Case 'c59.txt'
+New-TextFile $p 'ドライブ±' $EncUtf8
+$out = Get-Info $p
+Assert-True '59 ± を含む日本語の UTF-8 は utf8 と決まる' ($out -cmatch 'utf8') $out
+
+# 60. 半角カナだけの SJIS（ﾃｽﾂｱ）。UTF-8 でも「½±」として成立する → sjis
+$p = New-Case 'c60.txt'
+New-RawFile $p ([byte[]](0xC3, 0xBD, 0xC2, 0xB1))
+$out = Get-Info $p
+Assert-True '60 半角カナの SJIS は sjis と決まる' ($out -cmatch 'sjis') $out
+
+# 61. どちらとも言えない並び（UTF-8「±ア」/ SJIS「ﾂｱ繧｢」）→ 今までどおり止まる
+$p = New-Case 'c61.txt'
+New-RawFile $p ([byte[]](0xC2, 0xB1, 0xE3, 0x82, 0xA2))
+$before = Get-Bytes $p
+Assert-Equal '61 どちらとも言えなければ止まる 終了コード' 3 (Invoke-Exe @($p, '--to', 'utf8'))
+Assert-True '61 書き込まない' (Test-SameBytes $before (Get-Bytes $p)) ''
 
 # ---------------------------------------------------------------
 Write-Host ''

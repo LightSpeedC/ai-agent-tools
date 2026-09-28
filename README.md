@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。プロジェクトを問わず使う道具の置き場。
 
-> 📅 作成: 2026-08-27 / 更新: 2026-09-23
+> 📅 作成: 2026-08-27 / 更新: 2026-09-29
 
 ## 目次
 
@@ -34,6 +34,7 @@ HTML の文字色と背景色が読める組み合わせかを確かめる `chec
 | [convert-encoding 仕様書](notes/10_plan/p260906-01-convert-encoding.md) | 文字コードの判定・変換の手順・終了コード・テストケース |
 | [text ツール仕様書](notes/10_plan/p260907-01-text-tools.md) | read/find/edit/write の仕様。合言葉（digest）・組の判定・出力の形 |
 | [SJIS ファイルの扱い方](notes/10_plan/p260908-01-sjis-file-handling.md) | cmd・bat を壊さず、差分を見ながら作成・修正・削除する手順の比較 |
+| [文字コード判定の改善 計画](notes/10_plan/i260929-01-文字コード判定.md) | UTF-8 と SJIS のどちらとも取れるバイト列を、読んだ結果の自然さで見分ける |
 | [HTML クラス名の取り決め](notes/90_rules/html-class-rules.md) | html2md が読むクラス名。バッジ・callout・表・図の書き方 |
 | [ローカルルール](notes/90_rules/local-rules.md) | このプロジェクトでだけ通る決めごと。共通ルールとの差と、踏んだ落とし穴 |
 

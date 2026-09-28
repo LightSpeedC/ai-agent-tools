@@ -150,7 +150,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-27</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-29</p>
 	</div>
 </div>
 
@@ -496,7 +496,7 @@ convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</c
 
 	<h2>変換元は自動で判定する</h2>
 
-	<p>BOM を見たあと、UTF-8 と SJIS の両方で検査して決める。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると元へ戻せないため。<code>--from</code> で明示すると判定を飛ばす。</p>
+	<p>BOM を見たあと、UTF-8 と SJIS の両方で検査して決める。両方で成立するときは、読んだ文字が「よく使う文字」（かな・JIS 第一水準の漢字など）かの割合で見分ける。<strong>それでも判定できなければ何も書き込まずに終える。</strong>推測で変換すると元へ戻せないため。<code>--from</code> で明示すると判定を飛ばす。</p>
 
 	<div class="callout">
 		<p><strong>半角カタカナだけの短いファイルは、UTF-8 とも SJIS とも読めて止まることがある。</strong>そのときは <code>--from sjis</code> のように明示する。ふつうの日本語文なら数十文字あれば一意に決まる。</p>

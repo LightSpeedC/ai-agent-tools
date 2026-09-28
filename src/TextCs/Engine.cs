@@ -130,8 +130,9 @@ namespace TextTool
 	{
 		/// <summary>
 		/// BOM → UTF-8 厳密妥当 → SJIS の順で決める。
-		/// UTF-8 と SJIS の両方で妥当かつ非 ASCII のときは Ambiguous を立てる
-		/// （read/find は UTF-8 に倒し、edit/write は拒否する）。
+		/// UTF-8 と SJIS の両方で妥当かつ非 ASCII のときは、読んだ文字の自然さで
+		/// 見分ける（DecideAmbiguous。convert-encoding と同じ判定）。それでも決まらない
+		/// ときだけ Ambiguous を立てる（read/find は UTF-8 に倒し、edit/write は拒否する）。
 		/// </summary>
 		public static Combo Detect(byte[] b)
 		{
@@ -147,7 +148,13 @@ namespace TextTool
 				if (u8 && sj)
 				{
 					c.Enc = EncKind.Utf8;
-					if (!IsAscii(b)) { c.Ambiguous = true; }
+					if (!IsAscii(b))
+					{
+						int d = DecideAmbiguous(b);
+						if (d == 1) { c.Enc = EncKind.Utf8; }
+						else if (d == 2) { c.Enc = EncKind.Sjis; }
+						else { c.Ambiguous = true; }
+					}
 				}
 				else if (u8) { c.Enc = EncKind.Utf8; }
 				else if (sj) { c.Enc = EncKind.Sjis; }
@@ -157,6 +164,78 @@ namespace TextTool
 			c.Eol = EolOf(b, c.Enc);
 			c.Ascii = IsAscii(b);
 			return c;
+		}
+
+		// ---- 両方で成立するときの見分け（i260929-01）。TypeScript 版（src/lib/detector.ts）と合わせる
+
+		// JIS 第一水準の漢字（SJIS の先頭 88〜98）。初めて要るときに作る
+		private static HashSet<char> level1;
+
+		// 読めない組は U+FFFD にする（TypeScript の TextDecoder と揃える。既定の '?' だと ASCII として数えから漏れる）
+		private static Encoding Sjis()
+		{
+			return Encoding.GetEncoding(932, EncoderFallback.ReplacementFallback, new DecoderReplacementFallback("�"));
+		}
+
+		private static HashSet<char> Level1Kanji()
+		{
+			if (level1 != null) { return level1; }
+			Encoding sjis = Sjis();
+			var set = new HashSet<char>();
+			byte[] pair = new byte[2];
+			for (int a = 0x88; a <= 0x98; a++)
+			{
+				for (int t = 0x40; t <= 0xFC; t++)
+				{
+					if (t == 0x7F) { continue; }
+					pair[0] = (byte)a; pair[1] = (byte)t;
+					string ch = sjis.GetString(pair);
+					if (ch.Length == 1 && ch[0] != '�') { set.Add(ch[0]); }
+				}
+			}
+			level1 = set;
+			return set;
+		}
+
+		/// <summary>よく使う文字か。UTF-8 で読んだ側にも SJIS で読んだ側にも同じ物差しを当てる</summary>
+		private static bool IsCommonChar(char ch)
+		{
+			if (ch >= 'ぁ' && ch <= 'ゖ') { return true; }   // ひらがな
+			if (ch >= 'ァ' && ch <= 'ー') { return true; }   // カタカナ・長音
+			if (ch >= '　' && ch <= '〃') { return true; }   // 全角空白・、。〃
+			if (ch >= '！' && ch <= '～') { return true; }   // 全角英数
+			if (ch >= '｡' && ch <= 'ﾟ') { return true; }   // 半角カナ
+			return Level1Kanji().Contains(ch);
+		}
+
+		/// <summary>非 ASCII の文字のうち、よく使う文字の割合。非 ASCII が無ければ 0</summary>
+		private static double CommonRatio(string s)
+		{
+			int n = 0;
+			int ok = 0;
+			for (int i = 0; i < s.Length; i++)
+			{
+				char ch = s[i];
+				if (ch < 0x80) { continue; }
+				n++;
+				// サロゲートペアは 1 文字と数え、よく使う文字には入れない
+				if (char.IsHighSurrogate(ch) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1])) { i++; continue; }
+				if (IsCommonChar(ch)) { ok++; }
+			}
+			return n == 0 ? 0 : (double)ok / n;
+		}
+
+		/// <summary>
+		/// UTF-8 と SJIS の両方で成立し非 ASCII を含むバイト列を、読んだ文字の自然さで見分ける。
+		/// 1 = UTF-8、2 = SJIS、0 = 決まらない。しきい値は計画書 i260929-01 の第 2 章
+		/// </summary>
+		private static int DecideAmbiguous(byte[] bytes)
+		{
+			double nu = CommonRatio(new UTF8Encoding(false, false).GetString(bytes));
+			double ns = CommonRatio(Sjis().GetString(bytes));
+			if (nu >= 0.75 && nu > ns) { return 1; }
+			if (ns >= 0.9 && nu <= 0.1) { return 2; }
+			return 0;
 		}
 
 		/// <summary>UTF-16 でないのに NUL を含めばバイナリとみなす。</summary>

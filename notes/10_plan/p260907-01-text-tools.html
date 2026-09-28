@@ -104,7 +104,7 @@
 <div class="titlebar"><div class="inner">
 <h1>文字コード対応テキスト・ツール一式</h1>
 <div class="lead">SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。文字コードと改行の組を判定して、そのまま読み書きする</div>
-<div class="date">📅 作成: 2026-09-07 / 更新: 2026-09-27</div>
+<div class="date">📅 作成: 2026-09-07 / 更新: 2026-09-29</div>
 </div></div>
 
 <div class="wrap">
@@ -215,9 +215,9 @@
 <p><strong>非 ASCII のバイトを含まないファイルは <code>ascii</code> と出す。</strong><code>utf8</code> と <code>sjis</code> でバイト列が同じになり、どちらとも決められないため。<strong>判定する組が増えたわけではない</strong>ので <code>--from ascii</code> は受けず、内部では <code>utf8</code> のまま扱う。<code>--from</code> で組を明示したときは、指定した名前をそのまま出す。</p>
 <p><strong>日時（mtime）は <code>yymmdd-hhmmss-ccc</code></strong>（年 2 桁・月・日 ／ 時・分・秒 ／ ミリ秒 3 桁）。例: 2026-09-07 19:00:00.123 → <code>260907-190000-123</code>。短く、名前順が時刻順になり、合言葉の一部にも収まる。</p>
 
-<p>土台は <code>convert-encoding</code> の <code>Detector</code>。ただし<strong>「両方妥当」の倒し方が動詞で変わる</strong>。</p>
+<p>土台は <code>convert-encoding</code> の <code>Detector</code>。両方妥当（非 ASCII）なら、まず<strong>読んだ文字の自然さで見分ける</strong>（convert-encoding と同じ判定。<a href="i260929-01-文字コード判定.html">i260929-01</a>）。それでも決まらないものだけ、<strong>倒し方が動詞で変わる</strong>。</p>
 <div class="tablewrap"><table>
-<thead><tr><th>動詞</th><th>UTF-8 と SJIS が両方妥当（非 ASCII）</th><th>理由</th></tr></thead>
+<thead><tr><th>動詞</th><th>両方妥当で、自然さでも決まらない</th><th>理由</th></tr></thead>
 <tbody>
 <tr><td class="nowrap"><code>text read</code> / <code>text find</code></td><td>UTF-8 に倒す（読む・探すだけ）</td><td>止まると探せない。UTF-8 が既定で、実ファイルの両方妥当はまれ</td></tr>
 <tr><td class="nowrap"><code>text edit</code> / <code>text write</code></td><td><strong>拒否して止まる</strong>（終了 3）</td><td>書き戻すので取り違えは破壊になる。convert-encoding の既定の拒否がそのまま正しい</td></tr>
@@ -336,7 +336,7 @@ text edit README.html --old-file tmp/old.txt --new-file tmp/new.txt</code></pre>
 
 <h2>判定の順</h2>
 <ol>
-<li>ファイルの文字コードと改行の組を判定（両方妥当なら<strong>拒否</strong>）</li>
+<li>ファイルの文字コードと改行の組を判定（両方妥当で自然さでも決まらなければ<strong>拒否</strong>）</li>
 <li>対象を特定。<code>--lines</code> があればまず範囲を絞り、<code>--old</code> があればその範囲内（無ければファイル全体）で一致箇所を探す。<code>--old</code> の一致が 0 / 複数なら<strong>エラー</strong></li>
 <li><code>--digest</code> があれば、<strong>行範囲ハッシュ ＋ サイズ ＋ 更新日時</strong>から合言葉を計算し、<strong>一致しなければエラー</strong>で止める（何も書かない）</li>
 <li>その範囲を <code>--new</code>／<code>--new-file</code> に差し替える</li>
@@ -437,7 +437,7 @@ text write app.reg --keep --in tmp/body.txt</code></pre>
 <tr><td class="num">0</td><td>成功（text find は一致あり、text edit は置換した／変更なし）</td></tr>
 <tr><td class="num">1</td><td>text find で一致 0 件（正常）</td></tr>
 <tr><td class="num">2</td><td>エラー（対象が無い・引数が不正）</td></tr>
-<tr><td class="num">3</td><td>text edit / text write で組が両方妥当のため拒否</td></tr>
+<tr><td class="num">3</td><td>text edit / text write で組が両方妥当で、自然さでも決まらないため拒否</td></tr>
 <tr><td class="num">4</td><td>text edit で合言葉が不一致（別の人が更新）</td></tr>
 <tr><td class="num">5</td><td>text edit / text write で変換先が表現できない文字がある</td></tr>
 </tbody>
@@ -488,7 +488,7 @@ text write app.reg --keep --in tmp/body.txt</code></pre>
 <ul>
 <li>text read: <code>sjis</code>・<code>utf16le</code>・<code>utf16be</code>・<code>utf8bom</code> を UTF-8 として見せる。size・mtime・合言葉を返す。<code>--lines</code> で範囲を絞る</li>
 <li>text find: Grep が漏らす日本語が当たる。組を出す。<code>--include</code>/<code>--exclude</code>/<code>--recurse</code>。バイナリを飛ばす。終了 0/1/2</li>
-<li>text edit: 合言葉一致で置換、不一致でエラー（終了 4）。<strong>元の組を保つ</strong>（<code>sjis/crlf</code> が crlf のまま）。両方妥当で拒否（終了 3）。変更なしなら触らない</li>
+<li>text edit: 合言葉一致で置換、不一致でエラー（終了 4）。<strong>元の組を保つ</strong>（<code>sjis/crlf</code> が crlf のまま）。両方妥当で自然さでも決まらなければ拒否（終了 3）。変更なしなら触らない</li>
 <li>text write: <code>--to</code> と <code>--keep</code> で組が決まる</li>
 </ul>
 

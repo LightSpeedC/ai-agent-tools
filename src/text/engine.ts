@@ -12,7 +12,7 @@ import {
 	findUnmappableSjis, getPreamble, isAscii, startsWith,
 } from '../lib/codec.ts';
 import type { EncKind } from '../lib/codec.ts';
-import { isValidSjis, isValidUtf8 } from '../lib/detector.ts';
+import { decideAmbiguous, isValidSjis, isValidUtf8 } from '../lib/detector.ts';
 
 export type { EncKind };
 
@@ -112,8 +112,9 @@ export function eolOf(b: Uint8Array, enc: EncKind): EolKind {
 
 /**
  * BOM → UTF-8 厳密妥当 → SJIS の順で決める。
- * UTF-8 と SJIS の両方で妥当かつ非 ASCII のときは ambiguous を立てる
- * （read/find は UTF-8 に倒し、edit/write は拒否する）。
+ * UTF-8 と SJIS の両方で妥当かつ非 ASCII のときは、読んだ文字の自然さで
+ * 見分ける（decideAmbiguous。convert-encoding と同じ判定）。それでも決まらない
+ * ときだけ ambiguous を立てる（read/find は UTF-8 に倒し、edit/write は拒否する）。
  */
 export function detectCombo(b: Uint8Array): Combo {
 	let enc: EncKind;
@@ -127,7 +128,11 @@ export function detectCombo(b: Uint8Array): Combo {
 		const sj = isValidSjis(b);
 		if (u8 && sj) {
 			enc = 'utf8';
-			if (!isAscii(b)) { ambiguous = true; }
+			if (!isAscii(b)) {
+				const d = decideAmbiguous(b);
+				if (d == null) { ambiguous = true; }
+				else { enc = d; }
+			}
 		}
 		else if (u8) { enc = 'utf8'; }
 		else if (sj) { enc = 'sjis'; }

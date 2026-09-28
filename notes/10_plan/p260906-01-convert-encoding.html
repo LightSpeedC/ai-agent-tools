@@ -105,7 +105,7 @@
 <div class="titlebar"><div class="inner">
 <h1>convert-encoding 仕様書</h1>
 <div class="lead">文字コードと改行を変換するコマンドライン ツール</div>
-<div class="date">📅 作成: 2026-09-06 / 更新: 2026-09-16</div>
+<div class="date">📅 作成: 2026-09-06 / 更新: 2026-09-29</div>
 </div></div>
 
 <div class="wrap">
@@ -429,7 +429,7 @@ convert-encoding tmp/case.txt --from hex
 <tbody>
 <tr><td class="nowrap">妥当</td><td class="nowrap">不正</td><td>UTF-8</td></tr>
 <tr><td class="nowrap">不正</td><td class="nowrap">妥当</td><td>SJIS</td></tr>
-<tr><td class="nowrap">妥当</td><td class="nowrap">妥当</td><td><strong>純 ASCII なら UTF-8。それ以外は判定できない</strong></td></tr>
+<tr><td class="nowrap">妥当</td><td class="nowrap">妥当</td><td><strong>純 ASCII なら UTF-8。それ以外は読んだ文字の自然さで見分け、決まらなければ判定できない</strong></td></tr>
 <tr><td class="nowrap">不正</td><td class="nowrap">不正</td><td>判定できない</td></tr>
 </tbody>
 </table></div>
@@ -483,8 +483,17 @@ convert-encoding tmp/case.txt --from hex
 <p>SJIS の半角カタカナは <code>0xA1</code>〜<code>0xDF</code> の 1 バイトで、この範囲が<strong>UTF-8 の続きバイト（<code>0x80</code>〜<code>0xBF</code>）と 2 バイト文字の先頭（<code>0xC2</code>〜<code>0xDF</code>）にそのまま重なる。</strong>「ﾂ」〜「ﾝ」の直後に「｡」〜「ｿ」が来る並びは、UTF-8 の 2 バイト文字として完全に妥当になる。</p>
 
 <div class="callout callout-caution">
-	<p><strong>先に UTF-8 を試して確定させる作りだと、ここで半角カタカナが失われる。</strong>変換したあとでは元に戻せない。<strong>両方とも妥当なら止める</strong>のはこのため。</p>
+	<p><strong>先に UTF-8 を試して確定させる作りだと、ここで半角カタカナが失われる。</strong>変換したあとでは元に戻せない。<strong>両方とも妥当なら、構造だけでは決めない</strong>のはこのため。</p>
 </div>
+
+<h3>読んだ文字の自然さで見分ける</h3>
+<p>両方とも妥当なら、両方で読み、<strong>非 ASCII の文字のうち「よく使う文字」（かな・句読点・全角英数・半角カナ・JIS 第一水準の漢字）の割合</strong>を比べる。UTF-8 で読んだ割合を <code>Nu</code>、SJIS で読んだ割合を <code>Ns</code> とする。</p>
+<ul>
+	<li><code>Nu</code> ≧ 0.75 かつ <code>Nu</code> ＞ <code>Ns</code> → UTF-8</li>
+	<li><code>Ns</code> ≧ 0.9 かつ <code>Nu</code> ≦ 0.1 → SJIS（<code>C2 B1</code> は UTF-8 で「±」になりよく使う文字に入らないため、SJIS の「ﾂｱ」に決まる）</li>
+	<li>それ以外 → 判定できない（止まる）</li>
+</ul>
+<p>物差しとしきい値の根拠は<a href="i260929-01-文字コード判定.html">文字コード判定の改善 計画（i260929-01）</a>にある。</p>
 
 <h3>実際には、ほとんど止まらない</h3>
 
@@ -502,7 +511,7 @@ convert-encoding tmp/case.txt --from hex
 </table></div>
 
 <div class="callout callout-important">
-	<p><strong>「漢字が 1 文字あれば決まる」ではない。</strong>UTF-8 の漢字（3 バイト）は、並びと偶奇が揃うと SJIS の 2 バイト文字として構造上妥当になる。<code>東京都渋谷区</code> や <code>1 行目</code> のような<strong>短い文は両方妥当になり、止まる。</strong>効くのは<strong>長さ</strong>で、1 文字でも SJIS 構造が崩れれば UTF-8 に確定するため、文が長いほど崩れる箇所が必ず現れる。</p>
+	<p><strong>「漢字が 1 文字あれば決まる」ではない。</strong>UTF-8 の漢字（3 バイト）は、並びと偶奇が揃うと SJIS の 2 バイト文字として構造上妥当になる。<code>東京都渋谷区</code> や <code>1 行目</code> のような<strong>短い文は両方妥当になる。</strong>効くのは<strong>長さ</strong>で、1 文字でも SJIS 構造が崩れれば UTF-8 に確定するため、文が長いほど崩れる箇所が必ず現れる。両方妥当になった短い文は、読んだ文字の自然さで UTF-8 に決まる（どちらの例も UTF-8 に決まることを実測）。</p>
 </div>
 
 <p>乱数で作った日本語文で両方妥当率を測ると、<strong>1 文字で 46 %、16 文字で 20 %、64 文字で 1 %、128 文字で 0 %</strong>と、長さに対して急速に下がる。ひらがなが混じる普通の文なら 20 文字ほどで一意に決まる（ひらがなは SJIS 構造を崩しやすい）。実ファイル 59 件が 0 件だったのは、どれも十分な長さがあったため。</p>
@@ -510,7 +519,7 @@ convert-encoding tmp/case.txt --from hex
 <p>検査は先頭から走査し、不正なバイトを見つけた時点で打ち切る。<strong>最後まで読み切るのは「全部妥当だった」場合だけ。</strong></p>
 
 <div class="callout callout-warning">
-	<p><strong>テストデータを短い漢字だけの文にすると、この判定に引っかかって止まる。</strong>テストの本文は数十文字のひらがな混じりの日本語にする。<code>1 行目</code> のような短い作為的な文字列は、両方妥当になって判定の段階で終了コード 3 になる。</p>
+	<p><strong>テストデータを短い文にすると、構造の判定では決まらず、自然さでの見分けを通る。</strong>構造で決まる経路を確かめたいテストの本文は、数十文字のひらがな混じりの日本語にする。自然さでの見分けを確かめるテストは、両方妥当になることを確かめた並びを使う。</p>
 </div>
 
 </section>
@@ -868,12 +877,17 @@ notes/10_plan/plan.html      utf8+lf     → html は utf8bom+lf
 <div class="tablewrap"><table>
 <thead><tr><th>#</th><th>内容</th><th>期待する結果</th></tr></thead>
 <tbody>
-<tr><td class="num">32</td><td><code>C2 B1</code>（SJIS で「ﾂｱ」、UTF-8 で「±」）</td><td><strong>終了コード 3。書き込まない</strong></td></tr>
+<tr><td class="num">32</td><td><code>C2 B1</code>（SJIS で「ﾂｱ」、UTF-8 で「±」）</td><td><strong>SJIS に決まる</strong>（i260929-01 で変わった。以前は終了コード 3）</td></tr>
 <tr><td class="num">33</td><td>同上に <code>--from sjis</code></td><td>SJIS として変換される。半角カタカナが残る</td></tr>
 <tr><td class="num">34</td><td>同上に <code>--from utf8</code></td><td>UTF-8 として変換される</td></tr>
 <tr><td class="num">35</td><td>漢字を含む SJIS のファイル</td><td>SJIS に決まる。止まらない</td></tr>
 <tr><td class="num">36</td><td>漢字を含む UTF-8 のファイル</td><td>UTF-8 に決まる。止まらない</td></tr>
 <tr><td class="num">37</td><td>半角カタカナだけでも <code>ｱｲｳｴｵ</code>（<code>B1 B2 B3 B4 B5</code>）</td><td>SJIS に決まる。先頭バイトが続きバイトの範囲で UTF-8 として不正</td></tr>
+<tr><td class="num">57</td><td><code>bin/cx.cmd</code> の日本語の行を UTF-8 にしたもの（i260929-01 の再現条件）</td><td>UTF-8 に決まる。<code>--to cmd</code> で SJIS に戻せる</td></tr>
+<tr><td class="num">58</td><td>カタカナ語だけの UTF-8（<code>ファイル</code>）</td><td>UTF-8 に決まる</td></tr>
+<tr><td class="num">59</td><td><code>±</code> を含む日本語の UTF-8（<code>ドライブ±</code>）</td><td>UTF-8 に決まる</td></tr>
+<tr><td class="num">60</td><td>半角カナだけの SJIS（<code>ﾃｽﾂｱ</code> = <code>C3 BD C2 B1</code>。UTF-8 で「½±」）</td><td>SJIS に決まる</td></tr>
+<tr><td class="num">61</td><td>どちらとも言えない並び（<code>C2 B1 E3 82 A2</code>。UTF-8 で「±ア」、SJIS で「ﾂｱ繧｢」）</td><td>終了コード 3。書き込まない</td></tr>
 </tbody>
 </table></div>
 

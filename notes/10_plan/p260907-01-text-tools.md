@@ -2,7 +2,7 @@
 
 SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。文字コードと改行の組を判定して、そのまま読み書きする
 
-> 📅 作成: 2026-09-07 / 更新: 2026-09-27
+> 📅 作成: 2026-09-07 / 更新: 2026-09-29
 
 [← html2md](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)
 
@@ -91,9 +91,9 @@ Claude Code の標準ツールは、UTF-8 以外のファイルで壊れる。SJ
 
 **日時（mtime）は `yymmdd-hhmmss-ccc`**（年 2 桁・月・日 ／ 時・分・秒 ／ ミリ秒 3 桁）。例: 2026-09-07 19:00:00.123 → `260907-190000-123`。短く、名前順が時刻順になり、合言葉の一部にも収まる。
 
-土台は `convert-encoding` の `Detector`。ただし<strong>「両方妥当」の倒し方が動詞で変わる</strong>。
+土台は `convert-encoding` の `Detector`。両方妥当（非 ASCII）なら、まず**読んだ文字の自然さで見分ける**（convert-encoding と同じ判定。[i260929-01](i260929-01-文字コード判定.md)）。それでも決まらないものだけ、**倒し方が動詞で変わる**。
 
-| 動詞 | UTF-8 と SJIS が両方妥当（非 ASCII） | 理由 |
+| 動詞 | 両方妥当で、自然さでも決まらない | 理由 |
 |---|---|---|
 | `text read` / `text find` | UTF-8 に倒す（読む・探すだけ） | 止まると探せない。UTF-8 が既定で、実ファイルの両方妥当はまれ |
 | `text edit` / `text write` | **拒否して止まる**（終了 3） | 書き戻すので取り違えは破壊になる。convert-encoding の既定の拒否がそのまま正しい |
@@ -198,7 +198,7 @@ text edit README.html --old-file tmp/old.txt --new-file tmp/new.txt
 
 ### 判定の順
 
-1. ファイルの文字コードと改行の組を判定（両方妥当なら**拒否**）
+1. ファイルの文字コードと改行の組を判定（両方妥当で自然さでも決まらなければ**拒否**）
 2. 対象を特定。`--lines` があればまず範囲を絞り、`--old` があればその範囲内（無ければファイル全体）で一致箇所を探す。`--old` の一致が 0 / 複数なら**エラー**
 3. `--digest` があれば、**行範囲ハッシュ ＋ サイズ ＋ 更新日時**から合言葉を計算し、**一致しなければエラー**で止める（何も書かない）
 4. その範囲を `--new`／`--new-file` に差し替える
@@ -301,7 +301,7 @@ text write app.reg --keep --in tmp/body.txt
 | 0 | 成功（text find は一致あり、text edit は置換した／変更なし） |
 | 1 | text find で一致 0 件（正常） |
 | 2 | エラー（対象が無い・引数が不正） |
-| 3 | text edit / text write で組が両方妥当のため拒否 |
+| 3 | text edit / text write で組が両方妥当で、自然さでも決まらないため拒否 |
 | 4 | text edit で合言葉が不一致（別の人が更新） |
 | 5 | text edit / text write で変換先が表現できない文字がある |
 
@@ -347,7 +347,7 @@ text write app.reg --keep --in tmp/body.txt
 
 - text read: `sjis`・`utf16le`・`utf16be`・`utf8bom` を UTF-8 として見せる。size・mtime・合言葉を返す。`--lines` で範囲を絞る
 - text find: Grep が漏らす日本語が当たる。組を出す。`--include`/`--exclude`/`--recurse`。バイナリを飛ばす。終了 0/1/2
-- text edit: 合言葉一致で置換、不一致でエラー（終了 4）。**元の組を保つ**（`sjis/crlf` が crlf のまま）。両方妥当で拒否（終了 3）。変更なしなら触らない
+- text edit: 合言葉一致で置換、不一致でエラー（終了 4）。**元の組を保つ**（`sjis/crlf` が crlf のまま）。両方妥当で自然さでも決まらなければ拒否（終了 3）。変更なしなら触らない
 - text write: `--to` と `--keep` で組が決まる
 
 ### 済んだら

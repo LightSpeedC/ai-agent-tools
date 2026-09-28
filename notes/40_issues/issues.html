@@ -171,7 +171,7 @@
 	<div class="inner">
 		<h1>html2md の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-27</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-29</p>
 	</div>
 </div>
 
@@ -406,7 +406,7 @@
 <section class="ch04" id="ch04">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 16 件。12 件が解消済み、2 件が着手、2 件が未着手。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 18 件。13 件が解消済み、2 件が着手、3 件が未着手。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
@@ -896,6 +896,41 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li>同じく <code>child.stdin.end()</code> を持つ <code>check-public</code> を揃えるか</li>
 			</ul>
 			<p>関連: psh は子の出力を終わるまでまとめて受け取ってから流すため、<code>psh ... | 次のコマンド</code> には逐次には流れない。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260929-01</span>convert-encoding が日本語を含む BOM 無し UTF-8 を判定できない</summary>
+		<div class="issue-body">
+			<p>共通ルール「cmd・bat・reg を作る・直す・消す」の修正手順（<code>--to utf8</code> → Edit → <code>--to cmd</code>）で、<strong>最後の <code>--to cmd</code> が「文字コードを判定できません。--from で指定してください」（終了コード 3）で止まる</strong>。<code>--from utf8</code> を付ければ通る。<code>bin/cx.cmd</code> で踏んだ（2026-09-28）。</p>
+			<p><strong>原因。</strong><code>src/lib/detector.ts</code> の <code>detect()</code> は、UTF-8 と SJIS の両方で成立し非 ASCII を含むものを <code>null</code>（判定しない）にする。半角カナの SJIS（<code>C2 B1</code> 等）を UTF-8 と誤認しないためである。ところが UTF-8 の日本語は 3 バイト列（<code>E3 xx xx</code> 等）で、SJIS の 2 バイト文字の並びとしても成り立ちやすい。<code>cx.cmd</code> を UTF-8 にしたものは、SJIS の構造検査も CP932 の厳密なデコードも通った。<strong>しかも 2 バイト列（<code>C2</code>〜<code>DF</code> 始まり）を 1 つも含まず、守りたかった場面に当たらない。</strong></p>
+			<p>決めること（直し方）:</p>
+			<ul>
+				<li>A: 両方で成立し、UTF-8 として読んだとき 2 バイト列を含まないなら UTF-8 に決める（半角カナの誤認が起きる形だけを残す）</li>
+				<li>B: 両方でデコードし、かな・漢字など日本語として自然な文字の割合が高いほうに決める</li>
+				<li>C: 判定は変えず、共通ルールの修正手順の戻しを <code>--from utf8 --to cmd</code> にする（暫定。ほかの経路で同じく止まる）</li>
+			</ul>
+			<p><code>text</code> の <code>detectCombo</code>（<code>src/text/engine.ts</code>）も同じ考え方で、両方で成立すると UTF-8 に倒して <code>ambiguous</code> を立て、<code>edit</code> ・ <code>write</code> は拒否する。</p>
+			<p><strong>B で進める（2026-09-29）。</strong>計画は <a href="../10_plan/i260929-01-文字コード判定.html">i260929-01 文字コード判定の改善</a>。</p>
+			<p><strong>対応（2026-09-29）。</strong>両方で成立するときは、読んだ文字が「よく使う文字」かの割合（<code>Nu</code> ・ <code>Ns</code>）で見分けるようにした。<code>src/lib/detector.ts</code> の <code>decideAmbiguous</code> を convert-encoding と <code>text</code> の両方が使う。C# 版（<code>ConvertEncodingCs</code> ・ <code>TextCs</code>）も揃えた。</p>
+			<ul>
+				<li>テストを先に書き、落ちるのを見てから直した（convert-encoding 32〜37 ・ 57〜61、<code>text</code> 2 件）。<code>text</code> の既存テストで両方妥当の例に使っていた <code>C2 B1</code> は SJIS に決まるようになったため、止まる例（<code>C2 B1 E3 82 A2</code>）に差し替えた</li>
+				<li>全テストが bun ・ node とも通る。C# 版でも判定のケースは通る（残る失敗は以前からのずれ。<span class="no">i260929-02</span>）</li>
+				<li>判定できずに検査を素通りしていた <code>tests/cases/</code> の HTML 4 件が BOM 無しと分かり、BOM を付けた</li>
+			</ul>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">未</span><span class="no">i260929-02</span>C# 版（ConvertEncodingCs ・ TextCs）が TypeScript 版とずれている</summary>
+		<div class="issue-body">
+			<p>i260929-01 で C# 版にもテストを当てたところ、<strong>判定とは関係のない 8 件が落ちた。</strong>変更前（HEAD）のソースをビルドしても同じ 8 件が落ちるので、以前からのずれである。移植のあと、TypeScript 版にだけ入った変更が C# 版に入っていない。</p>
+			<ul>
+				<li>convert-encoding: <code>--read</code> ＋ <code>--to</code>、<code>--info</code> ＋ <code>--to</code> を拒否しない（2 件）</li>
+				<li>text find: 既定で <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> を外さない（4 件）</li>
+				<li>text edit: 読めないバイトがあっても拒否せず、書き換える（2 件）</li>
+			</ul>
+			<p>決めること: C# 版を追いつかせるか、突き合わせ用として固定して差分を記録するか、消すか。</p>
 		</div>
 	</details>
 </section>

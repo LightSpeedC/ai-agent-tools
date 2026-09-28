@@ -88,10 +88,74 @@ export function isValidSjis(b: Uint8Array): boolean {
 	return findInvalidSjis(b) < 0;
 }
 
+// ---- 両方で成立するときの見分け（i260929-01） ----------------------------
+
+// JIS 第一水準の漢字（SJIS の先頭 88〜98）。初めて要るときに作る
+let level1: Set<string> | null = null;
+
+function level1Kanji(): Set<string> {
+	if (level1 != null) { return level1; }
+	const dec = new TextDecoder('shift_jis');
+	const set = new Set<string>();
+	const pair = new Uint8Array(2);
+	for (let a = 0x88; a <= 0x98; a++) {
+		for (let t = 0x40; t <= 0xfc; t++) {
+			if (t === 0x7f) { continue; }
+			pair[0] = a; pair[1] = t;
+			const ch = dec.decode(pair);
+			if (ch.length === 1 && ch !== '�') { set.add(ch); }
+		}
+	}
+	level1 = set;
+	return set;
+}
+
+/** よく使う文字か。UTF-8 で読んだ側にも SJIS で読んだ側にも同じ物差しを当てる */
+function isCommonChar(ch: string): boolean {
+	const cp = ch.codePointAt(0)!;
+	if (cp >= 0x3041 && cp <= 0x3096) { return true; }   // ひらがな
+	if (cp >= 0x30a1 && cp <= 0x30fc) { return true; }   // カタカナ・長音
+	if (cp >= 0x3000 && cp <= 0x3003) { return true; }   // 全角空白・、。〃
+	if (cp >= 0xff01 && cp <= 0xff5e) { return true; }   // 全角英数
+	if (cp >= 0xff61 && cp <= 0xff9f) { return true; }   // 半角カナ
+	return level1Kanji().has(ch);
+}
+
+/** 非 ASCII の文字のうち、よく使う文字の割合。非 ASCII が無ければ 0 */
+export function commonRatio(s: string): number {
+	let n = 0;
+	let ok = 0;
+	for (const ch of s) {
+		if (ch.codePointAt(0)! < 0x80) { continue; }
+		n++;
+		if (isCommonChar(ch)) { ok++; }
+	}
+	return n === 0 ? 0 : ok / n;
+}
+
+/**
+ * UTF-8 と SJIS の両方で成立し、非 ASCII を含むバイト列を、読んだ文字の自然さで見分ける。
+ * 決まらなければ null。
+ *
+ * でたらめなバイト列が UTF-8 として「かな・よく使う漢字」になることは少ない。
+ * 一方、UTF-8 の日本語を SJIS で読むと 縺 繧 のような第二水準の字が混ざる。
+ * 半角カナの SJIS（C2 B1 = ﾂｱ）を UTF-8 で読むと ± 等になり、よく使う文字に入らない。
+ *
+ * しきい値は計画書 i260929-01 の第 2 章（このリポジトリの cmd ・ ps1 の 2,257 行で実測）
+ */
+export function decideAmbiguous(bytes: Uint8Array): 'utf8' | 'sjis' | null {
+	const nu = commonRatio(new TextDecoder('utf-8').decode(bytes));
+	const ns = commonRatio(new TextDecoder('shift_jis').decode(bytes));
+	if (nu >= 0.75 && nu > ns) { return 'utf8'; }
+	if (ns >= 0.9 && nu <= 0.1) { return 'sjis'; }
+	return null;
+}
+
 /**
  * BOM を見たあと、UTF-8 と SJIS の両方で検査してから決める。
  * 片方だけ妥当ならそれに決める。両方妥当で非 ASCII を含むものは
- * 決められないので null を返し、呼び出し側は何も書き換えずに終える。
+ * 読んだ文字の自然さで見分け（decideAmbiguous）、それでも決まらなければ
+ * null を返し、呼び出し側は何も書き換えずに終える。
  *
  * 先に UTF-8 を試して確定させると、半角カタカナ（例: C2 B1 は
  * UTF-8 で「±」、SJIS で「ﾂｱ」）が UTF-8 と誤認され、SJIS の
@@ -107,9 +171,9 @@ export function detect(bytes: Uint8Array): EncKind | null {
 
 	if (u8 && sj) {
 		// 純 ASCII はどちらに解釈しても変換結果のバイト列が同じ。
-		// UTF-8 で確定してよい。非 ASCII を含むなら決められない
+		// UTF-8 で確定してよい。非 ASCII を含むなら読んだ文字の自然さで見分ける
 		if (isAscii(bytes)) { return 'utf8'; }
-		return null;
+		return decideAmbiguous(bytes);
 	}
 
 	if (u8) { return 'utf8'; }

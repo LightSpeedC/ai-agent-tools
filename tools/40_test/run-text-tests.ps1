@@ -109,7 +109,9 @@ New-TextFile $fReg "`"名前`"=`"日本語`"`r`n" $EncUtf16Le
 New-TextFile $fBom "<p>見出し</p>`n" $EncUtf8Bom
 New-TextFile $fBe "漢字テスト" $EncUtf16Be
 New-RawFile $fBin @(0x41, 0x00, 0x42, 0x0A)          # NUL 入り＝バイナリ
-New-RawFile $fAmbig @(0xC2, 0xB1)                    # UTF-8「±」/ SJIS 半角カナ 2 文字＝両方妥当
+# UTF-8「±ア」/ SJIS「ﾂｱ繧｢」＝両方妥当で、どちらとも言えない（i260929-01）。
+# 以前は C2 B1 だけだったが、それは SJIS の半角カナと決まるようになった
+New-RawFile $fAmbig @(0xC2, 0xB1, 0xE3, 0x82, 0xA2)
 New-TextFile $fSub "rem 日本語 in sub`r`n" $EncSjis
 
 Write-Host ''
@@ -245,6 +247,19 @@ $r = Run-Text @('edit', $fTarget, '--old', 'x', '--new-file', $fAmbig)
 Assert-Equal 'edit: --new-file が両方妥当なら拒否 終了 3' 3 $r.Code
 $r = Run-Text @('edit', $fTarget, '--old-file', $fAmbig, '--new', 'y')
 Assert-Equal 'edit: --old-file が両方妥当なら拒否 終了 3' 3 $r.Code
+
+# 両方妥当でも、読んだ文字の自然さで決まるものは edit できる（i260929-01）。
+# cx.cmd を UTF-8 にしたものが「どちらとも取れる」で拒否されていた
+$fCx = Join-Path $Work 'cx-utf8.cmd'
+New-TextFile $fCx "`techo [NG] W: ドライブが見つかりません`r`n" $EncUtf8
+$r = Run-Text @('edit', $fCx, '--old', 'W:', '--new', 'X:')
+Assert-Equal 'edit: 日本語の UTF-8 は両方妥当でも UTF-8 と決まり編集できる 終了 0' 0 $r.Code
+Assert-Match 'edit: 読み直すと utf8' (Run-Text @('read', $fCx)).Out '[utf8/crlf]'
+
+# 半角カナだけの SJIS（ﾃｽﾂｱ）は、UTF-8 でも「½±」として成立するが SJIS と決まる
+$fKana = Join-Path $Work 'kana-sjis.txt'
+New-RawFile $fKana @(0xC3, 0xBD, 0xC2, 0xB1)
+Assert-Match 'read: 半角カナの SJIS は両方妥当でも sjis と決まる' (Run-Text @('read', $fKana)).Out '[sjis/none]'
 
 # 読めないバイトがあると置換位置がずれるため、edit を止める（i260908-04）。
 # A + 不正な SJIS 2 バイト（85 40）+ 改行 + B + 改行。2 行目（B）を書き換えようと
