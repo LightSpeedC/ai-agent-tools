@@ -1445,6 +1445,42 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p><span class="badge b-ok">済</span>2026-09-23、報告元（<code>ai-chat-lite</code>、public ルーム #1037）が実際のページで検証し、アンカー切れが0件になったことを確認。OK が出たため「済」にする。</p>
 		</div>
 	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">着手</span><span class="no">i260929-03</span>見出しにバッジを含むと、リンクのアンカーが実際の見出しとずれる</summary>
+		<div class="issue-body">
+			<p>2026-09-29、<code>20260905-windows-pc-memory-inspection</code> から報告（public ルーム #1264）。見出し <code>1. 出力の安全性 ✅ 済 3 件（済 3）</code> の実際のアンカー（<code>github-slugger</code> の出力）は <code>1-出力の安全性--済-3-件済-3</code> だが、html2md のリンクは <code>#1-出力の安全性-済-3-件済-3</code> になる。<code>2. 自動化 ⚠ 着手 1 件（着手 1）</code> も同じ。</p>
+
+			<h3>調べた</h3>
+			<p>報告の推測（<code>getAnchorText()</code> が空白を畳む）とは違った。<code>getAnchor()</code> は空白 1 個をハイフン 1 個にしており、畳んでいない。</p>
+			<p><strong>原因は、アンカーを計算する文字列と、Markdown に書き出す見出しが食い違っていること。</strong>アンカーは HTML の見出しからタグを落とした文字列（<code>getAnchorText()</code>）で計算する。一方、Markdown の見出しではバッジを <code>✅ **済** </code>（記号・空白・太字・空白）に、課題番号（<code>.no</code>）を後ろに空白を足して書き出す（<code>src/html2md/inline.ts</code>）。記号と補った空白が、アンカーの計算に入らない。</p>
+			<div class="tablewrap"><table>
+				<thead><tr><th>見出し（Markdown）</th><th>html2md のリンク</th><th>実際のアンカー</th></tr></thead>
+				<tbody>
+					<tr><td><code>1. 出力の安全性 ✅ **済** 3 件（済 3）</code></td><td><code>#1-出力の安全性-済-3-件済-3</code></td><td><code>#1-出力の安全性--済-3-件済-3</code></td></tr>
+					<tr><td><code>✅ **済** i260929-01 件名です</code></td><td><code>#済i260929-01件名です</code></td><td><code>#-済-i260929-01-件名です</code></td></tr>
+				</tbody>
+			</table></div>
+			<p>2 行目は報告に無かった形で、課題一覧の <code>&lt;summary&gt;</code> のようにバッジと課題番号が隣り合うと、<strong>空白がすべて消えてアンカーが別物になる</strong>。i260923-01 でタグの境界に空白を入れない <code>getAnchorText()</code> にしたとき、バッジと課題番号の後ろに補う空白の分が抜けた。</p>
+
+			<h3>決めること（直し方）</h3>
+			<ul>
+				<li>A: アンカーを、実際に書き出す Markdown の見出し（インライン変換のあと、<code>**</code> や <code>`</code> などの記法を外した文字列）から計算する。書き出しとアンカーが同じ元から出るので、インライン変換を変えてもずれない</li>
+				<li>B: <code>getAnchorText()</code> に、バッジ（記号と空白）と課題番号（後ろの空白）の書き出し規則を写す。変更は小さいが、書き出し側を変えるたびに両方を直すことになる</li>
+			</ul>
+			<p>他プロジェクトからの報告なので、直したあとも報告元の確認が取れるまで「済」にしない。</p>
+
+			<h3>直した（2026-09-29、A で）</h3>
+			<ul>
+				<li>アンカーの計算を、見出しを書き出すのと同じ順（インライン変換 → コードを戻す → 強調を決める）で作った Markdown の見出しから行うようにした（<code>converter.ts</code> の <code>headingAnchor</code>）。章の <code>h1</code>、id 付きの <code>h2</code>・<code>h3</code>、<code>md-flat</code> の <code>summary</code> の 3 か所</li>
+				<li>「Markdown の見出し → アンカー」を <code>getMarkdownHeadingAnchor</code>（<code>htmlutil.ts</code>）にまとめ、検査（<code>checks.ts</code>）と共有した。使われなくなった <code>getAnchorText()</code> は消した</li>
+				<li><strong>もう 1 つずれていた</strong>: <code>getAnchor()</code> が記号を落としたあとにもう一度 <code>trim()</code> していた。github-slugger には無い処理で、先頭が絵文字の見出し（<code>✅ 済 …</code>）で先頭のハイフンが落ちていた（実際は <code>-済-…</code>）。検査も同じ関数を使うため、検査の側もずれを見逃していた</li>
+				<li>テストを先に書き、落ちるのを見てから直した（<code>tests/cases/anchor-badge/</code>。期待値は github-slugger の規則で手計算）。全テストが bun ・ node とも通る</li>
+				<li>C# 版（<code>Html2MdCs</code>）は直していない。扱いは <span class="no">i260929-02</span> の判断に合わせる</li>
+			</ul>
+			<p>報告元へ検証を依頼した。OK が出たら「済」にする。</p>
+		</div>
+	</details>
 </section>
 
 </div>

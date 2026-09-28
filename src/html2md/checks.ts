@@ -12,7 +12,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
-	decodeEntities, getAnchor, getAttr, getPlainText,
+	decodeEntities, getAttr, getMarkdownHeadingAnchor, getPlainText,
 	resolveLink, stripNonContent, stripTagsRaw,
 } from './htmlutil.ts';
 import type { ConvertResult } from './context.ts';
@@ -38,9 +38,7 @@ export function stripCodeAreas(html: string): string {
 function getHeadingAnchors(markdown: string): string[] {
 	const heads: string[] = [];
 	for (const m of markdown.matchAll(/^#{1,6}[ \t]+(.+)$/gm)) {
-		let h = m[1].replace(/<[^>]+>/g, '');
-		h = h.replace(/[*`]/g, '');
-		heads.push(getAnchor(h));
+		heads.push(getMarkdownHeadingAnchor(m[1]));
 	}
 	return heads;
 }

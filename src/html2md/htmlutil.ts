@@ -92,36 +92,31 @@ export function getPlainText(html: string): string {
 }
 
 /**
- * 見出しのアンカー計算専用（i260903-02）。タグは消すだけで、タグの境界に
- * 空白を挿さない。
- *
- * `getPlainText()` はタグをすべて空白 1 個に置き換えるため、
- * `見出し（<code>-c</code>を廃止）` のように前後に空白の無いインライン要素が
- * あると、実際には隣接しているはずの文字の間に余計な空白が生まれる。
- * `getAnchor()` はその空白をハイフンに変えるため、`-c` 自身が持つハイフンと
- * 連続して `--c` のような二重ハイフンになり、GitHub が実際に生成するアンカー
- * とずれる。GitHub 側は見出しのレンダリング後のテキストをそのまま使うため、
- * タグの境界だからといって空白は入らない。
- */
-export function getAnchorText(html: string): string {
-	if (html == null || html.length === 0) { return ''; }
-	let t = html.replace(/<[^>]+>/g, '');
-	t = decodeEntities(t);
-	t = t.replace(/\s+/g, ' ');
-	return t.trim();
-}
-
-/**
  * GitHub の見出しアンカーを見出しテキストから求める。
  * 小文字化 → 記号を落とす → 空白 1 文字をハイフン 1 個にする。
+ *
+ * 記号を落としたあとに trim しない（i260929-03）。GitHub（github-slugger）は
+ * 落としたあとの空白もそのままハイフンにするため、先頭が絵文字の見出し
+ * 「✅ 済 …」は「-済-…」になる。
  */
 export function getAnchor(heading: string): string {
 	if (heading == null || heading.length === 0) { return ''; }
 	let a = heading.trim().toLowerCase();
 	// \p{L} 文字 / \p{N} 数字 / \p{M} 結合文字 / 空白 / _ / - 以外を落とす
 	a = a.replace(/[^\p{L}\p{N}\p{M}\s_-]/gu, '');
-	a = a.trim().replace(/\s/g, '-');
+	a = a.replace(/\s/g, '-');
 	return a;
+}
+
+/**
+ * Markdown の見出し行の中身（# の後ろ）から、GitHub のアンカーを求める。
+ * タグと強調・コードの記法を落としてから getAnchor に渡す。
+ * リンクの張り替え（converter）と検査（checks）の両方がこれを使う（i260929-03）
+ */
+export function getMarkdownHeadingAnchor(mdHeading: string): string {
+	let h = mdHeading.replace(/<[^>]+>/g, '');
+	h = h.replace(/[*`]/g, '');
+	return getAnchor(h);
 }
 
 /**

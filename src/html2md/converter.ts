@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import * as Emphasis from './emphasis.ts';
 import {
 	buildCssVars, decodeEntities, extractBody, findChapterClass,
-	getAnchor, getAnchorText, getAttr, getBlock, getClassList, getOpenTag,
+	getAttr, getBlock, getClassList, getMarkdownHeadingAnchor, getOpenTag,
 	getPlainText, hasClass, isMdSkipPage, stripNonContent,
 } from './htmlutil.ts';
 import type { Block } from './htmlutil.ts';
@@ -466,6 +466,27 @@ function findNextBlockStart(html: string, fromIndex: number): number {
 }
 
 /**
+ * 見出しの HTML から、GitHub のアンカーを求める（i260929-03）。
+ *
+ * 見出しを書き出すときと同じ順（インライン変換 → コードを戻す → 強調を決める）で
+ * Markdown の見出しの文字列を作り、検査と同じ getMarkdownHeadingAnchor に渡す。
+ * HTML からタグを落とした文字列で計算すると、書き出しで足すもの（バッジの ✅ と
+ * 前後の空白、課題番号の後ろの空白）が入らず、実際の見出しとずれる。
+ *
+ * 変換器は別に作る。本文の変換器が退避したコードを混ぜないため。
+ * prefix は章番号（「1. 」）。
+ */
+function headingAnchor(innerHtml: string, prefix: string): string {
+	const conv = new InlineConverter();
+	let t = conv.convert(innerHtml, null, false);
+	// summary を見出しにするときと同じく、改行は空白にする
+	t = t.replace(/\s*\r?\n\s*/g, ' ').trim();
+	t = conv.restoreCodeSpans(t);
+	t = Emphasis.resolve(t);
+	return getMarkdownHeadingAnchor((prefix + t).trim());
+}
+
+/**
  * 他ファイルへのアンカー付きリンクを張り替えるための事前パス用。
  * 読み込み済みの HTML から、このファイルの見出しアンカーマップだけを作る。
  */
@@ -499,14 +520,13 @@ function buildAnchorMap(body: string): Map<string, string> {
 		no++;
 		const id = getAttr(getOpenTag(block.outer), 'id');
 		if (id.length === 0) { continue; }
-		const title = getAnchorText(h1[1]);
-		map.set(id, getAnchor(no + '. ' + title));
+		map.set(id, headingAnchor(h1[1], no + '. '));
 	}
 	// h2 / h3 に id が振られている場合も拾う
 	for (const m of body.matchAll(/<h([23])\b([^>]*)>([\s\S]*?)<\/h\1>/g)) {
 		const id = getAttr('<h' + m[1] + m[2] + '>', 'id');
 		if (id.length === 0 || map.has(id)) { continue; }
-		map.set(id, getAnchor(getAnchorText(m[3])));
+		map.set(id, headingAnchor(m[3], ''));
 	}
 	collectFlatDetailsAnchors(body, map, null);
 	return map;
@@ -539,7 +559,7 @@ function collectFlatDetailsAnchors(html: string, map: Map<string, string>, ances
 				const id = ownId.length > 0 ? ownId : (ancestorId ?? '');
 				if (id.length > 0 && !map.has(id)) {
 					const sm = /<summary\b[^>]*>([\s\S]*?)<\/summary>/i.exec(block.inner);
-					if (sm != null) { map.set(id, getAnchor(getAnchorText(sm[1]))); }
+					if (sm != null) { map.set(id, headingAnchor(sm[1], '')); }
 				}
 			}
 		}
