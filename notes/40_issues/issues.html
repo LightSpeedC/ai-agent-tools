@@ -406,7 +406,7 @@
 <section class="ch04" id="ch04">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 15 件。12 件が解消済み、2 件が着手、1 件が未着手。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 16 件。12 件が解消済み、2 件が着手、2 件が未着手。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
@@ -881,6 +881,21 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		<div class="issue-body">
 			<p>共通ルール「Bun 同士のパイプは文字化けすることがある（未解決）」で報告済みの <a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a> を追跡する。2026-09-27 時点で issue は open。原因は bot（<code>robobun</code>）により特定済みで、修正 PR <a href="https://github.com/oven-sh/bun/pull/43662">#43662</a>（Windows コンソールへ UTF-16 で書き込み、bun 自身が変更したコードページだけを復元する）が紐づいているが、こちらも open（未マージ）。</p>
 			<p>マージ・リリースされたら、共通ルールの「Bun 同士のパイプは文字化けすることがある（未解決）」を実機で再検証し、解消していれば「未解決」の記述を外す。</p>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">未</span><span class="no">i260927-03</span>psh が標準入力を子の PowerShell に渡さない</summary>
+		<div class="issue-body">
+			<p><code>src/psh/main.ts</code> は PowerShell を起動した直後に <code>child.stdin.end()</code> で標準入力を閉じる。<strong>そのため <code>echo abc | psh foo.ps1</code> の <code>abc</code> は ps1 に届かない。</strong>ps1 から見た標準入力は最初から空（EOF）になる。</p>
+			<p><strong>利用者が決めた仕様ではない。</strong>追加時（<code>68a15ff</code>、2026-09-12）の <code>spawnSync</code> も入力を渡しておらず、spawn へ移したとき（<code>de1ef3b</code>、2026-09-13）に AI エージェントが明示的に閉じる形にした。理由は「閉じないと相手が入力を待って止まる。Claude Code の Bash ツールは対話的な入力を返せない」。計画書・課題に決めた記録は無い。</p>
+			<p>決めること:</p>
+			<ul>
+				<li>標準入力をどう扱うか（常に子へ渡す／リダイレクトされているときだけ渡し、端末のときは閉じる、など）</li>
+				<li>止まる問題への備えをどこに置くか（入力を渡すと、端末から起動した場合に子が入力を待ちうる）</li>
+				<li>同じく <code>child.stdin.end()</code> を持つ <code>check-public</code> を揃えるか</li>
+			</ul>
+			<p>関連: psh は子の出力を終わるまでまとめて受け取ってから流すため、<code>psh ... | 次のコマンド</code> には逐次には流れない。</p>
 		</div>
 	</details>
 </section>
