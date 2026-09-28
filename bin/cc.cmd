@@ -1,11 +1,11 @@
 @echo off
 set YMD=%date:/=%& set Y=%date:~0,4%& set XMD=%date:~5,5%
 set HMSC=%TIME: =0%& call set XHM=%%HMSC:~0,5%%
-if not exist N:\ (
-	echo [NG] N: ドライブが見つかりません
+if not exist W:\ (
+	echo [NG] W: ドライブが見つかりません
 	exit /b 1
 )
-cd /d N:\
+cd /d W:\
 if not exist "%Y%" md "%Y%"
 if exist %Y% cd "%Y%"
 if "%~1" == "" (echo [NG] プロジェクト %~1 はありません。& exit /b)

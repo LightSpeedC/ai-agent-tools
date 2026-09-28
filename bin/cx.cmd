@@ -1,11 +1,11 @@
 @rem if exist etc\c.bat etc\c.bat
 @set Y=%date:~0,4%
 @set YMD=%date:/=%
-@if not exist N:\ (
-	echo [NG] N: ドライブが見つかりません
+@if not exist W:\ (
+	echo [NG] W: ドライブが見つかりません
 	exit /b 1
 )
-cd /d N:\
+cd /d W:\
 @if not exist "%Y%" md "%Y%"
 @if exist %Y% cd "%Y%"
 @if "%~1" == "" exit /b

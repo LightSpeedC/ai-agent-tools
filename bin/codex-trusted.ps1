@@ -1,8 +1,8 @@
 ﻿# 使い方:
 #   codex-trusted                         # 現在のフォルダを信頼して Codex を起動
-#   codex-trusted N:\example              # 指定したフォルダを信頼して Codex を起動
+#   codex-trusted W:\example              # 指定したフォルダを信頼して Codex を起動
 #   codex-trusted -NoStart                # 現在のフォルダの信頼設定だけを確認・追加
-#   .\bin\codex-trusted.ps1 -Target N:\example -NoStart
+#   .\bin\codex-trusted.ps1 -Target W:\example -NoStart
 
 param(
 	[string]$Target = (Get-Location).Path,
@@ -36,15 +36,15 @@ function Get-CanonicalProjectPaths {
 	$resolved = (Resolve-Path -LiteralPath $InputPath).Path.Replace("/", "\").TrimEnd("\")
 	if ($resolved -match "^(?i)c:\\work\\(.+)$") {
 		$relative = $matches[1]
-	} elseif ($resolved -match "^(?i)n:\\(.+)$") {
+	} elseif ($resolved -match "^(?i)w:\\(.+)$") {
 		$relative = $matches[1]
 	} else {
-		throw "対象は C:\work または N: 配下にしてください。"
+		throw "対象は C:\work または W: 配下にしてください。"
 	}
 
 	$relative = $relative.Replace("/", "\").ToLowerInvariant()
 	# 保存するキーは、入力のドライブ文字・区切り文字にかかわらずこの形式に固定する。
-	return @("c:\work\$relative", "n:\$relative")
+	return @("c:\work\$relative", "w:\$relative")
 }
 
 function Get-ProjectHeaders {
