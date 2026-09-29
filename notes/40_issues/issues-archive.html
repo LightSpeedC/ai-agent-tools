@@ -1,0 +1,708 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- details で畳んでいるため Markdown にすると構造が失われる。変換しない -->
+<meta name="md-skip">
+<title>html2md の課題（アーカイブ）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%); --accent2:hsl(93.3,58%,55%); --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%); --accent2:hsl(0,58%,55%); --soft:hsl(0,28%,95%); }
+	/* グループのアクセント色（7 グループ / 色相 280 → 0 を 46.7 度刻み） */
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#d6e2fa; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	.titlebar a{ color:#fff; background:transparent; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	.badge{
+		display:inline-block; padding:1px 9px; border-radius:11px;
+		background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff;
+		font-size:.85em; font-weight:600; white-space:nowrap;
+	}
+	.badge.b-ok{ background:linear-gradient(100deg,#1d7a3c,#45b56c); color:#fff; }
+	.badge.b-ng{ background:linear-gradient(100deg,#a51f22,#e05a5c); color:#fff; }
+	.badge.b-warn{ background:linear-gradient(100deg,#b8620a,#f0a548); color:#fff; }
+	.badge.b-none{ background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff; }
+
+	/* 課題 1 件。JS を使わず details で畳む */
+	details{
+		border:1px solid var(--line,#d9dfe8); border-radius:8px;
+		margin:10px 0; background:#fff; color:var(--ink,#1c2330);
+	}
+	summary{
+		padding:9px 14px; cursor:pointer;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330); font-weight:600;
+		border-radius:8px;
+	}
+	details[open] summary{
+		border-bottom:1px solid var(--line,#d9dfe8);
+		border-radius:8px 8px 0 0;
+	}
+	summary .no{
+		display:inline-block; margin:0 8px;
+		background:transparent; color:var(--ink-soft,#4a5568);
+		font-family:Consolas,"Courier New",monospace; font-size:.9em; font-weight:400;
+	}
+	.issue-body{
+		padding:4px 16px 12px; background:#fff; color:var(--ink,#1c2330);
+	}
+	.issue-body p:first-child{ margin-top:8px; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>html2md の課題（アーカイブ）</h1>
+		<p class="lead">すべて済になったグループを移したもの。いま進めている課題は issues.html にある。</p>
+		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-09-29</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="issues.html">課題</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">変換仕様の未決事項</a></li>
+		<li class="ch02"><a href="#ch02">PowerShell 学習資料からの要求</a></li>
+		<li class="ch03"><a href="#ch03">共通化の残り段階</a></li>
+		<li class="ch04"><a href="#ch04">他プロジェクトからの要求</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>変換仕様の未決事項</h1>
+
+	<p>タグ対応仕様の第 5 章に挙げた論点。全 4 件解消済み。</p>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-01</span>caption が出力されない</summary>
+		<div class="issue-body">
+			<p><code>&lt;table&gt;</code> の中にある <code>&lt;caption&gt;</code> が Markdown に出ない。表の処理が <code>thead</code> と <code>tbody</code> しか見ていないため、<code>caption</code> に到達しない。</p>
+			<p>36 ケースの実測で唯一残った欠落。Markdown のテーブルにキャプションの記法が無いので、表の直前か直後の段落にする必要がある。どちらに置くかを決める。</p>
+			<p><span class="badge b-ok">済</span>2026-09-01 に対処。<strong>表の直前の段落にした。</strong>見出しとして読めるのは前に置いたときなので、<code>figure</code> の <code>figcaption</code> と同じ形に揃えた。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-02</span>ブロックとして扱っていないタグの構造が失われる</summary>
+		<div class="issue-body">
+			<p>次のタグは <code>BlockTags</code> に無いため、中身が地の文として 1 つに連結される。テキストは消えないが構造は失われる。</p>
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>タグ</th><th>いまの出力</th><th>本来あるべき形</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>main</code> <code>article</code> <code>aside</code> <code>header</code></td><td>5 つが 1 段落に連結される</td><td><code>div</code> と同じ「中身を処理する」扱い</td></tr>
+					<tr><td class="nowrap"><code>dl</code> <code>dt</code> <code>dd</code></td><td><code>dt</code> と <code>dd</code> が連結される</td><td>Markdown に定義リストは無い。箇条書きか表に落とす</td></tr>
+					<tr><td class="nowrap"><code>details</code> <code>summary</code></td><td>連結される</td><td>GitHub は HTML のまま解釈するので、そのまま残す手もある</td></tr>
+					<tr><td class="nowrap"><code>hr</code></td><td>消える</td><td><code>---</code>。ただし記号を足さない方針との兼ね合いがある</td></tr>
+				</tbody>
+			</table>
+			</div>
+			<p><code>main</code> 系の 4 つは <code>BlockTags</code> に足すだけで済む。<code>dl</code> と <code>details</code> は落とし方を決める必要がある。</p>
+			<p><span class="badge b-ok">済</span>2026-09-01 に<strong>テキストを落とさない対処を入れた。</strong><code>hr</code> を除くすべてを走査の対象に加え、<code>dt</code> <code>dd</code> <code>summary</code> も個別に挙げて項目ごとの段落にした。<code>address</code> と <code>caption</code> も同時に対応した。</p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に<strong>構造の落とし先を 3 つとも決めて実装した。</strong><code>dl</code> は箇条書き（<code>dd</code> は 4 字下げ）、<code>details</code> はタグのまま出す、<code>hr</code> は <code>---</code>。決着は<a href="../10_plan/html2md-tag-spec.html">タグ対応仕様</a>の決着 9 にある。</p>
+			<p><span class="badge b-ok">済</span><code>hr</code> は閉じタグを持たないため、<strong>そのまま走査に加えると後ろが丸ごと飲み込まれる。</strong>空要素として開きタグだけを切り出す分岐を <code>GetBlock</code> に入れた。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-03</span>章の外で見出しの段が飛ぶ</summary>
+		<div class="issue-body">
+			<p>章（<code>section</code>）の外に <code>h2</code> と <code>h3</code> を並べると <code>###</code> が抜ける。</p>
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>入力</th><th>章の中</th><th>章の外</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>h2</code></td><td class="nowrap"><code>###</code></td><td class="nowrap"><code>##</code></td></tr>
+					<tr><td class="nowrap"><code>h3</code></td><td class="nowrap"><code>####</code></td><td class="nowrap"><code>####</code></td></tr>
+				</tbody>
+			</table>
+			</div>
+			<p><code>h2</code> だけが章の内外で段を変え、<code>h3</code> は変えていない。章の外の <code>h3</code> を <code>###</code> にするか、<code>h2</code> を章の中と同じ <code>###</code> に統一するかを決める。</p>
+			<p><span class="badge b-ok">済</span>2026-09-01 に対処。<strong>章の外の <code>h3</code> 以下も 1 段上げる形にした。</strong>章の外の見出しは章と同じ立場なので、<code>h2</code> を <code>##</code> にする判断を残し、同じ調整を <code>h3</code> 以下に通した。調整は 1 か所に寄せ、<code>h2</code> だけが持っていた分岐は消した。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-04</span>意味を持つインラインタグが平文になる</summary>
+		<div class="issue-body">
+			<p><code>del</code> <code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>abbr</code> <code>small</code> <code>q</code> <code>cite</code> <code>time</code> はタグが消えて中身のテキストだけが残る。取り消し線や上付きの区別は Markdown に出ない。</p>
+			<p>GitHub は <code>~~取り消し線~~</code> を解釈するので <code>del</code> は記法にできる。<code>sup</code> <code>sub</code> <code>kbd</code> は HTML のまま残す手もある。どこまで対応するかを決める。</p>
+			<p><span class="badge b-ok">済</span>2026-09-01 に対処。<strong><code>del</code> は <code>~~</code>、GitHub で生き残るタグ（<code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>q</code>）はタグのまま残す。</strong><code>~~</code> も <code>**</code> と同じ前後判定を受けるため、強調と同じセンチネル方式に載せた。成立しない位置では <code>&lt;del&gt;</code> で出る。</p>
+			<p><strong>どのタグが残るかは実測で決めた。</strong>11 個すべてタグで出す実装にしたあと <code>api.github.com/markdown</code> へ投げたところ、<code>abbr</code> <code>small</code> <code>cite</code> <code>time</code> の 4 個は除去された（中身のテキストは残る）。表示に効かないため平文に落とすことにした。</p>
+			<p>この対応で<strong>退避の仕組みに潜んでいた欠陥が表面化した。</strong>キーの両端が同じ制御文字だったため、<code>2&lt;sup&gt;10&lt;/sup&gt;</code> のように数字が隣接すると偽のキーができ、別の退避内容に置き換わっていた。両端を別の文字にして直した。</p>
+		</div>
+	</details>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>PowerShell 学習資料からの要求</h1>
+
+	<p><code>20260822-powershell-pwsh-learn</code> からの要求。詳細は <code>notes/01_research/</code> に置いた要求 01 の文書にある（受け取った Markdown をそのまま残しているため、HTML 版は無い）。優先度は要求元が付けたもの。</p>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-05</span>章カード（.chapters）を表にする ［高］</summary>
+		<div class="issue-body">
+			<p><code>&lt;ul class="chapters"&gt;</code> の中の <code>span</code> 3 つが連結され、リンクのラベルが 1 本の長い文字列になる。</p>
+<pre><code>- [第1部 基礎編 01. PowerShell の生まれた経緯 DOS・Bash・Node.js と比較しながら、…](docs/01-背景.md)</code></pre>
+			<p>要求は 3 列の表にすること。<strong>ヘッダ行の「章」「タイトル」「内容」が HTML のどこにも無い</strong>のが論点で、そのまま実装すると html2md 自身の「HTML に無い文言」検査に毎回引っかかる。</p>
+			<p>案は 4 つある。HTML 側にヘッダを持たせる（<code>data-columns</code>）／ HTML 側を最初から表にして CSS でカード表示にする／表にせず区切りを入れた箇条書きにする／固定文言を足して検査の対象外にする。<strong>HTML 側を表にする案が最も筋が良い</strong>と考えている。変換器・検査・ルールのどれにも手を入れずに済むため。</p>
+			<p><span class="badge b-ok">済</span>2026-09-09 に、上記とは別の方向で<strong>html2md 側が chapters 構造を解釈する案（B）に決めて実装した。</strong>要求元プロジェクトが HTML を全面的に書き換える負担を避けるため。<code>no</code> は課題番号のクラスと衝突するため <code>part</code> に改名し、表の見出しは <code>data-columns</code> 属性（必須。無いとエラーで止まる）から取る。詳細は<a href="../10_plan/html2md-tag-spec.html">タグ対応仕様の決着 10</a>。<code>html-class-rules.html</code>・<code>TOOLS-USAGE.html</code> は反映済み。要求元への周知と、<code>~/.claude/CLAUDE.md</code> のクラス名一覧への反映は<strong>利用者の判断を待つ</strong>。</p>
+			<p><span class="badge b-ng">不具合</span>要求元プロジェクトから ai-chat-lite（#699）で報告。<strong>ttl のリンクだけ href が <code>.html</code> のまま置き換わらなかった。</strong>実装が <code>href</code> を自前で <code>"[text](href)"</code> に組み立てており、<code>.md</code> 置換・他ファイルのアンカー張り替えを行う共通経路（<code>ConvertLinkTarget</code> ／ <code>inline.Convert</code>）を素通りしていたのが原因。<span class="badge b-ok">済</span>同日に修正。ttl の生の中身を合成 <code>&lt;a&gt;</code> に包んで <code>inline.Convert</code> に通す形にし、他のリンクと同じ経路を通るようにした（exe・ps1 両方）。テストケースに実在するリンク先ファイルを足し、<code>.md</code> 置換が効くことを確認する回帰を追加。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-06</span>.html → .md の書き換えを変換対象だけに絞る ［高］</summary>
+		<div class="issue-body">
+			<p>いまは相対リンクの <code>.html</code> をすべて <code>.md</code> に置き換えている。変換対象でない HTML へのリンクまで書き換わり、存在しないファイルを指す。</p>
+			<p>変換対象のファイル一覧は既に持っているので、その集合に含まれるものだけを書き換えるようにする。</p>
+			<p><span class="badge b-ok">済</span><code>md-skip</code> のページの分は 2026-09-01 に対処した。変換より先に md-skip のページを洗い出し、その一覧にあるリンクは <code>.html</code> のまま残す形にした。</p>
+			<p><span class="badge b-ok">済</span>2026-09-02 に残りも対処した。<strong>判定を裏返して「この実行で <code>.md</code> ができるページの一覧」を持つ形にした。</strong>一覧にあるものだけ置き換え、無いものは <code>.html</code> のまま残す。md-skip のページも探索フォルダの外も、同じ 1 つの判定で片付く。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-07</span>他ファイルへのアンカーをスラッグに変換 ［高］</summary>
+		<div class="issue-body">
+			<p>同一ファイル内の <code>#chNN</code> は見出しアンカーに張り替えているが、<strong>他ファイルへのリンクのアンカー部分は変換していない</strong>。</p>
+<pre><code>[03.2 実行ポリシー](docs/03-実行環境.html#ch02)
+  ↓ いま
+[03.2 実行ポリシー](docs/03-実行環境.md#ch02)     ← 飛ばない
+  ↓ あるべき
+[03.2 実行ポリシー](docs/03-実行環境.md#032-実行ポリシー--なぜ動かないのか)</code></pre>
+			<p>変換対象すべてのアンカーマップを先に作り、リンク先のファイルのマップを引く形にする必要がある。いまはファイルごとに独立して変換しているため、構造を変えることになる。</p>
+			<p><span class="badge b-ok">済</span>2026-09-09 に実装した。<strong>md-skip 判定のために元々読んでいた HTML を使い回し、変換対象すべての見出しアンカーマップを先に作る事前パスを追加した。</strong>本変換のリンク張り替えは、そのマップを引いてアンカーを差し替える。exe（<code>Converter.cs</code>／<code>HtmlUtil.cs</code>）・ps1（<code>html2md-ps.ps1</code>）両方に実装し、テストケース <code>tests/cases/cross-anchor</code> を新設。全テスト成功。詳細は<a href="../10_plan/html2md-tag-spec.html">タグ対応仕様の決着 11</a>。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-08</span>画像の相対パスを出力位置から計算 ［中］</summary>
+		<div class="issue-body">
+			<p>いまは切り出した SVG を <code>images/</code> 固定で参照している。画像を 1 か所に集約する構成では、出力先の階層によって相対パスが変わる。</p>
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>md の位置</th><th>画像への相対パス</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>README.md</code></td><td class="nowrap"><code>docs/images/</code></td></tr>
+					<tr><td class="nowrap"><code>docs/01-背景.md</code></td><td class="nowrap"><code>images/</code></td></tr>
+					<tr><td class="nowrap"><code>docs/plan/構成案.md</code></td><td class="nowrap"><code>../images/</code></td></tr>
+				</tbody>
+			</table>
+			</div>
+			<p>要求元は「ルート直下か否か」の 2 分岐で書いて 3 階層目で壊れた経験がある。出力先からの相対パスを毎回計算する。</p>
+			<p><span class="badge b-ok">済</span>2026-09-10 に実装を確認したところ、この問題自体が起きない設計になっていた。画像を「1 か所に集約」せず、<strong>各ページと同じフォルダに <code>images/</code> を作る</strong>（<code>docs/plan/構成案.md</code> の画像は <code>docs/plan/images/構成案-fig01.svg</code>）。参照は常に <code>images/xxx.svg</code> の固定形で、階層の深さに関わらず相対パスの計算が要らない。3 階層下（<code>notes/plan/構成案.html</code>）で実測し、期待どおり崩れないことを確認した。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-09</span>章間ナビを冒頭にも出す ［中］</summary>
+		<div class="issue-body">
+			<p><code>&lt;footer&gt;</code> の内容は末尾に出るが、冒頭には出ない。900 行を超える章があり、次の章へ行くのに末尾までスクロールすることになる。</p>
+			<p>ナビを持たないページ（README）には出さない判定が要る。要求元は「前章」「次章」「目次に戻る」を含むかで判定している。</p>
+			<p><span class="badge b-ok">済</span><strong>html2md の変換仕様としてではなく、HTML を書くときの取り決めとして解決済みだった。</strong>共通ルール「学習資料の作成ルール」の「資料間のリンク」に「本文（<code>.wrap</code>）の先頭とフッターの両方に、前へ・次へ・目次の3つのバッジを置く。上下で同じ内容にする」と既に定められている。html2md は HTML の構造をそのまま変換するだけなので、ナビを冒頭にも出すかどうかは自動判定の対象ではなく、<strong>執筆時に両方へ置くかどうかで決まる</strong>。「ナビを持たないページには出さない」判定も、単に該当ページの HTML に置かないだけで済み、変換側の判定ロジックは要らない。README のような単独ページ（前後リンクを持たない）は元々このルールの対象外。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-10</span>SVG 切り出し時に CSS 変数を解決する</summary>
+		<div class="issue-body">
+			<p>デザインルールは <code>stop-color="var(--accent)"</code> の書き方を前提にしているが、SVG を単体ファイルに切り出すと変数が解決されず<strong>色が失われる</strong>。</p>
+<pre><code>&lt;section class="ch03"&gt;
+	&lt;svg&gt;&lt;linearGradient id="g-03-1a"&gt;
+		&lt;stop stop-color="var(--accent)"/&gt;    ← .ch03 の定義が要る
+	&lt;/linearGradient&gt;&lt;/svg&gt;
+&lt;/section&gt;</code></pre>
+			<p><code>&lt;style&gt;</code> から <code>.chNN { --accent: … }</code> を読み、切り出す <code>svg</code> の祖先 <code>section</code> のクラスと突き合わせれば静的に解決できる。<code>@media</code> と JS による上書きは対象外とする。</p>
+			<div class="callout callout-important">
+				<p><strong>ルールに従って書いた HTML ほどこの問題を踏む。</strong>この html2md 自身の図はリテラルの <code>hsl()</code> で書いていたため表面化していなかった。</p>
+			</div>
+			<p><span class="badge b-ok">済</span>2026-09-02 に対処。上の方針どおり実装した。<strong>定義も既定値も無いものは書き換えずに残す</strong>（消すと図が壊れるより、そのままのほうが気づける）。<code>@media</code> の中はブロックごと落としてから読む。</p>
+			<p>フォールバックの取り出しは括弧を数えている。<code>var(--x, hsl(280,78%,25%))</code> のように<strong>既定値の中に括弧が入ると <code>[^)]*</code> では途中で切れて壊れる。</strong></p>
+			<p>あわせて、テストが <code>.md</code> しか比べていなかったのを直し、<strong>切り出した <code>.svg</code> も exe と ps1 で突き合わせる</strong>ようにした。既存 6 プロジェクトの SVG に <code>var(</code> を含むものは無く、影響は出ていなかった。</p>
+		</div>
+	</details>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>共通化の残り段階</h1>
+
+	<p>共通化計画の第 7 章に挙げた 8 段階のうち、この章で扱う 5 件。全件解消済み。</p>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-11</span>既存 HTML のクラス名を取り決めに合わせる</summary>
+		<div class="issue-body">
+			<p>クラス名の取り決めの第 8 章に移行表がある。<strong>書き換えはそのプロジェクトの側で行う</strong>。共通ツールのリポジトリから他のプロジェクトのファイルは触らない。</p>
+			<p>出力が壊れているのは <code>b-good</code> / <code>b-bad</code> だけ（記号が付かない）。残りは名前が違っても出力は同じなので急がない。</p>
+			<p>ai-pc は <code>b-good</code>→<code>b-ok</code>(43)、<code>b-bad</code>→<code>b-ng</code>(11) を適用済みだが<strong>未コミットのまま</strong>。ai-pc 側で内容を確認して判断してもらう。</p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に閉じた。<strong>こちらの作業は移行表を用意した時点で終わっている。</strong>書き換えは各プロジェクトが自分で行うため、進捗をこちらの課題として追うと閉じられない。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-12</span>各プロジェクトへランチャーを配置</summary>
+		<div class="issue-body">
+			<p>各プロジェクトの <code>tools/30_html2md/</code> に <code>html2md.cmd</code> を置く。中身は CLAUDE.md の「HTML と Markdown の併存」に書いてある。</p>
+			<p><strong>ランチャーを置いて動作を確かめてから旧スクリプトを消す。</strong>先に消さない。旧スクリプトは <code>src/scripts/70_html2md/</code> にある。</p>
+			<p><span class="badge b-ok">済</span>2026-09-04 に<strong>配置そのものが不要になった。</strong>html2md のフォルダが PATH に入り、<code>html2md</code> だけでどこからでも呼べるようになったため。CLAUDE.md の「HTML と Markdown の併存」から、ランチャーを置く指示を外した。</p>
+			<p><span class="badge b-none">未</span><strong>旧スクリプトの削除は課題 14 に残る。</strong>ランチャーの有無とは無関係に不要だが、<strong>他プロジェクトのファイルなのでこちらからは触らない。</strong>そのプロジェクト側で消してもらう。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-13</span>check-markdown を C# 化</summary>
+		<div class="issue-body">
+			<p>html2md は C# 化したが、<code>check-markdown.ps1</code> は PowerShell のまま。C# 化すると <code>ConvertTo-Json</code> の UTF-8 バイト列の扱いなど ps1 固有の注意が不要になる。</p>
+			<p>C# 化したら CLAUDE.md の「生成した Markdown は GitHub のレンダラで検証する」の記述も更新する。</p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に<strong>やらないと決めて閉じた。</strong>ps1 のまま動いており、UTF-8 バイト列の扱いは既に片付いている。C# 化しても得るものが無い。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260830-14</span>旧 ps1 / mjs を削除</summary>
+		<div class="issue-body">
+			<p>各プロジェクトの <code>src/scripts/70_html2md/</code> にある 5 本（ps1 4 本、mjs 1 本）を削除する。ランチャーへの置き換えが済み、出力を確かめてから。</p>
+			<p>共通ツール側の <code>html2md-ps.ps1</code> は参照実装として残す。テストで exe との一致を確かめている。<strong>（2026-09-12 に削除した。<span class="no">i260912-02</span> を参照）</strong></p>
+			<p><strong>ランチャーへの置き換えという前提は無くなった</strong>（課題 12 参照）。<code>html2md</code> が PATH で呼べるので、各プロジェクトは旧スクリプトを消すだけでよい。<strong>他プロジェクトのファイルなのでこちらからは触らない。</strong></p>
+			<p><span class="badge b-ok">済</span>2026-09-05 に閉じた。<strong>周知で「消せます」と伝えた時点でこちらの役目は終わり。</strong>削除は各プロジェクトが自分で行う。課題 11 と同じ扱い。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260907-01</span>html2md-ps.cmd に廃止された書き方が残っている</summary>
+		<div class="issue-body">
+			<p><code>html2md-ps.cmd</code> の実行行が <code>powershell.exe -NoProfile …</code> になっている。共通ルール「実行ファイル名に <code>.exe</code> を付けない」に反する。<code>powershell</code> にする。</p>
+			<p>ai-chat-lite の指摘（#557 / #570）で調べて見つけた。<strong>この cmd は SJIS なので Grep では 0 件になり見えなかった。</strong>Grep は SJIS / UTF-16 を読めず、日本語で検索すると黙って結果から抜ける。<code>convert-encoding --read</code> で中身を読んで確認した。</p>
+			<p>このプロジェクトの SJIS ファイルは 4 件（<code>build.cmd</code> <code>build-convert-encoding.cmd</code> <code>build-text.cmd</code> <code>html2md-ps.cmd</code>）、UTF-16 は 0。<code>build</code> 系の <code>csc.exe</code> はファイルの場所を指す用途で、コマンド名の <code>.exe</code> ではないため対象外。<code>check-contrast.cmd</code>・<code>check-markdown.cmd</code>・<code>run-tests.cmd</code> は ASCII の cmd で、こちらは <code>powershell.exe</code> が残っていたため 2026-09-08 に直した（レビュー #649 low）。</p>
+			<p><span class="badge b-ok">済</span>2026-09-07 に直した。<code>powershell.exe</code> → <code>powershell</code>。<strong>SJIS の cmd は Edit で壊れるため、Write で全文を書き直し <code>convert-encoding --to cmd</code> で SJIS ＋ CRLF に変換した。</strong></p>
+		</div>
+	</details>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>他プロジェクトからの要求</h1>
+
+	<details open>
+		<summary><span class="badge b-ok">済</span><span class="no">i260912-05</span>アイコンだけのリンクが Markdown で空になる</summary>
+		<div class="issue-body">
+			<p>2026-09-12、<code>ai-chat-lite-reviewer</code> から指摘（html2md ルーム #793）。共通ルール「root の README.html と資料の html は相互リンクする」に<strong>戻るリンクをアイコンだけにする規定</strong>が入ったが、<strong>html2md がそれを Markdown に落とせない。</strong></p>
+
+			<h3>実測</h3>
+
+			<p>指摘を受けて <code>tmp/</code> に見本を作り、変換した。<strong>指摘のとおりだった。</strong></p>
+
+<pre><code class="language-html">&lt;a class="backlink" href="../"&gt;&lt;svg width="16" height="16" …&gt;&lt;path d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/&gt;&lt;/svg&gt;&lt;/a&gt;</code></pre>
+
+<pre><code class="language-markdown">[](../)
+[](01-前.html) [](03-次.html) [](README.md)</code></pre>
+
+			<p><strong>リンクテキストが空になり、GitHub では何も表示されない。</strong>SVG の <code>images/</code> への切り出しも起きない（リンクの中の SVG は対象外の扱い）。</p>
+
+			<h3>あわせて確認した点</h3>
+
+			<p>指摘元から「<code>docs/</code> 配下の前へ・次へ・目次バッジは置き換わっているか」と問われたので調べた。<strong>置き換わっていない。</strong><code>&lt;&lt;</code> ・ <code>&gt;&gt;</code> ・ <code>^^</code> への置換は<strong>ソース全体で 1 件も実装されていない</strong>（共通ルール「資料間のリンク」には規定がある）。</p>
+
+			<div class="callout callout-important">
+				<p><strong><code>.backlink</code> だけの問題ではない。</strong>アイコンだけのリンク全般が対象で、<code>docs/</code> を持つプロジェクトでは前へ・次へ・目次の 3 つが同じように空になる。</p>
+			</div>
+
+			<h3>決めたこと</h3>
+
+			<p><strong>何に置き換えるかは共通ルールで決まっていた</strong>（前へ <code>&lt;&lt;</code> ／ 次へ <code>&gt;&gt;</code> ／ 目次 <code>^^</code>）。決めたのは<strong>どのアイコンかをどう判別するか。</strong>次の順で手がかりを探す。</p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th class="num">順</th><th>手がかり</th><th>置き換え</th></tr></thead>
+				<tbody>
+					<tr><td class="num">1</td><td class="nowrap"><code>&lt;a aria-label&gt;</code></td><td rowspan="3">語が表にあれば記号。<strong>表に無い語はその語をそのまま文字にする</strong></td></tr>
+					<tr><td class="num">2</td><td class="nowrap"><code>&lt;a title&gt;</code></td></tr>
+					<tr><td class="num">3</td><td class="nowrap"><code>svg</code> の中の <code>&lt;title&gt;</code></td></tr>
+					<tr><td class="num">4</td><td class="nowrap"><code>&lt;a class="backlink"&gt;</code></td><td><code>^^</code></td></tr>
+					<tr><td class="num">5</td><td>どれも無い</td><td><strong>空のまま。検査で指摘する</strong></td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<div class="callout callout-important">
+				<p><strong>SVG の形（<code>path</code> の <code>d</code>）では判別しない。</strong>共通ルールはアイコンの意味（<code>⌂</code> ・ <code>‹</code> ・ <code>›</code>）だけを定めており、<code>d</code> の実値に規定が無い。辞書を持っても当たる保証が無く、外れたときに<strong>静かに空のまま通る</strong>。推測で当てるより、指摘して書き手に気づかせる方を採った。</p>
+			</div>
+
+			<h3>途中で見つかったもの</h3>
+
+			<p><strong><code>&lt;&lt;</code> が消えていた。</strong>最終段の汎用タグ除去（<code>&lt;[^&gt;]+&gt;</code>）が <code>&lt;&lt;](b.md) [&gt;</code> をタグ 1 個と誤認して飲み込み、<code>[&gt;](b.md)</code> だけが残る。</p>
+
+			<p><strong>既存の <code>&lt;br&gt;</code> と同じセンチネル退避方式で直した。</strong>制御文字（15）に置いてタグ除去を通過させ、通過後に <code>&lt;&lt;</code> へ戻す。汎用タグ除去の正規表現を厳しくする方が根本的だが、<strong>全ケースに影響が及ぶ</strong>ため、影響が閉じる方を採った。</p>
+
+			<p><strong>「HTML に無い文言」検査も 2 点直した。</strong>(1) 記号 <code>&lt;&lt;</code> ・ <code>&gt;&gt;</code> ・ <code>^^</code> を両側から落とす（共通ルールが認めた代替なので付け足しではない）。(2) <code>aria-label</code> を<strong>元の位置に埋めてから</strong>突き合わせる。末尾にまとめて足す作りだったため、<code>…にする: 付録</code> のように地の文と繋がった行が一致しなかった。</p>
+
+			<h3>テスト</h3>
+
+			<p>ケース <code>icon-link</code> を新設。<strong>期待値（終了コードと ★ 行）を手で書いてから実装した</strong>ので、実装の出力に引きずられていない。手で書いた <code>expected.txt</code> と実装の出力は一致した。</p>
+
+			<p><span class="badge b-ok">済</span>html2md 16 ケース ・ convert-encoding 140 件 ・ text 55 件すべて成功。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260912-01</span>公開前検査（check-public）を作るか</summary>
+		<div class="issue-body">
+			<p>2026-09-12、<code>ai-agent-rules</code> から依頼（public ルーム #777）。<strong>public のリポジトリに出す前に、個人名・実体パス・認証情報が混ざっていないかを機械で止めたい。</strong>公開資料を作るプロジェクトが他にもあるため、共有ツール側に入れれば全部が守られる、という理由。</p>
+
+			<p>希望された形は <code>check-contrast</code> ・ <code>check-markdown</code> と同じ<strong>独立コマンド</strong>（<code>check-public</code> など）で、html2md の検査からも呼ぶ。変換が起きない場面（コミット前・リモート作成前）でも走らせたいため。</p>
+
+			<h3>検査してほしいと挙がったもの</h3>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>対象</th><th>補足</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap">メールアドレス</td><td>—</td></tr>
+					<tr><td class="nowrap">実体パス</td><td><code>C:\Users\</code> の直後が実名のもの。プレースホルダは除外</td></tr>
+					<tr><td class="nowrap">認証情報</td><td><code>password</code> / <code>passwd</code> / <code>secret</code> / <code>api_key</code> / <code>token=</code>。<strong>コード例の変数名が誤検出しやすく、調整が要る</strong></td></tr>
+					<tr><td class="nowrap">除外語リスト</td><td>顧客名・案件名・内部システム名</td></tr>
+					<tr><td class="nowrap">異体字の混入</td><td>キリル・ハングル。日本語に紛れると目視で気づけない</td></tr>
+					<tr><td class="nowrap">git の author</td><td>ローカルユーザー名が本文に出ていないか。<strong>環境から取れるので、名前をリストに書かずに済む</strong></td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<p>除外語リストの置き場は<strong>先頭 <code>_</code> のファイルを既定に</strong>、という希望。リスト自体が機密のため、共通ルール「.gitignore の共通除外設定」で全階層が管理外になることを前提にしている。</p>
+
+			<h3>決めること</h3>
+
+			<ul>
+				<li><strong>受けるかどうか。</strong>html2md は「HTML と Markdown の変換と検証」の置き場で、公開前検査はその外側にある。共有ツール置き場として引き受けるなら、位置づけを計画書に書き足す必要がある</li>
+				<li>引き受ける場合の実装。exe（C#）と ps1 の 2 本立てにするか、<code>check-contrast</code> ・ <code>check-markdown</code> と同じ ps1 だけにするか</li>
+				<li>誤検出をどこまで許すか。<strong>止める検査は、誤検出が多いと使われなくなる</strong></li>
+				<li>除外語リストの形式と、リストが無いときの振る舞い</li>
+			</ul>
+
+			<div class="callout callout-important">
+				<p><strong>依頼元は「どう作るかはお任せ。課題に残すかどうかも含めて」と書いている。</strong>受けない判断もあり得る。その場合は、どこに置くのが適切かを返す。</p>
+			</div>
+
+			<h3>2026-09-13 に作った</h3>
+
+			<p><strong>引き受けて <code>check-public</code> として作った</strong>（<code>src/check-public/main.ts</code>）。挙がった 6 項目をすべて入れ、<code>--skip</code> で 1 つずつ外せる。実装は TypeScript で、ほかの 6 つと揃えた。</p>
+
+			<p>決めごとへの答え。</p>
+
+			<ul>
+				<li><strong>受けた。</strong>公開前検査は変換の外側だが、<code>check-contrast</code> ・ <code>check-markdown</code> と同じ「出す前に実物で確かめる」道具であり、置き場としては揃う</li>
+				<li><strong>TypeScript 1 本。</strong>ps1 と exe の 2 本立てにしない。この時点で 3 ツールの移植が済み、ps1 版も TypeScript へ移していたため</li>
+				<li><strong>誤検出は件数で縛った。</strong>テストの材料に「当たる 4 つ」と「当たらない 10 個」を置き、<strong>当たる件数が 4 を超えたら落ちる</strong>ようにしてある</li>
+				<li><strong>リストが無ければ、飛ばしたことを画面に出す。</strong>黙っては通さない</li>
+			</ul>
+
+			<div class="callout callout-warning">
+				<p><strong>作った直後、このプロジェクト自身に掛けたら 12 件出た。中身を見たら全部が誤検出だった</strong>（<code>const token = argv[i]</code> ・ <code>token: string</code> ・ HTML でエスケープされた伏せ字）。判定を直して 0 件にした。<strong>止める検査は、誤検出が多いと道具ごと使われなくなる。</strong></p>
+			</div>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260913-01</span>check-public の対象から .svg と拡張子を持たないファイルが外れる</summary>
+		<div class="issue-body">
+			<p>2026-09-13、<code>ai-agent-rules</code> から指摘（public ルーム #821）。<strong><code>--all</code> を付けても、追跡されているファイルより少ない。</strong>拡張子で絞っているためではないか、という問い。</p>
+
+			<p>調べた。<strong>指摘のとおり。</strong>このプロジェクトでは追跡 207 件に対して対象が 190 件で、<strong>17 件が外れる。</strong></p>
+
+			<div class="tablewrap">
+			<table>
+				<thead><tr><th>外れるもの</th><th>件数</th><th>中身</th></tr></thead>
+				<tbody>
+					<tr><td class="nowrap"><code>.svg</code></td><td class="num">6</td><td><strong>図の中に文字が入る。</strong>取りこぼしになり得る</td></tr>
+					<tr><td class="nowrap">拡張子なし</td><td class="num">7</td><td><code>html2md</code> ・ <code>text</code> 等の sh ランチャー。<strong>スクリプト本体</strong></td></tr>
+					<tr><td class="nowrap">ドット始まり</td><td class="num">3</td><td><code>.editorconfig</code> ・ <code>.gitattributes</code> ・ <code>.gitignore</code>。<strong>パスを含みうる</strong></td></tr>
+					<tr><td class="nowrap"><code>.mod</code></td><td class="num">1</td><td><code>go.mod</code></td></tr>
+				</tbody>
+			</table>
+			</div>
+
+			<h3>やること</h3>
+
+			<ul>
+				<li><strong>対象の決め方を変える。</strong>拾う拡張子を並べる形（allowlist）は、増えるたびに漏れる。<strong>読めたら検査する</strong>形にして、画像・実行ファイル・アーカイブだけを外すほうが漏れにくい</li>
+				<li><strong>拡張子を持たないファイルを対象に入れる。</strong>sh スクリプトは中身がテキストで、パスも書かれる</li>
+				<li><strong>USAGE に対象の決め方を書く。</strong>いまは書いていないため、外れていることに気づけない（指摘もそこから来ている）</li>
+			</ul>
+
+			<div class="callout callout-important">
+				<p><strong>「読めたら検査する」に変えると、対象が増えて誤検出も増える。</strong>いまは 0 件だが、増やしたあとも 0 件を保てるかを確かめてから切り替える。<strong>止める検査は、誤検出が多いと道具ごと使われなくなる。</strong></p>
+			</div>
+
+			<p>指摘元は「こちらの SVG は html2md が HTML から切り出したもので元は検査済みなので、いま困ってはいない」と書いている。<strong>急ぎではない。</strong></p>
+
+			<h3>2026-09-13 に直した</h3>
+
+			<p><strong>拾う側を並べる形をやめた。</strong>外すのは中身がテキストでないものだけ（画像・音声・書庫・実行ファイル・フォント・文書・データベース）にして、残りはすべて見る。対象は 190 件から <strong>207 件</strong>（追跡の全件）になった。</p>
+
+			<div class="callout callout-warning">
+				<p><strong>直す途中で、もっと深いものが出た。</strong>文字コードを判定できないファイルを飛ばしていたため、<strong>BOM 無しで日本語を含む <code>.svg</code> 2 件が黙って漏れていた</strong>（UTF-8 とも SJIS とも読めて決まらない）。<code>convert-encoding</code> は書き換えずに止めるのが正しいが、<strong>検査では逆</strong>で、読める形があるのに飛ばすと見逃す。UTF-8 として成立するならそちらで読むように直した。</p>
+			</div>
+
+			<p>テストに 3 件足した（<code>.svg</code> ・ 拡張子なし ・ 判定できないもの）。<strong>どれも落ちるのを見てから実装している。</strong>USAGE の第 3 章に「対象の決め方」を書いた。</p>
+
+			<h3>残っている論点</h3>
+
+			<p><strong>このプロジェクト自身に掛けると 4 件出る。</strong>テスト材料（<code>tests/check-public/ng/</code>）が追跡対象になったため。材料は当たるように作ってあるので、検出としては正しい。</p>
+
+			<p><code>check-contrast</code> は自分のフィクスチャ置き場（<code>contrast/</code>）を既定で除外している。<strong>同じように <code>--exclude</code> を足すかどうかは、まだ決めていない。</strong>汎用の道具に、このプロジェクト固有の除外を既定で入れるのは避けたい。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260913-02</span>text find --recurse が既定で tmp ・ etc を舐める</summary>
+		<div class="issue-body">
+			<p>2026-09-13、<code>ai-agent-rules</code> から報告（public ルーム #831）。<strong>共通ルール「名前を変えたら全体を検査する」に従って <code>text find --recurse</code> を素で撃ったところ、<code>etc/history/jsonl</code> のセッションログ（11.8 MB）に当たり、過去の会話が出力に出た。</strong></p>
+
+			<div class="callout callout-caution">
+				<p><strong>共通ルール違反を誘発する。</strong>「.gitignore で除外されたファイルの取り扱い」は「除外されたものは原則として読まない／出力に含めない」としている。<strong>素で撃つと必ずこれを破る。</strong>会話ログには個人名・パスもあり得る。</p>
+			</div>
+
+			<h3>調べた</h3>
+
+			<p><strong>報告のとおり。</strong><code>dirSet()</code>（<code>src/text/find.ts</code>）は引数が無ければ空の <code>Set</code> を返すため、<strong>既定の除外が無い。</strong><code>tmp/</code> に置いた語が <code>--recurse</code> で当たることを実測した。このプロジェクトの <code>etc/</code> は 58 MB ある。</p>
+
+			<p><strong>ほかの道具とも不揃い。</strong><code>check-markdown</code> ・ <code>check-contrast</code> は <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> ・ <code>.git</code> を既定で外し、<code>check-public</code> は git が追跡しているものだけを見る。<strong><code>text find</code> だけが素通し。</strong></p>
+
+			<h3>直し方の案</h3>
+
+			<ul>
+				<li><strong>A（推し）既定で <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> ・ <code>.git</code> を外す。</strong>ほかの 3 つと揃う。解除は <code>--no-default-exclude</code> のような明示で受ける</li>
+				<li>B <code>--recurse</code> のときだけ既定で外す。単一フォルダの指定は素通しのまま</li>
+				<li>C 変えない。呼ぶ側が <code>--exclude-dir</code> を付ける</li>
+			</ul>
+
+			<p><strong>C は採らない。</strong>報告元が書いているとおり「新ルールが <code>--recurse</code> を指示しているので、付け忘れる人は増える」。<strong>付け忘れたときに黙って会話ログを読む形は、道具の側が悪い。</strong></p>
+
+			<p>A は後方互換を壊す（<code>tmp/</code> を探していた呼び出しが当たらなくなる）。ただし <code>tmp/</code> ・ <code>etc/</code> を意図して探す場面は少なく、<strong>破る側の害のほうが大きい。</strong></p>
+
+			<p><span class="badge b-ok">済</span><strong>記録の是正。</strong>A 案は既に実装・テストとも揃っていた（<code>src/text/find.ts</code> の <code>DefaultExcludeDirs</code>、<code>tools/40_test/run-text-tests.ps1</code> の「既定で外すフォルダ（i260913-02）」節）。記録の更新だけが漏れていたため、実測（テスト62件成功）のうえで済に直す。</p>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-ok">済</span><span class="no">i260921-01</span>md-flat の details 展開で id が失われ、課題間リンクが折れる</summary>
+		<div class="issue-body">
+			<p>2026-09-19、<code>ai-chat-lite</code> から報告（public ルーム #914、待受けを張り直した際に読んだ）。<strong><code>md-flat</code> を付けた <code>details</code> を数十件含む一覧ページ（この課題一覧のような形）を変換すると、内部の課題間リンク（<code>href="#i260830-09"</code> 形式）がほぼ全滅する</strong>とのこと。報告元の実測: 同じファイルで <code>md-flat</code> 無しなら内部リンク切れ 0 件、有りだと 100 件超。</p>
+
+			<h3>調べた</h3>
+
+			<p><strong>報告のとおり。</strong><code>src/html2md/converter.ts</code> の <code>convertDetails()</code> は、<code>md-flat</code> のとき <code>summary</code> のテキストを <code>## </code> 見出しへ展開するだけで、元の <code>&lt;details id="..."&gt;</code>（<code>&lt;section&gt;</code>／<code>&lt;li&gt;</code> 等が持つ課題番号の <code>id</code>）を一切受け取っていない（呼び出し元 <code>convertBlocks()</code> も <code>inner</code> と <code>class</code> しか渡していない）。GitHub 側は見出しテキストを正規化した文字列から自動でアンカーを作るため、<code>「## <span class="badge b-ok">済</span> i260830-09 …」</code>のような見出しは <code>#i260830-09</code> という短いアンカーにならず、元の <code>id</code> を指すリンクが軒並み外れる。</p>
+
+			<div class="callout callout-important">
+				<p><strong>このファイル（<code>issues.html</code> 自身）も対象。</strong> <code>&lt;details&gt;</code> に <code>md-flat</code> は付けていないため今は影響を受けていないが、課題間リンク（<span class="no">i260910-02</span> 等）を多用する構造そのものが、将来 <code>md-flat</code> を付けた瞬間に同じ壊れ方をする位置にある。</p>
+			</div>
+
+			<h3>直し方（判断待ち）</h3>
+
+			<p>報告元も「修正の方向性は判断をお任せします」としている。<strong>生成される Markdown の形が変わる</strong>（このツールを使う全プロジェクトに影響する）ため、共通ルール「判断が要るもの」に該当し、ここでは実装しない。</p>
+
+			<ul>
+				<li><strong>A: 見出しの直前に明示アンカーを差し込む。</strong>Markdown 中に <code>&lt;a id="i260830-09"&gt;&lt;/a&gt;</code>（生 HTML）を1行足してから <code>## </code> 見出しを続ける。GitHub は Markdown 内の生 HTML の <code>id</code> をアンカーとして解決するため、既存の <code>href="#i260830-09"</code> がそのまま生きる。<code>convertDetails()</code> に元要素の <code>id</code> 属性を渡す必要がある（呼び出し元の追加対応も要る）</li>
+				<li>B: リンク側を書き換える。<code>href="#i260830-09"</code> を GitHub のスラッグ生成規則に合わせて動的に付け替える。バッジ・記号（<span class="badge b-ok">済</span> 等）を含む見出しの正規化規則を追随させ続ける必要があり、GitHub 側の仕様変更に弱い</li>
+			</ul>
+
+			<p>A の方が実装が閉じており壊れにくいと見ていたが、実装時にコードを読み直したところ、<strong>このプロジェクトは既に「見出しの id → 実際に生成されるアンカー」を事前計算するマップ（<code>buildAnchorMap()</code>）を持っており、<code>&lt;section&gt;</code> の h1 と id 付き <code>&lt;h2&gt;</code>/<code>&lt;h3&gt;</code> は既にこの経路でリンクが正しく張り替わっている</strong>ことが分かった。案A（生 Markdown に <code>&lt;a id&gt;</code> を追加）は生成される Markdown の中身が変わるが、<strong>この既存のマップを <code>md-flat</code> の <code>&lt;details&gt;</code> にも拡張する形なら、生成される Markdown は一切変えずに直せる</strong>（見出し自体の出力は変わらず、それを指すリンクの <code>href</code> だけが正しいアンカーへ書き換わる）。</p>
+
+			<h3>決定・実装（2026-09-22）</h3>
+			<p>利用者の判断: <strong>1-A</strong>（上記の拡張マップ方式を採用）、<strong>2 広げる（B: <code>&lt;details&gt;</code> 自身に <code>id</code> が無くても、直接くるむ <code>&lt;li&gt;</code>／<code>&lt;section&gt;</code> の <code>id</code> を拾う）</strong>、<strong>3 テスト追加</strong>。</p>
+			<p><span class="badge b-ok">済</span><code>src/html2md/converter.ts</code> の <code>buildAnchorMap()</code> に <code>collectFlatDetailsAnchors()</code> を追加。<code>section</code>・<code>li</code>・<code>div</code>・<code>ul</code>・<code>ol</code> を辿りながら「直近の id 持ちの li/section」を運び、<code>md-flat</code> の <code>details</code> に着いた時点で自分の <code>id</code> が無ければそれを使う。テストケース <code>tests/cases/flat-details-anchor/</code>（直接 id・section 経由 id の両方）を新設し、<code>tools/40_test/run-tests.ps1</code> に登録。全体テスト・型チェック・文字コード検査は確認済み。</p>
+			<p><strong>実装時に踏んだ落とし穴。</strong>最初 <code>&lt;li id="..."&gt;&lt;details class="md-flat"&gt;</code>（<code>li</code> で <code>details</code> をくるむ形）でテストを書いたが、このプロジェクトの実装では <code>li</code> の中身は見出しへ展開されず地の文として1行にまとめられる仕様だった（<code>md-flat</code> の対象外）。<code>section</code> でくるむ形に直してテストを作り直した。</p>
+			<p><span class="badge b-ok">済</span>2026-09-23、報告元（<code>ai-chat-lite</code>、public ルーム #1037）が実際のページで検証し、アンカー切れが0件になったことを確認。OK が出たため「済」にする。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260922-02</span>check-contrast を PlayWright へ一本化する（承諾済み）</summary>
+		<div class="issue-body">
+			<p>2026-09-22、<code>PlayWright</code> から相談（public ルーム #991）。<strong><code>check-contrast</code> を PlayWright 側が同名・同仕様で丸ごと引き取りたい</strong>とのこと。既に試験的に PlayWright 側で <code>bin/check-contrast</code> を用意済みで、このプロジェクト側の <code>check-contrast</code> 一式（<code>src/check-contrast/</code>・<code>contrast/</code>・<code>check-contrast.cmd</code>・<code>check-contrast-ps.ps1</code>）を廃止してよいか許可を求めている。詳細は <code>PlayWright</code> の計画書（<code>notes/10_plan/i260922-01-check-contrast-移行.html</code>、プロジェクト外のため直接参照はしない）とのこと。</p>
+			<p><span class="badge b-ok">済</span>利用者の判断: <strong>受け入れる</strong>。<code>check-contrast</code> はそもそも Playwright が無いと動かせないため、PlayWright 側に一本化するのが自然という理由。<code>#1007</code> で承諾の返信を送信済み。</p>
+			<p><span class="badge b-ok">済</span>2026-09-23、<code>ai-chat-lite-reviewer</code> が PlayWright 側の移行を最終確認（public ルーム #1075）。移行元と完全一致するコピー・TypeScript化・テスト引き継ぎ・ランチャー整合、指摘事項すべて解消を確認。<strong>この確認を受け、こちら側の <code>bin/check-contrast</code>・<code>bin/check-contrast.cmd</code> を削除した</strong>（利用者の指示）。これにより PATH 経由ではこちら側が実行されなくなり、移行はいったん完了とした。</p>
+			<p><span class="badge b-ok">済</span>2026-09-23、残る一式（<code>src/check-contrast/</code>・<code>contrast/</code>・<code>tools/90_misc/check-contrast-ps.ps1</code>・関連テスト・<code>README.html</code>/<code>TOOLS-USAGE.html</code> の説明・<code>build-release.ps1</code> の配布物リスト）も削除・更新した（利用者の指示）。全体テスト・型チェック・文字コード検査を確認済み。PlayWright 側でも削除後の PATH 解決を再実測し、正常動作を確認（<code>#1080</code>）。以上により本課題を「済」にする。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260923-01</span>見出しに隣接する code 等で、アンカーのハイフンが連続する</summary>
+		<div class="issue-body">
+			<p>2026-09-22、<code>i260921-01</code> の検証中に <code>ai-chat-lite</code> から追加報告（public ルーム #994）。<strong>見出しに <code>-c</code>・<code>:id:</code> のようなコードを含むとき、リンク側のスラッグが実際の見出しと一致しない</strong>とのこと（先方の <code>i260903-02</code>：見出し「`## **☑** i260903-02 ID の名乗り方を作り直す（`-c` を廃し、コマンドの直後に `:id:` で固定する）`」）。</p>
+
+			<h3>調べた</h3>
+
+			<p>最初は「記号除去後に空白が連続してハイフン2個になる」という仮説を立てたが、GitHub の実際のスラッグ生成（<code>github-slugger</code>、<a href="https://github.com/Flet/github-slugger/blob/main/index.js">GitHub上のソース</a>で確認）は <code>value.replace(規則で記号を除去, '').replace(/ /g, '-')</code> という単純な処理で、<strong>連続するハイフンをまとめる処理は無い</strong>ことが分かった（仮説は誤り）。</p>
+			<p><strong>本当の原因は <code>getAnchor()</code> 側ではなく、共通で使っている <code>getPlainText()</code>（<code>src/html2md/htmlutil.ts</code>）側だった。</strong><code>getPlainText()</code> はタグを無条件に空白1個へ置き換える（<code>html.replace(/&lt;[^&gt;]+&gt;/g, ' ')</code>）。見出しの中で <code>（&lt;code&gt;-c&lt;/code&gt;</code> のように<strong>タグの前後に元々空白が無い</strong>場合、タグを消すたびに余計な空白が生まれる。<code>getAnchor()</code> がその空白をハイフンに変換するため、<code>-c</code> 自身が持つハイフンと連続して <code>--c</code> のような二重ハイフンになり、GitHub の実際のアンカーとずれる。GitHub 側はレンダリング後のテキストをそのまま使うため、タグの境界だからといって空白は入らない。</p>
+			<div class="callout callout-important">
+				<p><strong>このプロジェクト自身も対象。</strong><code>issues.html</code> 自身が、バッジと id の間に空白を置かない書き方（<code>&lt;span class="badge..."&gt;済&lt;/span&gt;&lt;span class="no"&gt;i260830-01&lt;/span&gt;</code>）を使っている。他プロジェクト固有の問題ではなく、このプロジェクトが将来 <code>md-flat</code> を使えば同じ壊れ方をする位置にあった。</p>
+			</div>
+
+			<h3>直した</h3>
+
+			<p><span class="badge b-ok">済</span><code>getPlainText()</code> の全呼び出し（9箇所）を洗い出したところ、<strong>アンカー計算に使っているのは3箇所だけ</strong>（section の h1 タイトル・id 付き h2/h3・<code>i260921-01</code> で追加した md-flat details の summary）で、残り6箇所は空文字判定や緩い文言存在チェックのみで影響が無いと確認した。</p>
+			<p>アンカー計算専用に <strong>タグ境界に空白を入れない</strong> <code>getAnchorText()</code> を新設し、影響する3箇所だけ差し替えた（既存の <code>getPlainText()</code> は他6箇所のためそのまま残した）。テストケース <code>tests/cases/anchor-adjacent-code/</code>（<code>-c</code> と同じ構造で再現）を新設し、修正前のコードで実際に <code>--c-</code> のアンカー切れが起きることを確認したうえで修正し、直ることを確認した。全体テスト・型チェック・文字コード検査は確認済み。</p>
+			<p><span class="badge b-ok">済</span>2026-09-23、報告元（<code>ai-chat-lite</code>、public ルーム #1037）が実際のページで検証し、アンカー切れが0件になったことを確認。OK が出たため「済」にする。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260929-03</span>見出しにバッジを含むと、リンクのアンカーが実際の見出しとずれる</summary>
+		<div class="issue-body">
+			<p>2026-09-29、<code>20260905-windows-pc-memory-inspection</code> から報告（public ルーム #1264）。見出し <code>1. 出力の安全性 ✅ 済 3 件（済 3）</code> の実際のアンカー（<code>github-slugger</code> の出力）は <code>1-出力の安全性--済-3-件済-3</code> だが、html2md のリンクは <code>#1-出力の安全性-済-3-件済-3</code> になる。<code>2. 自動化 ⚠ 着手 1 件（着手 1）</code> も同じ。</p>
+
+			<h3>調べた</h3>
+			<p>報告の推測（<code>getAnchorText()</code> が空白を畳む）とは違った。<code>getAnchor()</code> は空白 1 個をハイフン 1 個にしており、畳んでいない。</p>
+			<p><strong>原因は、アンカーを計算する文字列と、Markdown に書き出す見出しが食い違っていること。</strong>アンカーは HTML の見出しからタグを落とした文字列（<code>getAnchorText()</code>）で計算する。一方、Markdown の見出しではバッジを <code>✅ **済** </code>（記号・空白・太字・空白）に、課題番号（<code>.no</code>）を後ろに空白を足して書き出す（<code>src/html2md/inline.ts</code>）。記号と補った空白が、アンカーの計算に入らない。</p>
+			<div class="tablewrap"><table>
+				<thead><tr><th>見出し（Markdown）</th><th>html2md のリンク</th><th>実際のアンカー</th></tr></thead>
+				<tbody>
+					<tr><td><code>1. 出力の安全性 ✅ **済** 3 件（済 3）</code></td><td><code>#1-出力の安全性-済-3-件済-3</code></td><td><code>#1-出力の安全性--済-3-件済-3</code></td></tr>
+					<tr><td><code>✅ **済** i260929-01 件名です</code></td><td><code>#済i260929-01件名です</code></td><td><code>#-済-i260929-01-件名です</code></td></tr>
+				</tbody>
+			</table></div>
+			<p>2 行目は報告に無かった形で、課題一覧の <code>&lt;summary&gt;</code> のようにバッジと課題番号が隣り合うと、<strong>空白がすべて消えてアンカーが別物になる</strong>。i260923-01 でタグの境界に空白を入れない <code>getAnchorText()</code> にしたとき、バッジと課題番号の後ろに補う空白の分が抜けた。</p>
+
+			<h3>決めること（直し方）</h3>
+			<ul>
+				<li>A: アンカーを、実際に書き出す Markdown の見出し（インライン変換のあと、<code>**</code> や <code>`</code> などの記法を外した文字列）から計算する。書き出しとアンカーが同じ元から出るので、インライン変換を変えてもずれない</li>
+				<li>B: <code>getAnchorText()</code> に、バッジ（記号と空白）と課題番号（後ろの空白）の書き出し規則を写す。変更は小さいが、書き出し側を変えるたびに両方を直すことになる</li>
+			</ul>
+			<p>他プロジェクトからの報告なので、直したあとも報告元の確認が取れるまで「済」にしない。</p>
+
+			<h3>直した（2026-09-29、A で）</h3>
+			<ul>
+				<li>アンカーの計算を、見出しを書き出すのと同じ順（インライン変換 → コードを戻す → 強調を決める）で作った Markdown の見出しから行うようにした（<code>converter.ts</code> の <code>headingAnchor</code>）。章の <code>h1</code>、id 付きの <code>h2</code>・<code>h3</code>、<code>md-flat</code> の <code>summary</code> の 3 か所</li>
+				<li>「Markdown の見出し → アンカー」を <code>getMarkdownHeadingAnchor</code>（<code>htmlutil.ts</code>）にまとめ、検査（<code>checks.ts</code>）と共有した。使われなくなった <code>getAnchorText()</code> は消した</li>
+				<li><strong>もう 1 つずれていた</strong>: <code>getAnchor()</code> が記号を落としたあとにもう一度 <code>trim()</code> していた。github-slugger には無い処理で、先頭が絵文字の見出し（<code>✅ 済 …</code>）で先頭のハイフンが落ちていた（実際は <code>-済-…</code>）。検査も同じ関数を使うため、検査の側もずれを見逃していた</li>
+				<li>テストを先に書き、落ちるのを見てから直した（<code>tests/cases/anchor-badge/</code>。期待値は github-slugger の規則で手計算）。全テストが bun ・ node とも通る</li>
+				<li>C# 版（<code>Html2MdCs</code>）は直していない。C# 版は 28 ケース中 12 ケースが落ちるほどずれていたため、扱いは <span class="no">i260929-02</span> の判断を先にする</li>
+			</ul>
+			<p><span class="badge b-ok">済</span>2026-09-29、報告元（<code>20260905-windows-pc-memory-inspection</code>、public ルーム #1276）が issues.html を再変換し、アンカー切れが 0 件になったことを確認。OK が出たため「済」にする。</p>
+		</div>
+	</details>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>
