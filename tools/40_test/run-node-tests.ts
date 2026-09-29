@@ -56,9 +56,12 @@ function hasNode(): boolean {
 	return r.error == null && r.status === 0;
 }
 
+/** 本体のファイル名がフォルダ名と合わないもの。ほかは src/<ツール>/main.ts */
+const MainFile: Record<string, string> = { psh: 'psh-main.ts' };
+
 /** ツールを node で呼ぶ */
 function runNode(tool: string, args: string[]): { code: number; out: string; err: string } {
-	const main = path.join(root, 'src', tool, 'main.ts');
+	const main = path.join(root, 'src', tool, MainFile[tool] ?? 'main.ts');
 	const r = spawnSync('node', [main, ...args], { encoding: 'utf8' });
 	return { code: r.status ?? -1, out: r.stdout ?? '', err: r.stderr ?? '' };
 }

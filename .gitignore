@@ -6,6 +6,7 @@ _*
 
 node_modules/
 bun.lock
+target/
 
 .claude/*
 !.claude/settings.json

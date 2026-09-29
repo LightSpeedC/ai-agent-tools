@@ -200,7 +200,7 @@
 
 	<h2>中身が TypeScript に変わった（2026-09-12）</h2>
 
-	<p><strong>どれも TypeScript で書いてある。</strong><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> は C# の exe から、<code>check-markdown</code> は PowerShell から移した。<code>psh</code> ・ <code>check-public</code> は最初から TypeScript である。</p>
+	<p><strong>どれも TypeScript で書いてある。</strong><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> は C# の exe から、<code>check-markdown</code> は PowerShell から移した。<code>psh</code> ・ <code>check-public</code> は最初から TypeScript である。<code>psh</code> には Rust 版もあり、ビルドしてあればそちらが使われる（第 6 章）。</p>
 
 	<p>呼び出し方・出力の中身は変えていない。<strong>使う側の書き換えは要らない</strong>（<code>check-〜</code> のオプションだけ <code>--</code> へ寄せたが、古い形も受ける）。</p>
 
@@ -598,7 +598,21 @@ psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる</code></
 	</table>
 	</div>
 
-	<p>オプションを付けなければ第 1 引数を ps1 のパスとして <code>-File</code> で実行する。<strong>いずれも <code>-NoProfile -ExecutionPolicy Bypass</code> が付く。</strong>終了コードは PowerShell のものをそのまま返す。</p>
+	<p>オプションを付けなければ第 1 引数を ps1 のパスとして実行する。引数は <code>-File</code> と同じ規則で渡る（<code>-</code> で始まる語は引数の名前、それ以外は値。値の <code>$</code> や <code>;</code> は展開されない）。<strong>いずれも <code>-NoProfile -ExecutionPolicy Bypass</code> が付く。</strong>終了コードは PowerShell のものをそのまま返す。</p>
+
+	<h2>PowerShell は UTF-8（65001）で動く</h2>
+
+	<p><strong>ps1 の中で外部コマンドの出力を変数に取り込むと、PowerShell は自分のコンソールのコードページで文字列にする。</strong>932 ならこのリポジトリのツールが出す UTF-8 が化け、65001 なら SJIS が化ける。取り込んだあとに化けたものは、psh の読み分けでは直せない。</p>
+	<p><code>psh</code> は PowerShell を自分専用のコンソールで起動し、<strong>そのコンソールを 65001 にする。</strong>UTF-8 のツールの出力は正しく取り込める。<strong>SJIS を出すもの（SJIS の cmd 等）を取り込むと化ける。</strong>呼び出し元の窓のコードページには触らない。</p>
+
+	<div class="callout callout-important">
+		<p><strong>exit を書かない ps1 は、最後の外部コマンドの終了コードが返る。</strong>UTF-8 にする 1 行を先に実行するため、ps1 は <code>-File</code> ではなく <code>-Command</code> の中から呼んでいる。<code>-File</code> なら 0 になる場面で、psh は外部コマンドの値（例: 5）を返す。確実に 0 で終えたい ps1 は、最後に <code>exit 0</code> を書く。</p>
+	</div>
+
+	<h2>実体は Rust の exe（無ければ TypeScript）</h2>
+
+	<p><code>bin/psh.cmd</code> ・ <code>bin/psh</code> は、<code>src/psh-rs/target/release/psh.exe</code>（Rust 版）があればそれを使い、無ければ <code>src/psh/psh-main.ts</code> を bun（無ければ node）で走らせる。exe は <code>tools/20_build/build-psh-rs.cmd</code> で作る（git には含めない）。動きは両方で同じで、同じテストを当てている。</p>
+	<p>Rust 版は処理系を挟まないぶん軽い。PowerShell を除いた psh 自身の物理メモリは約 4 MB（bun 26 MB ・ node 52 MB）、起動も速い（<code>-c "1"</code> で平均 402 ms。bun 567 ms ・ node 652 ms ・ powershell を直に呼んで 357 ms）。測った手順と結果は<a href="notes/10_plan/p260929-01-psh-rust.html">計画書</a>にある。</p>
 
 	<h2>既定は 5.1。7 ではない</h2>
 

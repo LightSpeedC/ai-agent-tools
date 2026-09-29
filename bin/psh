@@ -1,6 +1,8 @@
 #!/bin/sh
 # PowerShell を呼んで、出力を UTF-8 に直して流す。
-# 中身は src/psh/main.ts。bun を優先し、無ければ node で走らせる。
+# Rust 版（src/psh-rs/target/release/psh.exe）があればそれを使う。
+# 無ければ src/psh/psh-main.ts を、bun を優先し、無ければ node で走らせる（計画 p260929-01）。
+# exe は tools/20_build/build-psh-rs.cmd で作る。git には含めない。
 #
 # 呼ぶのは powershell（Windows PowerShell 5.1）。pwsh（7）ではない。
 #
@@ -9,13 +11,18 @@
 # それでも exit を書くのは、分岐がここで終わることを目で追えるようにするため。
 dir=$(dirname "$0")
 
+if [ -f "$dir/../src/psh-rs/target/release/psh.exe" ]; then
+	exec "$dir/../src/psh-rs/target/release/psh.exe" "$@"
+	exit $?
+fi
+
 if command -v bun >/dev/null 2>&1; then
-	exec bun "$dir/../src/psh/main.ts" "$@"
+	exec bun "$dir/../src/psh/psh-main.ts" "$@"
 	exit $?
 fi
 
 if command -v node >/dev/null 2>&1; then
-	exec node "$dir/../src/psh/main.ts" "$@"
+	exec node "$dir/../src/psh/psh-main.ts" "$@"
 	exit $?
 fi
 

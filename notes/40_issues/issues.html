@@ -406,7 +406,7 @@
 <section class="ch04" id="ch04">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 18 件。13 件が解消済み、2 件が着手、3 件が未着手。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 19 件。13 件が解消済み、2 件が着手、4 件が未着手。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
@@ -887,7 +887,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	<details open>
 		<summary><span class="badge b-warn">未</span><span class="no">i260927-03</span>psh が標準入力を子の PowerShell に渡さない</summary>
 		<div class="issue-body">
-			<p><code>src/psh/main.ts</code> は PowerShell を起動した直後に <code>child.stdin.end()</code> で標準入力を閉じる。<strong>そのため <code>echo abc | psh foo.ps1</code> の <code>abc</code> は ps1 に届かない。</strong>ps1 から見た標準入力は最初から空（EOF）になる。</p>
+			<p><code>src/psh/psh-main.ts</code>（Rust 版 <code>src/psh-rs/src/psh-main.rs</code> も同じ）は PowerShell を起動した直後に <code>child.stdin.end()</code> で標準入力を閉じる。<strong>そのため <code>echo abc | psh foo.ps1</code> の <code>abc</code> は ps1 に届かない。</strong>ps1 から見た標準入力は最初から空（EOF）になる。</p>
 			<p><strong>利用者が決めた仕様ではない。</strong>追加時（<code>68a15ff</code>、2026-09-12）の <code>spawnSync</code> も入力を渡しておらず、spawn へ移したとき（<code>de1ef3b</code>、2026-09-13）に AI エージェントが明示的に閉じる形にした。理由は「閉じないと相手が入力を待って止まる。Claude Code の Bash ツールは対話的な入力を返せない」。計画書・課題に決めた記録は無い。</p>
 			<p>決めること:</p>
 			<ul>
@@ -922,7 +922,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details open>
-		<summary><span class="badge b-warn">未</span><span class="no">i260929-02</span>C# 版（ConvertEncodingCs ・ TextCs）が TypeScript 版とずれている</summary>
+		<summary><span class="badge b-warn">未</span><span class="no">i260929-02</span>C# 版（ConvertEncodingCs ・ TextCs ・ Html2MdCs）が TypeScript 版とずれている</summary>
 		<div class="issue-body">
 			<p>i260929-01 で C# 版にもテストを当てたところ、<strong>判定とは関係のない 8 件が落ちた。</strong>変更前（HEAD）のソースをビルドしても同じ 8 件が落ちるので、以前からのずれである。移植のあと、TypeScript 版にだけ入った変更が C# 版に入っていない。</p>
 			<ul>
@@ -930,7 +930,25 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li>text find: 既定で <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> を外さない（4 件）</li>
 				<li>text edit: 読めないバイトがあっても拒否せず、書き換える（2 件）</li>
 			</ul>
+			<p><strong>html2md の C# 版はさらに大きくずれている。</strong>i260929-03 を C# 版にも入れようとして 2026-09-29 に html2md のテストを当てたところ、<strong>28 ケース中 12 ケースが落ちた</strong>。アンカーの件（i260929-03）の前提になる i260903-02（タグの境界に空白を入れない）と i260921-01（<code>md-flat</code> の summary のアンカー）も入っていない。ほかに <code>emphasis-boundary-mark</code> ・ <code>existing-md</code> ・ <code>figure-extra</code> ・ <code>link-in-strong</code> など、アンカーと関係のないケースも落ちる。</p>
+			<p>そのため i260929-03 は C# 版に入れず、この課題の判断を先にする（2026-09-29、利用者の判断）。</p>
 			<p>決めること: C# 版を追いつかせるか、突き合わせ用として固定して差分を記録するか、消すか。</p>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">未</span><span class="no">i260929-04</span>psh が PowerShell を自分専用のコンソールで起動しなくて済む方法</summary>
+		<div class="issue-body">
+			<p>psh（TypeScript 版 ・ Rust 版とも）は、2026-09-29 から PowerShell を<strong>自分専用のコンソール</strong>（<code>CREATE_NO_WINDOW</code>。TypeScript 版は <code>windowsHide</code>）で起動し、最初の 1 行でそのコンソールを 65001 にしている。そのため ps1 は <code>-File</code> ではなく <code>-Command</code> の中から呼ぶ。</p>
+			<p><strong>理由。</strong>PowerShell は ps1 の中で取り込んだ外部コマンドの出力を、自分のコンソールのコードページで文字列にする。呼び出し元の窓を引き継ぐと、呼び元しだいで 65001（bun が窓を変える）にも 932 にもなり、結果が揃わなかった。UTF-8 に固定することは利用者が決めた（計画 <a href="../10_plan/p260929-01-psh-rust.html">p260929-01</a>）。</p>
+			<p><strong>引き換えになること。</strong></p>
+			<ul>
+				<li>SJIS を出すもの（SJIS の cmd 等）を ps1 の中で取り込むと化ける</li>
+				<li><code>exit</code> を書かない ps1 の最後で外部コマンドが失敗すると、<code>-File</code> の 0 ではなく、その終了コードが返る</li>
+				<li>PowerShell が窓を持たないため、窓の大きさを調べる ps1（<code>$Host.UI.RawUI.WindowSize</code> 等）は既定の値を返すと思われる（未確認）</li>
+				<li>プロセスが 1 つ増える（<code>conhost</code>。約 4 MB）</li>
+			</ul>
+			<p>決めること: 別のコンソールで起動しない ・ <code>-File</code> のまま使える方法を探すか、いまの形を続けるか。<strong>いったん今の形にすることは利用者が決めた（2026-09-29）。</strong></p>
 		</div>
 	</details>
 </section>
@@ -1476,7 +1494,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li>「Markdown の見出し → アンカー」を <code>getMarkdownHeadingAnchor</code>（<code>htmlutil.ts</code>）にまとめ、検査（<code>checks.ts</code>）と共有した。使われなくなった <code>getAnchorText()</code> は消した</li>
 				<li><strong>もう 1 つずれていた</strong>: <code>getAnchor()</code> が記号を落としたあとにもう一度 <code>trim()</code> していた。github-slugger には無い処理で、先頭が絵文字の見出し（<code>✅ 済 …</code>）で先頭のハイフンが落ちていた（実際は <code>-済-…</code>）。検査も同じ関数を使うため、検査の側もずれを見逃していた</li>
 				<li>テストを先に書き、落ちるのを見てから直した（<code>tests/cases/anchor-badge/</code>。期待値は github-slugger の規則で手計算）。全テストが bun ・ node とも通る</li>
-				<li>C# 版（<code>Html2MdCs</code>）は直していない。扱いは <span class="no">i260929-02</span> の判断に合わせる</li>
+				<li>C# 版（<code>Html2MdCs</code>）は直していない。C# 版は 28 ケース中 12 ケースが落ちるほどずれていたため、扱いは <span class="no">i260929-02</span> の判断を先にする</li>
 			</ul>
 			<p>報告元へ検証を依頼した。OK が出たら「済」にする。</p>
 		</div>

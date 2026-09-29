@@ -39,7 +39,7 @@ HTML の文字色と背景色が読める組み合わせかを確かめる `chec
 
 ### 中身が TypeScript に変わった（2026-09-12）
 
-**どれも TypeScript で書いてある。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-markdown` は PowerShell から移した。`psh` ・ `check-public` は最初から TypeScript である。
+**どれも TypeScript で書いてある。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-markdown` は PowerShell から移した。`psh` ・ `check-public` は最初から TypeScript である。`psh` には Rust 版もあり、ビルドしてあればそちらが使われる（第 6 章）。
 
 呼び出し方・出力の中身は変えていない。**使う側の書き換えは要らない**（`check-〜` のオプションだけ `--` へ寄せたが、古い形も受ける）。
 
@@ -404,7 +404,22 @@ psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる
 | `--pwsh` | pwsh（7）で走らせる。**先頭に置く** |
 | `--help` ・ `-h` | 使い方を出して終わる。**先頭に置いたときだけ**（`psh foo.ps1 --help` の `--help` は `foo.ps1` へ渡る） |
 
-オプションを付けなければ第 1 引数を ps1 のパスとして `-File` で実行する。<strong>いずれも `-NoProfile -ExecutionPolicy Bypass` が付く。</strong>終了コードは PowerShell のものをそのまま返す。
+オプションを付けなければ第 1 引数を ps1 のパスとして実行する。引数は `-File` と同じ規則で渡る（`-` で始まる語は引数の名前、それ以外は値。値の `$` や `;` は展開されない）。<strong>いずれも `-NoProfile -ExecutionPolicy Bypass` が付く。</strong>終了コードは PowerShell のものをそのまま返す。
+
+### PowerShell は UTF-8（65001）で動く
+
+<strong>ps1 の中で外部コマンドの出力を変数に取り込むと、PowerShell は自分のコンソールのコードページで文字列にする。</strong>932 ならこのリポジトリのツールが出す UTF-8 が化け、65001 なら SJIS が化ける。取り込んだあとに化けたものは、psh の読み分けでは直せない。
+
+`psh` は PowerShell を自分専用のコンソールで起動し、<strong>そのコンソールを 65001 にする。</strong>UTF-8 のツールの出力は正しく取り込める。<strong>SJIS を出すもの（SJIS の cmd 等）を取り込むと化ける。</strong>呼び出し元の窓のコードページには触らない。
+
+> [!IMPORTANT]
+> <strong>exit を書かない ps1 は、最後の外部コマンドの終了コードが返る。</strong>UTF-8 にする 1 行を先に実行するため、ps1 は `-File` ではなく `-Command` の中から呼んでいる。`-File` なら 0 になる場面で、psh は外部コマンドの値（例: 5）を返す。確実に 0 で終えたい ps1 は、最後に `exit 0` を書く。
+
+### 実体は Rust の exe（無ければ TypeScript）
+
+`bin/psh.cmd` ・ `bin/psh` は、`src/psh-rs/target/release/psh.exe`（Rust 版）があればそれを使い、無ければ `src/psh/psh-main.ts` を bun（無ければ node）で走らせる。exe は `tools/20_build/build-psh-rs.cmd` で作る（git には含めない）。動きは両方で同じで、同じテストを当てている。
+
+Rust 版は処理系を挟まないぶん軽い。PowerShell を除いた psh 自身の物理メモリは約 4 MB（bun 26 MB ・ node 52 MB）、起動も速い（`-c "1"` で平均 402 ms。bun 567 ms ・ node 652 ms ・ powershell を直に呼んで 357 ms）。測った手順と結果は[計画書](notes/10_plan/p260929-01-psh-rust.md)にある。
 
 ### 既定は 5.1。7 ではない
 

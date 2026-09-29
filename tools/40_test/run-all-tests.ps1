@@ -46,8 +46,9 @@ $Suites = @(
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },
 	@{ Name = 'text'; Script = 'run-text-tests.ps1'; NodeTarget = 'runners\text-node.cmd' },
 	# psh のテストだけ ts で書いてある。道具自体が PowerShell を呼ぶため、
-	# テストまで ps1 にすると道具が壊れたときにテストも動かせない
-	@{ Name = 'psh'; Script = 'run-psh-tests.ts' },
+	# テストまで ps1 にすると道具が壊れたときにテストも動かせない。
+	# ExeTarget は Rust 版（計画 p260929-01）。同じテストを PSH_TARGET で当てる
+	@{ Name = 'psh'; Script = 'run-psh-tests.ts'; ExeTarget = 'src\psh-rs\target\release\psh.exe'; ExeEnv = 'PSH_TARGET' },
 	# node でも動くかの確認。ランチャーは bun が無ければ node に落ちるため、
 	# bun でしか試していないと bun の無い環境で初めて落ちる
 	@{ Name = 'node で動くか'; Script = 'run-node-tests.ts' },
@@ -108,6 +109,25 @@ foreach ($suite in $Suites) {
 			Write-Host ('--- ' + $suite.Name + '（' + $runner + '）') -ForegroundColor DarkGray
 			& $runner $path
 			if ($LASTEXITCODE -ne 0) { $failed += ($suite.Name + '（' + $runner + '）') }
+		}
+
+		# exe 版（Rust）も同じテストで回す。呼び出し元が bun のときと node のときで
+		# 動きが変わりうる（bun は窓のコードページを変える）ので、両方から呼ぶ。
+		# ビルドしていなければ飛ばすが、黙って成功にはしない
+		if ($suite.ContainsKey('ExeTarget')) {
+			$exePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) $suite.ExeTarget
+			if (Test-Path -LiteralPath $exePath) {
+				foreach ($runner in $TsRunners) {
+					Write-Host ('--- ' + $suite.Name + '（exe・呼び出し元 ' + $runner + '）') -ForegroundColor DarkGray
+					Set-Item -Path ('env:' + $suite.ExeEnv) -Value $exePath
+					& $runner $path
+					$code = $LASTEXITCODE
+					Remove-Item -Path ('env:' + $suite.ExeEnv)
+					if ($code -ne 0) { $failed += ($suite.Name + '（exe・' + $runner + '）') }
+				}
+			} else {
+				Write-Host ('--- ' + $suite.Name + '（exe）: ビルドしていないので飛ばしました（' + $suite.ExeTarget + '）') -ForegroundColor Yellow
+			}
 		}
 		continue
 	}

@@ -1,0 +1,326 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>psh の Rust 化 計画</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（6 章 / 色相 280 → 0 を 56 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(224,78%,25%); --accent2:hsl(224,58%,55%); --soft:hsl(224,28%,95%); }
+	.ch03{ --accent:hsl(168,78%,25%); --accent2:hsl(168,58%,55%); --soft:hsl(168,28%,95%); }
+	.ch04{ --accent:hsl(112,78%,25%); --accent2:hsl(112,58%,55%); --soft:hsl(112,28%,95%); }
+	.ch05{ --accent:hsl(56,78%,25%);  --accent2:hsl(56,58%,55%);  --soft:hsl(56,28%,95%); }
+	.ch06{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:7px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>psh の Rust 化 計画</h1>
+		<p class="lead">TypeScript（bun ・ node）で動いている <code>psh</code> を、Rust の単体の exe にする。</p>
+		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-09-29</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a href="../../README.html">← html2md</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">背景と狙い</a></li>
+		<li class="ch02"><a href="#ch02">守る仕様</a></li>
+		<li class="ch03"><a href="#ch03">実装の方式</a></li>
+		<li class="ch04"><a href="#ch04">置き場と呼び出し</a></li>
+		<li class="ch05"><a href="#ch05">テスト方針</a></li>
+		<li class="ch06"><a href="#ch06">決めたこと</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>背景と狙い</h1>
+	<p><code>psh</code> は PowerShell を呼び、出力を UTF-8 に直して流す当て木（<code>src/psh/psh-main.ts</code>）。入口の <code>bin/psh.cmd</code> ・ <code>bin/psh</code> が bun を優先し、無ければ node で走らせる。</p>
+	<p>Rust にすると、次が見込める（<strong>全部を狙う。とくにコードページ・パイプとプロセスツリーの深さ</strong>。第 6 章）。</p>
+	<ul>
+		<li><strong>bun がコードページを 65001 にする件を避けられる</strong>。bun は動いている間、窓の入力・出力のコードページを 65001 にする（共通ルール「Bun 同士のパイプは文字化けすることがある」）。bun から起動した PowerShell はその状態で起動するため、ps1 の中で SJIS を出す cmd や .NET Framework の exe の出力を受け取ると、psh に届く前に化けるおそれがある（未検証）。Rust の exe はコードページに触らない</li>
+		<li><strong>bun 同士のパイプを避けられる</strong>。<code>psh … | text …</code> のように相手が bun のとき、oven-sh/bun#43660 に当たる（課題 i260927-01）</li>
+		<li><strong>処理系が要らない</strong>。bun も node も無い環境で動く</li>
+		<li><strong>プロセスとメモリが軽くなる</strong>。処理系が 1 段減る見込み（前後で実測する。第 5 章）</li>
+		<li><strong>起動が速い</strong>（ランタイムの起動が要らない。どれだけ速くなるかは実測する）</li>
+	</ul>
+	<p>環境: cargo 1.96.1 ・ rustc 1.96.1 が入っている（2026-09-29 に確認）。</p>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>守る仕様</h1>
+	<p>いまの <code>main.ts</code> の動きを変えずに移す。<strong>移植で動きを変えない</strong>。変えたいものは移植と別に決める。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>いまの動き</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">呼び方</td><td><code>psh &lt;path.ps1&gt; [引数...]</code>（<code>-File</code>）、<code>psh -c "&lt;式&gt;"</code> ・ <code>--command</code>（<code>-Command</code>）。どちらも <code>-NoProfile -ExecutionPolicy Bypass</code> を付ける</td></tr>
+			<tr><td class="nowrap">処理系</td><td>既定は <code>powershell</code>（5.1）。先頭の <code>--pwsh</code> で <code>pwsh</code>（7）</td></tr>
+			<tr><td class="nowrap">使い方</td><td>先頭の <code>--help</code> ・ <code>-h</code> は標準出力へ出して 0。引数なしは標準エラーへ出して 2。<code>psh x.ps1 --help</code> の <code>--help</code> は ps1 に渡す</td></tr>
+			<tr><td class="nowrap">終了コード</td><td>PowerShell のものを素通し。ps1 が無い・<code>-c</code> に式が無い・起動できない・シグナルで落ちたときは 2</td></tr>
+			<tr><td class="nowrap">出力</td><td>標準出力と標準エラーを分けたまま、<strong>終わるまでまとめて受け取ってから</strong>流す</td></tr>
+			<tr><td class="nowrap">文字コード</td><td>全体を UTF-8 として厳密に読み、読めなければ行（<code>\n</code> まで）ごとに UTF-8 → CP932 の順で読み分ける。CP932 は WHATWG の shift_jis（Windows-31J の表）</td></tr>
+			<tr><td class="nowrap">標準入力</td><td>起動した直後に閉じる（課題 i260927-03 で扱いを検討中）</td></tr>
+			<tr><td class="nowrap">引数の渡し方</td><td>シェルを挟まず配列で渡す。空白・引用符を含む引数が割れない</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<div class="callout">
+		<strong>i260927-03（標準入力を渡さない）とは切り離す。</strong>移植では「閉じる」をそのまま写す。扱いは移植が済んでから決める（第 6 章の 5）。
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>実装の方式</h1>
+	<ul>
+		<li><strong>子プロセス</strong>: <code>std::process::Command</code> で配列のまま起動し、<code>output()</code> で標準出力・標準エラーを受け取る。標準入力は <code>Stdio::null()</code>（すぐ閉じるのと同じ）</li>
+		<li><strong>UTF-8 の厳密な判定</strong>: <code>std::str::from_utf8</code>（標準ライブラリ）</li>
+		<li><strong>CP932 の読み</strong>: <code>encoding_rs</code>（WHATWG のエンコーディング仕様の実装）。いまの TypeScript 版の <code>TextDecoder('shift_jis')</code> と同じ表なので、<strong>結果が一致する</strong>。Windows の <code>MultiByteToWideChar</code> を直接呼ぶ案は保留（第 6 章）</li>
+		<li><strong>出力</strong>: 読み直した文字列を UTF-8 のバイト列として書く。<strong>コンソールのコードページは変えない</strong>（共通ルール「コンソールのコードページを変更しない」）。Rust の標準出力は、窓に直接書くときは UTF-16 で書き込むため、コードページに関係なく化けない（リダイレクトされていれば UTF-8 のバイト列のまま）</li>
+		<li><strong>表示文言</strong>: 使い方・エラーの文言は TypeScript 版と同じ日本語にする</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>置き場と呼び出し</h1>
+	<ul>
+		<li><strong>ソース</strong>: <code>src/psh-rs/</code>（Cargo のプロジェクト）。<code>src/psh/</code>（TypeScript）とは大小違いではなく接尾辞で分ける（共通ルール「大小だけが違う名前を作らない」）</li>
+		<li><strong>ビルドの出力</strong>: Rust の既定の <code>target/</code>。<code>.gitignore</code> に <code>target/</code> を足す（共通ルール「トップレベル」で dist は言語の既定に読み替える）。exe は git に含めない（i260830-16 の決定どおり）</li>
+		<li><strong>ビルド</strong>: <code>tools/20_build/build-psh-rs.cmd</code>（<code>cargo build --release</code>）</li>
+		<li><strong>入口</strong>: <code>bin/psh.cmd</code> ・ <code>bin/psh</code> を「Rust の exe（<code>psh.exe</code>）があればそれ、無ければ今までどおり bun → node」にする（第 6 章の 3）。<strong>exe を <code>bin/</code> に直接置かない</strong>（Windows は <code>psh.exe</code> を <code>psh.cmd</code> より先に見つけるため、入口の切り替えが効かなくなる）</li>
+	</ul>
+	<div class="callout">
+		<strong>TypeScript 版は消さない。</strong>共通ルール「移植で落ちるのは、言語が肩代わりしていた比較」の「元の実装を消さない」に従い、突き合わせる相手として残す。消す時期は利用者が指示する（第 6 章の 4）。
+	</div>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>テスト方針</h1>
+	<ul>
+		<li><strong>いまの 22 件をそのまま両方に当てる</strong>。<code>run-psh-tests.ts</code> は <code>main.ts</code> を処理系で直に呼ぶ作りなので、対象を exe に差し替えられるようにする（引数か環境変数）</li>
+		<li><strong>移す前に、両方の出力を突き合わせるテストを足す</strong>（共通ルール「移植で落ちるのは…」）。とくに文字コードの読み分け: UTF-8 だけ・CP932 だけ・行ごとに混ざる・行の途中で <code>\r\n</code> を含む・末尾に改行が無い。同じバイト列を両方に読ませ、結果が一致すること</li>
+		<li><strong><code>run-all-tests</code> で両方を回す</strong>。ローカルルール「優先するランチャーがあると、もう一方は 1 ケースも通らない」を踏まない。exe が無いとき（ビルドしていない環境）は Rust 側を飛ばしたと表示する（黙って成功にしない）</li>
+		<li><strong>入口を切り替えるのは、両方で全件が通ってから</strong>（ローカルルール「置いてからテストしない」）</li>
+		<li>起動の速さを実測し、資料に残す</li>
+	</ul>
+
+	<h2>プロセスツリーとメモリ使用量の比較</h2>
+	<p><strong>Rust 版を書く前に、bun と node で測っておく</strong>（あとから測ると、前の状態に戻して測り直すことになる）。Rust 版ができたら同じ手順で測り、3 つを並べる。</p>
+	<ul>
+		<li><strong>測り方</strong>: 数秒止まる ps1（<code>Start-Sleep</code>）を psh に走らせ、その間に <code>psls</code> でツリーと物理メモリを取る。bun ・ node は処理系を名指しして起動する（<code>bun src/psh/psh-main.ts …</code> ・ <code>node src/psh/psh-main.ts …</code>）。入口の cmd ・ sh を通す場合と、通さない場合の両方</li>
+		<li><strong>見るもの</strong>
+			<ul>
+				<li>ツリー: 入口（<code>cmd</code> ・ <code>sh</code>）→ 処理系（<code>bun</code> ・ <code>node</code> ・ <code>psh.exe</code>）→ <code>powershell</code> の段数と、途中に挟まるプロセス</li>
+				<li>メモリ: 各段の物理メモリ。psh 自身の分と、powershell の分を分けて書く（powershell の分はどの実装でも同じはずなので、差が出たら理由を調べる）</li>
+				<li>終わったあとに残るプロセスが無いこと（共通ルール「残ったプロセスを調べるときは psls を使う」）</li>
+			</ul>
+		</li>
+		<li><strong>回数</strong>: それぞれ 3 回測り、ばらつきも書く</li>
+		<li><strong>置き場</strong>: 測る手順は <code>tools/90_misc/bench-psh/</code> に置き（既存の <code>bench-html2md</code> ・ <code>bench-check-public</code> と同じ置き場）、結果はこの計画書に表で残す</li>
+	</ul>
+	<p><code>tests/psh/callexe.ps1</code> は .NET 製の exe の例として <code>dist/convert-encoding-cs.exe</code> を呼ぶ。C# 版の扱い（i260929-02）しだいで差し替えが要る。</p>
+</section>
+
+<section class="ch06" id="ch06">
+	<h1>決めたこと</h1>
+	<p>2026-09-29 に利用者が決めた。</p>
+	<ol>
+		<li><strong>狙い</strong>: 第 1 章の見込みの全部。<strong>とくに bun のコードページとパイプの問題、プロセスツリーが深いこと</strong>。コードページの件は、移植の前に「bun から起動した PowerShell の中で化ける」ことを実測で確かめる</li>
+		<li><strong>CP932 の読み方</strong>: <code>encoding_rs</code>。Windows API は保留</li>
+		<li><strong>入口の優先順</strong>: <code>psh.exe</code> があればそれを使う</li>
+		<li><strong>TypeScript 版</strong>: まだ消さない。消す時期は利用者が指示する</li>
+		<li><strong>標準入力（i260927-03）</strong>: 移植のあとで扱う</li>
+	</ol>
+
+	<h2>進める順</h2>
+	<ol>
+		<li>bun ・ node の測定（プロセスツリー・メモリ）と、コードページの件の実測（第 5 章）</li>
+		<li>文字コードの読み分けを両方に当てる突き合わせのテストと、<code>run-psh-tests</code> の対象の差し替え</li>
+		<li>Rust 版の実装とビルドスクリプト</li>
+		<li>両方で全件が通ってから、入口を <code>psh.exe</code> 優先に切り替える</li>
+		<li>Rust 版で同じ測定をし、結果を並べる。資料（TOOLS-USAGE の第 6 章）を更新する</li>
+	</ol>
+
+	<h2>実装の結果（2026-09-29）</h2>
+	<p>1〜5 を済ませた。全テストが通る（psh は TypeScript 版を bun ・ node で、Rust 版を bun ・ node の両方から呼んで、それぞれ 53 件）。</p>
+
+	<h3>コードページの件（実測）</h3>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>psh の起動元</th><th>PowerShell のコードページ</th><th>SJIS の cmd の出力の取り込み</th></tr></thead>
+		<tbody>
+			<tr><td>bun（TypeScript 版）</td><td>65001</td><td>化ける</td></tr>
+			<tr><td>node（TypeScript 版）</td><td>932</td><td>正しい</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>Rust 版にしても、呼び出し元に bun がいれば 65001 のまま</strong>（bun が窓を変え、同じ窓の子に及ぶ）。</li>
+		<li>PowerShell を自分専用のコンソール（<code>CREATE_NO_WINDOW</code>）で起動すると 932 になり SJIS は読めたが、<strong>今度はこのリポジトリのツールの UTF-8 を取り込む ps1（テスト）がすべて化けた</strong>。いままで通っていたのは、bun が窓を 65001 にしていたため。</li>
+		<li><strong>どちらのコードページでも、片方の出力は化ける</strong>。取り込みは PowerShell の中で起き、psh の読み分けは届かない。</li>
+	</ul>
+
+	<h3>計画と違えた点（利用者の決定）</h3>
+	<ul>
+		<li><strong>PowerShell を UTF-8（65001）に固定する</strong>。TypeScript 版も同じ。UTF-8 のツールの出力を正しく取り込み、SJIS を取り込むと化ける</li>
+		<li>固定のしかた: 自分専用のコンソールで起動し、<strong>最初の 1 行で PowerShell 自身にそのコンソールを 65001 にさせる</strong>。外から一時停止中に設定する案は、一時停止中はコンソールがまだ無く接続できなかった（実測）。起動直後に外から設定する案は動いたが、競争に勝っているだけで保証が無い</li>
+		<li>共通ルール「コンソールのコードページを変更しない」に、例外「自分専用に作ったコンソールは変えてよい」を足した（利用者が反映）</li>
+		<li><strong><code>-File</code> をやめ、<code>-Command</code> の中から ps1 を呼ぶ</strong>。<code>-</code> で始まる語は引数の名前、それ以外は単一引用符で囲んだ値として並べ直す（配列を渡す形では、名前付きの引数が名前として結び付かなかった）。<code>trap { break }</code> で、引数の結び付けの失敗を <code>-File</code> と同じ終了コード 1 にする</li>
+		<li><strong><code>-File</code> との違いが 1 つ残る</strong>: <code>exit</code> を書かない ps1 の最後で外部コマンドが失敗すると、<code>-File</code> は 0、psh はその終了コードを返す</li>
+		<li>別のコンソールで起動しないで済む方法は、課題 i260929-04 に残した</li>
+	</ul>
+
+	<h3>プロセスツリーとメモリ（3 回ずつの平均。物理メモリ）</h3>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>形</th><th>ツリー</th><th class="num">psh 自身</th><th class="num">合計</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">前: bun を直に</td><td>bun &gt; powershell</td><td class="num">25.7 MB</td><td class="num">102.4 MB</td></tr>
+			<tr><td class="nowrap">前: node を直に</td><td>node &gt; powershell</td><td class="num">52.1 MB</td><td class="num">128.9 MB</td></tr>
+			<tr><td class="nowrap">前: 入口 cmd</td><td>cmd &gt; bun &gt; powershell</td><td class="num">34.8 MB</td><td class="num">111.6 MB</td></tr>
+			<tr><td class="nowrap">前: 入口 sh</td><td>sh &gt; bun &gt; powershell</td><td class="num">36.4 MB</td><td class="num">113.2 MB</td></tr>
+			<tr><td class="nowrap">後: exe を直に</td><td>psh.exe &gt; powershell &gt; conhost</td><td class="num">4.1 MB</td><td class="num">84.3 MB</td></tr>
+			<tr><td class="nowrap">後: 入口 cmd</td><td>cmd &gt; psh.exe &gt; powershell &gt; conhost</td><td class="num">12.9 MB</td><td class="num">93.1 MB</td></tr>
+			<tr><td class="nowrap">後: 入口 sh</td><td>sh &gt; psh.exe &gt; powershell &gt; conhost</td><td class="num">14.2 MB</td><td class="num">94.4 MB</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li>psh 自身は 26〜52 MB から 4 MB になった（入口を含めて 35 MB から 13 MB）。合計は 18 MB ほど減った</li>
+		<li><strong>段の数は減っていない</strong>。処理系（bun ・ node）の段が psh.exe に置き換わっただけで、自分専用のコンソールを作るため <code>conhost</code> が 1 つ増えた（約 4 MB。合計に含む）</li>
+		<li>終わったあとに残ったプロセスは、どの形でも 0</li>
+		<li>起動（<code>-c "1"</code> を 5 回の平均）: exe 402 ms ・ bun 567 ms ・ node 652 ms。powershell を直に呼ぶと 357 ms で、exe の上乗せは 45 ms ほど</li>
+	</ul>
+	<p>測った手順は <code>tools/90_misc/bench-psh/</code>（<code>run-bench.ps1</code>）。</p>
+</section>
+
+</div>
+
+<footer>
+	<p><a href="../../README.html">← html2md</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,7 +1,7 @@
 /*
 	PowerShell を呼んで、出力を UTF-8 に直して流す。
 
-	    psh <path.ps1> [引数...]         ps1 を -File で実行する
+	    psh <path.ps1> [引数...]         ps1 を実行する（引数は -File と同じ規則で渡す）
 	    psh -c "<式>"                   PowerShell の式を実行する（--command も可）
 	    psh --pwsh …                    pwsh（7）で走らせる
 
@@ -26,6 +26,7 @@
 
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 /** 引数の誤り・対象が無い。html2md 系の契約に合わせる */
 const ExitBadArgs = 2;
@@ -40,7 +41,7 @@ function usage(toStdout: boolean): void {
 	const write = toStdout ? console.log : console.error;
 	write('PowerShell を呼んで、出力を UTF-8 に直して流します。');
 	write('');
-	write('  psh <path.ps1> [引数...]     ps1 を -File で実行する');
+	write('  psh <path.ps1> [引数...]     ps1 を実行する');
 	write('  psh -c "<式>"               式を実行する（--command も同じ）');
 	write('');
 	write('  --pwsh                      pwsh（7）で走らせる。既定は powershell（5.1）');
@@ -49,6 +50,9 @@ function usage(toStdout: boolean): void {
 	write('既定を 5.1 にしているのは、ps1 を 5.1 で動くように書く決めがあるため。');
 	write('厳しい側で動かさないと、7 でしか通らない書き方に気づけません。');
 	write('起動も 5.1 のほうが速い（実測 185ms 対 285ms）。');
+	write('');
+	write('PowerShell は UTF-8（65001）で動かします。ps1 の中で取り込んだ外部コマンドの');
+	write('出力は UTF-8 として読まれます（SJIS を出すものは化けます）。');
 	write('');
 	write('終了コードは PowerShell のものをそのまま返します。');
 }
@@ -114,6 +118,54 @@ function decode(buf: Buffer | null): string {
 type RunResult = { status: number | null; stdout: Buffer; stderr: Buffer; error?: Error };
 
 /*
+	PowerShell を UTF-8（65001）で動かす（計画 p260929-01。利用者の決定）。
+
+	PowerShell は、ps1 の中で外部コマンドの出力を変数に取り込むとき、自分のコンソールの
+	コードページで文字列にする。932 だと、このリポジトリのツールが出す UTF-8 が化け、
+	65001 だと SJIS が化ける。UTF-8 のほうを取る。取り込んだあとに化けたものは、
+	psh の読み分けでは直せない。
+
+	PowerShell は自分専用のコンソール（windowsHide = CREATE_NO_WINDOW）で起動し、
+	最初の 1 行でそのコンソールを 65001 にする。呼び出し元の窓には触らない
+	（共通ルール「コンソールのコードページを変更しない」の例外「自分専用に作ったコンソール」）。
+*/
+const Utf8Setup = '[Console]::OutputEncoding = [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)';
+
+/** 単一引用符の文字列にする。中の ' は '' にする。$ などは展開されない */
+function psQuote(s: string): string {
+	return "'" + s.replace(/'/g, "''") + "'";
+}
+
+/*
+	ps1 を呼ぶ 1 行を組み立てる。
+
+	最初の 1 行を実行してから ps1 を呼ぶため、-File が使えず -Command の中から呼ぶ。
+	-File と同じく、- で始まる語（-Name ・ -Flag）は引数の名前、それ以外は値として並べる。
+	値はすべて単一引用符で囲むので、空白 ・ 引用符 ・ $ ・ ; を含んでも 1 つの値のまま届き、
+	展開もされない（-File との突き合わせで確かめた）。-Name:値 は名前と値に分けて値だけ囲む。
+
+	trap { break } を置く。引数の結び付けに失敗したとき、-File は 1 で終わるが、& は
+	止まらないエラーとして続けて 0 で終わってしまうため。trap はこの 1 行の範囲の
+	止まるエラーだけに効き、ps1 の中のエラーの扱いは変えない（突き合わせで確かめた）。
+
+	-File との違い: exit を書かない ps1 の最後で外部コマンドが失敗すると、-File では 0、
+	ここではその終了コードになる（ps1 が exit したのか、外部コマンドの値が残っているだけかを
+	見分けられないため）。
+
+	パスは絶対パスにする。& は区切りを含まない名前をカレントから探さないため
+*/
+function buildFileCall(script: string, rest: string[]): string {
+	const parts = ['&', psQuote(path.resolve(script))];
+	for (const a of rest) {
+		const named = /^(-[A-Za-z_][\w-]*)(:(.*))?$/s.exec(a);
+		if (named == null) { parts.push(psQuote(a)); }
+		else if (named[2] == null) { parts.push(named[1]); }
+		else { parts.push(named[1] + ':' + psQuote(named[3])); }
+	}
+	return Utf8Setup + '; trap { break }; $global:LASTEXITCODE = 0; ' + parts.join(' ') + '; exit $LASTEXITCODE';
+}
+
+/*
 	PowerShell を走らせて、出た分をすべて受け取る。
 
 	shell: false（既定）で起動する。配列のまま渡るので、空白や記号を含む
@@ -128,7 +180,8 @@ type RunResult = { status: number | null; stdout: Buffer; stderr: Buffer; error?
 */
 function run(exe: string, args: string[]): Promise<RunResult> {
 	return new Promise((resolve) => {
-		const child = spawn(exe, args);
+		// 自分専用のコンソールで起動する（上の Utf8Setup の説明を参照）
+		const child = spawn(exe, args, { windowsHide: true });
 		const out: Buffer[] = [];
 		const err: Buffer[] = [];
 
@@ -187,16 +240,16 @@ async function main(): Promise<number> {
 			return ExitBadArgs;
 		}
 		// 式は 1 つの引数として渡す。シェルを挟まないので、
-		// ここで引用符を足す必要はない（足すと式の一部になってしまう）
-		pwshArgs = base.concat(['-Command', args[1]]);
+		// ここで引用符を足す必要はない（足すと式の一部になってしまう）。
+		// 前に UTF-8 にする 1 行を置く
+		pwshArgs = base.concat(['-Command', Utf8Setup + '; ' + args[1]]);
 	} else {
 		const script = args[0];
 		if (!fs.existsSync(script)) {
 			console.error('[NG] ファイルが見つかりません: ' + script);
 			return ExitBadArgs;
 		}
-		// -File は引数の解釈が 1 段で済む。-Command より事故が少ない
-		pwshArgs = base.concat(['-File', script], args.slice(1));
+		pwshArgs = base.concat(['-Command', buildFileCall(script, args.slice(1))]);
 	}
 
 	const r = await run(exe, pwshArgs);
