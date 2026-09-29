@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- details で畳んでいるため Markdown にすると構造が失われる。変換しない -->
 <meta name="md-skip">
-<title>html2md の課題</title>
+<title>ai-agent-tools の課題</title>
 <style>
 	:root{
 		--navy1:#12224d; --navy2:#2f5fbf;
@@ -114,7 +114,7 @@
 		width:310px; max-width:100%;
 		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
 		color:#fff; text-decoration:none; padding:9px 13px;
-		border-radius:7px; font-size:.95em; line-height:1.45;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
 		font-weight:700;
 	}
 	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
@@ -160,13 +160,24 @@
 		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
 	}
 	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
 </style>
 </head>
 <body>
 
 <div class="titlebar">
 	<div class="inner">
-		<h1>html2md の課題</h1>
+		<h1>ai-agent-tools の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
 		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-29</p>
 	</div>
@@ -174,7 +185,7 @@
 
 <div class="wrap">
 
-<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="../10_plan/html2md-plan.html">共通化計画</a> ／ <a href="../10_plan/html2md-tag-spec.html">タグ対応仕様</a> ／ <a href="../90_rules/html-class-rules.html">クラス名の取り決め</a> ／ <a href="issues-archive.html">アーカイブ</a></p>
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a> ／ <a href="../10_plan/html2md-plan.html">共通化計画</a> ／ <a href="../10_plan/html2md-tag-spec.html">タグ対応仕様</a> ／ <a href="../90_rules/html-class-rules.html">クラス名の取り決め</a> ／ <a href="issues-archive.html">アーカイブ</a></p>
 
 <div class="toc">
 	<h2>目次</h2>
@@ -989,7 +1000,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 </div>
 
 <footer>
-	<p><a href="../../README.html">← html2md</a></p>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
 </footer>
 
 </body>

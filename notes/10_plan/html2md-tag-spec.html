@@ -117,7 +117,7 @@
 		width:310px; max-width:100%;
 		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
 		color:#fff; text-decoration:none; padding:9px 13px;
-		border-radius:7px; font-size:.95em; line-height:1.45;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
 		font-weight:700;
 	}
 	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
@@ -138,6 +138,13 @@
 		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
 	}
 	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
 </style>
 </head>
 <body>
@@ -152,7 +159,7 @@
 
 <div class="wrap">
 
-<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="html2md-plan.html">html2md ツール共通化計画</a> ／ <a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め</a></p>
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a> ／ <a href="html2md-plan.html">html2md ツール共通化計画</a> ／ <a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め</a></p>
 
 <div class="toc">
 	<h2>目次</h2>
@@ -720,7 +727,7 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 </div>
 
 <footer>
-	<p><a href="../../README.html">← html2md</a></p>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
 </footer>
 
 </body>

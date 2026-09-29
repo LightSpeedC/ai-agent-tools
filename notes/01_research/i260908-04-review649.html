@@ -40,6 +40,13 @@
 		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
 	}
 	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
 </style>
 </head>
 <body>
@@ -54,7 +61,7 @@
 
 <div class="wrap">
 
-<p class="backlink"><a href="../../README.html">← html2md</a></p>
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
 
 <p><strong>この文書はレビュー本文をそのまま保存したもの。</strong>直後の high・medium・low は当時すでに issues.html（<span class="no">i260908-01</span>〜<span class="no">i260908-03</span>）へ転記・対応済み。ここに残す主目的は「未検証の47件」（<span class="no">i260908-04</span>）を後から突き合わせられるようにすること。<strong>参照する行番号は当時の C# 実装（<code>src/Html2Md</code>・<code>src/ConvertEncoding</code>・<code>src/Text</code>）と <code>html2md-ps.ps1</code> のもの。</strong>その後 TypeScript へ全面移植し、ps1 は削除済みのため、現在のコードと突き合わせるときは該当箇所を読み替える必要がある。</p>
 
@@ -175,7 +182,7 @@
 </div>
 
 <footer>
-	<p><a href="../../README.html">← html2md</a></p>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
 </footer>
 
 </body>

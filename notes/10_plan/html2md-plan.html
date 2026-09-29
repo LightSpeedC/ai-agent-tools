@@ -122,7 +122,7 @@
 		width:310px; max-width:100%;
 		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
 		color:#fff; text-decoration:none; padding:9px 13px;
-		border-radius:7px; font-size:.95em; line-height:1.45;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
 		font-weight:700;
 	}
 	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
@@ -145,6 +145,13 @@
 		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
 	}
 	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
 </style>
 </head>
 <body>
@@ -153,13 +160,13 @@
 	<div class="inner">
 		<h1>html2md ツール共通化計画</h1>
 		<p class="lead">5 プロジェクトに散在する HTML→Markdown 変換スクリプトを、このフォルダの共通ツールに統合する。あわせて PowerShell スクリプトを <code>csc.exe</code> でビルドする C# の exe に置き換える。</p>
-		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-09-12</p>
+		<p class="date">📅 作成: 2026-08-28 / 更新: 2026-09-29</p>
 	</div>
 </div>
 
 <div class="wrap">
 
-<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め</a></p>
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a> ／ <a href="../90_rules/html-class-rules.html">HTML クラス名の取り決め</a></p>
 
 <div class="toc">
 	<h2>目次</h2>
@@ -489,6 +496,10 @@
 
 	<p><code>html2md</code> の検査はローカルのファイルだけを見る。GitHub 上で実際にどう表示されるかは <code>check-markdown</code> が Markdown API に投げて確かめる。第 5 章の判定を入れれば <code>**</code> の破綻は出なくなる見込みだが、<strong>見込みで済ませずに実物で確認する</strong>という役割は残す。</p>
 
+	<p><strong>ローカルの目視では見つからない。</strong>閉じ側の規則だけを直して「60 件解決した」と判断した後、GitHub 上では開き側の 29 箇所が壊れたままだった。</p>
+
+	<p><code>check-markdown</code> は、Markdown を <code>https://api.github.com/markdown</code> に投げ、返る HTML に <code>**</code> が残っていないかを見る。コードブロックとコードスパンは対象外にする（<code>**</code> が本物のコードのことがあるため）。GitHub は <code>&lt;code class="notranslate"&gt;</code> とクラスを付けるので、<code>&lt;code&gt;</code> 決め打ちでは拾えない。送る本文は UTF-8 のバイト列にする（そのままでは日本語が壊れる）。</p>
+
 	<div class="tablewrap">
 	<table>
 		<thead><tr><th>終了コード</th><th>意味</th></tr></thead>
@@ -499,6 +510,8 @@
 		</tbody>
 	</table>
 	</div>
+
+	<p><code>html2md</code> 自身の検査で<strong>HTML 側も独立に見る</strong>（HTML が <code>.md</code> を参照していないか・HTML 側のリンク切れ）のは、Markdown 側だけ見ると、変換で <code>.md</code> になった分と区別できず見逃すため。</p>
 </section>
 
 <section class="ch07" id="ch07">
@@ -776,7 +789,7 @@ exit 2</code></pre>
 </div>
 
 <footer>
-	<p><a href="../../README.html">← html2md</a></p>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
 </footer>
 
 </body>

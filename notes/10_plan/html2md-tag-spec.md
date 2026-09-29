@@ -4,7 +4,7 @@ html2md がどのタグをどう変換するか。実測した結果と、まだ
 
 > 📅 作成: 2026-08-30 / 更新: 2026-09-11
 
-[← html2md](../../README.md) ／ [html2md ツール共通化計画](html2md-plan.md) ／ [HTML クラス名の取り決め](../90_rules/html-class-rules.md)
+[^^](../../README.md) ／ [html2md ツール共通化計画](html2md-plan.md) ／ [HTML クラス名の取り決め](../90_rules/html-class-rules.md)
 
 ## 目次
 
@@ -480,4 +480,4 @@ md-skip のページと探索フォルダの外にある HTML は、決着 7 と
 
 `summary` の中のリンクとコードスパンは、決着 12 と同じ理由で `[文字](リンク先)` ・ ``コード`` が記号のまま表示される。<strong>直すにはタグ（`<a href>` ・ `<code>`）で出す必要があり、リンクは `.md` 置換とアンカー張り替えの経路も通す。</strong>今回の範囲には入れていない。
 
-[← html2md](../../README.md)
+[^^](../../README.md)

@@ -121,7 +121,7 @@
 		width:310px; max-width:100%;
 		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
 		color:#fff; text-decoration:none; padding:9px 13px;
-		border-radius:7px; font-size:.95em; line-height:1.45;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
 		font-weight:700;
 	}
 	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
@@ -142,6 +142,13 @@
 		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
 	}
 	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
 </style>
 </head>
 <body>
@@ -156,7 +163,7 @@
 
 <div class="wrap">
 
-<p class="backlink"><a href="README.html">← ai-agent-tools</a> ／ <a href="notes/10_plan/html2md-tag-spec.html">タグ対応仕様</a> ／ <a href="notes/90_rules/html-class-rules.html">クラス名の取り決め</a></p>
+<p class="backlink"><a class="home" href="README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a> ／ <a href="notes/10_plan/html2md-tag-spec.html">タグ対応仕様</a> ／ <a href="notes/90_rules/html-class-rules.html">クラス名の取り決め</a></p>
 
 <div class="toc">
 	<h2>目次</h2>
@@ -255,6 +262,8 @@ html2md --root . --dry-run                # 書き出さず、結果と指摘だ
 
 	<p>終了コードは <code>0</code>＝指摘なし、<code>1</code>＝指摘あり、<code>2</code>＝引数や対象の誤り。</p>
 
+	<p><code>--exclude</code> の既定で <code>index.html</code> を外しているのは、<code>README.html</code> へのリダイレクト専用のページで本文を持たないため。</p>
+
 	<p>生成する <code>.md</code> と切り出した <code>.svg</code> は、<strong>BOM 無しの UTF-8 ＋ LF で書く。</strong>共通ルールが置く <code>.editorconfig</code> ・ <code>.gitattributes</code> の宣言（<code>.md</code> は LF）に合わせてある。元の HTML が CRLF でも、生成物は LF になる。</p>
 
 	<div class="callout callout-warning">
@@ -325,6 +334,21 @@ html2md --root . --dry-run                # 書き出さず、結果と指摘だ
 	<p>Markdown を GitHub のレンダラに投げ、返る HTML に <code>**</code> が記号のまま残っていないかを見る。<strong>日本語では <code>**</code> が強調にならないことがある</strong>（前後の文字で開閉が決まる）。html2md は該当箇所を <code>&lt;strong&gt;</code> に置き換えるが、実物で確かめるのはこちら。</p>
 
 	<p>認証なしは 60 回/時。<code>--token</code> を渡すと 5000 回/時になる。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>終了コード</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="num">0</td><td>問題なし</td></tr>
+			<tr><td class="num">1</td><td>表示が壊れる箇所がある。該当箇所を前後 45 文字つきで出す</td></tr>
+			<tr><td class="num">2</td><td><strong>検証できなかった</strong>（レート制限・通信断など）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-important">
+		<p><strong>2 を 0 と混同しない。</strong>2 は「問題なし」ではない。検証できていないのに問題なしと報告するのは、このツールが防ごうとしている誤りそのもの。</p>
+	</div>
 
 	<p><strong>オプションはどれも同じ形</strong>（<code>--path</code> ・ <code>-p</code> ・ 名前を付けない対象）。以前は PowerShell 製で <code>-Path</code> 形式だったが、<strong>TypeScript へ移して <code>--</code> へ寄せた。</strong>古い形も当面は受ける。</p>
 
@@ -718,7 +742,7 @@ psls claude.exe    # "claude.exe" を含む行だけに絞り込む（大小文�
 </div>
 
 <footer>
-	<p><a href="README.html">← ai-agent-tools</a></p>
+	<p><a class="home" href="README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
 </footer>
 
 </body>

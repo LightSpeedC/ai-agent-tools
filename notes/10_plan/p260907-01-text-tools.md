@@ -4,7 +4,7 @@ SJIS・UTF-16・UTF-8BOM で壊れる Read・Grep・Edit・Write の代わり。
 
 > 📅 作成: 2026-09-07 / 更新: 2026-09-29
 
-[← html2md](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)
+[^^](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)
 
 > [!NOTE]
 > <strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド `text`（`text.exe`）1 本に `read`／`find`／`edit`／`write` を載せた（`src/TextCs/`、ビルド `build-text-cs.cmd`、テスト `tools/40_test/run-text-tests.ps1` = 53 件成功）。**本文の「決定」はすべて実装に反映済み。**`--col`・`--regex`・`--all` は将来。`write`・`edit` の変換先で表現できない文字の検出は実装済み（終了 5 で止まる。convert-encoding の `--force` のような ? への置き換えは無い）。
@@ -358,4 +358,4 @@ text write app.reg --keep --in tmp/body.txt
 
 4 つの動詞を一度に作ると重い。**穴の大きい順に、動詞ごとに区切って実装・確認する**: `text find`（要望・独立）→ `text read`（合言葉の土台）→ `text edit`（合言葉の本命）→ `text write`。各段でテストを通してから次へ。
 
-[← html2md](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)
+[^^](../../README.md) ／ [課題 i260907-02](../40_issues/issues.html)

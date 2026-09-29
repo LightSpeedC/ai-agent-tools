@@ -97,6 +97,13 @@
 	footer{max-width:1600px;margin:40px auto 0;padding:18px 30px 0;
 		border-top:1px solid var(--line,#d9dfe8);color:var(--ink-soft,#4a5568);
 		background:#fff;font-size:.88em;}
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
 </style>
 </head>
 <body>
@@ -109,7 +116,7 @@
 
 <div class="wrap">
 
-<p class="backlink"><a href="../../README.html">← html2md</a> ／ <a href="../40_issues/issues.html">課題 i260907-02</a></p>
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a> ／ <a href="../40_issues/issues.html">課題 i260907-02</a></p>
 
 <div class="callout">
 <strong>実装済み（2026-09-08）。</strong>ai-chat-lite（#621）の検索ツール要望を発端に、壊れるツール一式の代わりへと広げたもの。多機能コマンド <code>text</code>（<code>text.exe</code>）1 本に <code>read</code>／<code>find</code>／<code>edit</code>／<code>write</code> を載せた（<code>src/TextCs/</code>、ビルド <code>build-text-cs.cmd</code>、テスト <code>tools/40_test/run-text-tests.ps1</code> = 53 件成功）。<strong>本文の「決定」はすべて実装に反映済み。</strong><code>--col</code>・<code>--regex</code>・<code>--all</code> は将来。<code>write</code>・<code>edit</code> の変換先で表現できない文字の検出は実装済み（終了 5 で止まる。convert-encoding の <code>--force</code> のような ? への置き換えは無い）。
@@ -502,7 +509,7 @@ text write app.reg --keep --in tmp/body.txt</code></pre>
 </div>
 
 <footer>
-<p><a href="../../README.html">← html2md</a> ／ <a href="../40_issues/issues.html">課題 i260907-02</a></p>
+<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a> ／ <a href="../40_issues/issues.html">課題 i260907-02</a></p>
 </footer>
 
 </body>

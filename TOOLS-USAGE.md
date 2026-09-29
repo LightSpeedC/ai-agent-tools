@@ -4,7 +4,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 
 > 📅 作成: 2026-09-04 / 更新: 2026-09-29
 
-[← ai-agent-tools](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
+[^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
 ## 目次
 
@@ -84,6 +84,8 @@ html2md --root . --dry-run                # 書き出さず、結果と指摘だ
 
 終了コードは `0`＝指摘なし、`1`＝指摘あり、`2`＝引数や対象の誤り。
 
+`--exclude` の既定で `index.html` を外しているのは、`README.html` へのリダイレクト専用のページで本文を持たないため。
+
 生成する `.md` と切り出した `.svg` は、<strong>BOM 無しの UTF-8 ＋ LF で書く。</strong>共通ルールが置く `.editorconfig` ・ `.gitattributes` の宣言（`.md` は LF）に合わせてある。元の HTML が CRLF でも、生成物は LF になる。
 
 > [!WARNING]
@@ -151,6 +153,15 @@ check-markdown . --recurse
 Markdown を GitHub のレンダラに投げ、返る HTML に `**` が記号のまま残っていないかを見る。**日本語では `**` が強調にならないことがある**（前後の文字で開閉が決まる）。html2md は該当箇所を `<strong>` に置き換えるが、実物で確かめるのはこちら。
 
 認証なしは 60 回/時。`--token` を渡すと 5000 回/時になる。
+
+| 終了コード | 意味 |
+|---:|---|
+| 0 | 問題なし |
+| 1 | 表示が壊れる箇所がある。該当箇所を前後 45 文字つきで出す |
+| 2 | **検証できなかった**（レート制限・通信断など） |
+
+> [!IMPORTANT]
+> <strong>2 を 0 と混同しない。</strong>2 は「問題なし」ではない。検証できていないのに問題なしと報告するのは、このツールが防ごうとしている誤りそのもの。
 
 **オプションはどれも同じ形**（`--path` ・ `-p` ・ 名前を付けない対象）。以前は PowerShell 製で `-Path` 形式だったが、<strong>TypeScript へ移して `--` へ寄せた。</strong>古い形も当面は受ける。
 
@@ -502,4 +513,4 @@ Markdown の日付は変換で引き継がれる。**個別に管理しない。
 
 html2md 側に手を入れる場合、<strong>出力が `tests/golden/` の期待値と一致することを `tools/40_test/run-tests.cmd` が検査している。</strong>出力を変える修正なら落ちるので、差分を目で確かめてから期待値を作り直す。
 
-[← ai-agent-tools](README.md)
+[^^](README.md)

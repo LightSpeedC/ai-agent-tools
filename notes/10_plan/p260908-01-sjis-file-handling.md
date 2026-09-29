@@ -4,7 +4,7 @@ cmd・bat（SJIS）を壊さず、しかも差分を見ながら扱うための�
 
 > 📅 作成: 2026-09-08 / 更新: 2026-09-12
 
-[← html2md](../../README.md) ／ [text ツール仕様](p260907-01-text-tools.md)
+[^^](../../README.md) ／ [text ツール仕様](p260907-01-text-tools.md)
 
 1. [背景と結論](#1-背景と結論)
 2. [手段の一覧と評価](#2-手段の一覧と評価)
@@ -112,4 +112,4 @@ text find 日本語 --path . --recurse --include "*.cmd,*.reg"
 - exe 系（text・convert-encoding）は .NET の起動ぶん数十〜百 ms。小さいファイルなら体感差は小さい
 - UTF-8 往復は変換 2 回だが、cmd は小さいので実用上は速い
 
-[← html2md](../../README.md) ／ [text ツール仕様](p260907-01-text-tools.md)
+[^^](../../README.md) ／ [text ツール仕様](p260907-01-text-tools.md)

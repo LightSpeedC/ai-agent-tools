@@ -62,6 +62,8 @@ $Suites = @(
 	# プロセス一覧（ツリー表示）。bun:ffi 必須で node には代わりが無いため、
 	# node で走らせたときは「bun が必要です」で終わることだけ確かめる
 	@{ Name = 'psls'; Script = 'run-psls-tests.ts' },
+	# このリポジトリの HTML が共通ルール（戻るリンク ・ 目次 ・ 日付 ・ README からのリンク等）に沿っているか
+	@{ Name = 'HTML のルール'; Script = 'check-html-rules.ts' },
 	# 型チェック。bun も node も型を見ないため、ここでしか食い違いが出ない
 	@{ Name = '型チェック'; Script = 'run-tsc-tests.ps1' }
 )

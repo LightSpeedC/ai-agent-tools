@@ -4,7 +4,7 @@ html2md が読むクラス名を 1 つに決める。変換側は設定を持た
 
 > 📅 作成: 2026-08-29 / 更新: 2026-09-12
 
-[← html2md](../../README.md) ／ [html2md ツール共通化計画](../10_plan/html2md-plan.md)
+[^^](../../README.md) ／ [html2md ツール共通化計画](../10_plan/html2md-plan.md)
 
 ## 目次
 
@@ -432,4 +432,4 @@ HTML でだけ見せたい要素には `md-skip` を付ける。
 | `tocnote` | typescript-learn で 1 箇所 | 目次の補足。通常の段落として出る |
 | `backlink` | 6 プロジェクトすべて | 名前は揃っている。通常のリンクとして出る |
 
-[← html2md](../../README.md)
+[^^](../../README.md)

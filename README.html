@@ -115,10 +115,23 @@
 		width:310px; max-width:100%;
 		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
 		color:#fff; text-decoration:none; padding:9px 13px;
-		border-radius:7px; font-size:.95em; line-height:1.45;
+		border-radius:6px; font-size:.95em; line-height:1.45;
 		font-weight:700;
 	}
 	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 30px;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
 </style>
 </head>
 <body>
@@ -133,330 +146,123 @@
 
 <div class="wrap">
 
+<p class="backlink"><a class="home" href="../" aria-label="戻る" title="親サイトへ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p>AI エージェントと人が、どのプロジェクトでも同じ手順で使う道具を 1 か所に集めたもの。<strong>ドキュメントは HTML で書いて Markdown を生成する</strong>、<strong>ファイルは種類ごとに決まった文字コードと改行で置く</strong>、<strong>公開する前に機械で確かめる</strong>、といった共通ルールの取り決めを、その場の判断に任せず道具で守れるようにする。</p>
+
+<p>道具は <code>bin/</code> にあり、<code>bin/</code> は PATH に入っているので、どのプロジェクトからも名前だけで呼べる。<strong>使い方は <a href="TOOLS-USAGE.html">TOOLS-USAGE</a> にある。</strong></p>
+
+<h2>道具</h2>
+
+<div class="tablewrap">
+<table>
+	<thead><tr><th>道具</th><th>何のためにあるか</th></tr></thead>
+	<tbody>
+		<tr><td class="nowrap"><code>html2md</code></td><td>HTML を正として、GitHub で読むための Markdown を生成する。生成したあとにリンク ・ アンカー ・ 文言の食い違いを検査する</td></tr>
+		<tr><td class="nowrap"><code>check-markdown</code></td><td>生成した Markdown が GitHub 上で意図どおりに表示されるかを、GitHub のレンダラに投げて実物で確かめる</td></tr>
+		<tr><td class="nowrap"><code>check-public</code></td><td>public のリポジトリに出す前に、個人名 ・ 実体パス ・ 認証情報などが混ざっていないかを機械で止める</td></tr>
+		<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルを種類ごとに決まった文字コードと改行へ、判断の余地なく変換する。判定できなければ書き換えない</td></tr>
+		<tr><td class="nowrap"><code>text</code></td><td>SJIS ・ UTF-16 のファイルも壊さずに読む ・ 探す ・ 書き換える（Read ・ Grep ・ Edit ・ Write の代わり）</td></tr>
+		<tr><td class="nowrap"><code>psh</code></td><td>PowerShell を呼び、出力を UTF-8 に直して流す</td></tr>
+		<tr><td class="nowrap"><code>less</code></td><td>UTF-8 の出力を、化けずにページングして読む（<code>more</code> の代わり）</td></tr>
+		<tr><td class="nowrap"><code>psls</code></td><td>プロセスを親子のツリーで一覧し、キーワードで絞り込む</td></tr>
+	</tbody>
+</table>
+</div>
+
+<p><code>bin/</code> にはほかに、このリポジトリの持ち主が使う起動用の cmd（<code>cc</code> ・ <code>cx</code> ・ <code>w</code> など）も置いている。</p>
+
+<h2>フォルダの構成</h2>
+
+<div class="tablewrap">
+<table>
+	<thead><tr><th>フォルダ</th><th>中身</th></tr></thead>
+	<tbody>
+		<tr><td class="nowrap"><code>bin/</code></td><td>道具の入口。PATH に入れるのはここだけ</td></tr>
+		<tr><td class="nowrap"><code>src/</code></td><td>道具の本体。TypeScript（bun を優先し、無ければ node で動く）。<code>psh-rs/</code> は psh の Rust 版、<code>〜Cs/</code> は C# 版（突き合わせ用）</td></tr>
+		<tr><td class="nowrap"><code>tests/</code></td><td>テストの入力と期待値</td></tr>
+		<tr><td class="nowrap"><code>tools/</code></td><td>ビルド（<code>20_build</code>）・テスト（<code>40_test</code>）・測定（<code>90_misc</code>）</td></tr>
+		<tr><td class="nowrap"><code>notes/</code></td><td>このリポジトリを管理する資料（下の各章）</td></tr>
+	</tbody>
+</table>
+</div>
+
 <div class="toc">
 	<h2>目次</h2>
 	<ol>
-		<li class="ch01"><a href="#ch01">このフォルダにあるもの</a></li>
-		<li class="ch02"><a href="#ch02">html2md</a></li>
-		<li class="ch03"><a href="#ch03">check-markdown</a></li>
-		<li class="ch04"><a href="#ch04">convert-encoding</a></li>
+		<li class="ch01"><a href="#ch01">調査</a></li>
+		<li class="ch02"><a href="#ch02">計画と仕様</a></li>
+		<li class="ch03"><a href="#ch03">課題</a></li>
+		<li class="ch04"><a href="#ch04">ルールと手順</a></li>
 	</ol>
 </div>
 
 <section class="ch01" id="ch01">
-	<h1>このフォルダにあるもの</h1>
+	<h1>調査</h1>
 
 	<div class="tablewrap">
 	<table>
-		<thead><tr><th>ツール</th><th>何を確かめるか</th></tr></thead>
+		<thead><tr><th>資料</th><th>内容</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>html2md</code></td><td>HTML から Markdown を生成する。<strong>変換はこれを使う</strong>（実体は <code>html2md.exe</code>）</td></tr>
-			<tr><td class="nowrap"><code>check-markdown</code></td><td>Markdown が <strong>GitHub 上で意図どおりに表示されるか</strong></td></tr>
-			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、決められた組み合わせへ変換する</td></tr>
-			<tr><td class="nowrap"><code>text</code></td><td>SJIS・UTF-16・UTF-8BOM でも壊さず<strong>読む・探す・編集する・書く</strong>（Read・Grep・Edit・Write の代わり。実体は <code>text.exe</code>）</td></tr>
+			<tr><td class="nowrap"><a href="notes/01_research/i260908-04-review649.html">レビュー #649 全文</a></td><td>html2md 全体のレビュー（2026-09-08）の原資料</td></tr>
+			<tr><td class="nowrap"><a href="tools/90_misc/bench-html2md/処理系比較-html2md.html">html2md の処理系比較</a></td><td>実際の HTML → Markdown 変換で、C# の exe と TypeScript 版の時間とメモリを測った</td></tr>
+			<tr><td class="nowrap"><a href="tools/90_misc/bench-check-public/処理系比較-check-public.html">check-public の処理系比較</a></td><td>同じ検査を 6 つの処理系で書き、速さ ・ 事前の段 ・ 行数を測った</td></tr>
 		</tbody>
 	</table>
 	</div>
 
-	<p><code>check-markdown</code> は、<strong>推測ではなく実物で判定する</strong>。Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。</p>
-
-	<p>HTML の文字色と背景色が読める組み合わせかを確かめる <code>check-contrast</code> は、PlayWright 共有環境へ一本化した（<a href="notes/40_issues/issues.html">課題 i260922-02</a>）。このプロジェクトからは削除済み。</p>
-
-	<h2>関連する文書</h2>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>文書</th><th>内容</th></tr></thead>
-		<tbody>
-			<tr><td class="nowrap"><a href="TOOLS-USAGE.html">他のプロジェクトから使う</a></td><td>コマンド・オプション・変換対象の外し方・検査の読み方。<strong>使う側が読むのはこれ</strong></td></tr>
-			<tr><td class="nowrap"><a href="notes/10_plan/html2md-plan.html">html2md ツール共通化計画</a></td><td>各プロジェクトに散在した変換スクリプトを 1 本にまとめ、exe にするまでの段取り</td></tr>
-			<tr><td class="nowrap"><a href="notes/10_plan/html2md-tag-spec.html">html2md タグ対応仕様</a></td><td>どのタグをどう変換するか。実測した結果と、まだ決まっていない論点</td></tr>
-			<tr><td class="nowrap"><a href="notes/10_plan/p260906-01-convert-encoding.html">convert-encoding 仕様書</a></td><td>文字コードの判定・変換の手順・終了コード・テストケース</td></tr>
-			<tr><td class="nowrap"><a href="notes/10_plan/p260907-01-text-tools.html">text ツール仕様書</a></td><td>read/find/edit/write の仕様。合言葉（digest）・組の判定・出力の形</td></tr>
-			<tr><td class="nowrap"><a href="notes/10_plan/p260908-01-sjis-file-handling.html">SJIS ファイルの扱い方</a></td><td>cmd・bat を壊さず、差分を見ながら作成・修正・削除する手順の比較</td></tr>
-			<tr><td class="nowrap"><a href="notes/10_plan/i260929-01-文字コード判定.html">文字コード判定の改善 計画</a></td><td>UTF-8 と SJIS のどちらとも取れるバイト列を、読んだ結果の自然さで見分ける</td></tr>
-			<tr><td class="nowrap"><a href="notes/10_plan/p260929-01-psh-rust.html">psh の Rust 化 計画</a></td><td>TypeScript で動いている psh を Rust の単体の exe にする。守る仕様・置き場・テスト・前後の比較</td></tr>
-			<tr><td class="nowrap"><a href="notes/90_rules/html-class-rules.html">HTML クラス名の取り決め</a></td><td>html2md が読むクラス名。バッジ・callout・表・図の書き方</td></tr>
-			<tr><td class="nowrap"><a href="notes/90_rules/local-rules.html">ローカルルール</a></td><td>このプロジェクトでだけ通る決めごと。共通ルールとの差と、踏んだ落とし穴</td></tr>
-		</tbody>
-	</table>
-	</div>
+	<p>処理系比較の 2 つは、測るための手順と一緒に <code>tools/90_misc/</code> に置いている。</p>
 </section>
 
 <section class="ch02" id="ch02">
-	<h1>html2md</h1>
-
-	<h2>なぜ必要か</h2>
-
-	<p>ドキュメントは HTML で書き、GitHub で読むための Markdown をそこから生成する。<strong>HTML を正とし、Markdown は生成物として扱う。</strong>生成された <code>.md</code> を直接編集しても次回の実行で上書きされる。</p>
-
-	<p>変換スクリプトは以前プロジェクトごとに置かれていた。同じ処理が 5 通りに分かれ、直しが片方にしか入らない状態になっていたため、ここに 1 本だけ置く形に変えた。</p>
-
-	<h2>使い方</h2>
-
-	<p><strong>このフォルダは PATH に入っているので、パスを書かずに <code>html2md</code> で呼べる。</strong>プロジェクト側にランチャーを置く必要はない。</p>
-
-<pre><code class="language-powershell">html2md --root .
-html2md --root . --dir docs --dir notes
-html2md --root . --dry-run</code></pre>
-
+	<h1>計画と仕様</h1>
 
 	<div class="tablewrap">
 	<table>
-		<thead><tr><th>オプション</th><th>既定</th><th>内容</th></tr></thead>
+		<thead><tr><th>資料</th><th>内容</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>--root &lt;パス&gt;</code></td><td class="nowrap">カレントフォルダ</td><td>対象のプロジェクトフォルダ</td></tr>
-			<tr><td class="nowrap"><code>--dir &lt;名前&gt;</code></td><td class="nowrap"><code>notes</code></td><td>探索するフォルダ。複数回指定できる</td></tr>
-			<tr><td class="nowrap"><code>--exclude &lt;名前&gt;</code></td><td class="nowrap"><code>index.html</code></td><td>変換しないファイル名。複数回指定できる</td></tr>
-			<tr><td class="nowrap"><code>--extra &lt;名前&gt;</code></td><td class="nowrap">—</td><td>ルート直下の追加ファイル。複数回指定できる</td></tr>
-			<tr><td class="nowrap"><code>--no-readme</code></td><td class="nowrap">—</td><td>ルート直下の <code>README.html</code> を対象から外す</td></tr>
-			<tr><td class="nowrap"><code>--dry-run</code></td><td class="nowrap">—</td><td>書き出さず、変換結果と検査結果だけを表示する</td></tr>
-			<tr><td class="nowrap"><code>--help</code></td><td class="nowrap">—</td><td>説明を表示する</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/html2md-plan.html">html2md ツール共通化計画</a></td><td>各プロジェクトに散在した変換スクリプトを 1 本にまとめるまでの段取りと、生成後の検査</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/html2md-tag-spec.html">html2md タグ対応仕様</a></td><td>どのタグをどう変換するか。実測した結果と、まだ決まっていない論点</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260906-01-convert-encoding.html">convert-encoding 仕様書</a></td><td>文字コードの判定 ・ 変換の手順 ・ 終了コード ・ テストケース</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260907-01-text-tools.html">text ツール仕様書</a></td><td>read ・ find ・ edit ・ write の仕様。合言葉（digest）・組の判定 ・ 出力の形</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260908-01-sjis-file-handling.html">SJIS ファイルの扱い方</a></td><td>cmd ・ bat を壊さず、差分を見ながら作成 ・ 修正 ・ 削除する手順の比較</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260912-01-check-public.html">check-public 計画</a></td><td>public のリポジトリに出す前に、出してはいけないものが混ざっていないかを機械で止める</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260912-02-bun移植.html">bun への移植</a></td><td>C# の 3 本（convert-encoding ・ text ・ html2md）を TypeScript に移し、bun で走らせる</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/i260917-01-less.html">less 計画</a></td><td>UTF-8 の出力を DOS の <code>more</code> で受けると化ける問題を、UTF-8 で読めるページャーで解決する</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260921-01-プロセス一覧.html">psls 計画</a></td><td>プロセス一覧を、キーワードで絞り込みながら親子のツリーで表示する CLI ツール</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/i260929-01-文字コード判定.html">文字コード判定の改善 計画</a></td><td>UTF-8 と SJIS のどちらとも取れるバイト列を、読んだ結果の自然さで見分ける</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/p260929-01-psh-rust.html">psh の Rust 化 計画</a></td><td>psh を Rust の単体の exe にする。守る仕様 ・ 置き場 ・ テスト ・ 前後の比較</td></tr>
 		</tbody>
 	</table>
 	</div>
-
-	<p>終了コードは <code>0</code>＝指摘なし、<code>1</code>＝指摘あり、<code>2</code>＝引数や対象の誤り。</p>
-
-	<div class="callout">
-		<p><code>--exclude</code> の既定で <code>index.html</code> を外しているのは、<code>README.html</code> へのリダイレクト専用ページで本文を持たないため。</p>
-	</div>
-
-	<h2>変換対象から外す</h2>
-
-	<p>外し方は 3 通りある。<strong>何を外したいかで選ぶ。</strong></p>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>外すもの</th><th>書き方</th></tr></thead>
-		<tbody>
-			<tr><td class="nowrap">ページ全体</td><td><code>head</code> に <code>&lt;meta name="md-skip"&gt;</code> を置く</td></tr>
-			<tr><td class="nowrap">要素だけ</td><td>その要素に <code>class="md-skip"</code> を付ける</td></tr>
-			<tr><td class="nowrap">ファイル名で</td><td><code>--exclude &lt;名前&gt;</code> を渡す。<strong>効くのは <code>--dir</code> で探したファイルだけ</strong>で、<code>README.html</code> と <code>--extra</code> で名指ししたものは素通りする</td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<p>ページ全体を外すのは、変換すると構造が失われるものに使う。ログのように機械が書き足すページが該当する。</p>
-
-	<h3>折りたたみの落とし方</h3>
-
-	<p><code>details</code> は既定でタグのまま出る。GitHub が解釈するので畳みが効く。<strong>畳むより見出しが要るページには <code>class="md-flat"</code> を付ける。</strong><code>summary</code> が見出しになり、中身はその配下の本文になる。課題の一覧のように 1 件ずつ引くものに向く。</p>
-
-	<h3>md-skip のページへのリンク</h3>
-
-	<p>そのページを参照する側のリンクは、<strong>拡張子を置き換えず <code>.html</code> のまま残る。</strong>Markdown が生成されないため、<code>.md</code> にすると存在しないファイルを指すことになる。</p>
-
-<pre><code class="language-markdown">[課題](../40_issues/issues.html)</code></pre>
-
-	<p>除外の判定は html2md が行うので、<strong>書き手は常に <code>.html</code> と書けばよい。</strong></p>
-
-	<div class="callout callout-important">
-		<p>GitHub はリポジトリ内の <code>.html</code> をレンダリングせず<strong>ソース表示にする。</strong><code>details</code> の畳みは効かないが、中身には到達できる。</p>
-	</div>
-
-	<h2>仕組み</h2>
-
-	<p>正規表現だけで解析する。対象は自分たちで書いた整形済みの HTML に限る。<strong>どのタグをどう変換するかは<a href="notes/10_plan/html2md-tag-spec.html">タグ対応仕様</a>にまとめている。</strong></p>
-
-	<h3>タグのまま出すもの</h3>
-
-	<p><code>ins</code> <code>sup</code> <code>sub</code> <code>mark</code> <code>kbd</code> <code>q</code> はタグのまま残す。<strong>GitHub のレンダラで生き残ることを実測して選んだ。</strong><code>abbr</code> <code>small</code> <code>cite</code> <code>time</code> は除去されるため平文に落とす。</p>
-
-	<p><code>del</code> は <code>~~取り消し線~~</code> にする。ただし <code>~~</code> は <code>**</code> と同じ前後判定を受けるので、成立しない位置では <code>&lt;del&gt;</code> で出る。</p>
-
-	<p>変換のあとに検査を行う。Markdown 側のリンク切れ・アンカー切れ、HTML 側が <code>.md</code> を参照していないか、HTML 側のリンク切れ、Markdown 側だけにある文言、更新日の古さを見る。<strong>HTML 側も独立に検査するのは、Markdown 側だけ見ると変換で <code>.md</code> になった分と区別できず見逃すため。</strong></p>
-
-	<h3>出力の担保</h3>
-
-	<p>変換した結果が <code>tests/golden/</code> に置いた期待値と<strong>完全に一致すること</strong>を <code>tools/40_test/run-tests.cmd</code> が検査する。出力そのものだけでなく、終了コードと検査の指摘も固定している。</p>
-
-	<p>出力を変える修正を入れたときは、<strong>差分を目で確かめてから</strong> <code>run-tests.ps1 -UpdateGolden</code> で期待値を作り直す。確かめずに更新すると担保が無くなる。</p>
-
-	<h3>ビルド</h3>
-
-	<p><code>tools/20_build/build-html2md-cs.cmd</code> を実行する。Roslyn の <code>csc.exe</code> があればそれを使い、無ければ .NET Framework 4.8 の <code>csc.exe</code> を使う。標準搭載版は C# 5 相当なので、文字列補間や <code>out var</code> は書けない。</p>
-
-	<p><strong>ビルドの入口はツールごとに 1 本。</strong>名前は<strong>ツール名と処理系</strong>で付ける（<code>build-&lt;ツール&gt;-&lt;処理系&gt;.cmd</code>）。移植版が増えても、どれを作る入口か名前で分かる。</p>
-
-	<div class="tablewrap"><table>
-	<thead><tr><th>作るもの</th><th>入口</th></tr></thead>
-	<tbody>
-	<tr><td class="nowrap"><code>html2md.exe</code></td><td class="nowrap"><code>build-html2md-cs.cmd</code></td></tr>
-	<tr><td class="nowrap"><code>convert-encoding.exe</code></td><td class="nowrap"><code>build-convert-encoding-cs.cmd</code></td></tr>
-	<tr><td class="nowrap"><code>text.exe</code></td><td class="nowrap"><code>build-text-cs.cmd</code></td></tr>
-	</tbody>
-	</table></div>
-
-	<p>いずれも同じ csc の探し方をする。<strong>TypeScript 版はビルドが要らない</strong>（bun ・ node がソースをそのまま走らせる）。</p>
 </section>
 
 <section class="ch03" id="ch03">
-	<h1>check-markdown</h1>
+	<h1>課題</h1>
 
-	<h2>なぜ必要か</h2>
-
-	<p>ローカルで正しく見える Markdown でも、GitHub では壊れることがある。代表が<strong>日本語の強調</strong>で、CommonMark は <code>**</code> の前後の文字を見て開閉を判定する。</p>
-
-<pre><code>主題は**「何が流れるか」**です     ← ** が記号のまま表示される</code></pre>
-
-	<p>開きの <code>**</code> の直後が <code>「</code>（句読点扱い）で、その直前が通常文字だと<strong>開き記号にならない</strong>。閉じ側も同様に、直前が <code>。</code> <code>」</code> <code>）</code> <code>］</code> だと閉じられない。</p>
-
-	<p><strong>この種の不具合はローカルの目視では見つからない。</strong>実際、閉じ側だけを直して「60 件解決した」と判断した後、GitHub 上では開き側の 29 箇所が壊れたままだった。</p>
-
-	<h2>使い方</h2>
-
-<pre><code class="language-powershell"># フォルダ配下をまとめて
-check-markdown -Path . -Recurse
-
-# 1 ファイルだけ
-check-markdown -Path .\README.md
-
-# レート制限を緩める（60 回/時 → 5000 回/時）
-check-markdown -Path . -Recurse -Token ghp_xxxxx</code></pre>
-
-	<p><code>check-markdown.cmd</code> をダブルクリックしてもよい（カレントディレクトリが対象）。</p>
-
-	<p>問題があれば該当箇所を前後 45 文字つきで表示する。CI にも組めるよう終了コードを分けている。</p>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>終了コード</th><th>意味</th></tr></thead>
-		<tbody>
-			<tr><td class="num">0</td><td>問題なし</td></tr>
-			<tr><td class="num">1</td><td>表示が壊れる箇所がある</td></tr>
-			<tr><td class="num">2</td><td><strong>検証できなかった</strong>（レート制限・通信断など）。<strong>「問題なし」ではない</strong></td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<div class="callout callout-warning">
-		<p><strong>2 を 0 と混同しないこと。</strong>検証できていないのに「問題なし」と報告するのは、このツールが防ごうとしている誤りそのもの。</p>
-	</div>
-
-	<h2>仕組み</h2>
-
-	<p>Markdown を GitHub の Markdown API（<code>https://api.github.com/markdown</code>）に投げ、<strong>実際に GitHub が返す HTML</strong> を見る。そこに <code>**</code> が残っていれば強調が効いていない。コードブロックとコードスパンは対象外（<code>**</code> が実際のコードのことがあるため）。</p>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>項目</th><th>内容</th></tr></thead>
-		<tbody>
-			<tr><td class="nowrap">レート制限</td><td>認証なし 60 回/時。<code>-Token</code> で 5000 回/時</td></tr>
-			<tr><td class="nowrap">文字コード</td><td><code>ConvertTo-Json</code> の結果を UTF-8 のバイト列にして送る。そのままだと日本語が壊れる</td></tr>
-			<tr><td class="nowrap">除外の注意</td><td>GitHub は <code>&lt;code class="notranslate"&gt;</code> とクラスを付ける。<code>&lt;code&gt;</code> 決め打ちでは拾えない</td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<h2>直し方</h2>
-
-	<p>該当箇所だけ <code>&lt;strong&gt;〜&lt;/strong&gt;</code> に置き換える。GitHub は Markdown 中の HTML を解釈するので確実に太字になる。半角スペースを入れて成立させる方法もあるが、日本語の文中に隙間が空くので使わない。</p>
-
-	<p>判定は変換スクリプト側で機械的に行い、書き手には意識させない。</p>
+	<p>これから解決することは <a href="notes/40_issues/issues.html">課題</a> に集めている。</p>
 </section>
 
 <section class="ch04" id="ch04">
-	<h1>convert-encoding</h1>
-
-	<h2>なぜ必要か</h2>
-
-	<p>Windows で扱うファイルは種類ごとに求められる形式が違う。<strong>書き込みツールは BOM なし UTF-8 ＋ LF でしか書けない</strong>ため、書いたあとに毎回変換することになる。</p>
+	<h1>ルールと手順</h1>
 
 	<div class="tablewrap">
 	<table>
-		<thead><tr><th>ファイル</th><th>求められる形式</th></tr></thead>
+		<thead><tr><th>資料</th><th>内容</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap">ps1</td><td class="nowrap">BOM 付き UTF-8 ＋ CRLF</td></tr>
-			<tr><td class="nowrap">cmd・bat</td><td class="nowrap">SJIS（CP932）＋ CRLF</td></tr>
-			<tr><td class="nowrap">reg</td><td class="nowrap">UTF-16 LE ＋ BOM ＋ CRLF</td></tr>
-			<tr><td class="nowrap">html</td><td class="nowrap">BOM 付き UTF-8 ＋ LF</td></tr>
+			<tr><td class="nowrap"><a href="notes/90_rules/local-rules.html">ローカルルール</a></td><td>このプロジェクトでだけ通る決めごと。共通ルールとの差と、踏んだ落とし穴</td></tr>
+			<tr><td class="nowrap"><a href="notes/90_rules/html-class-rules.html">HTML クラス名の取り決め</a></td><td>html2md が読むクラス名。バッジ ・ callout ・ 表 ・ 図の書き方</td></tr>
+			<tr><td class="nowrap"><a href="notes/90_rules/development.html">開発の手順</a></td><td>ツールを直すときに回すテスト、期待値の作り直し、ビルド</td></tr>
 		</tbody>
 	</table>
 	</div>
-
-	<p>その変換を PowerShell で書くと、書き方がその場の判断に委ねられる。<strong>1 つのセッションで書き方が 3 回変わり、うち 1 回はウイルス対策に検知されて止まった。</strong>コマンド文字列は AMSI に読まれるため、書き方によって引っかかる。</p>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>観点</th><th>手で書く</th><th>このコマンド</th></tr></thead>
-		<tbody>
-			<tr><td class="nowrap">手法</td><td>セッションごとに組み立てる</td><td>引数を渡すだけ。判断の余地が無い</td></tr>
-			<tr><td class="nowrap">ウイルス対策</td><td>コマンド文字列が読まれる</td><td>exe の内部処理は読まれない</td></tr>
-			<tr><td class="nowrap">正しさ</td><td>変換のたびに書き間違いの余地がある</td><td>テストで担保できる</td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<h2>使い方</h2>
-
-<pre><code class="language-powershell"># 用途名で指定する。文字コードと改行の両方が決まる
-convert-encoding tools/80_ops/foo.ps1 --to ps1
-convert-encoding tools/80_ops/foo.cmd --to cmd
-
-# 文字コード名でも書ける。改行は入力のまま
-convert-encoding foo.txt --to sjis
-
-# 改行も指定する。単独で書くと改行だけ変える
-convert-encoding foo.txt --to sjis/crlf
-convert-encoding foo.txt --to /crlf
-
-# いまの状態を見るだけ。書き込まない
-convert-encoding foo.cmd --info
-
-# フォルダも受ける。--info は全件、--check は規約に合わないものだけ
-convert-encoding . --info
-convert-encoding . --check
-
-# 中身を UTF-8 で標準出力へ出す。書き込まない
-convert-encoding foo.cmd --read</code></pre>
-
-	<div class="callout callout-important">
-		<p><strong>読み取りツールは SJIS のファイルを UTF-8 として読むため化ける。</strong>文字コードを指定する手段が無く、化けたまま推測で扱うことになる。<code>--read</code> はその逃げ道。スクリプトから使うときは <code>[Console]::OutputEncoding</code> を UTF-8 にしておく（5.1 は外部コマンドの出力を CP932 として読む）。</p>
-	</div>
-
-	<p>用途名は <code>ps1</code> <code>cmd</code> <code>bat</code> <code>reg</code> <code>html</code>、文字コード名は <code>utf8</code> <code>utf8bom</code> <code>sjis</code> <code>utf16le</code> <code>utf16be</code>。改行は <code>lf</code> と <code>crlf</code>。</p>
-
-	<div class="callout callout-important">
-		<p><strong>改行を書かなければ、改行は変えない。</strong>「指定しなかったものは変えない」で通している。文字コードごとに既定の改行を決めると、その対応を覚える必要が生じ、覚え違いが事故になる。用途名だけは例外で、種類ごとに改行まで決まる。</p>
-	</div>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>終了コード</th><th>意味</th></tr></thead>
-		<tbody>
-			<tr><td class="num">0</td><td>成功（変更なしを含む）</td></tr>
-			<tr><td class="num">1</td><td>引数が正しくない</td></tr>
-			<tr><td class="num">2</td><td>ファイルが無い、または読めない</td></tr>
-			<tr><td class="num">3</td><td><strong>文字コードを判定できない</strong>。書き込まずに終える</td></tr>
-			<tr><td class="num">4</td><td><strong>変換先で表現できない文字がある</strong>、または<strong>変換元として読めないバイトがある</strong>。前者は <code>--force</code> で回避できる</td></tr>
-			<tr><td class="num">5</td><td>書き込みに失敗した</td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<h2>仕組み</h2>
-
-	<p>変換元は BOM → UTF-8 → SJIS の順に調べる。<strong>判定できなければ何も書き込まずに終える。</strong>推測で変換すると、失敗したときに元へ戻せない。<code>--from</code> を指定すると判定を飛ばす。</p>
-
-	<p>UTF-8 の検査では<strong>過剰な長さの符号化を弾く</strong>。<code>C0 80</code> のように短く書けるものを長く書いた並びを通すと、SJIS のファイルが UTF-8 と誤判定される場面が増える。</p>
-
-	<div class="callout callout-warning">
-		<p><strong>SJIS へ変換すると文字が失われることがある。</strong>絵文字・ハングル・簡体字は CP932 に無く、既定の変換では <code>?</code> に置き換わって元に戻せない。変換の前に検査し、見つかれば<strong>書き換えずに終了コード 4 で終える。</strong>その文字と行番号を出すので、どこを直せばよいか分かる。</p>
-	</div>
-
-	<div class="callout callout-warning">
-		<p><strong>元のバイト列が、指定した組として読めないこともある。</strong>SJIS の未割当バイトなどを best-fit で別の文字に化けさせたまま書き戻さないよう、<strong>同一組へのバイト保持を除き</strong>、再エンコードする前にデコード方向も検査する。読めなければ<strong>書き換えずに終了コード 4 で終える</strong>（変換先の文字が表現できない場合と同じコードだが、原因は逆）。<code>--from</code> で組を明示すれば読み方を変えられる。</p>
-	</div>
-
-	<p>改行はいったんすべて LF に落としてから目的の改行へ置き換える。<strong>CR 単独（旧 Mac 形式）もこの順で拾える。</strong>1 段階で <code>\r?\n</code> を置き換える方法だと CR 単独が残る。</p>
-
-	<p>変換後のバイト列が元と同じならファイルに触らない。<strong>更新日時が変わらないので、何度実行しても同じ結果になる。</strong>書き込みは同じフォルダの一時ファイルを経由するため、途中で失敗しても元のファイルが壊れない。</p>
-
-	<p>判定・変換の詳細とテストケースは<a href="notes/10_plan/p260906-01-convert-encoding.html">仕様書</a>にある。</p>
 </section>
 
 </div>
+
+<footer>
+	<p><a class="home" href="../" aria-label="戻る" title="親サイトへ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
 
 </body>
 </html>

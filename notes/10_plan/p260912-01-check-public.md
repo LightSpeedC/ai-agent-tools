@@ -4,7 +4,7 @@ public のリポジトリに出す前に、出してはいけないものが混�
 
 > 📅 作成: 2026-09-12 / 更新: 2026-09-12
 
-[← html2md](../../README.md) ／ [共通化計画](html2md-plan.md) ／ [課題](../40_issues/issues.html)
+[^^](../../README.md) ／ [共通化計画](html2md-plan.md) ／ [課題](../40_issues/issues.html)
 
 ## 目次
 
@@ -203,4 +203,4 @@ notes/10_plan/p260901-01-設計.html:13  [除外語]  1 件
 - <strong>自動での修正。</strong>見つけて止めるところまで。何に置き換えるかは書き手が決める
 - <strong>フックへの組み込み。</strong>引き金は人が呼ぶ形から始める
 
-[← html2md](../../README.md)
+[^^](../../README.md)
