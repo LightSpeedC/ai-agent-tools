@@ -51,6 +51,7 @@ $launchers = @(
 	'psh', 'psh.cmd',
 	'check-markdown', 'check-markdown.cmd',
 	'check-public', 'check-public.cmd',
+	'spawn-server', 'spawn-server.cmd',
 	'cc.cmd', 'cx.cmd', 'n.cmd', 'nn.cmd'
 )
 New-Item -ItemType Directory -Path (Join-Path $target 'bin') -Force | Out-Null
@@ -59,7 +60,7 @@ foreach ($name in $launchers) {
 }
 
 # 実行に使う src 配下
-$srcDirs = @('lib', 'html2md', 'text', 'convert-encoding', 'check-markdown', 'check-public', 'psh')
+$srcDirs = @('lib', 'html2md', 'text', 'convert-encoding', 'check-markdown', 'check-public', 'psh', 'spawn-server-ts')
 foreach ($dir in $srcDirs) {
 	Copy-Item (Join-Path $root "src/$dir") (Join-Path $target "src/$dir") -Recurse
 }

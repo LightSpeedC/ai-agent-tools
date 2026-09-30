@@ -212,22 +212,23 @@
 
 <section class="ch04" id="ch04">
 	<h1>実装の方式</h1>
-	<p>HTTP は <code>node:http</code>（bun でも動く）。起動は <code>cc.cmd</code> と同じく <code>start</code> に任せる。</p>
-<pre><code class="language-typescript">spawn('cmd.exe', ['/d', '/s', '/c', 'start "' + title + '" ' + command], { cwd, detached: true, stdio: 'ignore', windowsVerbatimArguments: true }).unref();</code></pre>
+	<p>HTTP は <code>node:http</code>（bun でも動く）。起動は PowerShell の <code>Start-Process -PassThru</code> で、新しい窓の <code>cmd /c</code> にコマンドを渡す。</p>
+<pre><code class="language-powershell">(Start-Process -FilePath cmd.exe -ArgumentList ('/d /s /c "title ' + $env:SPAWN_TITLE + ' &amp; ' + $env:SPAWN_COMMAND + '"') -WorkingDirectory $env:SPAWN_CWD -PassThru).Id</code></pre>
 	<ul>
-		<li><strong>新しい窓は <code>start</code> が開く</strong>。自前で <code>CREATE_NEW_CONSOLE</code> を指定しない</li>
-		<li><strong>間の <code>cmd</code> はすぐ終わる</strong>ので、<code>spawn</code> が返す pid は起動したものではない。本物の pid は、終わった <code>cmd</code> の子を探して取る（第 6 章 2）</li>
-		<li><strong>サーバーの窓が 65001 でも、新しい窓は既定のコードページで開く</strong>はず（未検証。bun で動かすとサーバーの窓は 65001 になる）</li>
+		<li><strong>新しい窓は <code>Start-Process</code> が開く</strong>。返す pid は窓の中の <code>cmd</code> のもので、<code>taskkill /T</code> で止めれば中身ごと止まる</li>
+		<li><strong>コマンド ・ タイトル ・ カレントは環境変数で渡す</strong>。式に埋め込むとクォートの入れ子になり、中身しだいで壊れる</li>
+		<li>タイトルは <code>cmd</code> の <code>title</code> に渡すので、<code>" &amp; | &lt; &gt; ^ %</code> を外す</li>
 	</ul>
+	<div class="callout callout-important"><strong>当初は <code>cc.cmd</code> と同じく <code>cmd</code> の <code>start</code> に任せ、終わった <code>start</code> の子を探して pid を取る形にした。</strong>ところが、すぐ終わるコマンドは探す前に終わっていて取りこぼした（テストで 500 になった）。<code>Start-Process -PassThru</code> は起動した時点で pid が決まるので、これに替えた（2026-09-30、利用者の判断）。</div>
 
-	<h2>実測すること</h2>
-	<ol>
-		<li>依頼ごとに新しい窓が開き、指定したタイトル ・ カレントになるか</li>
-		<li>サーバーを Ctrl+C ・ <code>taskkill</code> で止めても、起動したものが生き残るか（<code>detached</code> と <code>start</code> の二重で切れているはず。未検証）</li>
-		<li>環境変数がサーバーのものを引き継ぐか</li>
-		<li>新しい窓のコードページ（bun で動かしたとき）</li>
-		<li>コマンド文字列に <code>"</code> ・ <code>&amp;</code> ・ 日本語を含むときに、そのまま渡るか</li>
-	</ol>
+	<h2>実測の結果</h2>
+	<p>テスト（第 5 章）で bun ・ node とも確かめた。</p>
+	<ul>
+		<li>依頼ごとに新しい窓が開き、指定したカレントで動く</li>
+		<li>サーバーを <code>taskkill /T /F</code> で止めても、起動したものは生き残る</li>
+		<li>環境変数はサーバーのものを引き継ぐ</li>
+		<li>コマンド文字列の <code>"</code> ・ 日本語はそのまま渡る。<code>echo</code> が書いたファイルは CP932 なので、新しい窓は既定のコードページで開いている（bun で動かしたときも同じ）</li>
+	</ul>
 </section>
 
 <section class="ch05" id="ch05">
@@ -247,8 +248,8 @@
 	<ul>
 		<li><strong>名前と置き場</strong>。<code>spawn-server</code>、<code>src/spawn-server-ts/</code></li>
 		<li><strong>窓</strong>。依頼ごとに <code>cc.cmd</code> と同じく新しい窓を開き、コマンドが終われば閉じる</li>
-		<li><strong>コマンド文字列</strong>。<code>cmd</code> の <code>start</code> に渡す</li>
-		<li><strong>応答の pid</strong>。<code>start</code> が起動した本物の pid を探して返す</li>
+		<li><strong>コマンド文字列</strong>。新しい窓の <code>cmd /c</code> に渡す。起動の方法は <code>start</code> にこだわらない</li>
+		<li><strong>応答の pid</strong>。窓の中でコマンドを走らせているプロセスの pid を返す</li>
 		<li><strong>トークン</strong>。使わない（第 3 章）</li>
 		<li><strong>呼ぶ場所</strong>。同じ PC からだけ。ブラウザからは呼ばない</li>
 	</ul>

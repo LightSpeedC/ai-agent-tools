@@ -12,15 +12,16 @@
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
 	/* 章のアクセント色（9 章 / 色相 280 → 0 を 35 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(245,78%,25%); --accent2:hsl(245,58%,55%); --soft:hsl(245,28%,95%); }
-	.ch03{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
-	.ch04{ --accent:hsl(175,78%,25%); --accent2:hsl(175,58%,55%); --soft:hsl(175,28%,95%); }
-	.ch05{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
-	.ch06{ --accent:hsl(105,78%,25%); --accent2:hsl(105,58%,55%); --soft:hsl(105,28%,95%); }
-	.ch07{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
-	.ch08{ --accent:hsl(35,78%,25%);  --accent2:hsl(35,58%,55%);  --soft:hsl(35,28%,95%); }
-	.ch09{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(248.9,78%,25%); --accent2:hsl(248.9,58%,55%); --soft:hsl(248.9,28%,95%); }
+	.ch03{ --accent:hsl(217.8,78%,25%); --accent2:hsl(217.8,58%,55%); --soft:hsl(217.8,28%,95%); }
+	.ch04{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch05{ --accent:hsl(155.6,78%,25%); --accent2:hsl(155.6,58%,55%); --soft:hsl(155.6,28%,95%); }
+	.ch06{ --accent:hsl(124.4,78%,25%); --accent2:hsl(124.4,58%,55%); --soft:hsl(124.4,28%,95%); }
+	.ch07{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch08{ --accent:hsl(62.2,78%,25%);  --accent2:hsl(62.2,58%,55%);  --soft:hsl(62.2,28%,95%); }
+	.ch09{ --accent:hsl(31.1,78%,25%);  --accent2:hsl(31.1,58%,55%);  --soft:hsl(31.1,28%,95%); }
+	.ch10{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -157,7 +158,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-29</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-09-30</p>
 	</div>
 </div>
 
@@ -176,7 +177,8 @@
 		<li class="ch06"><a href="#ch06">PowerShell を呼ぶ（psh）</a></li>
 		<li class="ch07"><a href="#ch07">ページングして読む（less）</a></li>
 		<li class="ch08"><a href="#ch08">プロセス一覧を見る（psls）</a></li>
-		<li class="ch09"><a href="#ch09">つまずきやすいところ</a></li>
+		<li class="ch09"><a href="#ch09">HTTP で受けたコマンドを新しい窓で起動する（spawn-server）</a></li>
+		<li class="ch10"><a href="#ch10">つまずきやすいところ</a></li>
 	</ol>
 </div>
 
@@ -197,6 +199,7 @@
 			<tr><td class="nowrap"><code>psh</code></td><td>PowerShell を呼び、出力を <strong>UTF-8 に直して流す</strong>（第 6 章）</td></tr>
 			<tr><td class="nowrap"><code>less</code></td><td>UTF-8 セーフなページャー。DOS の <code>more</code> の文字化けを避ける（第 7 章）</td></tr>
 			<tr><td class="nowrap"><code>psls</code></td><td>プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（第 8 章）</td></tr>
+			<tr><td class="nowrap"><code>spawn-server</code></td><td>HTTP で受けたコマンドを、同じユーザーのまま<strong>新しい窓で起動する</strong>（第 9 章）</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -703,6 +706,31 @@ psls claude.exe    # "claude.exe" を含む行だけに絞り込む（大小文�
 </section>
 
 <section class="ch09" id="ch09">
+	<h1>HTTP で受けたコマンドを新しい窓で起動する（spawn-server）</h1>
+
+	<p><strong>HTTP で受けたコマンドを、サーバーと同じユーザー ・ 同じ環境変数のまま、新しい窓で起動する。</strong>サーバーは起動するだけで、終わりを待たず出力も受け取らない。サーバーを止めても起動したものは残る。</p>
+
+<pre><code class="language-shell">spawn-server --port 8790</code></pre>
+
+<pre><code class="language-powershell">$body = @{ command = 'claude -c'; cwd = 'W:/2026/20260930-sample'; title = 'sample' } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8790/run -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($body))</code></pre>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>command</code></td><td>必須。新しい窓の <code>cmd /c</code> に渡す。窓はコマンドが終われば閉じる</td></tr>
+			<tr><td class="nowrap"><code>cwd</code></td><td>省略可。起動するカレント（省略時はサーバーのカレント）</td></tr>
+			<tr><td class="nowrap"><code>title</code></td><td>省略可。窓のタイトル（省略時はコマンド文字列）</td></tr>
+			<tr><td class="nowrap">応答</td><td><code>200 {"pid": …}</code>（窓の中の <code>cmd</code> の pid。<code>taskkill /PID … /T</code> で中身ごと止まる）・ <code>400</code> 形が違う ・ <code>403</code> Origin 付き ・ <code>500</code> 起動できない</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout callout-caution"><strong>任意のコマンドを本人の権限で走らせる口になる。</strong>待ち受けは <code>127.0.0.1</code> だけで、ブラウザからの依頼（<code>Origin</code> 付き）は断るが、<strong>トークンは無いので、同じ PC のほかのプロセスからの依頼は防げない。</strong>使わないときは止める。</div>
+</section>
+
+<section class="ch10" id="ch10">
 	<h1>つまずきやすいところ</h1>
 
 	<h2>Markdown を直接編集しない</h2>

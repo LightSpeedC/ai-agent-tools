@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-09-29
+> 📅 作成: 2026-09-04 / 更新: 2026-09-30
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -16,7 +16,8 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 6. [PowerShell を呼ぶ（psh）](#6-powershell-を呼ぶpsh)
 7. [ページングして読む（less）](#7-ページングして読むless)
 8. [プロセス一覧を見る（psls）](#8-プロセス一覧を見るpsls)
-9. [つまずきやすいところ](#9-つまずきやすいところ)
+9. [HTTP で受けたコマンドを新しい窓で起動する（spawn-server）](#9-http-で受けたコマンドを新しい窓で起動するspawn-server)
+10. [つまずきやすいところ](#10-つまずきやすいところ)
 
 ## 1. 使えるコマンド
 
@@ -32,6 +33,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `psh` | PowerShell を呼び、出力を **UTF-8 に直して流す**（第 6 章） |
 | `less` | UTF-8 セーフなページャー。DOS の `more` の文字化けを避ける（第 7 章） |
 | `psls` | プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（第 8 章） |
+| `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま**新しい窓で起動する**（第 9 章） |
 
 `check-markdown` は<strong>推測せず実物で判定する。</strong>Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。
 
@@ -482,7 +484,30 @@ psls claude.exe    # "claude.exe" を含む行だけに絞り込む（大小文�
 
 取得できない項目（権限不足等）は `-`（コマンド行は `(-)`）にする。**管理者として実行すると `SeDebugPrivilege` を自動で有効化し、より多くのプロセスの情報を取得できる**（一般ユーザーでは無効化されずそのまま動く）。
 
-## 9. つまずきやすいところ
+## 9. HTTP で受けたコマンドを新しい窓で起動する（spawn-server）
+
+<strong>HTTP で受けたコマンドを、サーバーと同じユーザー ・ 同じ環境変数のまま、新しい窓で起動する。</strong>サーバーは起動するだけで、終わりを待たず出力も受け取らない。サーバーを止めても起動したものは残る。
+
+```shell
+spawn-server --port 8790
+```
+
+```powershell
+$body = @{ command = 'claude -c'; cwd = 'W:/2026/20260930-sample'; title = 'sample' } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8790/run -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($body))
+```
+
+| 項目 | 意味 |
+|---|---|
+| `command` | 必須。新しい窓の `cmd /c` に渡す。窓はコマンドが終われば閉じる |
+| `cwd` | 省略可。起動するカレント（省略時はサーバーのカレント） |
+| `title` | 省略可。窓のタイトル（省略時はコマンド文字列） |
+| 応答 | `200 {"pid": …}`（窓の中の `cmd` の pid。`taskkill /PID … /T` で中身ごと止まる）・ `400` 形が違う ・ `403` Origin 付き ・ `500` 起動できない |
+
+> [!CAUTION]
+> <strong>任意のコマンドを本人の権限で走らせる口になる。</strong>待ち受けは `127.0.0.1` だけで、ブラウザからの依頼（`Origin` 付き）は断るが、<strong>トークンは無いので、同じ PC のほかのプロセスからの依頼は防げない。</strong>使わないときは止める。
+
+## 10. つまずきやすいところ
 
 ### Markdown を直接編集しない
 
