@@ -1,7 +1,6 @@
 /*
 	インライン SVG を独立ファイルに切り出す。
 
-	C# 版（src/Html2Md/Svg.cs）の移植。
 	GitHub は Markdown 内のインライン SVG をサニタイズで除去するため、
 	images/ に書き出して画像参照にする。
 */

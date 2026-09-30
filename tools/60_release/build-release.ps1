@@ -8,10 +8,7 @@
 	で src 依存なし）
 
 	含めないもの: テスト・tools・notes・.git・node_modules・bun.lock・
-	tsconfig.json・*.exe（C# 移植版のビルド成果物）・src 内の C# 移植ソース
-	（ConvertEncodingCs・Html2MdCs・TextCs）・移行前の PowerShell 版
-	（check-markdown-ps.ps1）・このプロジェクト自身のビルド用 cmd
-	（build-*-cs.cmd）
+	tsconfig.json・移行前の PowerShell 版（check-markdown-ps.ps1）
 
 	check-contrast は i260922-02 で PlayWright 側へ一本化したため、
 	ランチャー・src・contrast/ とも含めない。
@@ -61,7 +58,7 @@ foreach ($name in $launchers) {
 	Copy-Item (Join-Path $root "bin/$name") (Join-Path $target "bin/$name")
 }
 
-# 実行に使う src 配下（C# 移植ソースは含めない）
+# 実行に使う src 配下
 $srcDirs = @('lib', 'html2md', 'text', 'convert-encoding', 'check-markdown', 'check-public', 'psh')
 foreach ($dir in $srcDirs) {
 	Copy-Item (Join-Path $root "src/$dir") (Join-Path $target "src/$dir") -Recurse

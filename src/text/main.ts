@@ -5,8 +5,6 @@
 	終了コード:
 	  0 成功 / 1 find 一致なし / 2 エラー / 3 両方妥当で拒否
 	  4 合言葉不一致 / 5 変換先で表現できない文字
-
-	C# 版（src/TextCs/Program.cs）の移植。
 */
 
 import { ToolError } from './engine.ts';

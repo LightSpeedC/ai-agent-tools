@@ -1,7 +1,6 @@
 /*
 	HTML の文字列を扱う共通処理。
 
-	C# 版（src/Html2Md/HtmlUtil.cs）の移植。
 	正規表現だけで解析するため、対象は自分たちで書いた整形済みの HTML に限る。
 */
 
@@ -140,7 +139,6 @@ export function convertLinkTarget(href: string, baseDir: string | null,
 	}
 
 	// 大小を区別しない突き合わせ。呼び出し側は小文字にして持っている
-	// （C# 版は StringComparer.OrdinalIgnoreCase の HashSet を使っていた）
 	const resolved = resolveLink(baseDir, href);
 	if (resolved == null) { return href; }
 	const full = resolved.toLowerCase();

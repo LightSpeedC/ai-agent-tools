@@ -1,7 +1,5 @@
 /*
 	変換中に持ち回る状態と、変換の結果。
-
-	C# 版（src/Html2MdCs/Converter.cs）の ConvertContext ・ ConvertResult を移したもの。
 */
 
 export interface ConvertContext {

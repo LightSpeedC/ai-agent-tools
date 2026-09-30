@@ -1,8 +1,6 @@
 /*
 	文字コードと改行の変換。
 
-	C# 版（src/ConvertEncoding/Converter.cs）の移植。挙動は合わせる。
-
 	CP932 のエンコーダは標準に無い。TextDecoder は shift_jis を読めるが、
 	TextEncoder は UTF-8 しか書けないため、<strong>2 バイト組を総当たりでデコードして
 	逆引きを組み立てる</strong>（9,206 件・14 ms 程度）。依存を増やさずに済む。

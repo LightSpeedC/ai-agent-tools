@@ -1,7 +1,6 @@
 /*
 	用途名・文字コード名・改行名の対応。
 
-	C# 版（src/ConvertEncoding/Spec.cs）の移植。
 	表示する名前は EncKind の値そのもの（--to / --from に書く綴りと同じ）。
 */
 

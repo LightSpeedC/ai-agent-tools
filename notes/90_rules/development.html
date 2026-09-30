@@ -140,7 +140,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools の開発の手順</h1>
 		<p class="lead">ツールを直すときに回すテスト、期待値の作り直し、ビルド。使い方は <a href="../../TOOLS-USAGE.html">TOOLS-USAGE</a> を見る。</p>
-		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-09-29</p>
+		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-09-30</p>
 	</div>
 </div>
 
@@ -189,12 +189,8 @@
 
 	<p>テストは既定で入口（<code>bin/</code>）を試す。別の実装を試すときは名指しする。</p>
 
-<pre><code class="language-shell"># C# 版に当てる（先にビルドする。第 3 章）
-psh tools/40_test/run-convert-encoding-tests.ps1 -Target "$(pwd -W)/dist/convert-encoding-cs.exe"
-# psh の Rust 版に当てる
+<pre><code class="language-shell"># psh の Rust 版に当てる
 PSH_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts</code></pre>
-
-	<p>C# 版は突き合わせ用で、TypeScript 版に入った変更の一部が入っていない（課題 i260929-02）。</p>
 </section>
 
 <section class="ch02" id="ch02">
@@ -221,11 +217,7 @@ psh tools/40_test/run-tests.ps1 -Case anchor-badge -UpdateGolden  # 1 ケース�
 	<table>
 		<thead><tr><th>作るもの</th><th>入口</th><th>出力先</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap">psh の Rust 版</td><td class="nowrap"><code>build-psh-rs.cmd</code></td><td class="nowrap"><code>src/psh-rs/target/release/psh.exe</code></td></tr>
-			<tr><td class="nowrap">html2md の C# 版</td><td class="nowrap"><code>build-html2md-cs.cmd</code></td><td class="nowrap"><code>dist/html2md-cs.exe</code></td></tr>
-			<tr><td class="nowrap">convert-encoding の C# 版</td><td class="nowrap"><code>build-convert-encoding-cs.cmd</code></td><td class="nowrap"><code>dist/convert-encoding-cs.exe</code></td></tr>
-			<tr><td class="nowrap">text の C# 版</td><td class="nowrap"><code>build-text-cs.cmd</code></td><td class="nowrap"><code>dist/text-cs.exe</code></td></tr>
-		</tbody>
+			<tr><td class="nowrap">psh の Rust 版</td><td class="nowrap"><code>build-psh-rs.cmd</code></td><td class="nowrap"><code>src/psh-rs/target/release/psh.exe</code></td></tr>		</tbody>
 	</table>
 	</div>
 
@@ -233,9 +225,6 @@ psh tools/40_test/run-tests.ps1 -Case anchor-badge -UpdateGolden  # 1 ケース�
 
 	<h2>Rust 版</h2>
 	<p><code>cargo</code> が要る。psh の入口（<code>bin/psh.cmd</code> ・ <code>bin/psh</code>）は、exe があればそれを使い、無ければ TypeScript 版に落ちる。</p>
-
-	<h2>C# 版</h2>
-	<p>Visual Studio の Roslyn の <code>csc.exe</code> があればそれを使い、無ければ Windows に標準で入っている .NET Framework 4.8 の <code>csc.exe</code> を使う。<strong>標準の csc は C# 5 相当なので、文字列補間や <code>out var</code> は書けない。</strong>どちらでも通るように C# 5 の範囲で書く。</p>
 </section>
 
 </div>

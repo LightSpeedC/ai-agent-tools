@@ -1,7 +1,5 @@
 /*
 	バイト列から文字コードを判定する。
-
-	C# 版（src/ConvertEncoding/Detector.cs）の移植。判定の順も結果も合わせる。
 */
 
 import type { EncKind } from './codec.ts';

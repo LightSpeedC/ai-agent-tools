@@ -1,7 +1,5 @@
 /*
 	text edit — 判定 → 部分置換 → 元の組のまま書き戻す。合言葉で競合を検知。
-
-	C# 版（src/TextCs/EditCmd.cs）の移植。
 */
 
 import type { EolKind } from './engine.ts';

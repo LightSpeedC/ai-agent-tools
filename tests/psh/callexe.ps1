@@ -12,7 +12,17 @@
 [CmdletBinding()]
 param()
 
+$ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
+# 呼ぶ exe は callexe.cs を Windows 標準の csc でビルドしたもの。無ければ作る
+$exe = Join-Path $root 'tmp\psh-callexe.exe'
+if (-not (Test-Path -LiteralPath $exe)) {
+	$csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+	New-Item -ItemType Directory -Force (Split-Path -Parent $exe) | Out-Null
+	& $csc /nologo /utf8output /codepage:65001 /out:"$exe" (Join-Path $PSScriptRoot 'callexe.cs') | Out-Null
+	if ($LASTEXITCODE -ne 0) { Write-Host ('csc でビルドできません: ' + $csc); exit 1 }
+}
+
 Write-Host 'ここは PowerShell の出力です'
-& (Join-Path $root 'dist\convert-encoding-cs.exe') --help
+& $exe

@@ -142,7 +142,7 @@
 	<div class="inner">
 		<h1>psh の Rust 化 計画</h1>
 		<p class="lead">TypeScript（bun ・ node）で動いている <code>psh</code> を、Rust の単体の exe にする。</p>
-		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-09-29</p>
+		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-09-30</p>
 	</div>
 </div>
 
@@ -247,7 +247,7 @@
 		<li><strong>回数</strong>: それぞれ 3 回測り、ばらつきも書く</li>
 		<li><strong>置き場</strong>: 測る手順は <code>tools/90_misc/bench-psh/</code> に置き（既存の <code>bench-html2md</code> ・ <code>bench-check-public</code> と同じ置き場）、結果はこの計画書に表で残す</li>
 	</ul>
-	<p><code>tests/psh/callexe.ps1</code> は .NET 製の exe の例として <code>dist/convert-encoding-cs.exe</code> を呼ぶ。C# 版の扱い（i260929-02）しだいで差し替えが要る。</p>
+	<p><code>tests/psh/callexe.ps1</code> は .NET 製の exe の例として、<code>tests/psh/callexe.cs</code> を Windows 標準の csc で <code>tmp/</code> にビルドして呼ぶ。</p>
 </section>
 
 <section class="ch06" id="ch06">

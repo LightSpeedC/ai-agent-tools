@@ -1,7 +1,5 @@
 /*
 	text find — 文字コードを問わず素の文字列を探す。◎/■/◆ の入れ子で出す。
-
-	C# 版（src/TextCs/FindCmd.cs）の移植。
 */
 
 import * as fs from 'node:fs';

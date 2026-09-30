@@ -1,7 +1,7 @@
 /*
 	フォルダの下を再帰して、1 ファイルずつ文字コードと改行を見る。
 
-	C# 版（src/ConvertEncoding/Scan.cs）の移植。書き込みは行わない（--info ・ --check の土台）。
+	書き込みは行わない（--info ・ --check の土台）。
 */
 
 import * as fs from 'node:fs';

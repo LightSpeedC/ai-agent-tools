@@ -1,7 +1,5 @@
 /*
 	引数の解釈・ファイルの読み書き・出力。
-
-	C# 版（src/TextCs/Program.cs）の Args ・ Files ・ Io を移したもの。
 */
 
 import * as fs from 'node:fs';

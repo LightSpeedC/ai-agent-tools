@@ -1,7 +1,5 @@
 /*
 	text write — 指定した組（--to）または既存の組（--keep）で全文を書く。
-
-	C# 版（src/TextCs/WriteCmd.cs）の移植。
 */
 
 import * as fs from 'node:fs';

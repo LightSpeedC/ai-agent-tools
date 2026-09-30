@@ -58,8 +58,6 @@ HTML の文字色と背景色が読める組み合わせかを確かめる `chec
 > [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 > ```
 
-移す前の C# 版は `html2md-cs.exe` ・ `text-cs.exe` ・ `convert-encoding-cs.exe` として残してある。<strong>突き合わせ用で、ふだん呼ぶものではない。</strong>結果が食い違ったときの切り分けに使う。
-
 ## 2. html2md で変換する
 
 ### 基本

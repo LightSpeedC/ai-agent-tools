@@ -1,7 +1,5 @@
 /*
 	HTML を Markdown にする。
-
-	C# 版（src/Html2MdCs/Converter.cs）の移植。
 */
 
 import * as fs from 'node:fs';

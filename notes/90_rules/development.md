@@ -2,7 +2,7 @@
 
 ツールを直すときに回すテスト、期待値の作り直し、ビルド。使い方は [TOOLS-USAGE](../../TOOLS-USAGE.md) を見る。
 
-> 📅 作成: 2026-09-29 / 更新: 2026-09-29
+> 📅 作成: 2026-09-29 / 更新: 2026-09-30
 
 [^^](../../README.md) ／ [ローカルルール](local-rules.md)
 
@@ -40,13 +40,9 @@ psh tools/40_test/run-all-tests.ps1
 テストは既定で入口（`bin/`）を試す。別の実装を試すときは名指しする。
 
 ```shell
-# C# 版に当てる（先にビルドする。第 3 章）
-psh tools/40_test/run-convert-encoding-tests.ps1 -Target "$(pwd -W)/dist/convert-encoding-cs.exe"
 # psh の Rust 版に当てる
 PSH_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts
 ```
-
-C# 版は突き合わせ用で、TypeScript 版に入った変更の一部が入っていない（課題 i260929-02）。
 
 ## 2. 期待値（golden）の作り直し
 
@@ -69,18 +65,11 @@ psh tools/40_test/run-tests.ps1 -Case anchor-badge -UpdateGolden  # 1 ケース�
 | 作るもの | 入口 | 出力先 |
 |---|---|---|
 | psh の Rust 版 | `build-psh-rs.cmd` | `src/psh-rs/target/release/psh.exe` |
-| html2md の C# 版 | `build-html2md-cs.cmd` | `dist/html2md-cs.exe` |
-| convert-encoding の C# 版 | `build-convert-encoding-cs.cmd` | `dist/convert-encoding-cs.exe` |
-| text の C# 版 | `build-text-cs.cmd` | `dist/text-cs.exe` |
 
 **入口の名前はツール名と処理系で付ける**（`build-<ツール>-<処理系>.cmd`）。どれを作る入口か、名前で分かる。exe はどれも git に含めない。
 
 ### Rust 版
 
 `cargo` が要る。psh の入口（`bin/psh.cmd` ・ `bin/psh`）は、exe があればそれを使い、無ければ TypeScript 版に落ちる。
-
-### C# 版
-
-Visual Studio の Roslyn の `csc.exe` があればそれを使い、無ければ Windows に標準で入っている .NET Framework 4.8 の `csc.exe` を使う。<strong>標準の csc は C# 5 相当なので、文字列補間や `out var` は書けない。</strong>どちらでも通るように C# 5 の範囲で書く。
 
 [^^](../../README.md)

@@ -12,9 +12,8 @@
 
 	比べるのは 2 系統。
 
-	  本物  … html2md-cs.exe（C#）と src/html2md/main.ts（移植版）
-	          どちらも変換・検査・SVG 切り出しまで行う。振る舞いが一致
-	          しているので、そのまま突き合わせて読める
+	  本物  … src/html2md/main.ts を node と bun で
+	          変換・検査・SVG 切り出しまで行う
 	  port  … 移植の検討用に書いた簡易版（port.js / .mjs / .ts）
 	          変換だけを行う。.js / .mjs / .ts の読み込みコストを見るためのもの
 
@@ -159,16 +158,12 @@ Write-Host ''
 
 if (-not (Test-Path -LiteralPath $workRoot)) { New-Item -ItemType Directory -Path $workRoot -Force | Out-Null }
 
-$csSources = @(Get-ChildItem -LiteralPath (Join-Path $root 'src\Html2MdCs') -Filter *.cs | ForEach-Object { $_.FullName })
 $tsSources = @(Get-ChildItem -LiteralPath (Join-Path $root 'src\html2md') -Filter *.ts | ForEach-Object { $_.FullName })
 $mainTs = Join-Path $root 'src\html2md\main.ts'
 
 $results = @()
 
 # --- 本物どうし（変換・検査・SVG 切り出しまで行う） ---
-$w = New-Work 'cs'
-$results += Measure-Impl 'C#   exe（本物）' $w (Join-Path $root 'dist\html2md-cs.exe') @('--root', $w, '--dir', 'notes') $csSources '//'
-
 $w = New-Work 'node-main'
 $results += Measure-Impl 'node .ts（本物）' $w 'node' @($mainTs, '--root', $w, '--dir', 'notes') $tsSources '//'
 
@@ -191,7 +186,7 @@ foreach ($v in @(
 
 $results | Format-Table 名前, 起動込みms, 変換のみms, メモリMB, 総行数, 実行行数, 生成md -AutoSize
 
-Write-Host '注: 本物（上の 3 行）はどちらも変換・検査・SVG 切り出しまで行う。そのまま突き合わせて読める。'
+Write-Host '注: 本物（上の 2 行）は変換・検査・SVG 切り出しまで行う。'
 Write-Host '    port 版は変換だけを行う簡易版。.js / .mjs / .ts の読み込みコストを見るためのもの。'
 Write-Host '    行数は本物がフォルダ内の全ファイルの合計、port 版は 1 本の値。'
 Write-Host '    メモリは実行中にポーリングして拾ったピーク作業セット。'

@@ -119,7 +119,7 @@ if (hasPwsh()) {
 r = run([path.join(cases, 'callexe.ps1')]);
 assertEqual('5 終了コード', 0, r.code);
 assertTrue('5 PowerShell 側の日本語が読める', r.out.includes('ここは PowerShell の出力です'), JSON.stringify(r.out.slice(0, 80)));
-assertTrue('5 exe 側の日本語が読める', r.out.includes('ファイルの文字コードと改行を変換します'), JSON.stringify(r.out.slice(0, 200)));
+assertTrue('5 exe 側の日本語が読める', r.out.includes('ここは .NET 製 exe の出力です'), JSON.stringify(r.out.slice(0, 200)));
 
 // 6. 対象が無ければ 2 で止める（黙って成功しない）
 r = run([path.join(cases, 'nothing-here.ps1')]);

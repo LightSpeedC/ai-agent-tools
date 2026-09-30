@@ -4,9 +4,6 @@
 	    convert-encoding <path> --to <指定>[/<改行>] [--from <形式>] [--force]
 	    convert-encoding <path> --info
 	    convert-encoding <path> --check
-
-	C# 版（src/ConvertEncoding/Program.cs）の移植。
-	オプションも出力も終了コードも、現存と同じにしてある（突き合わせのため）。
 */
 
 import * as fs from 'node:fs';

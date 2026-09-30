@@ -1,7 +1,5 @@
 /*
 	表・リスト・目次を Markdown にする。
-
-	C# 版（src/Html2MdCs/Table.cs）の移植。
 */
 
 import { getAttr, getBlock, getClassList, getOpenTag, hasClass } from './htmlutil.ts';

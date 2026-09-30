@@ -178,7 +178,7 @@ Write-Host ''
 Write-Host '=== convert-encoding のテスト ===' -ForegroundColor Cyan
 
 if (-not (Test-Path -LiteralPath $Exe)) {
-	Write-Host ('対象がありません。C# 版を見るなら build-convert-encoding-cs.cmd を実行してください') -ForegroundColor Red
+	Write-Host ('対象がありません: ' + $Exe) -ForegroundColor Red
 	exit 2
 }
 
@@ -940,7 +940,7 @@ Write-Host '[実際のファイルでの往復]' -ForegroundColor Cyan
 
 # このプロジェクトの実ファイルを複製し、往復させてバイト列が戻ることを見る
 $pairs = @(
-	@{ Name = 'build-html2md-cs.cmd'; Src = (Join-Path $Root 'tools\20_build\build-html2md-cs.cmd'); To = 'cmd' },
+	@{ Name = 'build-psh-rs.cmd'; Src = (Join-Path $Root 'tools\20_build\build-psh-rs.cmd'); To = 'cmd' },
 	# 日本語を多く含む大きめの ps1 を選ぶ。往復で 1 バイトでも変われば落ちる
 	@{ Name = 'run-tests.ps1'; Src = (Join-Path $Root 'tools\40_test\run-tests.ps1'); To = 'ps1' }
 )

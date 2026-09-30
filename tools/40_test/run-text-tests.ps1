@@ -89,7 +89,7 @@ function Assert-Equal { param([string]$Name, $Expected, $Actual) if ($Expected -
 function Assert-Match { param([string]$Name, [string]$Text, [string]$Needle) if ($Text.Contains($Needle)) { Write-Ok $Name } else { Write-Ng $Name ('「' + $Needle + '」が無い') } }
 
 # ---------------------------------------------------------------
-if (-not (Test-Path $Exe)) { Write-Host ("[NG] 対象がありません: " + $Exe + "  C# 版を見るなら build-text-cs.cmd を先に実行してください。") -ForegroundColor Red; exit 2 }
+if (-not (Test-Path $Exe)) { Write-Host ("[NG] 対象がありません: " + $Exe) -ForegroundColor Red; exit 2 }
 if (Test-Path $Work) { Remove-Item -Recurse -Force $Work }
 New-Item -ItemType Directory -Force $Work | Out-Null
 

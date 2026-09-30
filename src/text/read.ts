@@ -1,8 +1,6 @@
 /*
 	text read — 何であろうと読み、UTF-8 で見せる。
 	◆ ヘッダに組・サイズ・更新日時・合言葉。
-
-	C# 版（src/TextCs/ReadCmd.cs）の移植。
 */
 
 import { ToolError, comboName, decode, lineContent, splitLines } from './engine.ts';
