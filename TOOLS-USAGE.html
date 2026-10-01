@@ -12,16 +12,15 @@
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
 	/* 章のアクセント色（9 章 / 色相 280 → 0 を 35 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(248.9,78%,25%); --accent2:hsl(248.9,58%,55%); --soft:hsl(248.9,28%,95%); }
-	.ch03{ --accent:hsl(217.8,78%,25%); --accent2:hsl(217.8,58%,55%); --soft:hsl(217.8,28%,95%); }
-	.ch04{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
-	.ch05{ --accent:hsl(155.6,78%,25%); --accent2:hsl(155.6,58%,55%); --soft:hsl(155.6,28%,95%); }
-	.ch06{ --accent:hsl(124.4,78%,25%); --accent2:hsl(124.4,58%,55%); --soft:hsl(124.4,28%,95%); }
-	.ch07{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
-	.ch08{ --accent:hsl(62.2,78%,25%);  --accent2:hsl(62.2,58%,55%);  --soft:hsl(62.2,28%,95%); }
-	.ch09{ --accent:hsl(31.1,78%,25%);  --accent2:hsl(31.1,58%,55%);  --soft:hsl(31.1,28%,95%); }
-	.ch10{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(245,78%,25%); --accent2:hsl(245,58%,55%); --soft:hsl(245,28%,95%); }
+	.ch03{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch04{ --accent:hsl(175,78%,25%); --accent2:hsl(175,58%,55%); --soft:hsl(175,28%,95%); }
+	.ch05{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch06{ --accent:hsl(105,78%,25%); --accent2:hsl(105,58%,55%); --soft:hsl(105,28%,95%); }
+	.ch07{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch08{ --accent:hsl(35,78%,25%);  --accent2:hsl(35,58%,55%);  --soft:hsl(35,28%,95%); }
+	.ch09{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -178,7 +177,6 @@
 		<li class="ch07"><a href="#ch07">ページングして読む（less）</a></li>
 		<li class="ch08"><a href="#ch08">プロセス一覧を見る（psls）</a></li>
 		<li class="ch09"><a href="#ch09">HTTP で受けたコマンドを新しい窓で起動する（spawn-server）</a></li>
-		<li class="ch10"><a href="#ch10">つまずきやすいところ</a></li>
 	</ol>
 </div>
 
@@ -324,6 +322,34 @@ html2md --root . --dry-run                # 書き出さず、結果と指摘だ
 	<div class="callout">
 		<p>GitHub はリポジトリ内の <code>.html</code> をレンダリングせず<strong>ソース表示にする。</strong>畳みは効かないが、中身には到達できる。</p>
 	</div>
+
+	<h2>Markdown を直接編集しない</h2>
+
+	<p><strong>HTML を正とし、Markdown は生成物として扱う。</strong>生成された <code>.md</code> を直しても次回の実行で上書きされる。内容を変えるときは HTML を直して再実行する。</p>
+
+	<h2>更新日は HTML 側で直す</h2>
+
+	<p>Markdown の日付は変換で引き継がれる。<strong>個別に管理しない。</strong></p>
+
+	<h2>指摘と警告は別物</h2>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>印</th><th>意味</th><th>終了コード</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">★</td><td>指摘。直す必要がある（リンク切れ・HTML に無い文言など）</td><td class="nowrap"><code>1</code></td></tr>
+			<tr><td class="nowrap">▲</td><td>警告。判断に委ねる（更新日が古い可能性など）</td><td class="nowrap"><code>0</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>「更新日が古い可能性」は<strong>体裁だけの変更なら直さなくてよい。</strong>本文を書き換えた日を書く決まりのため、警告に留めている。</p>
+
+	<h2>SVG は独立ファイルに切り出される</h2>
+
+	<p>インライン SVG は <code>images/</code> に書き出され、<code>![](images/xxx.svg)</code> で参照される。<strong>GitHub は Markdown 内のインライン SVG をサニタイズで除去するため。</strong></p>
+
+	<p>切り出すとき <code>var(--accent)</code> のような CSS 変数は実際の値に置き換わる。<strong>章ごとに色が違うので、その図がどの章にあるかを見て解決する。</strong>解決できない変数はそのまま残る。</p>
 </section>
 
 <section class="ch03" id="ch03">
@@ -730,42 +756,6 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8790/run -ContentType 'appl
 	</div>
 
 	<div class="callout callout-caution"><strong>任意のコマンドを本人の権限で走らせる口になる。</strong>待ち受けは <code>127.0.0.1</code> だけで、ブラウザからの依頼は自分の入力ページからのものだけを通し、<code>Host</code> も <code>127.0.0.1:&lt;port&gt;</code> ・ <code>localhost:&lt;port&gt;</code> に限る（よそのドメインを 127.0.0.1 に向ける手口を防ぐ）が、<strong>トークンは無いので、同じ PC のほかのプロセスからの依頼は防げない。</strong>使わないときは止める。</div>
-</section>
-
-<section class="ch10" id="ch10">
-	<h1>つまずきやすいところ</h1>
-
-	<h2>Markdown を直接編集しない</h2>
-
-	<p><strong>HTML を正とし、Markdown は生成物として扱う。</strong>生成された <code>.md</code> を直しても次回の実行で上書きされる。内容を変えるときは HTML を直して再実行する。</p>
-
-	<h2>更新日は HTML 側で直す</h2>
-
-	<p>Markdown の日付は変換で引き継がれる。<strong>個別に管理しない。</strong></p>
-
-	<h2>指摘と警告は別物</h2>
-
-	<div class="tablewrap">
-	<table>
-		<thead><tr><th>印</th><th>意味</th><th>終了コード</th></tr></thead>
-		<tbody>
-			<tr><td class="nowrap">★</td><td>指摘。直す必要がある（リンク切れ・HTML に無い文言など）</td><td class="nowrap"><code>1</code></td></tr>
-			<tr><td class="nowrap">▲</td><td>警告。判断に委ねる（更新日が古い可能性など）</td><td class="nowrap"><code>0</code></td></tr>
-		</tbody>
-	</table>
-	</div>
-
-	<p>「更新日が古い可能性」は<strong>体裁だけの変更なら直さなくてよい。</strong>本文を書き換えた日を書く決まりのため、警告に留めている。</p>
-
-	<h2>SVG は独立ファイルに切り出される</h2>
-
-	<p>インライン SVG は <code>images/</code> に書き出され、<code>![](images/xxx.svg)</code> で参照される。<strong>GitHub は Markdown 内のインライン SVG をサニタイズで除去するため。</strong></p>
-
-	<p>切り出すとき <code>var(--accent)</code> のような CSS 変数は実際の値に置き換わる。<strong>章ごとに色が違うので、その図がどの章にあるかを見て解決する。</strong>解決できない変数はそのまま残る。</p>
-
-	<h2>期待値との一致を壊さない</h2>
-
-	<p>html2md 側に手を入れる場合、<strong>出力が <code>tests/golden/</code> の期待値と一致することを <code>tools/40_test/run-tests.cmd</code> が検査している。</strong>出力を変える修正なら落ちるので、差分を目で確かめてから期待値を作り直す。</p>
 </section>
 
 </div>
