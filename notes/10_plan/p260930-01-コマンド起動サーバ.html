@@ -142,7 +142,7 @@
 	<div class="inner">
 		<h1>コマンド起動サーバ 計画</h1>
 		<p class="lead">HTTP で待ち受け、受け取ったコマンド文字列を、同じユーザーのまま新しい窓で独立したプロセスとして起動する TypeScript のツール（<code>spawn-server</code>）。</p>
-		<p class="date">📅 作成: 2026-09-30 / 更新: 2026-09-30</p>
+		<p class="date">📅 作成: 2026-09-30 / 更新: 2026-10-01</p>
 	</div>
 </div>
 
@@ -167,7 +167,7 @@
 	<p>窓を開いた本人のコンテキストのまま、外から（HTTP で）コマンドを起動したい。<code>bin/cc.cmd</code> が <code>start</code> で claude を新しい窓に立てるのと同じ形にする。</p>
 	<ul>
 		<li><strong>サーバーは起動するだけ</strong>。終わるのを待たず、出力も受け取らない。応答で返すのは起動したプロセスの pid</li>
-		<li><strong>起動したプロセスはサーバーから独立する</strong>。サーバーを止めても道連れにならない</li>
+		<li><strong>起動したプロセスはサーバーから独立する</strong>。サーバーを止めても道連れにならない（<code>taskkill /T</code> で止めたときは除く。第 4 章）</li>
 		<li><strong>依頼ごとに新しい窓を開く</strong>。コンソール ・ 標準入力 ・ 標準出力 ・ 標準エラーはその窓のもので、サーバーの窓とは共有しない。入力の取り合いも起きない</li>
 		<li><strong>ユーザーコンテキストはサーバーのまま</strong>。環境変数 ・ カレント ・ 権限（昇格の有無）を引き継ぐ</li>
 	</ul>
@@ -205,29 +205,65 @@
 	<ul>
 		<li><strong>待ち受けは <code>127.0.0.1</code> だけ</strong>。<code>0.0.0.0</code> にしない</li>
 		<li><strong>トークンは使わない</strong>。呼ぶのは同じ PC からだけなので、127.0.0.1 と Origin 拒否で足りるとした。<strong>同じ PC のほかのプロセスからの依頼は防げない</strong></li>
-		<li><strong>ブラウザからの依頼を断る</strong>。<code>Origin</code> ヘッダがあれば拒否し、本文は <code>application/json</code> だけを受ける（悪意あるページから localhost へ投げられるのを防ぐ）</li>
+		<li><strong>ほかのページからの依頼を断る</strong>。<code>Origin</code> は自分の入力ページ（第 6 章の追加）と同じときだけ通し、本文は <code>application/json</code> だけを受ける（悪意あるページから localhost へ投げられるのを防ぐ）</li>
 		<li>CORS のヘッダは返さない</li>
 	</ul>
 </section>
 
 <section class="ch04" id="ch04">
 	<h1>実装の方式</h1>
-	<p>HTTP は <code>node:http</code>（bun でも動く）。起動は PowerShell の <code>Start-Process -PassThru</code> で、新しい窓の <code>cmd /c</code> にコマンドを渡す。</p>
-<pre><code class="language-powershell">(Start-Process -FilePath cmd.exe -ArgumentList ('/d /s /c "title ' + $env:SPAWN_TITLE + ' &amp; ' + $env:SPAWN_COMMAND + '"') -WorkingDirectory $env:SPAWN_CWD -PassThru).Id</code></pre>
+	<p>HTTP は <code>node:http</code>（bun でも動く）。起動は <code>CreateProcessW</code> を FFI で直に呼び、新しい窓の <code>cmd /c</code> にコマンドを渡す（<code>src/spawn-server-ts/create-process.ts</code>）。</p>
+<pre><code class="language-text">CreateProcessW(NULL, 'cmd.exe /d /s /c "title &lt;title&gt; &amp; &lt;command&gt;"', …, bInheritHandles=0,
+               CREATE_NEW_CONSOLE, lpEnvironment=NULL, lpCurrentDirectory=&lt;cwd&gt;, STARTUPINFOW{cb だけ}, …)</code></pre>
 	<ul>
-		<li><strong>新しい窓は <code>Start-Process</code> が開く</strong>。返す pid は窓の中の <code>cmd</code> のもので、<code>taskkill /T</code> で止めれば中身ごと止まる</li>
-		<li><strong>コマンド ・ タイトル ・ カレントは環境変数で渡す</strong>。式に埋め込むとクォートの入れ子になり、中身しだいで壊れる</li>
+		<li><strong>FFI は bun が <code>bun:ffi</code>、node が koffi</strong>（共通ルール「bun と node で FFI を使うとき」）</li>
+		<li><strong>標準入出力のハンドルを渡さない</strong>（<code>STARTF_USESTDHANDLES</code> なし）。<code>CREATE_NEW_CONSOLE</code> で作った窓に出力が出る</li>
+		<li><strong>環境変数は渡さない</strong>（<code>NULL</code>）。サーバーのものをそのまま引き継ぐ。渡すための作業用の変数も要らない</li>
+		<li>返す pid は窓の中の <code>cmd</code> のもので、<code>taskkill /T</code> で止めれば中身ごと止まる</li>
 		<li>タイトルは <code>cmd</code> の <code>title</code> に渡すので、<code>" &amp; | &lt; &gt; ^ %</code> を外す</li>
+		<li><strong>FFI が使えないとき</strong>（node で koffi が入っていない等）は PowerShell の <code>Start-Process</code> に落ちる（案 A）。機能は同じで、起動に 0.6 秒ほどかかる。<code>SPAWN_SERVER_NO_FFI=1</code> で最初からこちらにでき、テストは両方の道を回す</li>
 	</ul>
-	<div class="callout callout-important"><strong>当初は <code>cc.cmd</code> と同じく <code>cmd</code> の <code>start</code> に任せ、終わった <code>start</code> の子を探して pid を取る形にした。</strong>ところが、すぐ終わるコマンドは探す前に終わっていて取りこぼした（テストで 500 になった）。<code>Start-Process -PassThru</code> は起動した時点で pid が決まるので、これに替えた（2026-09-30、利用者の判断）。</div>
+
+	<h2>起動方法の比較（2026-10-01）</h2>
+	<p>5 つの案を、起動の部分だけを切り出して比べた（<code>tools/50_run/bench-spawn/</code>）。サーバー役のプロセスから起動し、次を見た。</p>
+	<ul>
+		<li>起動の速さ: 依頼を受けてから pid が返るまで。<code>cmd /c exit</code> を 5 回起動した中央値</li>
+		<li>機能: <code>&gt;</code> と <code>&amp;</code> を含み、日本語 ・ サーバーの環境変数 ・ 作業用の変数（<code>%SPAWN_COMMAND%</code>）・ 標準出力が窓につながっているか（<code>[Console]::IsOutputRedirected</code>）をファイルに書き、10 秒ほど生きるコマンド</li>
+		<li>新しい窓: 起動したものの下に <code>conhost.exe</code> がいるか</li>
+		<li>止め方: サーバー役だけを止めたとき（<code>/T</code> なし。Ctrl+C に近い）と、<code>taskkill /T</code> で止めたときに残るか</li>
+	</ul>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>案</th><th>やり方</th><th>速さ</th><th><code>&gt;</code> ・ <code>&amp;</code></th><th>日本語 ・ 環境変数</th><th>作業用の変数の漏れ</th><th>出力が窓に出る</th><th>サーバーだけ止めた</th><th><code>/T</code> で止めた</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">A</td><td>PowerShell の <code>Start-Process</code>。変数は起動前に消す</td><td class="num nowrap">568 ms</td><td>動く</td><td>渡る</td><td>なし</td><td>出る</td><td>残る</td><td>残る</td></tr>
+			<tr><td class="nowrap">B</td><td>窓なしの node の中継から <code>cmd</code></td><td class="num nowrap">8 ms</td><td>動く</td><td>渡る</td><td>なし</td><td><strong>出ない</strong>（NUL に流れる）</td><td>残る</td><td>道連れ</td></tr>
+			<tr><td class="nowrap">C</td><td>窓なしの <code>cmd</code> から <code>start /wait</code>。遅延展開で渡す</td><td class="num nowrap">14 ms</td><td><strong>壊れる</strong></td><td><strong>渡らない</strong></td><td>なし</td><td>出る</td><td>残る</td><td>道連れ</td></tr>
+			<tr><td class="nowrap">D</td><td><code>conhost.exe cmd.exe</code></td><td class="num nowrap">―</td><td colspan="6"><strong>node ・ bun からは窓が開かない</strong>。<code>stdio</code> が <code>ignore</code> ならすぐ終わり、<code>pipe</code> なら窓を作らずパイプへ流す</td></tr>
+			<tr><td class="nowrap">E</td><td>FFI で <code>CreateProcessW</code></td><td class="num nowrap">13 ms（bun）<br>23 ms（node）</td><td>動く</td><td>渡る</td><td>なし</td><td>出る</td><td>残る</td><td>道連れ</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>プロセスツリー（サーバー役から。E）。間に何も挟まない。</p>
+<pre><code class="language-text">bun.exe（サーバー役）
+  cmd.exe        ← 返す pid
+    conhost.exe  ← 新しい窓
+    PING.EXE</code></pre>
+	<ul>
+		<li><strong>B ・ D が窓に出せないのは、node の <code>spawn</code> が子に標準入出力のハンドルを必ず渡すため</strong>。B は中継が NUL を受け取り、それを <code>cmd</code> に引き継ぐ。D の <code>conhost</code> はハンドルを受け取ると窓を作らず、疑似コンソールとしてそちらへ流す（挙動からの推測）</li>
+		<li><strong>C が壊れるのは展開と解釈の順序</strong>。遅延展開した文字列の <code>&gt;</code> ・ <code>&amp;</code> は演算子にならず、解釈させるには <code>cmd</code> をもう 1 段挟むことになる</li>
+		<li><strong><code>/T</code> で道連れになるのは、起動したものがサーバーの子として残るため</strong>。A だけ残るのは、間の PowerShell がすぐ終わり、親子がつながらないから</li>
+		<li><strong>E を採った</strong>（2026-10-01、利用者の判断）。機能がすべて正しく、速く、プロセスの構成も最小。<code>/T</code> で道連れになる点は引き換えにした</li>
+	</ul>
+	<div class="callout callout-important"><strong>途中の形。</strong>最初は <code>cc.cmd</code> と同じく <code>cmd</code> の <code>start</code> に任せ、終わった <code>start</code> の子を探して pid を取った。すぐ終わるコマンドを取りこぼしたので A に替え、PowerShell の遅さと変数の漏れを避けるために比べ直して E にした。</div>
 
 	<h2>実測の結果</h2>
-	<p>テスト（第 5 章）で bun ・ node とも確かめた。</p>
+	<p>テスト（第 5 章）で bun ・ node とも、FFI と <code>Start-Process</code> の両方の道で確かめた。</p>
 	<ul>
-		<li>依頼ごとに新しい窓が開き、指定したカレントで動く</li>
-		<li>サーバーを <code>taskkill /T /F</code> で止めても、起動したものは生き残る</li>
-		<li>環境変数はサーバーのものを引き継ぐ</li>
-		<li>コマンド文字列の <code>"</code> ・ 日本語はそのまま渡る。<code>echo</code> が書いたファイルは CP932 なので、新しい窓は既定のコードページで開いている（bun で動かしたときも同じ）</li>
+		<li>依頼ごとに新しい窓が開き（<code>conhost</code> がいる）、指定したカレントフォルダで動く</li>
+		<li>サーバーだけを止めても、起動したものは生き残る</li>
+		<li>環境変数はサーバーのものを引き継ぎ、作業用の変数は持ち込まない</li>
+		<li>コマンド文字列の <code>"</code> ・ <code>&gt;</code> ・ <code>&amp;</code> ・ 日本語はそのまま渡る。<code>echo</code> が書いたファイルは CP932 なので、新しい窓は既定のコードページで開いている（bun で動かしたときも同じ）</li>
 	</ul>
 </section>
 
@@ -236,9 +272,10 @@
 	<ul>
 		<li>本体 <code>src/spawn-server-ts/spawn-server-main.ts</code>、入口 <code>bin/spawn-server.cmd</code> ・ <code>bin/spawn-server</code>（bun を優先し、無ければ node）</li>
 		<li>テスト <code>tools/40_test/run-spawn-server-tests.ts</code>。<code>run-all-tests.ps1</code> に足し、bun ・ node の両方で回す</li>
-		<li>テストで確かめること: <code>Origin</code> 付きは 403、<code>127.0.0.1</code> 以外で待ち受けていない、起動した pid が実在する、サーバーを止めても起動したものが残る、指定したカレントで動く。<strong>窓はテスト中に開いて閉じる</strong>（起動するのは、ファイルを 1 つ書いて終わる短いコマンドにする）</li>
+		<li>テストで確かめること: <code>Origin</code> 付きは 403、<code>127.0.0.1</code> 以外で待ち受けていない、起動した pid が実在する、サーバーだけを止めても起動したものが残る、指定したカレントフォルダで動く、新しい窓で開く、作業用の変数を持ち込まない。FFI と <code>Start-Process</code> の両方の道で回す。<strong>窓はテスト中に開いて閉じる</strong>（起動するのは、ファイルを 1 つ書いて終わる短いコマンドにする）</li>
 		<li>テストで立てたサーバーと起動したものは、テストの最後に必ず止める（共通ルール「残ったプロセスを調べるときは psls を使う」）</li>
 		<li>使い方は <code>TOOLS-USAGE.html</code> に章を足す</li>
+		<li>配布物（<code>build-release.ps1</code>）には <code>node_modules/koffi</code>（1.6 MB）を含め、<code>package.json</code> の依存に版を書く。配布物を node で動かしても koffi で起動することを確かめた</li>
 	</ul>
 </section>
 
@@ -248,11 +285,30 @@
 	<ul>
 		<li><strong>名前と置き場</strong>。<code>spawn-server</code>、<code>src/spawn-server-ts/</code></li>
 		<li><strong>窓</strong>。依頼ごとに <code>cc.cmd</code> と同じく新しい窓を開き、コマンドが終われば閉じる</li>
-		<li><strong>コマンド文字列</strong>。新しい窓の <code>cmd /c</code> に渡す。起動の方法は <code>start</code> にこだわらない</li>
+		<li><strong>コマンド文字列</strong>。新しい窓の <code>cmd /c</code> に渡す。起動は FFI で <code>CreateProcessW</code>（第 4 章の案 E）</li>
 		<li><strong>応答の pid</strong>。窓の中でコマンドを走らせているプロセスの pid を返す</li>
 		<li><strong>トークン</strong>。使わない（第 3 章）</li>
 		<li><strong>呼ぶ場所</strong>。同じ PC からだけ。ブラウザからは呼ばない</li>
 	</ul>
+
+	<h2>追加: 入力ページ（2026-10-01 承認 ・ 実装済み）</h2>
+	<p><code>GET /</code> で、コマンド行を 1 つ置いたページを返す。入力して Enter で <code>POST /run</code> し、返った pid をページに出す。ブラウザから呼ぶことになるので、上の「ブラウザからは呼ばない」を次のように改める。</p>
+	<ul>
+		<li><strong>自分のページからの依頼だけを通す</strong>。<code>Origin</code> が <code>http://&lt;Host&gt;</code>（開いたときと同じ）と一致するときだけ受け、それ以外の <code>Origin</code> は今までどおり 403</li>
+		<li><strong><code>Host</code> ヘッダは <code>127.0.0.1:&lt;port&gt;</code> と <code>localhost:&lt;port&gt;</code> に限る</strong>。よそのドメインを 127.0.0.1 に向けて（DNS リバインディング）自分のページに見せかけるのを防ぐ。<code>localhost</code> は利用者の指示で足した（2026-10-01）</li>
+		<li>ページは本体に文字列で持つ（外部ファイル ・ CDN を使わない）。欄は command ・ cwd（省略可）の 2 つ。送ったコマンドと結果を下に積む</li>
+		<li>テストに足すこと: <code>GET /</code> が 200 でページを返す、自分の <code>Origin</code> なら起動できる、<code>Host</code> が違えば 403</li>
+	</ul>
+	<h2>対応していないこと</h2>
+	<ul>
+		<li><strong>同じ PC のほかのプロセス ・ ユーザーからの依頼を防げない</strong>。トークンを使わないため（第 3 章）。127.0.0.1 に届くものは、サーバーを立てた人の権限でコマンドを起動できる。ほかのユーザーから通るかは未確認</li>
+		<li><strong>コマンド文字列の <code>%変数%</code> は、窓の中の <code>cmd</code> が展開する</strong>。<code>cmd</code> に渡す以上そうなるが、使い方の資料には書いていない</li>
+		<li><strong><code>taskkill /T</code> でサーバーを止めると、起動したものも止まる</strong>。サーバーの子として残るため（第 4 章）。サーバーだけを止めれば残る</li>
+		<li><strong>テストを回すと窓が数回開き、フォーカスを奪う</strong>。全テストの間、ほかの作業の邪魔になる</li>
+		<li><strong>同時に起動できる数に上限が無い</strong>。入力ページは Enter で欄を空にするので同じものを二重に送りにくいが、別のものを続けて送れば、その数だけ窓が開く</li>
+	</ul>
+
+	<p><strong>結果。</strong>テストが bun ・ node とも通る（件数は第 5 章のテストの最新を見る）。<code>http://localhost:&lt;port&gt;/</code> も実際に開ける（curl で 200）。ページの中の JavaScript（Enter で送る ・ 結果を積む）は、ブラウザで動かしては確かめていない（Chrome の拡張がつながらなかった）。</p>
 </section>
 
 </div>

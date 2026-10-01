@@ -3,11 +3,13 @@
 	_releases/ai-agent-tools/ へ集める。
 
 	含めるもの: ランチャー（拡張子なし + .cmd）・実行に使う src 配下・
-	TOOLS-USAGE・最小の package.json（"type": "module" だけ）・個人用
-	セッション起動スクリプト（cc.cmd・cx.cmd・n.cmd・nn.cmd。単体の cmd
+	TOOLS-USAGE・最小の package.json（"type": "module" と koffi の版）・個人用
+	セッション起動スクリプト（cc.cmd・cx.cmd・w.cmd・ww.cmd。単体の cmd
 	で src 依存なし）
 
-	含めないもの: テスト・tools・notes・.git・node_modules・bun.lock・
+	node_modules のうち koffi だけを含める（spawn-server が node で FFI を使うため）。
+
+	含めないもの: テスト・tools・notes・.git・koffi 以外の node_modules・bun.lock・
 	tsconfig.json・移行前の PowerShell 版（check-markdown-ps.ps1）
 
 	check-contrast は i260922-02 で PlayWright 側へ一本化したため、
@@ -52,7 +54,7 @@ $launchers = @(
 	'check-markdown', 'check-markdown.cmd',
 	'check-public', 'check-public.cmd',
 	'spawn-server', 'spawn-server.cmd',
-	'cc.cmd', 'cx.cmd', 'n.cmd', 'nn.cmd'
+	'cc.cmd', 'cx.cmd', 'w.cmd', 'ww.cmd'
 )
 New-Item -ItemType Directory -Path (Join-Path $target 'bin') -Force | Out-Null
 foreach ($name in $launchers) {
@@ -65,16 +67,24 @@ foreach ($dir in $srcDirs) {
 	Copy-Item (Join-Path $root "src/$dir") (Join-Path $target "src/$dir") -Recurse
 }
 
+# koffi（node で FFI を使うため。spawn-server が CreateProcessW を呼ぶ）。
+# 無くても動くが、node では PowerShell 経由に落ちて起動が 0.6 秒ほど遅くなる。bun は使わない
+$koffi = Join-Path $root 'node_modules/koffi'
+if (-not (Test-Path -LiteralPath $koffi)) { throw ('koffi がありません。npm install を先に実行してください: ' + $koffi) }
+New-Item -ItemType Directory -Path (Join-Path $target 'node_modules') -Force | Out-Null
+Copy-Item -LiteralPath $koffi -Destination (Join-Path $target 'node_modules/koffi') -Recurse
+
 # 使う側の案内（読むのはこれだけでよい）
 Copy-Item (Join-Path $root 'TOOLS-USAGE.md') (Join-Path $target 'TOOLS-USAGE.md')
 Copy-Item (Join-Path $root 'TOOLS-USAGE.html') (Join-Path $target 'TOOLS-USAGE.html')
 
-# 最小の package.json（devDependencies は実行に要らない。"type": "module" だけ要る）
+# 最小の package.json（devDependencies は実行に要らない。"type": "module" と、同梱した koffi の版だけ書く）
 $pkg = [ordered]@{
 	name = 'ai-agent-tools'
 	private = $true
 	type = 'module'
 	description = 'HTML → Markdown 変換と、文字コード・テキスト操作の共有ツール'
+	dependencies = [ordered]@{ koffi = (Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).dependencies.koffi }
 }
 $json = $pkg | ConvertTo-Json
 [System.IO.File]::WriteAllText((Join-Path $target 'package.json'), $json, (New-Object System.Text.UTF8Encoding($false)))
