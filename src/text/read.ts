@@ -23,7 +23,7 @@ export function run(a: string[]): number {
 	let a1 = 1;
 	let b1 = lines.length;
 	if (hasLines) {
-		const r = parseLines(spec, lines.length);
+		const r = parseLines(spec, lines.length, true);
 		a1 = r.a;
 		b1 = r.b;
 	}
@@ -58,7 +58,13 @@ export function run(a: string[]): number {
 	return 0;
 }
 
-export function parseLines(spec: string, count: number): { a: number; b: number } {
+/*
+	--lines A-B を読む。clamp が真なら、B が全行数を超えたとき最後の行で打ち切る
+	（read だけ。「A 行目から最後まで」を A-10000 のように書く使い方が多いため。
+	実際の範囲はヘッダの lines= と行番号で分かる）。edit は書き換える範囲を取り違えないよう打ち切らない。
+	A が全行数を超えたときは、出すものが無いので打ち切りでもエラーにする。
+*/
+export function parseLines(spec: string, count: number, clamp = false): { a: number; b: number } {
 	const dash = spec.indexOf('-');
 	if (dash < 0) { throw new ToolError(2, '--lines は A-B の形で指定してください: ' + spec); }
 	const a = Number(spec.substring(0, dash));
@@ -66,8 +72,8 @@ export function parseLines(spec: string, count: number): { a: number; b: number 
 	if (!Number.isInteger(a) || !Number.isInteger(b)) {
 		throw new ToolError(2, '--lines の数が読めません: ' + spec);
 	}
-	if (a < 1 || b < a || b > count) {
+	if (a < 1 || b < a || a > count || (b > count && !clamp)) {
 		throw new ToolError(2, '--lines の範囲が不正です: ' + spec + '（全 ' + count + ' 行）');
 	}
-	return { a: a, b: b };
+	return { a: a, b: Math.min(b, count) };
 }

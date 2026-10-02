@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-10-01
+> 📅 作成: 2026-09-04 / 更新: 2026-10-03
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -382,8 +382,11 @@ SJIS に無い文字（絵文字・ハングル・簡体字など）は `?` に�
 ```powershell
 text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダに組・digest）
 text read tools/80_ops/foo.cmd --lines 3-5  # 範囲を絞る（省トークン）
+text read tools/80_ops/foo.cmd --lines 3-10000  # 3 行目から最後まで
 text find 日本語 --path . --recurse --include "*.cmd,*.reg"
 ```
+
+`read` の `--lines` は、<strong>終わりが全行数を超えたら最後の行で打ち切る。</strong>実際に出した範囲はヘッダの `lines=` と行番号で分かる。開始が全行数を超えたときはエラー（終了コード 2）。**`edit` の `--lines` は打ち切らず、はみ出せばエラーにする**（書き換える範囲を取り違えないため）。
 
 `find` は**ファイルごとに ◆ 見出し＋一致行**を出す（サクラエディタの grep 風）。**複数の glob はダブルクォートで囲む**（`"*.cmd,*.reg"`）。フォルダを外すのは `--exclude-dir`。
 

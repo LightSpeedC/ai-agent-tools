@@ -157,7 +157,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-01</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-03</p>
 	</div>
 </div>
 
@@ -592,7 +592,10 @@ convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</c
 
 <pre><code class="language-powershell">text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダに組・digest）
 text read tools/80_ops/foo.cmd --lines 3-5  # 範囲を絞る（省トークン）
+text read tools/80_ops/foo.cmd --lines 3-10000  # 3 行目から最後まで
 text find 日本語 --path . --recurse --include "*.cmd,*.reg"</code></pre>
+
+	<p><code>read</code> の <code>--lines</code> は、<strong>終わりが全行数を超えたら最後の行で打ち切る。</strong>実際に出した範囲はヘッダの <code>lines=</code> と行番号で分かる。開始が全行数を超えたときはエラー（終了コード 2）。<strong><code>edit</code> の <code>--lines</code> は打ち切らず、はみ出せばエラーにする</strong>（書き換える範囲を取り違えないため）。</p>
 
 	<p><code>find</code> は<strong>ファイルごとに ◆ 見出し＋一致行</strong>を出す（サクラエディタの grep 風）。<strong>複数の glob はダブルクォートで囲む</strong>（<code>"*.cmd,*.reg"</code>）。フォルダを外すのは <code>--exclude-dir</code>。</p>
 

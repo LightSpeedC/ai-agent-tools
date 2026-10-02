@@ -141,6 +141,19 @@ Assert-Match 'read: --lines で範囲を絞る' $r.Out 'かきく'
 Assert-True 'read: --lines 外の行は出ない' (-not ($r.Out -like '*あいう*')) 'あいう が出た'
 Assert-Match 'read: lines= を表示' $r.Out 'lines=2-2'
 
+# 終わりが全行数を超えたら最後の行で打ち切る（「この行から最後まで」を 2-10000 のように書く使い方が多いため）。
+# 実際に出した範囲はヘッダの lines= と行番号で分かる
+$r = Run-Text @('read', $fU8, '--lines', '2-10000')
+Assert-Equal 'read: 終わりが全行数を超えても 終了 0' 0 $r.Code
+Assert-Match 'read: 終わりが超えたら最後の行まで出す' $r.Out 'さしす'
+Assert-Match 'read: 打ち切った範囲を lines= に出す' $r.Out 'lines=2-3'
+# 開始が全行数を超えたら出すものが無いので、今までどおりエラー
+$r = Run-Text @('read', $fU8, '--lines', '500-600')
+Assert-Equal 'read: 開始が全行数を超えたら 終了 2' 2 $r.Code
+# edit は打ち切らない。書き換える範囲を取り違えたまま進めないため
+$r = Run-Text @('edit', $fU8, '--lines', '2-10000', '--new', 'x')
+Assert-Equal 'edit: 終わりが全行数を超えたら 終了 2' 2 $r.Code
+
 $r = Run-Text @('read', $fU8, '--from', 'sjis')
 Assert-Match 'read: --from で判定を上書き' $r.Out '[sjis/'
 
