@@ -53,10 +53,12 @@ function hasPwsh(): boolean {
 }
 
 /** psh を呼ぶ。PSH_TARGET があればその exe、無ければ psh-main.ts をいま走っている処理系で */
-function run(args: string[]): { code: number; out: string; err: string } {
+function run(args: string[], input?: string): { code: number; out: string; err: string } {
+	// input を渡すと標準入力はパイプになる。渡さなくても spawnSync は空のパイプを渡す（端末ではない）
+	const opt = { encoding: 'utf8' as const, input, timeout: 60000 };
 	const r = target.length > 0
-		? spawnSync(target, args, { encoding: 'utf8' })
-		: spawnSync(process.argv[0], [tool, ...args], { encoding: 'utf8' });
+		? spawnSync(target, args, opt)
+		: spawnSync(process.argv[0], [tool, ...args], opt);
 	return { code: r.status ?? -1, out: r.stdout ?? '', err: r.stderr ?? '' };
 }
 
@@ -214,6 +216,18 @@ for (const c of argCases) {
 	assertEqual('12 相対パスでも動く 終了コード', 0, r.code);
 	assertTrue('12 相対パスでも動く', r.out.includes('日本語の出力です'), JSON.stringify(r.out.slice(0, 60)));
 }
+
+// 13. 標準入力がパイプなら、ps1 まで届く（i260927-03）。
+//     標準入力の JSON を読む ps1（Claude Code のフック等）を psh で試すと、閉じていた頃は入力が空のまま
+//     正常終了し、動いたように見えた。端末のときだけ閉じる（子が入力待ちで止まらないように）
+r = run([path.join(cases, 'stdin.ps1')], 'hello 日本語\n');
+assertEqual('13 パイプの入力が ps1 に届く 終了コード', 0, r.code);
+assertTrue('13 パイプの入力が ps1 に届く', r.out.includes('[hello 日本語]'), JSON.stringify(r.out.slice(0, 80)));
+r = run(['-c', '[Console]::In.ReadToEnd().Trim()'], 'abc\n');
+assertTrue('13 -c でもパイプの入力を読める', r.out.includes('abc'), JSON.stringify(r.out.slice(0, 80)));
+// 入力が空でも止まらずに終わる（読めば即 EOF）
+r = run([path.join(cases, 'stdin.ps1')], '');
+assertEqual('13 空の入力でも止まらず終わる', '[]', r.out.trim());
 
 console.log('');
 if (fail === 0) {

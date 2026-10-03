@@ -174,18 +174,19 @@ function buildFileCall(script: string, rest: string[]): string {
 	**同期版（spawnSync）は使わない。**返るまでこのプロセスの非同期処理が
 	1 つも進まないため。
 
-	標準入力はすぐ閉じる。**閉じないと、相手が入力を待って止まったままになる。**
-	Claude Code の Bash ツールは対話的な入力を返せないので、待たれても答えが無い
-	（ai-chat-lite 側で、入力待ちのプロセスが 10 時間残った例がある）。
+	標準入力は、パイプ ・ ファイル ・ NUL なら引き継ぐ（echo … | psh foo.ps1 の入力が ps1 に届く。課題 i260927-03）。
+	Claude Code の Bash ツールの標準入力は NUL で、読めばすぐ EOF になるので止まらない（実測）。
+	**端末なら閉じる。**PowerShell は別のコンソールにいるので、端末の入力を引き継ぐと
+	利用者の窓のキー入力を読み続け、Ctrl+C も届かず、窓ごと操作できなくなった（実測）。
 */
 function run(exe: string, args: string[]): Promise<RunResult> {
 	return new Promise((resolve) => {
 		// 自分専用のコンソールで起動する（上の Utf8Setup の説明を参照）
-		const child = spawn(exe, args, { windowsHide: true });
+		const stdin = process.stdin.isTTY ? 'ignore' : 'inherit';
+		const child = spawn(exe, args, { windowsHide: true, stdio: [stdin, 'pipe', 'pipe'] });
 		const out: Buffer[] = [];
 		const err: Buffer[] = [];
 
-		child.stdin.end();
 		child.stdout.on('data', (d: Buffer) => { out.push(d); });
 		child.stderr.on('data', (d: Buffer) => { err.push(d); });
 
@@ -195,6 +196,22 @@ function run(exe: string, args: string[]): Promise<RunResult> {
 		child.on('close', (code: number | null) => {
 			resolve({ status: code, stdout: Buffer.concat(out), stderr: Buffer.concat(err) });
 		});
+	});
+}
+
+/*
+	出力先が端末のとき（人が窓で使う）。PowerShell を同じ窓で起動し、標準入出力をすべて引き継ぐ。
+	powershell -File を直に呼んだのと同じ動きになり、キーボードも Ctrl+C も効く。
+	出力を受け取って直す必要が無いので、UTF-8 にする 1 行も入れない（窓のコードページを変えない）。
+*/
+function runInTerminal(exe: string, args: string[]): Promise<number> {
+	return new Promise((resolve) => {
+		const child = spawn(exe, args, { stdio: 'inherit' });
+		child.on('error', (e: Error) => {
+			console.error('[NG] ' + exe + ' を起動できません: ' + e.message);
+			resolve(ExitBadArgs);
+		});
+		child.on('close', (code: number | null) => { resolve(code == null ? ExitBadArgs : code); });
 	});
 }
 
@@ -232,6 +249,22 @@ async function main(): Promise<number> {
 
 	const base = ['-NoProfile', '-ExecutionPolicy', 'Bypass'];
 	let pwshArgs: string[];
+
+	// 出力先が端末なら、直に呼んだのと同じ形で同じ窓に任せる（runInTerminal を参照）
+	if (process.stdout.isTTY) {
+		if (args[0] === '--command' || args[0] === '-c') {
+			if (args.length < 2) {
+				console.error('[NG] ' + args[0] + ' に式がありません。');
+				return ExitBadArgs;
+			}
+			return runInTerminal(exe, base.concat(['-Command', args[1]]));
+		}
+		if (!fs.existsSync(args[0])) {
+			console.error('[NG] ファイルが見つかりません: ' + args[0]);
+			return ExitBadArgs;
+		}
+		return runInTerminal(exe, base.concat(['-File', args[0]], args.slice(1)));
+	}
 
 	// -c は --command の短縮（sh -c ・ bash -c と同じ慣習）
 	if (args[0] === '--command' || args[0] === '-c') {

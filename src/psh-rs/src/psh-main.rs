@@ -21,7 +21,7 @@
 */
 
 use std::ffi::OsString;
-use std::io::Write;
+use std::io::{IsTerminal, Write};
 use std::path::Path;
 use std::process::{Command, ExitCode, Stdio};
 
@@ -213,6 +213,39 @@ fn main() -> ExitCode {
 
 	let mut ps_args: Vec<OsString> = vec!["-NoProfile".into(), "-ExecutionPolicy".into(), "Bypass".into()];
 
+	/*
+		出力先が端末のとき（人が窓で使う）。PowerShell を同じ窓で起動し、標準入出力をすべて引き継ぐ。
+		powershell -File を直に呼んだのと同じ動きになり、キーボードも Ctrl+C も効く。
+		出力を受け取って直す必要が無いので、UTF-8 にする 1 行も入れない（窓のコードページを変えない）
+	*/
+	if std::io::stdout().is_terminal() {
+		if args[0] == "--command" || args[0] == "-c" {
+			if args.len() < 2 {
+				write_err(&format!("[NG] {} に式がありません。\n", args[0].to_string_lossy()));
+				return ExitCode::from(EXIT_BAD_ARGS);
+			}
+			ps_args.push("-Command".into());
+			ps_args.push(args[1].clone());
+		} else {
+			if !Path::new(&args[0]).exists() {
+				write_err(&format!("[NG] ファイルが見つかりません: {}\n", args[0].to_string_lossy()));
+				return ExitCode::from(EXIT_BAD_ARGS);
+			}
+			ps_args.push("-File".into());
+			ps_args.extend(args.iter().cloned());
+		}
+		return match Command::new(exe).args(&ps_args).status() {
+			Ok(s) => match s.code() {
+				Some(c) => ExitCode::from((c & 0xff) as u8),
+				None => ExitCode::from(EXIT_BAD_ARGS),
+			},
+			Err(e) => {
+				write_err(&format!("[NG] {} を起動できません: {}\n", exe, e));
+				ExitCode::from(EXIT_BAD_ARGS)
+			}
+		};
+	}
+
 	// -c は --command の短縮（sh -c ・ bash -c と同じ慣習）
 	if args[0] == "--command" || args[0] == "-c" {
 		if args.len() < 2 {
@@ -239,14 +272,16 @@ fn main() -> ExitCode {
 		PowerShell を走らせて、出た分をすべて受け取る。
 
 		引数は配列のまま渡す（シェルを挟まない）。空白や記号を含む引数が割れない。
-		標準入力は閉じる（Stdio::null）。閉じないと、相手が入力を待って止まったままになる
-		（TypeScript 版と同じ。扱いは課題 i260927-03 で検討中）
+		標準入力は、パイプ ・ ファイル ・ NUL なら引き継ぐ（echo … | psh foo.ps1 の入力が ps1 に届く。
+		TypeScript 版と同じ。課題 i260927-03）。端末なら閉じる。PowerShell は別のコンソールにいるので、
+		端末の入力を引き継ぐと利用者の窓のキー入力を読み続け、Ctrl+C も届かなくなった（実測）
 
 		PowerShell は自分専用のコンソールで起動する（CREATE_NO_WINDOW。上の UTF8_SETUP の説明を参照）。
 		そうしない方法は課題 i260929-04 で検討する
 	*/
 	let mut cmd = Command::new(exe);
-	cmd.args(&ps_args).stdin(Stdio::null());
+	let stdin = if std::io::stdin().is_terminal() { Stdio::null() } else { Stdio::inherit() };
+	cmd.args(&ps_args).stdin(stdin);
 	#[cfg(windows)]
 	{
 		use std::os::windows::process::CommandExt;

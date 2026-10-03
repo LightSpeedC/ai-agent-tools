@@ -201,7 +201,7 @@
 <section class="ch01" id="ch01">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 19 件。14 件が解消済み、2 件が着手、3 件が未着手。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 19 件。15 件が解消済み、2 件が着手、2 件が未着手。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260830-15</span>PlayWright の projects/html2md/ の扱い</summary>
@@ -679,8 +679,8 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		</div>
 	</details>
 
-	<details open>
-		<summary><span class="badge b-none">未</span><span class="no">i260927-03</span>psh が標準入力を子の PowerShell に渡さない</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260927-03</span>psh が標準入力を子の PowerShell に渡さない</summary>
 		<div class="issue-body">
 			<p><strong>2026-10-03 に <code>ai-agent-rules</code> から不具合として報告があった（ai-chat-lite #1327）。</strong><code>echo hello| psh probe.ps1</code> で <code>[Console]::In.ReadToEnd()</code> が 0 文字（<code>--pwsh</code> も同じ）、<code>powershell -File</code> を直接呼べば 7 文字。<strong>標準入力の JSON を読む ps1（Claude Code のフック等）を psh 経由で試すと、入力が空のまま正常終了し、動いたように見える。</strong>報告元の期待は「標準入力を ps1 へ引き継ぐ。引き継がない仕様なら資料に書く」。</p>
 			<p><code>src/psh/psh-main.ts</code> は PowerShell を起動した直後に <code>child.stdin.end()</code> で標準入力を閉じる（Rust 版 <code>src/psh-rs/src/psh-main.rs</code> は <code>Stdio::null()</code> で最初から渡さない）。<strong>そのため <code>echo abc | psh foo.ps1</code> の <code>abc</code> は ps1 に届かない。</strong>ps1 から見た標準入力は最初から空（EOF）になる。</p>
@@ -691,7 +691,16 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li>止まる問題への備えをどこに置くか（入力を渡すと、端末から起動した場合に子が入力を待ちうる）</li>
 				<li>同じく <code>child.stdin.end()</code> を持つ <code>check-public</code> を揃えるか</li>
 			</ul>
-			<p><strong>決めたこと（2026-10-03、利用者の判断）。</strong>標準入力がパイプやファイルのときだけ子へ渡し、端末のときは閉じる。<code>check-public</code> はそのまま。実装の前に、Claude Code の Bash ツールから呼んだときの標準入力（データの来ないパイプで止まらないか）を確かめる。</p>
+			<p><strong>決めたこと（2026-10-03、利用者の判断）。</strong>標準入力は常にそのまま子へ引き継ぐ（<code>powershell -File</code> を直に呼んだときと同じ）。<code>check-public</code> はそのまま。</p>
+			<p>はじめは「パイプやファイルのときだけ渡し、端末のときは閉じる」と決めたが、閉じる理由（Claude Code の Bash ツールは入力を返せない）が実測で崩れたので改めた。Bash ツールの標準入力は端末ではなく NUL で、読めばすぐ EOF になる。また Windows の node では、パイプも <code>isFIFO()</code> が偽になり、パイプかどうかを見分けられない。</p>
+			<ul>
+				<li><span class="badge b-ok">済</span>TS 版は <code>stdio: ['inherit', 'pipe', 'pipe']</code>、Rust 版は <code>Stdio::inherit()</code> にした。テスト 13（パイプの入力が届く ・ <code>-c</code> でも読める ・ 空の入力で止まらない）を先に書き、落ちるのを見てから直した。全テスト成功。cmd から <code>echo hello| psh stdin.ps1</code> で 5.1 ・ 7 とも届くことを確かめた</li>
+				<li><span class="badge b-ok">済</span><code>TOOLS-USAGE.html</code> の psh の章に「標準入力は ps1 に渡る」を足した</li>
+				<li><span class="badge b-ok">済</span><strong>人が窓から呼ぶと止まった</strong>（利用者が確かめた）。PowerShell は自分専用のコンソールにいるので、窓の入力を引き継ぐと窓のキー入力を読み続け、Ctrl+C も届かず、窓ごと操作できなくなった</li>
+				<li><span class="badge b-ok">済</span><strong>出力先が窓なら、PowerShell を同じ窓で <code>-File</code> のまま起動し、入出力をすべて引き継ぐ形にした</strong>（利用者の判断）。直に呼んだのと同じ動きで、窓のコードページも変えない。出力先がパイプやファイルなら今までどおり（自分専用のコンソール ・ 65001 ・ 受け取って直す）で、そのとき標準入力が窓なら渡さない。TS 版 ・ Rust 版とも。自動のテストは出力がパイプの側だけを確かめている</li>
+				<li><span class="badge b-ok">済</span>窓から使う側の動きを、利用者が cmd の窓で確かめた（2026-10-03）。打った文字が ps1 に届く（<code>[abc]</code>）・ Ctrl+C で止まりプロンプトに戻る ・ <code>psh -c "'日本語の表示'"</code> が化けない</li>
+			</ul>
+			<p><strong>報告元の確認（2026-10-03、ai-chat-lite #1332）。</strong>cmd から <code>echo hello| psh probe.ps1</code> が 5.1 ・ 7 とも届き、<code>type file | psh probe.ps1</code> も届いた。標準入力の JSON を読むフック用の ps1 も、psh 経由で期待どおり動いた。</p>
 			<p>関連: psh は子の出力を終わるまでまとめて受け取ってから流すため、<code>psh ... | 次のコマンド</code> には逐次には流れない。</p>
 		</div>
 	</details>

@@ -451,6 +451,16 @@ psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる
 > [!IMPORTANT]
 > <strong>exit を書かない ps1 は、最後の外部コマンドの終了コードが返る。</strong>UTF-8 にする 1 行を先に実行するため、ps1 は `-File` ではなく `-Command` の中から呼んでいる。`-File` なら 0 になる場面で、psh は外部コマンドの値（例: 5）を返す。確実に 0 で終えたい ps1 は、最後に `exit 0` を書く。
 
+### 窓で使うときは、直に呼んだのと同じ
+
+**出力先が窓（端末）なら、psh は PowerShell を同じ窓で `-File` のまま起動し、入出力をすべて任せる。**`powershell -File` を直に呼んだのと同じ動きで、キーボードの入力も Ctrl+C も効く。窓のコードページは変えない（上の「UTF-8（65001）で動く」は、出力先がパイプやファイルのときの話）。
+
+### 標準入力は ps1 に渡る
+
+**標準入力がパイプやファイルなら、PowerShell に引き継がれる。**`echo hello| psh foo.ps1` の `hello` は、ps1 の `[Console]::In.ReadToEnd()` で読める。標準入力の JSON を読む ps1（Claude Code のフック等）も、psh 経由で試せる。Claude Code の Bash ツールから呼んだときの標準入力は空（読めばすぐ終わる）なので、入力待ちで止まらない。
+
+出力先がパイプやファイルで、標準入力だけが窓のとき（`psh foo.ps1 > out.txt` を窓で打つ等）は、標準入力を渡さない。PowerShell は別のコンソールで動くため、窓のキー入力を渡すと Ctrl+C も届かず窓ごと止まる。
+
 ### 実体は Rust の exe（無ければ TypeScript）
 
 `bin/psh.cmd` ・ `bin/psh` は、`src/psh-rs/target/release/psh.exe`（Rust 版）があればそれを使い、無ければ `src/psh/psh-main.ts` を bun（無ければ node）で走らせる。exe は `tools/20_build/build-psh-rs.cmd` で作る（git には含めない）。動きは両方で同じで、同じテストを当てている。
