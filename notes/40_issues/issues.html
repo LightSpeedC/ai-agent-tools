@@ -1011,21 +1011,21 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			<p><strong>決めたこと（2026-10-03、利用者の判断）。</strong>認めるのは <code>Created: … / Updated: …</code> の形だけ。混在は認めない。共通ルールには書き足す（書き方が揺れないように）。</p>
 			<ul>
 				<li><span class="badge b-ok">済</span>検査が <code>Created: … / Updated: …</code> も日付の記載として読む。テスト <code>tools/40_test/run-html2md-date-tests.ts</code>（混在 ・ 大小の違いを認めないことも含む）を先に書き、落ちるのを見てから直した</li>
-				<li><span class="badge b-none">未</span>共通ルール「ドキュメントの作成日・更新日」への書き足し（文言を提示して「反映して」を待つ）</li>
+				<li><span class="badge b-ok">済</span>共通ルール「ドキュメントの作成日・更新日」に英語の書式を書き足した（2026-10-03）</li>
 			</ul>
 			<p>報告元の確認が取れたら 済 にする。</p>
 		</div>
 	</details>
 
-	<details open>
-		<summary><span class="badge b-warn">着手</span><span class="no">i261003-02</span>html2md: URL に括弧を含むリンクを「HTML に無い文言」と誤検出する</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i261003-02</span>html2md: URL に括弧を含むリンクを「HTML に無い文言」と誤検出する</summary>
 		<div class="issue-body">
 			<p>2026-10-03 に <code>20261003-personal-ai-assistant</code> から不具合報告（ai-chat-lite #1307）。<code>https://en.wikipedia.org/wiki/Grok_(chatbot)</code> へのリンクで誤検出する。生成された <code>[Grok (Wikipedia)](https://en.wikipedia.org/wiki/Grok_(chatbot))</code> は GitHub でも正しく表示される。</p>
 			<ul>
 				<li><span class="badge b-ok">済</span>検査の誤検出。<code>src/html2md/checks.ts</code> がリンク先を <code>\([^)]*\)</code> で取り、URL の最初の <code>)</code> で切っていた。対応した括弧を 1 段まで含める形にした（文言の検査 ・ 画像 ・ リンク切れの検査の 3 か所）。テスト <code>tests/cases/link-paren</code> を先に書き、落ちるのを見てから直した。全テスト成功</li>
 				<li><span class="badge b-ok">済</span>生成側。対応していない括弧や空白を含む URL は、リンク先を <code>&lt;…&gt;</code> で囲む（CommonMark のリンク先の書き方。中の <code>&lt;</code> <code>&gt;</code> だけ <code>%3C</code> <code>%3E</code> にする）。対応している括弧はそのまま。テスト <code>tests/cases/link-paren-unbalanced</code> を先に書いた。GitHub のレンダラで、どのリンクも意図した URL になることを確かめた</li>
 			</ul>
-			<p>報告元の確認が取れたら 済 にする。</p>
+			<p><strong>報告元の確認（2026-10-03、ai-chat-lite #1313）。</strong><code>ee9eda5</code> の html2md で再変換し、括弧を含む URL 3 件の誤検出が消えて「指摘なし」になった。check-markdown も通った。</p>
 		</div>
 	</details>
 </section>
