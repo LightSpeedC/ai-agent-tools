@@ -119,7 +119,7 @@ export class InlineConverter {
 			const src = getAttr(tag, 'src');
 			if (src.length === 0) { return ''; }
 			const alt = getAttr(tag, 'alt');
-			return '![' + alt + '](' + src + ')';
+			return '![' + alt + '](' + linkDest(src) + ')';
 		});
 
 		// リンク: 拡張子を .md に置き換え、ページ内アンカーは見出しアンカーへ張り替える
@@ -138,7 +138,7 @@ export class InlineConverter {
 			} else {
 				href = convertLinkTarget(href, this.linkBaseDir, this.convertedPages, this.crossAnchors);
 			}
-			return '[' + text + '](' + href + ')';
+			return '[' + text + '](' + linkDest(href) + ')';
 		});
 
 		// 強調はセンチネルで囲むだけにして、記法は最終段で決める
@@ -218,6 +218,31 @@ function markForLabel(label: string): string {
 	if (label === '目次' || label === '戻る' || isWord(label, 'toc')
 		|| isWord(label, 'contents') || isWord(label, 'home') || isWord(label, 'index')) { return TocMark; }
 	return label;
+}
+
+/*
+	リンク先を Markdown の (…) に入れる形にする（i261003-02）。
+	括弧が対応していて空白が無ければそのまま書く（Grok_(chatbot) のような URL を素直に読める）。
+	対応しない括弧や空白があると (…) が途中で切れるので、<…> で囲む（CommonMark のリンク先の書き方）。
+	<…> の中には < > を書けないので、それだけ %3C %3E にする。
+	囲みの < > は、後の段のタグ除去に消されないよう目印の文字で置き、最後に restoreLinkDest で戻す
+*/
+const DEST_OPEN = '';
+const DEST_CLOSE = '';
+
+export function restoreLinkDest(md: string): string {
+	return md.split(DEST_OPEN).join('<').split(DEST_CLOSE).join('>');
+}
+
+function linkDest(href: string): string {
+	let depth = 0;
+	let balanced = true;
+	for (const ch of href) {
+		if (ch === '(') { depth++; }
+		else if (ch === ')') { depth--; if (depth < 0) { balanced = false; break; } }
+	}
+	if (balanced && depth === 0 && !/\s/.test(href)) { return href; }
+	return DEST_OPEN + href.split('<').join('%3C').split('>').join('%3E') + DEST_CLOSE;
 }
 
 function isWord(label: string, word: string): boolean {

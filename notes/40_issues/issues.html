@@ -179,7 +179,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-30</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-10-03</p>
 	</div>
 </div>
 
@@ -996,6 +996,38 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	<h1>他プロジェクトからの要求</h1>
 
 	<p>ai-chat-lite で他のプロジェクトから届いた要求と指摘。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
+
+	<details open>
+		<summary><span class="badge b-warn">着手</span><span class="no">i261003-01</span>html2md の作成日・更新日の検査で、英語の書式（Created: / Updated:）も認める</summary>
+		<div class="issue-body">
+			<p>2026-10-03 に <code>20261003-bun-codepage-problem</code> から要望（ai-chat-lite #1297）。</p>
+			<ul>
+				<li>現状: 「📅 Created: 2026-10-03 / Updated: 2026-10-03」と書いた英語の資料で「作成日・更新日の記載が見つかりません」の警告が出る</li>
+				<li>背景: そのプロジェクトは英語版を主、日本語版（-JP）を従にして資料を並べている</li>
+				<li>希望: 「Created: / Updated:」も日付の記載として認識する</li>
+			</ul>
+			<p><strong>調べた結果。</strong>検査は <code>src/html2md/checks.ts</code> の <code>testUpdatedDate</code> で、<code>作成: … / 更新: …</code> の正規表現だけを見ている。認める語を足すだけなら 1 行で済む。</p>
+			<p>決めること: 認める書式（<code>Created:</code> ・ <code>Updated:</code> だけか、大小や <code>Last updated</code> 等も含めるか）、日本語と英語の混在（<code>作成: … / Updated: …</code>）を認めるか、共通ルール「ドキュメントの作成日・更新日」に英語の書式を書き足すか。</p>
+			<p><strong>決めたこと（2026-10-03、利用者の判断）。</strong>認めるのは <code>Created: … / Updated: …</code> の形だけ。混在は認めない。共通ルールには書き足す（書き方が揺れないように）。</p>
+			<ul>
+				<li><span class="badge b-ok">済</span>検査が <code>Created: … / Updated: …</code> も日付の記載として読む。テスト <code>tools/40_test/run-html2md-date-tests.ts</code>（混在 ・ 大小の違いを認めないことも含む）を先に書き、落ちるのを見てから直した</li>
+				<li><span class="badge b-none">未</span>共通ルール「ドキュメントの作成日・更新日」への書き足し（文言を提示して「反映して」を待つ）</li>
+			</ul>
+			<p>報告元の確認が取れたら 済 にする。</p>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-warn">着手</span><span class="no">i261003-02</span>html2md: URL に括弧を含むリンクを「HTML に無い文言」と誤検出する</summary>
+		<div class="issue-body">
+			<p>2026-10-03 に <code>20261003-personal-ai-assistant</code> から不具合報告（ai-chat-lite #1307）。<code>https://en.wikipedia.org/wiki/Grok_(chatbot)</code> へのリンクで誤検出する。生成された <code>[Grok (Wikipedia)](https://en.wikipedia.org/wiki/Grok_(chatbot))</code> は GitHub でも正しく表示される。</p>
+			<ul>
+				<li><span class="badge b-ok">済</span>検査の誤検出。<code>src/html2md/checks.ts</code> がリンク先を <code>\([^)]*\)</code> で取り、URL の最初の <code>)</code> で切っていた。対応した括弧を 1 段まで含める形にした（文言の検査 ・ 画像 ・ リンク切れの検査の 3 か所）。テスト <code>tests/cases/link-paren</code> を先に書き、落ちるのを見てから直した。全テスト成功</li>
+				<li><span class="badge b-ok">済</span>生成側。対応していない括弧や空白を含む URL は、リンク先を <code>&lt;…&gt;</code> で囲む（CommonMark のリンク先の書き方。中の <code>&lt;</code> <code>&gt;</code> だけ <code>%3C</code> <code>%3E</code> にする）。対応している括弧はそのまま。テスト <code>tests/cases/link-paren-unbalanced</code> を先に書いた。GitHub のレンダラで、どのリンクも意図した URL になることを確かめた</li>
+			</ul>
+			<p>報告元の確認が取れたら 済 にする。</p>
+		</div>
+	</details>
 </section>
 
 </div>

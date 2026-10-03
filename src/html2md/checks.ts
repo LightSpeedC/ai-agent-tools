@@ -15,6 +15,14 @@ import {
 } from './htmlutil.ts';
 import type { ConvertResult } from './context.ts';
 
+/*
+	Markdown のリンク先（[…](ここ)）。中に対応した括弧を 1 段まで含められる。
+	[^)]* で取ると Grok_(chatbot) のような URL の最初の ) で切れ、残りの ) が
+	「HTML に無い文言」になった（ai-chat-lite #1307）。GitHub も対応した括弧はリンク先として読む
+*/
+// 対応しない括弧や空白を含むものは、生成側が <…> で囲んで出す（i261003-02）。その形も読む
+const LINK_DEST = '(?:<[^<>\\n]*>|(?:[^()]|\\([^()]*\\))*)';
+
 function readText(p: string): string {
 	let s = new TextDecoder('utf-8').decode(fs.readFileSync(p));
 	if (s.charCodeAt(0) === 0xfeff) { s = s.substring(1); }
@@ -60,8 +68,9 @@ export function testMdLinks(result: ConvertResult, expected: Set<string> | null,
 	// 書き方を説明する文書では ![](images/xxx.svg) のような例がコードとして現れる
 	let body = md.replace(/```[\s\S]*?```/g, '');
 	body = body.replace(/`[^`\r\n]*`/g, '');
-	for (const m of body.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/g)) {
-		const link = m[1];
+	for (const m of body.matchAll(new RegExp('!?\\[[^\\]]*\\]\\((' + LINK_DEST + ')\\)', 'g'))) {
+		// <…> で囲んだリンク先は、囲みを外した中身が本体
+		const link = m[1].startsWith('<') && m[1].endsWith('>') ? m[1].slice(1, -1) : m[1];
 
 		// アイコンだけのリンクで代替テキストが無いと、ここが空になる。
 		// GitHub では何も表示されず、リンクがあることに気づけない（i260912-05）。
@@ -133,8 +142,8 @@ function normalize(s: string): string {
 	let t = s;
 	// 記法そのものがコード例として本文に現れることがあるので、両側で同じ扱いにする。
 	// 画像は元が SVG なら HTML の本文に対応が無いため、両側から落とす
-	t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
-	t = t.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+	t = t.replace(new RegExp('!\\[[^\\]]*\\]\\(' + LINK_DEST + '\\)', 'g'), '');
+	t = t.replace(new RegExp('\\[([^\\]]*)\\]\\(' + LINK_DEST + '\\)', 'g'), '$1');
 	// タグのまま出すもの。属性を持つものがあるので開きタグは属性まで含めて落とす
 	t = t.replace(/<\/?(?:strong|em|br|del|ins|sup|sub|mark|kbd|abbr|small|q|cite|time|details|summary)\b[^>]*>/g, '');
 	t = t.split('\\|').join('|');
@@ -228,7 +237,10 @@ export function testExtraText(result: ConvertResult): string[] {
  */
 export function testUpdatedDate(htmlPath: string): string {
 	const html = readText(htmlPath);
-	const m = /作成:\s*([\d-]+)\s*\/\s*更新:\s*([\d-]+)/.exec(html);
+	// 日本語の「作成: … / 更新: …」か、英語の「Created: … / Updated: …」（i261003-01）。
+	// 書き方が揺れないよう、この 2 つの形だけを認める（混在や大小の違いは認めない）
+	const m = /作成:\s*([\d-]+)\s*\/\s*更新:\s*([\d-]+)/.exec(html)
+		?? /Created:\s*([\d-]+)\s*\/\s*Updated:\s*([\d-]+)/.exec(html);
 	if (m == null) { return '作成日・更新日の記載が見つかりません'; }
 
 	const written = m[2];

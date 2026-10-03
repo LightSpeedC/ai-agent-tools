@@ -11,7 +11,7 @@ import {
 	getPlainText, hasClass, isMdSkipPage, stripNonContent,
 } from './htmlutil.ts';
 import type { Block } from './htmlutil.ts';
-import { InlineConverter } from './inline.ts';
+import { InlineConverter, restoreLinkDest } from './inline.ts';
 import { ListTableConverter } from './table.ts';
 import { exportSvg } from './svg.ts';
 import { newContext } from './context.ts';
@@ -81,6 +81,7 @@ export class Converter {
 		// コードスパンを戻したあとで強調の記法を決める（前後の文字を見て判定するため）
 		md = this.inline.restoreCodeSpans(md);
 		md = Emphasis.resolve(md);
+		md = restoreLinkDest(md);
 
 		md = md.replace(/[ \t]+\n/g, '\n');
 		md = md.replace(/\n{3,}/g, '\n\n');
