@@ -1,4 +1,3 @@
-@rem if exist etc\c.bat etc\c.bat
 @set Y=%date:~0,4%
 @set YMD=%date:/=%
 @if not exist W:\ (
@@ -12,11 +11,11 @@ cd /d W:\
 @if exist "..\*%~1*" (
 	cls
 	cd "..\*%~1*"
-	start "codex" codex-trusted resume --last
+	start "codex" codex-trusted resume
 ) else if exist "*%~1*" (
 	cls
 	cd "*%~1*"
-	start "codex" codex-trusted resume --last
+	start "codex" codex-trusted resume
 ) else (
 	cls
 	md "%YMD%-%~1"

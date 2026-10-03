@@ -1,15 +1,8 @@
 ﻿# 使い方:
 #   codex-trusted                         # 現在のフォルダを信頼して Codex を起動
-#   codex-trusted W:\example              # 指定したフォルダを信頼して Codex を起動
-#   codex-trusted -NoStart                # 現在のフォルダの信頼設定だけを確認・追加
-#   .\bin\codex-trusted.ps1 -Target W:\example -NoStart
-
-param(
-	[string]$Target = (Get-Location).Path,
-	[switch]$NoStart,
-	[Parameter(ValueFromRemainingArguments = $true)]
-	[string[]]$CodexArgs
-)
+#   codex-trusted resume                  # セッションを選んで再開
+#   codex-trusted resume --last           # 前回のセッションを再開
+#   codex-trusted exec --help             # Codex の引数をそのまま渡す
 
 # コンソールのコードページは変えない（窓に残り、隣のプロセスを化けさせる）。
 # リダイレクトされている分だけ、UTF-8 で読み書きするよう個別に差し替える
@@ -54,7 +47,7 @@ function Get-ProjectHeaders {
 		ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() }
 }
 
-$paths = Get-CanonicalProjectPaths -InputPath $Target
+$paths = Get-CanonicalProjectPaths -InputPath (Get-Location).Path
 $configDirectory = Join-Path $env:USERPROFILE ".codex"
 $configPath = Join-Path $configDirectory "config.toml"
 
@@ -85,9 +78,5 @@ if ($missing.Count -gt 0) {
 	Write-Output "信頼設定は既にあります。"
 }
 
-if ($NoStart) {
-	exit 0
-}
-
-& codex --cd $paths[0] @CodexArgs
+& codex --cd $paths[0] @args
 exit $LASTEXITCODE
