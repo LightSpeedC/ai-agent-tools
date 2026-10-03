@@ -110,7 +110,7 @@
 |---|---|---|---|
 | `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe` | C# 5 相当 | Windows に標準搭載。追加インストール不要 | ✅ **採用** |
 | VS 2022 Community 同梱の Roslyn `csc.exe` | 最新 | Visual Studio が入っている環境だけ | ⚠️ **あれば優先** |
-| dotnet SDK 7.0.202（`dotnet build`） | 最新 | SDK が必要。単一 exe にするには publish 手順が要る | **使わない** |
+| dotnet SDK 7.0.202（`dotnet build`） | 最新 | SDK が必要。単一 exe にするには publish 手順が要る | ⬜ **使わない** |
 
 基準は「Windows さえあればビルドできる」こと。標準搭載の `csc.exe` で通るコードなら、どの環境でも同じ手順で作り直せる。C# 5 相当なので文字列補間（`$"..."`）や `out var` は使えないが、正規表現・ジェネリクス・LINQ は揃っており、この用途では困らない。
 

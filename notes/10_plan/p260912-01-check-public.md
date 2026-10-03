@@ -52,7 +52,7 @@ public のリポジトリに出す前に、出してはいけないものが混�
 | 案 | 内容 | 採否 |
 |---|---|---|
 | A（採用） | `check-public.ps1` ＋ `check-public.cmd`。`check-markdown` ・ `check-contrast` と同じ形 | ✅ **採用** 検査系は ps1 で揃っている。正規表現の調整が頻繁に要る種類の処理で、ビルドを挟まないほうが直しやすい |
-| B | C# で書き `check-public.exe` にする | **見送り** [i260830-13](../40_issues/issues.html) で `check-markdown` の exe 化を「やらない」と決めた前例に揃える。起動の速さが要る場面が無い |
+| B | C# で書き `check-public.exe` にする | ⬜ **見送り** [i260830-13](../40_issues/issues.html) で `check-markdown` の exe 化を「やらない」と決めた前例に揃える。起動の速さが要る場面が無い |
 
 ### html2md の検査からも呼ぶ
 

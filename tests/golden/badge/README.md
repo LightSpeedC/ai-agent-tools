@@ -5,3 +5,5 @@
 **BADGENOSPAN のような、バッジを含まない通常の強調。**
 
 先頭は**BADGEWSTRONG** 続きです。
+
+❌ **失敗** BADGENG ／ ⚠️ **注意** BADGEWARN ／ ⬜ **未実施** BADGENONE

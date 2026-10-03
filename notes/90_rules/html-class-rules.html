@@ -347,16 +347,16 @@
 			<tr><td class="nowrap"><code>badge b-ok</code></td><td class="nowrap"><span class="badge b-ok">完了</span></td><td>良い・完了・可</td><td class="nowrap"><code>✅ **完了**</code></td></tr>
 			<tr><td class="nowrap"><code>badge b-ng</code></td><td class="nowrap"><span class="badge b-ng">未対応</span></td><td>悪い・リスク・不可</td><td class="nowrap"><code>❌ **未対応**</code></td></tr>
 			<tr><td class="nowrap"><code>badge b-warn</code></td><td class="nowrap"><span class="badge b-warn">要注意</span></td><td>警告・注意</td><td class="nowrap"><code>⚠️ **要注意**</code></td></tr>
-			<tr><td class="nowrap"><code>badge b-none</code></td><td class="nowrap"><span class="badge b-none">未実施</span></td><td>未実施・対象外・該当なし</td><td class="nowrap"><code>**未実施**</code></td></tr>
+			<tr><td class="nowrap"><code>badge b-none</code></td><td class="nowrap"><span class="badge b-none">未実施</span></td><td>未実施・対象外・該当なし</td><td class="nowrap"><code>⬜ **未実施**</code></td></tr>
 		</tbody>
 	</table>
 	</div>
 
 	<p><strong>記号は太字の外に置く。</strong><code>**✅ 完了**</code> と書くと、強調の内側の先頭が記号になる。<code>✅</code> は Unicode の記号カテゴリで、CommonMark は句読点として扱うため、手前が通常文字だと <code>**</code> が開き記号にならず記号のまま表示される。外に出せばこの並びを作らない。</p>
 
-	<p><code>b-none</code> に記号を付けないのは、灰色＝未実施が「強調しない状態そのもの」だからだ。太字だけを残してバッジであることを示す。</p>
+	<p><strong>4 つの記号は、共通ルール「結果の報告に絵文字を付ける」の絵文字に揃える</strong>（共通ルール「色分けの代替」）。<code>b-none</code> も <code>⬜</code> を付ける。</p>
 
-	<p><code>⚠️</code> は異体字セレクタ付きの <code>U+26A0 U+FE0F</code>（絵文字として表示させる形）を使う。共通ルール「結果の報告に絵文字を付ける」と揃える。文言の突き合わせは異体字セレクタを落としてから比べるので、本文に <code>⚠</code> 単体が混ざっても別の文字列にはならない。</p>
+	<p><code>⚠️</code> は異体字セレクタ付きの <code>U+26A0 U+FE0F</code>（絵文字として表示させる形）を使う。文言の突き合わせは異体字セレクタを落としてから比べるので、本文に <code>⚠</code> 単体が混ざっても別の文字列にはならない。</p>
 	<p><strong>見出しにバッジがあると、アンカーに <code>U+FE0F</code> が残る</strong>（<code>2-自動化-️-着手</code> のように見えない文字が入る）。GitHub の規則（github-slugger）でも同じに残ることを確かめてある。</p>
 
 	<h2>種類を表すバッジ</h2>
