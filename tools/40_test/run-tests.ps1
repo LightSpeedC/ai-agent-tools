@@ -95,7 +95,7 @@ $Expect = @{
 		'畳んだ中の段落。ここは**通常の判定**で強調になる。',   # 中身は空行で区切られ、通常の Markdown になる
 		'<summary>i260830-02 バッジなしの件名</summary>',       # .no は CSS の余白の代わりに空白 1 個を補う
 		# md-flat は畳まず、summary を「その位置の h2」の段の見出しにする
-		'### ⚠ **着手** i260830-03 FLATTITLE の件名',
+		'### ⚠️ **着手** i260830-03 FLATTITLE の件名',
 		'- 配下の箇条書きも本文として出る'
 	)
 	'toc-dl' = @(
@@ -143,7 +143,8 @@ $Expect = @{
 		# HTML からタグを落とした文字列で計算していたため、記号の前後の空白（-- になる）と、
 		# バッジ・課題番号の後ろに補う空白が抜けていた。期待値は github-slugger の規則で手計算
 		'(#1-出力の安全性--済-3-件済-3)',
-		'(#2-自動化--着手-1-件着手-1)',
+		# ⚠️ の U+FE0F は GitHub の規則（github-slugger）でもアンカーに残る（i261003-03 で確かめた）
+		'(#2-自動化-️-着手-1-件着手-1)',
 		'(#-済-i260929-01-件名です)'
 	)
 	'md-skip' = @(
@@ -429,7 +430,9 @@ foreach ($c in $cases) {
 			continue
 		}
 		$want = [System.IO.File]::ReadAllText($g.FullName, [System.Text.Encoding]::UTF8)
-		if ($exeOut[$k] -cne $want) {
+		# 序数で比べる。-cne はカルチャ比較で、異体字セレクタ（U+FE0F）のような見えない文字の違いを
+		# 同じとみなす（⚠ と ⚠️ の違いを見逃した。i261003-03）
+		if (-not [string]::Equals($exeOut[$k], $want, [System.StringComparison]::Ordinal)) {
 			$d = Compare-Object ($want -split "`r?`n") ($exeOut[$k] -split "`r?`n")
 			Write-Result '[NG]' ('期待値と出力が違います{0}（差分 {1} 行）' -f $k, $d.Count)
 			$d | Select-Object -First 6 | ForEach-Object {

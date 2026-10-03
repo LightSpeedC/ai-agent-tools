@@ -15,7 +15,8 @@ import {
 const BadgeMarks: Record<string, string> = {
 	'b-ok': '✅',
 	'b-ng': '❌',
-	'b-warn': '⚠',
+	// U+26A0 ＋ U+FE0F。絵文字として表示させる形（共通ルール「結果の報告に絵文字を付ける」と揃える）
+	'b-warn': '⚠️',
 	'b-none': '',
 };
 
