@@ -11,16 +11,17 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（9 章 / 色相 280 → 0 を 35 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(245,78%,25%); --accent2:hsl(245,58%,55%); --soft:hsl(245,28%,95%); }
-	.ch03{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
-	.ch04{ --accent:hsl(175,78%,25%); --accent2:hsl(175,58%,55%); --soft:hsl(175,28%,95%); }
-	.ch05{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
-	.ch06{ --accent:hsl(105,78%,25%); --accent2:hsl(105,58%,55%); --soft:hsl(105,28%,95%); }
-	.ch07{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
-	.ch08{ --accent:hsl(35,78%,25%);  --accent2:hsl(35,58%,55%);  --soft:hsl(35,28%,95%); }
-	.ch09{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+	/* 章のアクセント色（10 章 / 色相 280 → 0 を 31.1 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(248.9,78%,25%); --accent2:hsl(248.9,58%,55%); --soft:hsl(248.9,28%,95%); }
+	.ch03{ --accent:hsl(217.8,78%,25%); --accent2:hsl(217.8,58%,55%); --soft:hsl(217.8,28%,95%); }
+	.ch04{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch05{ --accent:hsl(155.6,78%,25%); --accent2:hsl(155.6,58%,55%); --soft:hsl(155.6,28%,95%); }
+	.ch06{ --accent:hsl(124.4,78%,25%); --accent2:hsl(124.4,58%,55%); --soft:hsl(124.4,28%,95%); }
+	.ch07{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch08{ --accent:hsl(62.2,78%,25%);  --accent2:hsl(62.2,58%,55%);  --soft:hsl(62.2,28%,95%); }
+	.ch09{ --accent:hsl(31.1,78%,25%);  --accent2:hsl(31.1,58%,55%);  --soft:hsl(31.1,28%,95%); }
+	.ch10{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -157,7 +158,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-03</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-05</p>
 	</div>
 </div>
 
@@ -177,6 +178,7 @@
 		<li class="ch07"><a href="#ch07">ページングして読む（less）</a></li>
 		<li class="ch08"><a href="#ch08">プロセス一覧を見る（psls）</a></li>
 		<li class="ch09"><a href="#ch09">HTTP で受けたコマンドを新しい窓で起動する（spawn-server）</a></li>
+		<li class="ch10"><a href="#ch10">クラウドのセッションを準備する（cloud-session-start）</a></li>
 	</ol>
 </div>
 
@@ -198,6 +200,7 @@
 			<tr><td class="nowrap"><code>less</code></td><td>UTF-8 セーフなページャー。DOS の <code>more</code> の文字化けを避ける（第 7 章）</td></tr>
 			<tr><td class="nowrap"><code>psls</code></td><td>プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（第 8 章）</td></tr>
 			<tr><td class="nowrap"><code>spawn-server</code></td><td>HTTP で受けたコマンドを、同じユーザーのまま<strong>新しい窓で起動する</strong>（第 9 章）</td></tr>
+			<tr><td class="nowrap"><code>cloud-session-start</code></td><td>クラウドのセッションで、<strong>共通ルールと共有ツールを隣に置き、PATH と git の author を整える</strong>（第 10 章）</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -768,6 +771,43 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8790/run -ContentType 'appl
 	</div>
 
 	<div class="callout callout-caution"><strong>任意のコマンドを本人の権限で走らせる口になる。</strong>待ち受けは <code>127.0.0.1</code> だけで、ブラウザからの依頼は自分の入力ページからのものだけを通し、<code>Host</code> も <code>127.0.0.1:&lt;port&gt;</code> ・ <code>localhost:&lt;port&gt;</code> に限る（よそのドメインを 127.0.0.1 に向ける手口を防ぐ）が、<strong>トークンは無いので、同じ PC のほかのプロセスからの依頼は防げない。</strong>使わないときは止める。</div>
+</section>
+
+<section class="ch10" id="ch10">
+	<h1>クラウドのセッションを準備する（cloud-session-start）</h1>
+
+	<p><strong>クラウドのセッション（Linux）で、共通ルールと共有ツールを使える状態にする。</strong>クラウドの環境は毎回作り直されるため、<code>AGENTS.md</code> が参照する <code>../ai-agent-rules/</code> も、このプロジェクトの道具も無い。セッションの開始時に、プロジェクト側の入り口から呼ぶ。手順は共通ルール「クラウド作業のルール」に従う。</p>
+
+<pre><code class="language-shell">cloud-session-start --project "$CLAUDE_PROJECT_DIR" --env-file "$CLAUDE_ENV_FILE"</code></pre>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>順</th><th>すること</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">1</td><td><code>ai-agent-rules</code> ・ <code>ai-agent-tools</code> を、プロジェクトの隣に <code>--depth 1</code> で clone する。目印のファイル（<code>common-rules.md</code> ・ <code>bin/html2md</code>）があれば clone しない</td></tr>
+			<tr><td class="nowrap">2</td><td>既にあれば、<strong>日（JST）が変わっていたときだけ</strong> fetch して rebase する。最後に取得・更新した日は各リポジトリの <code>.git/last-update-date</code> に残す</td></tr>
+			<tr><td class="nowrap">3</td><td><code>bin/</code> のうち拡張子の無いもの（sh 版）に実行権限を付け、<code>--env-file</code> に PATH を通す行を書く</td></tr>
+			<tr><td class="nowrap">4</td><td>プロジェクトの git の author を、<code>ai-agent-rules</code> の最新コミットと同じにする（<code>.git/config</code> にだけ書く）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>オプション</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>--project &lt;パス&gt;</code></td><td>対象のプロジェクトフォルダ（既定: カレントフォルダ）。隣に置く場所と、author を書くリポジトリが決まる</td></tr>
+			<tr><td class="nowrap"><code>--env-file &lt;パス&gt;</code></td><td>PATH を通す行の書き込み先。Claude Code では <code>CLAUDE_ENV_FILE</code> を渡す。無ければ PATH は通さず、そう報告する</td></tr>
+			<tr><td class="nowrap">終了コード</td><td>常に <code>0</code>（失敗は出力で伝え、セッションは止めない）。引数の誤りだけ <code>2</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p><strong>出力は、セッションの文脈に入る報告文。</strong>clone ・ 更新 ・ 失敗をそのまま書くので、エージェントはそれを読んでユーザーに伝える。author の値は出さない。</p>
+
+	<div class="callout callout-important"><strong>未 commit の変更がある置き場は更新しない。</strong>fetch ・ rebase に失敗したときは rebase を中止して元に戻し、古いまま使う。どちらも出力で報告する。置き場に目印のファイルが無いものがあれば、消さずに報告する。</div>
+
+	<div class="callout"><strong>自分自身を rebase で書き換えるため、本体は関数にまとめて読み終えてから走らせている。</strong>bash はスクリプトを少しずつ読むので、走っている途中でファイルが変わると、途中から別の内容を読む。</div>
 </section>
 
 </div>

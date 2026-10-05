@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-10-03
+> 📅 作成: 2026-09-04 / 更新: 2026-10-05
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -17,6 +17,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 7. [ページングして読む（less）](#7-ページングして読むless)
 8. [プロセス一覧を見る（psls）](#8-プロセス一覧を見るpsls)
 9. [HTTP で受けたコマンドを新しい窓で起動する（spawn-server）](#9-http-で受けたコマンドを新しい窓で起動するspawn-server)
+10. [クラウドのセッションを準備する（cloud-session-start）](#10-クラウドのセッションを準備するcloud-session-start)
 
 ## 1. 使えるコマンド
 
@@ -33,6 +34,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `less` | UTF-8 セーフなページャー。DOS の `more` の文字化けを避ける（第 7 章） |
 | `psls` | プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（第 8 章） |
 | `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま**新しい窓で起動する**（第 9 章） |
+| `cloud-session-start` | クラウドのセッションで、**共通ルールと共有ツールを隣に置き、PATH と git の author を整える**（第 10 章） |
 
 `check-markdown` は<strong>推測せず実物で判定する。</strong>Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。
 
@@ -543,5 +545,34 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8790/run -ContentType 'appl
 
 > [!CAUTION]
 > <strong>任意のコマンドを本人の権限で走らせる口になる。</strong>待ち受けは `127.0.0.1` だけで、ブラウザからの依頼は自分の入力ページからのものだけを通し、`Host` も `127.0.0.1:<port>` ・ `localhost:<port>` に限る（よそのドメインを 127.0.0.1 に向ける手口を防ぐ）が、<strong>トークンは無いので、同じ PC のほかのプロセスからの依頼は防げない。</strong>使わないときは止める。
+
+## 10. クラウドのセッションを準備する（cloud-session-start）
+
+<strong>クラウドのセッション（Linux）で、共通ルールと共有ツールを使える状態にする。</strong>クラウドの環境は毎回作り直されるため、`AGENTS.md` が参照する `../ai-agent-rules/` も、このプロジェクトの道具も無い。セッションの開始時に、プロジェクト側の入り口から呼ぶ。手順は共通ルール「クラウド作業のルール」に従う。
+
+```shell
+cloud-session-start --project "$CLAUDE_PROJECT_DIR" --env-file "$CLAUDE_ENV_FILE"
+```
+
+| 順 | すること |
+|---|---|
+| 1 | `ai-agent-rules` ・ `ai-agent-tools` を、プロジェクトの隣に `--depth 1` で clone する。目印のファイル（`common-rules.md` ・ `bin/html2md`）があれば clone しない |
+| 2 | 既にあれば、**日（JST）が変わっていたときだけ** fetch して rebase する。最後に取得・更新した日は各リポジトリの `.git/last-update-date` に残す |
+| 3 | `bin/` のうち拡張子の無いもの（sh 版）に実行権限を付け、`--env-file` に PATH を通す行を書く |
+| 4 | プロジェクトの git の author を、`ai-agent-rules` の最新コミットと同じにする（`.git/config` にだけ書く） |
+
+| オプション | 意味 |
+|---|---|
+| `--project <パス>` | 対象のプロジェクトフォルダ（既定: カレントフォルダ）。隣に置く場所と、author を書くリポジトリが決まる |
+| `--env-file <パス>` | PATH を通す行の書き込み先。Claude Code では `CLAUDE_ENV_FILE` を渡す。無ければ PATH は通さず、そう報告する |
+| 終了コード | 常に `0`（失敗は出力で伝え、セッションは止めない）。引数の誤りだけ `2` |
+
+<strong>出力は、セッションの文脈に入る報告文。</strong>clone ・ 更新 ・ 失敗をそのまま書くので、エージェントはそれを読んでユーザーに伝える。author の値は出さない。
+
+> [!IMPORTANT]
+> <strong>未 commit の変更がある置き場は更新しない。</strong>fetch ・ rebase に失敗したときは rebase を中止して元に戻し、古いまま使う。どちらも出力で報告する。置き場に目印のファイルが無いものがあれば、消さずに報告する。
+
+> [!NOTE]
+> <strong>自分自身を rebase で書き換えるため、本体は関数にまとめて読み終えてから走らせている。</strong>bash はスクリプトを少しずつ読むので、走っている途中でファイルが変わると、途中から別の内容を読む。
 
 [^^](README.md)
