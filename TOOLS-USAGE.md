@@ -30,11 +30,11 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `convert-encoding` | ファイルの文字コードと改行を、**ファイルの種類ごとに決められた形へ**変換する |
 | `text` | SJIS・UTF-16 でも壊さず**読む・探す・編集する・書く**（Read・Grep・Edit・Write の代わり） |
 | `check-public` | 公開前に、**外に出してはいけないもの**が混ざっていないかを見る |
-| `psh` | PowerShell を呼び、出力を **UTF-8 に直して流す**（第 6 章） |
-| `less` | UTF-8 セーフなページャー。DOS の `more` の文字化けを避ける（第 7 章） |
-| `psls` | プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（第 8 章） |
-| `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま**新しい窓で起動する**（第 9 章） |
-| `cloud-session-start` | クラウドのセッションで、**共通ルールと共有ツールを隣に置き、PATH と git の author を整える**（第 10 章） |
+| `psh` | PowerShell を呼び、出力を **UTF-8 に直して流す**（「PowerShell を呼ぶ（psh）」） |
+| `less` | UTF-8 セーフなページャー。DOS の `more` の文字化けを避ける（「ページングして読む（less）」） |
+| `psls` | プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（「プロセス一覧を見る（psls）」） |
+| `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま**新しい窓で起動する**（「HTTP で受けたコマンドを新しい窓で起動する（spawn-server）」） |
+| `cloud-session-start` | クラウドのセッションで、**共通ルールと共有ツールを隣に置き、PATH と git の author を整える**（「クラウドのセッションを準備する（cloud-session-start）」） |
 
 `check-markdown` は<strong>推測せず実物で判定する。</strong>Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。
 
@@ -42,7 +42,7 @@ HTML の文字色と背景色が読める組み合わせかを確かめる `chec
 
 ### 中身が TypeScript に変わった（2026-09-12）
 
-**どれも TypeScript で書いてある。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-markdown` は PowerShell から移した。`psh` ・ `check-public` は最初から TypeScript である。`psh` には Rust 版もあり、ビルドしてあればそちらが使われる（第 6 章）。
+**どれも TypeScript で書いてある。**`html2md` ・ `text` ・ `convert-encoding` は C# の exe から、`check-markdown` は PowerShell から移した。`psh` ・ `check-public` は最初から TypeScript である。`psh` には Rust 版もあり、ビルドしてあればそちらが使われる（「PowerShell を呼ぶ（psh）」）。
 
 呼び出し方・出力の中身は変えていない。**使う側の書き換えは要らない**（`check-〜` のオプションだけ `--` へ寄せたが、古い形も受ける）。
 
@@ -56,7 +56,7 @@ HTML の文字色と背景色が読める組み合わせかを確かめる `chec
 **残した C# 版も UTF-8 で出すように直した**ので、いまはどれを呼んでも標準出力は UTF-8 である。
 
 > [!IMPORTANT]
-> <strong>素の PowerShell 5.1 から呼ぶと化ける。</strong>5.1 は標準出力を CP932 として読むため、UTF-8 で出す側と打ち消し合わない（実測で `→` が壊れた）。受け手側に 1 行置いて揃える。**`psh` 経由なら要らない**（第 6 章）。
+> <strong>素の PowerShell 5.1 から呼ぶと化ける。</strong>5.1 は標準出力を CP932 として読むため、UTF-8 で出す側と打ち消し合わない（実測で `→` が壊れた）。受け手側に 1 行置いて揃える。**`psh` 経由なら要らない**（「PowerShell を呼ぶ（psh）」）。
 > ```powershell
 > [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 > ```
@@ -482,7 +482,7 @@ ps1 は Windows PowerShell 5.1 で動くように書く決めがある。<strong
 
 ## 7. ページングして読む（less）
 
-<strong>DOS の `more` へ UTF-8 の出力をパイプすると文字化けする。</strong>PowerShell・.NET 系の出力コードページ問題の受け手側（第 6 章と根が同じ）。`less` は UTF-8 のまま画面に収まる分だけ表示する。
+<strong>DOS の `more` へ UTF-8 の出力をパイプすると文字化けする。</strong>PowerShell・.NET 系の出力コードページ問題の受け手側（「PowerShell を呼ぶ（psh）」と根が同じ）。`less` は UTF-8 のまま画面に収まる分だけ表示する。
 
 ```shell
 type README.md | more   # 文字化けする（DOS の既定のコードページで読むため）

@@ -196,11 +196,11 @@
 			<tr><td class="nowrap"><code>convert-encoding</code></td><td>ファイルの文字コードと改行を、<strong>ファイルの種類ごとに決められた形へ</strong>変換する</td></tr>
 			<tr><td class="nowrap"><code>text</code></td><td>SJIS・UTF-16 でも壊さず<strong>読む・探す・編集する・書く</strong>（Read・Grep・Edit・Write の代わり）</td></tr>
 			<tr><td class="nowrap"><code>check-public</code></td><td>公開前に、<strong>外に出してはいけないもの</strong>が混ざっていないかを見る</td></tr>
-			<tr><td class="nowrap"><code>psh</code></td><td>PowerShell を呼び、出力を <strong>UTF-8 に直して流す</strong>（第 6 章）</td></tr>
-			<tr><td class="nowrap"><code>less</code></td><td>UTF-8 セーフなページャー。DOS の <code>more</code> の文字化けを避ける（第 7 章）</td></tr>
-			<tr><td class="nowrap"><code>psls</code></td><td>プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（第 8 章）</td></tr>
-			<tr><td class="nowrap"><code>spawn-server</code></td><td>HTTP で受けたコマンドを、同じユーザーのまま<strong>新しい窓で起動する</strong>（第 9 章）</td></tr>
-			<tr><td class="nowrap"><code>cloud-session-start</code></td><td>クラウドのセッションで、<strong>共通ルールと共有ツールを隣に置き、PATH と git の author を整える</strong>（第 10 章）</td></tr>
+			<tr><td class="nowrap"><code>psh</code></td><td>PowerShell を呼び、出力を <strong>UTF-8 に直して流す</strong>（「PowerShell を呼ぶ（psh）」）</td></tr>
+			<tr><td class="nowrap"><code>less</code></td><td>UTF-8 セーフなページャー。DOS の <code>more</code> の文字化けを避ける（「ページングして読む（less）」）</td></tr>
+			<tr><td class="nowrap"><code>psls</code></td><td>プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（「プロセス一覧を見る（psls）」）</td></tr>
+			<tr><td class="nowrap"><code>spawn-server</code></td><td>HTTP で受けたコマンドを、同じユーザーのまま<strong>新しい窓で起動する</strong>（「HTTP で受けたコマンドを新しい窓で起動する（spawn-server）」）</td></tr>
+			<tr><td class="nowrap"><code>cloud-session-start</code></td><td>クラウドのセッションで、<strong>共通ルールと共有ツールを隣に置き、PATH と git の author を整える</strong>（「クラウドのセッションを準備する（cloud-session-start）」）</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -211,7 +211,7 @@
 
 	<h2>中身が TypeScript に変わった（2026-09-12）</h2>
 
-	<p><strong>どれも TypeScript で書いてある。</strong><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> は C# の exe から、<code>check-markdown</code> は PowerShell から移した。<code>psh</code> ・ <code>check-public</code> は最初から TypeScript である。<code>psh</code> には Rust 版もあり、ビルドしてあればそちらが使われる（第 6 章）。</p>
+	<p><strong>どれも TypeScript で書いてある。</strong><code>html2md</code> ・ <code>text</code> ・ <code>convert-encoding</code> は C# の exe から、<code>check-markdown</code> は PowerShell から移した。<code>psh</code> ・ <code>check-public</code> は最初から TypeScript である。<code>psh</code> には Rust 版もあり、ビルドしてあればそちらが使われる（「PowerShell を呼ぶ（psh）」）。</p>
 
 	<p>呼び出し方・出力の中身は変えていない。<strong>使う側の書き換えは要らない</strong>（<code>check-〜</code> のオプションだけ <code>--</code> へ寄せたが、古い形も受ける）。</p>
 
@@ -230,7 +230,7 @@
 	<p><strong>残した C# 版も UTF-8 で出すように直した</strong>ので、いまはどれを呼んでも標準出力は UTF-8 である。</p>
 
 	<div class="callout callout-important">
-		<p><strong>素の PowerShell 5.1 から呼ぶと化ける。</strong>5.1 は標準出力を CP932 として読むため、UTF-8 で出す側と打ち消し合わない（実測で <code>→</code> が壊れた）。受け手側に 1 行置いて揃える。<strong><code>psh</code> 経由なら要らない</strong>（第 6 章）。</p>
+		<p><strong>素の PowerShell 5.1 から呼ぶと化ける。</strong>5.1 は標準出力を CP932 として読むため、UTF-8 で出す側と打ち消し合わない（実測で <code>→</code> が壊れた）。受け手側に 1 行置いて揃える。<strong><code>psh</code> 経由なら要らない</strong>（「PowerShell を呼ぶ（psh）」）。</p>
 <pre><code class="language-powershell">[Console]::OutputEncoding = [System.Text.Encoding]::UTF8</code></pre>
 	</div>
 
@@ -698,7 +698,7 @@ psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる</code></
 <section class="ch07" id="ch07">
 	<h1>ページングして読む（less）</h1>
 
-	<p><strong>DOS の <code>more</code> へ UTF-8 の出力をパイプすると文字化けする。</strong>PowerShell・.NET 系の出力コードページ問題の受け手側（第 6 章と根が同じ）。<code>less</code> は UTF-8 のまま画面に収まる分だけ表示する。</p>
+	<p><strong>DOS の <code>more</code> へ UTF-8 の出力をパイプすると文字化けする。</strong>PowerShell・.NET 系の出力コードページ問題の受け手側（「PowerShell を呼ぶ（psh）」と根が同じ）。<code>less</code> は UTF-8 のまま画面に収まる分だけ表示する。</p>
 
 <pre><code class="language-shell">type README.md | more   # 文字化けする（DOS の既定のコードページで読むため）
 type README.md | less   # UTF-8 のまま化けずに読める</code></pre>
