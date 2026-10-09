@@ -9,6 +9,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { decodeEntities, escapeRegex, getAttr, resolveCssVars } from './htmlutil.ts';
 import type { ConvertContext } from './context.ts';
+import { writeIfChanged } from './write-file.ts';
 
 export interface SvgResult {
 	fileName: string;
@@ -90,7 +91,7 @@ export function exportSvg(svgHtml: string, ctx: ConvertContext): SvgResult {
 
 	if (ctx.write) {
 		if (!fs.existsSync(ctx.imagesDir)) { fs.mkdirSync(ctx.imagesDir, { recursive: true }); }
-		fs.writeFileSync(path.join(ctx.imagesDir, fileName), new TextEncoder().encode(svg));
+		writeIfChanged(path.join(ctx.imagesDir, fileName), new TextEncoder().encode(svg));
 	}
 	ctx.images.push(fileName);
 

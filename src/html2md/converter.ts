@@ -15,6 +15,7 @@ import { InlineConverter, restoreLinkDest } from './inline.ts';
 import { ListTableConverter } from './table.ts';
 import { exportSvg } from './svg.ts';
 import { newContext } from './context.ts';
+import { writeIfChanged } from './write-file.ts';
 import type { ConvertContext, ConvertResult } from './context.ts';
 
 export { isMdSkipPage };
@@ -91,7 +92,7 @@ export class Converter {
 		md = md.replace(/\r\n?/g, '\n');
 
 		const mdPath = htmlPath.replace(/\.[^.\\/]*$/, '') + '.md';
-		if (write) { fs.writeFileSync(mdPath, new TextEncoder().encode(md)); }
+		if (write) { writeIfChanged(mdPath, new TextEncoder().encode(md)); }
 
 		return { htmlPath: htmlPath, mdPath: mdPath, markdown: md, images: ctx.images };
 	}

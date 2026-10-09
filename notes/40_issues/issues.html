@@ -179,7 +179,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-10-03</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-10-09</p>
 	</div>
 </div>
 
@@ -1018,10 +1018,15 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details open>
-		<summary><span class="badge b-none">未</span><span class="no">i261009-02</span>html2md: 中身が同じなら .md ・ SVG を書き出さない</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i261009-02</span>html2md: 中身が同じなら .md ・ SVG を書き出さない</summary>
 		<div class="issue-body">
 			<p>2026-10-09 に <code>20260907-ai-mcp-servers-learn</code> から要望（ai-chat-lite #1412 の 1）。再変換すると、変わっていない <code>.md</code> と <code>images/*.svg</code> も書き直す。そのプロジェクトでは 73 ファイルが <code>git status</code> で M になり、中身は index と同じ（ハッシュ一致 ・ <code>git diff</code> は空）なのに、<code>git update-index --refresh</code> でも消えなかった。希望は、convert-encoding と同じく、書き出す前に比べて同じならファイルに触らないこと。</p>
 			<p>決めること: 受けるか。受けるなら、比べるのは中身のバイト列か。</p>
+			<p><strong>決めたこと（2026-10-09、利用者の判断）。</strong>受ける。書き出す前に既存のファイルとバイト列を比べ、同じなら触らない。</p>
+			<ul>
+				<li><span class="badge b-ok">済</span><code>src/html2md/write-file.ts</code> の <code>writeIfChanged</code> を、.md（<code>converter.ts</code>）と SVG（<code>svg.ts</code>）の書き出しに使う。テスト <code>tools/40_test/run-html2md-write-tests.ts</code> を先に書き、落ちるのを見てから直した</li>
+				<li><span class="badge b-none">未</span>報告元の確認</li>
+			</ul>
 		</div>
 	</details>
 
