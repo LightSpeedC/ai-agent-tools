@@ -6,4 +6,6 @@
 
 先頭は**BADGEWSTRONG** 続きです。
 
+前文<strong>BADGECLOSE 太字で示す。</strong>⬜ **未実施** 後ろ
+
 ❌ **失敗** BADGENG ／ ⚠️ **注意** BADGEWARN ／ ⬜ **未実施** BADGENONE

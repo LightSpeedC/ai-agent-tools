@@ -90,10 +90,13 @@ function tagOf(kind: number): string {
 }
 
 /**
- * CommonMark が句読点として扱う文字か（Unicode の P 系と S 系）。
- * .NET の UnicodeCategory に当たるものを正規表現の Unicode 属性で見る。
+ * GitHub が強調の開閉の判定で句読点として扱う文字か。
+ * ASCII の記号すべて（!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~）と、Unicode の P 系だけ。
+ * **Unicode の S 系（⬜ ✅ ❌ ⚠ → 等）は句読点に入れない。**GitHub で実測すると、
+ * 閉じの ** の直後が ⬜ ・ ✅ ・ → だと太字にならず ** が残った（「 なら太字になる）。
+ * S 系を句読点に入れていたため、句点で閉じた太字の直後にバッジが来ると ** が効くと誤った（i261009-01）
  */
-const PunctRe = /[\p{Pc}\p{Pd}\p{Ps}\p{Pe}\p{Pi}\p{Pf}\p{Po}\p{Sm}\p{Sc}\p{Sk}\p{So}]/u;
+const PunctRe = /[!-/:-@[-`{-~\p{Pc}\p{Pd}\p{Ps}\p{Pe}\p{Pi}\p{Pf}\p{Po}]/u;
 
 export function isPunct(c: string): boolean {
 	return PunctRe.test(c);
