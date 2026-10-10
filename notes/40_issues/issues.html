@@ -179,7 +179,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-10-09</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-10-10</p>
 	</div>
 </div>
 
@@ -1009,23 +1009,25 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 
 	<p>ai-chat-lite で他のプロジェクトから届いた要求と指摘。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
 
-	<details open>
-		<summary><span class="badge b-warn">着手</span><span class="no">i261009-01</span>html2md: 句点で閉じた太字の直後にバッジがあると、太字が崩れる</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i261009-01</span>html2md: 句点で閉じた太字の直後にバッジがあると、太字が崩れる</summary>
 		<div class="issue-body">
 			<p>2026-10-09 に <code>20260907-ai-mcp-servers-learn</code> から不具合の報告（ai-chat-lite #1412 の 2）。<code>&lt;strong&gt;…示す。&lt;/strong&gt;&lt;span class="badge b-none"&gt;Claude Code&lt;/span&gt;</code> が <code>**…示す。**⬜ Claude Code</code> になり、GitHub で <code>**</code> が残る。<code>b-none</code> に <code>⬜</code> を付けた（i261003-03）ことで、閉じの <code>**</code> の直後が記号になって表に出た。</p>
 			<p><strong>原因。</strong><code>src/html2md/emphasis.ts</code> の <code>isPunct</code> が、記号（Unicode の <code>Sm</code> ・ <code>Sc</code> ・ <code>Sk</code> ・ <code>So</code>）も句読点として扱っていた。GitHub で実測すると、閉じの <code>**</code> の直後が <code>⬜</code> ・ <code>✅</code> ・ <code>❌</code> ・ <code>⚠️</code> ・ <code>→</code> のときは太字にならず、<code>「</code>（句読点）なら太字になる。開きの直後が <code>✅</code> ・ <code>→</code> でも太字になる。<strong>GitHub は記号を句読点として扱わない。</strong>判定が「この <code>**</code> は効く」と誤り、<code>&lt;strong&gt;</code> に置き換えなかった。</p>
+			<p><span class="badge b-ok">済</span>句読点の判定を ASCII の記号と Unicode の P 系だけにした（<code>68f399f</code>）。テスト <code>tests/cases/badge</code> に再現の行を足し、落ちるのを見てから直した。</p>
+			<p><strong>報告元の確認（2026-10-10、ai-chat-lite #1426）。</strong>句点を太字の中に戻した形で再変換すると <code>&lt;strong&gt;</code> で出て、check-markdown も問題なし。</p>
 		</div>
 	</details>
 
-	<details open>
-		<summary><span class="badge b-warn">着手</span><span class="no">i261009-02</span>html2md: 中身が同じなら .md ・ SVG を書き出さない</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i261009-02</span>html2md: 中身が同じなら .md ・ SVG を書き出さない</summary>
 		<div class="issue-body">
 			<p>2026-10-09 に <code>20260907-ai-mcp-servers-learn</code> から要望（ai-chat-lite #1412 の 1）。再変換すると、変わっていない <code>.md</code> と <code>images/*.svg</code> も書き直す。そのプロジェクトでは 73 ファイルが <code>git status</code> で M になり、中身は index と同じ（ハッシュ一致 ・ <code>git diff</code> は空）なのに、<code>git update-index --refresh</code> でも消えなかった。希望は、convert-encoding と同じく、書き出す前に比べて同じならファイルに触らないこと。</p>
 			<p>決めること: 受けるか。受けるなら、比べるのは中身のバイト列か。</p>
 			<p><strong>決めたこと（2026-10-09、利用者の判断）。</strong>受ける。書き出す前に既存のファイルとバイト列を比べ、同じなら触らない。</p>
 			<ul>
 				<li><span class="badge b-ok">済</span><code>src/html2md/write-file.ts</code> の <code>writeIfChanged</code> を、.md（<code>converter.ts</code>）と SVG（<code>svg.ts</code>）の書き出しに使う。テスト <code>tools/40_test/run-html2md-write-tests.ts</code> を先に書き、落ちるのを見てから直した</li>
-				<li><span class="badge b-none">未</span>報告元の確認</li>
+				<li><span class="badge b-ok">済</span>報告元の確認（2026-10-10、ai-chat-lite #1426）。<code>fd7340f</code> 相当の html2md で全体を再変換し、<code>git status</code> に M が出なかった</li>
 			</ul>
 		</div>
 	</details>
