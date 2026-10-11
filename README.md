@@ -23,6 +23,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | `less` | UTF-8 の出力を、化けずにページングして読む（`more` の代わり） |
 | `psls` | プロセスを親子のツリーで一覧し、キーワードで絞り込む |
 | `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま新しい窓で起動する（同じ PC からだけ） |
+| `transcribe` | 音声を whisper.cpp で書き起こす。複数の音声を 1 回の起動でまとめて処理する |
 | `cloud-session-start` | クラウドのセッションで、共通ルールと共有ツールを隣に置き、PATH と git の author を整える |
 
 `bin/` にはほかに、このリポジトリの持ち主が使う起動用の cmd（`cc` ・ `cx` ・ `w` など）も置いている。
@@ -70,6 +71,8 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | [文字コード判定の改善 計画](notes/10_plan/i260929-01-文字コード判定.md) | UTF-8 と SJIS のどちらとも取れるバイト列を、読んだ結果の自然さで見分ける |
 | [psh の Rust 化 計画](notes/10_plan/p260929-01-psh-rust.md) | psh を Rust の単体の exe にする。守る仕様 ・ 置き場 ・ テスト ・ 前後の比較 |
 | [コマンド起動サーバ 計画](notes/10_plan/p260930-01-コマンド起動サーバ.md) | HTTP で受けたコマンドを、同じユーザーのまま新しい窓で独立したプロセスとして起動する |
+| [transcribe 計画](notes/10_plan/i261012-01-transcribe-whisper-listen.md) | 音声ファイルを whisper.cpp で聞き取り、ファイルごとの書き起こしと JSON を出す |
+| [convert-audio 計画](notes/10_plan/i261012-02-convert-audio-ffmpeg.md) | WAV 等の音声を ffmpeg で mp3 等に変える |
 
 ## 3. 課題
 

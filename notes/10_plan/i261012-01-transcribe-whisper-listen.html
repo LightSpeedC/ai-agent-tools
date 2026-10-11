@@ -1,0 +1,277 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>transcribe 計画（whisper で音声を聞き取る）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>transcribe 計画（whisper で音声を聞き取る）</h1>
+		<p class="lead">音声ファイルを whisper.cpp で聞き取り、ファイルごとの書き起こしと JSON を出す共有コマンド <code>transcribe</code> を足す（i261012-01）。</p>
+		<p class="date">📅 作成: 2026-10-12 / 更新: 2026-10-12</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">背景</a></li>
+		<li class="ch02"><a href="#ch02">置き場と実装方式</a></li>
+		<li class="ch03"><a href="#ch03">コマンドの仕様</a></li>
+		<li class="ch04"><a href="#ch04">決めること</a></li>
+		<li class="ch05"><a href="#ch05">進め方とテスト</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>背景</h1>
+	<p>2026-10-12 に <code>20261004-kamishibai-animation</code> から依頼（ai-chat-lite #1437、<a href="../40_issues/issues.html">課題 i261012-01</a>）。音声の書き起こしを、各プロジェクトが個別に whisper を呼ぶのではなく、共有ツールから名前で呼べるようにする。</p>
+	<ul>
+		<li>本体は whisper.cpp v1.9.4（BLAS x64 版）の <code>whisper-cli</code></li>
+		<li>モデルは <code>ggml-large-v3-turbo-q5_0.bin</code>（547MB）</li>
+		<li>依頼元は、自分の確認用スクリプトを <code>transcribe</code> を呼ぶ形に直す予定</li>
+	</ul>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>置き場と実装方式</h1>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>もの</th><th>置き場</th><th>Git</th></tr></thead>
+		<tbody>
+			<tr><td>whisper-cli と DLL</td><td class="nowrap"><code>_vendor/whisper/bin/</code></td><td>管理外（先頭 <code>_</code>）</td></tr>
+			<tr><td>モデル</td><td class="nowrap"><code>_vendor/whisper/model/</code></td><td>管理外</td></tr>
+			<tr><td>本体</td><td class="nowrap"><code>src/transcribe/transcribe-main.ts</code></td><td>管理</td></tr>
+			<tr><td>入口</td><td class="nowrap"><code>bin/transcribe</code> ・ <code>bin/transcribe.cmd</code></td><td>管理</td></tr>
+			<tr><td>テスト</td><td class="nowrap"><code>tools/40_test/run-transcribe-tests.ts</code></td><td>管理</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>TypeScript で書き、入口はほかのツールと同じく bun を優先し、無ければ node</strong></li>
+		<li><strong>whisper-cli とモデルは Git に入れない</strong>。<code>_vendor/whisper/</code> が無い PC ・ クラウドでは、置き場を示すエラーで止める</li>
+		<li>取り込みは、依頼元がプロジェクトの外の一時フォルダに置いたものを<strong>移動</strong>する（元に残さない、が依頼の条件）</li>
+	</ul>
+
+	<h2>別の PC での入手方法</h2>
+	<p><code>_vendor/</code> は Git に入らないため、ほかの PC では次から入手して同じ置き場に展開する（2026-10-12 に GitHub API ・ 配布ページで確認）。<strong>入手は ai-agent-tools 側で行う</strong>（2026-10-12、利用者の判断）。使う側の資料（TOOLS-USAGE）には入手方法を書かず、依頼してもらう。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>もの</th><th>入手先</th><th>展開先</th></tr></thead>
+		<tbody>
+			<tr><td>whisper-cli（BLAS x64 版）</td><td>whisper.cpp の GitHub Releases。<strong>v1.9.4 のタグ自体には配布物が無く、同じ日に出た b5130 に付いている</strong>。<code>whisper-blas-bin-x64.zip</code>（約 21MB）</td><td class="nowrap"><code>_vendor/whisper/bin/</code></td></tr>
+			<tr><td>モデル</td><td>Hugging Face の <code>ggerganov/whisper.cpp</code> の <code>ggml-large-v3-turbo-q5_0.bin</code>（ページの表示は 574MB。依頼の 547MB は MiB での値と見られる）</td><td class="nowrap"><code>_vendor/whisper/model/</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<pre><code class="language-text">https://github.com/ggml-org/whisper.cpp/releases/download/b5130/whisper-blas-bin-x64.zip
+https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin</code></pre>
+	<ul>
+		<li><strong>zip の中のフォルダ構成と、依頼元が置いた <code>bin/Release/</code> との対応は、取り込みのときに確かめる</strong>。transcribe は <code>_vendor/whisper/</code> の下から <code>whisper-cli.exe</code> を探す形にし、zip の構成の違いに左右されないようにする</li>
+		<li>新しい版（2026-10-12 時点で v1.9.5 ＝ b5454）もある。版を上げるときは、配布物がビルド番号のタグ側に付く点に注意する</li>
+		<li><strong>取り込んだ一式の構成（2026-10-12）</strong>: <code>_vendor/whisper/bin/Release/whisper-cli.exe</code> ・ <code>_vendor/whisper/model/</code> ・ <code>_vendor/whisper/dl/whisper-blas-bin-x64.zip</code>（入手した zip そのもの。大きさが b5130 の配布物とバイト数まで一致した）</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>コマンドの仕様</h1>
+	<pre><code class="language-text">transcribe &lt;音声…&gt; [--lang ja] [--model &lt;パス&gt;] [--out &lt;フォルダ&gt;]</code></pre>
+	<ol>
+		<li><strong>音声は変換せずに、そのまま whisper-cli に渡す</strong>（決めたこと 1-C）</li>
+		<li><strong>全ファイルを 1 回の whisper-cli の起動でまとめて渡す</strong>（モデルの読み込みを 1 回にする）。<code>-f &lt;音声&gt; -of &lt;出力名&gt;</code> を組で並べる</li>
+		<li>ファイルごとに書き起こし（<code>.txt</code>）と JSON（<code>.json</code>）を出す。名前は元の音声の拡張子を除いたもの</li>
+	</ol>
+	<ul>
+		<li><code>--model</code> の既定は <code>_vendor/whisper/model/ggml-large-v3-turbo-q5_0.bin</code></li>
+		<li>終了コード: 0 成功 ／ 1 書き起こしの失敗 ／ 2 引数の誤り ・ whisper-cli かモデルが無い</li>
+		<li>whisper-cli の進捗は標準エラーへ流し、標準出力には出したファイルの一覧だけを出す</li>
+	</ul>
+	<div class="callout">
+		<p><strong>実測（2026-10-12、b5130）。</strong>whisper-cli は内蔵の miniaudio で音声を読み、16kHz 以外（24kHz ・ ステレオ）の WAV もそのまま受けた。<code>-f</code> と <code>-of</code> を組で 2 つ並べると、1 回の起動でファイルごとに <code>.txt</code> ・ <code>.json</code> が出た。<strong>無音を渡すと「ご視聴ありがとうございました」と書き起こす</strong>（whisper が無音から文を作る、よく知られた現象）。mp3 等を受けるかは未確認。</p>
+	</div>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>決めること</h1>
+	<p><strong>決めたこと（2026-10-12、利用者の判断）。</strong>1-C ・ 2-A ・ 3-A。4 は許可。いったん 1-B を選んだが、whisper-cli が 16kHz 以外も読むと実測で分かり、1-C に選び直した。</p>
+	<h3>1. WAV への変換の方法</h3>
+	<ul>
+		<li><strong>1-C（採用）</strong>: 変換せず、そのまま whisper-cli に渡す。実測で変換が要らないと分かった。作るものと頼る道具が最も少ない。恒久</li>
+		<li><strong>1-A</strong>: TypeScript で自前に変換する（WAV の読み込み ・ モノラル化 ・ 16kHz への再標本化）。推す理由: 依頼の入力は WAV で、外部の道具（ffmpeg）を足さずに済む。WAV 以外はエラーにする。恒久</li>
+		<li><strong>1-B</strong>: ffmpeg に任せる。mp3 等も受けられるが、ffmpeg を各 PC に入れる必要がある。恒久</li>
+	</ul>
+	<h3>2. <code>--out</code> を省いたときの出し先</h3>
+	<ul>
+		<li><strong>2-A（推奨）</strong>: 音声と同じフォルダ。推す理由: 複数のフォルダの音声を渡しても、どれの結果か迷わない</li>
+		<li><strong>2-B</strong>: カレントフォルダ</li>
+	</ul>
+	<h3>3. <code>--lang</code> を省いたときの言語</h3>
+	<ul>
+		<li><strong>3-A（推奨）</strong>: <code>ja</code>。推す理由: 依頼の書き方が <code>[--lang ja]</code> で、使う側はほぼ日本語</li>
+		<li><strong>3-B</strong>: <code>auto</code>（whisper の自動判定）</li>
+	</ul>
+	<h3>4. プロジェクトの外の一時フォルダへの操作の許可</h3>
+	<p>依頼元が置いた whisper 一式を <code>_vendor/whisper/</code> へ移すことと、参考実装の ts を読み、読み終えたら消すこと。<strong>どちらもプロジェクトの外なので、許可を得てから行う</strong>（共通ルール「プロジェクトフォルダ外へのアクセス」）。</p>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>進め方とテスト</h1>
+	<ol>
+		<li>許可を得て、参考実装を読み、whisper 一式を <code>_vendor/whisper/</code> へ移す。<code>whisper-cli --help</code> で、まとめて渡す方法と出力の指定を実測する</li>
+		<li>テストを先に書く（下記）。落ちるのを見てから実装する</li>
+		<li>実装し、全件のテストを通す</li>
+		<li>TOOLS-USAGE に使い方を書く。README の一覧に足す</li>
+		<li>依頼元へ使い方を返信する。報告元の確認が取れたら課題を済にする</li>
+	</ol>
+	<h2>テスト</h2>
+	<ul>
+		<li><strong>whisper を要らないもの</strong>（どこでも回る）: 引数の解釈、whisper-cli に渡す引数の組み立て、出し先と出力名、whisper-cli ・ モデル ・ 音声が無いときの終了コード 2 と案内</li>
+		<li><strong>whisper を要るもの</strong>: 合成した無音の WAV 2 本（16kHz モノラル ・ 24kHz ステレオ）を 1 回で書き起こし、<code>.txt</code> と <code>.json</code> がファイルごとに出ること。<strong>無音は文を作ってしまうので、中身は見ずに、ファイルが出たことだけを見る</strong>。<code>_vendor/whisper/</code> が無ければ ⬜ 未実施として飛ばし、件数を報告に出す</li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

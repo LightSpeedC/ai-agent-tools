@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-10-05
+> 📅 作成: 2026-09-04 / 更新: 2026-10-12
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -18,6 +18,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 8. [プロセス一覧を見る（psls）](#8-プロセス一覧を見るpsls)
 9. [HTTP で受けたコマンドを新しい窓で起動する（spawn-server）](#9-http-で受けたコマンドを新しい窓で起動するspawn-server)
 10. [クラウドのセッションを準備する（cloud-session-start）](#10-クラウドのセッションを準備するcloud-session-start)
+11. [音声を書き起こす（transcribe）](#11-音声を書き起こすtranscribe)
 
 ## 1. 使えるコマンド
 
@@ -34,6 +35,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `less` | UTF-8 セーフなページャー。DOS の `more` の文字化けを避ける（「ページングして読む（less）」） |
 | `psls` | プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（「プロセス一覧を見る（psls）」） |
 | `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま**新しい窓で起動する**（「HTTP で受けたコマンドを新しい窓で起動する（spawn-server）」） |
+| `transcribe` | 音声を whisper.cpp で**書き起こす**。複数の音声を 1 回の起動でまとめて処理する（「音声を書き起こす（transcribe）」） |
 | `cloud-session-start` | クラウドのセッションで、**共通ルールと共有ツールを隣に置き、PATH と git の author を整える**（「クラウドのセッションを準備する（cloud-session-start）」） |
 
 `check-markdown` は<strong>推測せず実物で判定する。</strong>Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。
@@ -574,5 +576,29 @@ cloud-session-start --project "$CLAUDE_PROJECT_DIR" --env-file "$CLAUDE_ENV_FILE
 
 > [!NOTE]
 > <strong>自分自身を rebase で書き換えるため、本体は関数にまとめて読み終えてから走らせている。</strong>bash はスクリプトを少しずつ読むので、走っている途中でファイルが変わると、途中から別の内容を読む。
+
+## 11. 音声を書き起こす（transcribe）
+
+```powershell
+transcribe a.wav b.wav                      # a.txt ・ a.json ・ b.txt ・ b.json を音声と同じフォルダに出す
+transcribe voice/*.wav --out tmp/asr        # 出し先を指定する
+transcribe talk.wav --lang en               # 言語を指定する（既定は ja、auto で自動判定）
+transcribe talk.wav --model <モデルのパス>  # 別のモデルを使う
+```
+
+<strong>中身は whisper.cpp の `whisper-cli`。</strong>渡した音声を**すべて 1 回の起動でまとめて**書き起こす。モデルの読み込みは 1 回で済むので、細かいファイルが多いときほど、1 本ずつ呼ぶより速い。
+
+- <strong>音声は変換せずに渡してよい。</strong>whisper-cli が自分で 16kHz ・ モノラルに直す（24kHz ・ ステレオの WAV で確かめた。mp3 等は未確認）
+- 出力名は、音声の名前から拡張子を除いたもの。`.txt` は書き起こしの文、`.json` は区間ごとの時刻付き
+- **出力名がぶつかるとき（`--out` に同じ名前の音声を 2 つ渡す等）は、上書きせずに止まる**
+- 標準出力には、出したファイルの一覧だけを出す。whisper-cli の進捗は標準エラーに出る
+- 終了コード: 0 成功 ／ 1 書き起こしの失敗 ／ 2 引数の誤り、whisper-cli ・ モデル ・ 音声が無い
+
+> [!WARNING]
+> <strong>無音や雑音から文を作ることがある。</strong>無音の WAV を渡すと「ご視聴ありがとうございました」と書き起こした。whisper によく知られた現象。書き起こしが空でないことを、音声が入っている証拠にしない。
+
+### whisper-cli とモデルが無いとき
+
+<strong>whisper-cli とモデルは Git に入っていない。</strong>無い PC では、置き場を示して終了コード 2 で止まる。入手は ai-agent-tools 側で行うので、ai-chat-lite で依頼する。
 
 [^^](README.md)

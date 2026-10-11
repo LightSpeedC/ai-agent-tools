@@ -46,6 +46,7 @@ $Suites = @(
 	# html2md の作成日 ・ 更新日の検査。警告（▲）は golden の期待値に入らないため別に見る
 	@{ Name = 'html2md の日付の検査'; Script = 'run-html2md-date-tests.ts' },
 	@{ Name = 'html2md の書き出し'; Script = 'run-html2md-write-tests.ts' },
+	@{ Name = 'transcribe'; Script = 'run-transcribe-tests.ts' },
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },
 	@{ Name = 'text'; Script = 'run-text-tests.ps1'; NodeTarget = 'runners\text-node.cmd' },
 	# psh のテストだけ ts で書いてある。道具自体が PowerShell を呼ぶため、
