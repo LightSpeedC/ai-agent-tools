@@ -28,3 +28,4 @@ for /d %%d in ("*%~1*") do (
 	start "%%d" claude.exe -c -n "%%d %XMD% %XHM%"
 	exit /b
 )
+@rem Ž¸”s? --advisor opus --subagents haiku
