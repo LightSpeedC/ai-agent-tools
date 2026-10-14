@@ -36,7 +36,7 @@ fs.mkdirSync(work, { recursive: true });
 check('日本語の書式を認める', '<p class="date">📅 作成: 2026-01-01 / 更新: ' + today + '</p>', '');
 check('英語の書式（Created: / Updated:）を認める', '<p class="date">📅 Created: 2026-01-01 / Updated: ' + today + '</p>', '');
 check('英語でも更新日が古ければ警告', '<p class="date">📅 Created: 2026-01-01 / Updated: 2026-01-02</p>',
-	'更新日が古い可能性: ヘッダ 2026-01-02 / ファイル更新 ' + today + '（体裁だけの変更ならこのままでよい）');
+	'更新日が古い可能性: ヘッダー 2026-01-02 / ファイル更新 ' + today + '（体裁だけの変更ならこのままでよい）');
 check('日本語と英語の混在は認めない', '<p class="date">📅 作成: 2026-01-01 / Updated: ' + today + '</p>', notFound);
 check('大小の違う英語は認めない', '<p class="date">📅 created: 2026-01-01 / updated: ' + today + '</p>', notFound);
 check('記載が無ければ見つからない', '<p>本文</p>', notFound);

@@ -71,7 +71,7 @@ async function post(body: unknown, headers: Record<string, string> = {}): Promis
 }
 
 /*
-	Host ・ Origin を自分で決めて投げる。fetch はこれらのヘッダを自分で決めてしまうことがあるため、
+	Host ・ Origin を自分で決めて投げる。fetch はこれらのヘッダーを自分で決めてしまうことがあるため、
 	node:http で直に組む
 */
 function raw(method: string, urlPath: string, headers: Record<string, string>, body = ''): Promise<{ status: number; text: string }> {

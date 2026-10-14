@@ -155,7 +155,7 @@ Assert-True 'read: --lines 外の行は出ない' (-not ($r.Out -like '*あい�
 Assert-Match 'read: lines= を表示' $r.Out 'lines=2-2'
 
 # 終わりが全行数を超えたら最後の行で打ち切る（「この行から最後まで」を 2-10000 のように書く使い方が多いため）。
-# 実際に出した範囲はヘッダの lines= と行番号で分かる
+# 実際に出した範囲はヘッダーの lines= と行番号で分かる
 $r = Run-Text @('read', $fU8, '--lines', '2-10000')
 Assert-Equal 'read: 終わりが全行数を超えても 終了 0' 0 $r.Code
 Assert-Match 'read: 終わりが超えたら最後の行まで出す' $r.Out 'さしす'
@@ -184,7 +184,7 @@ Write-Host '=== text find ===' -ForegroundColor Cyan
 $r = Run-Text @('find', '日本語', '--path', $Work, '--recurse')
 Assert-Equal 'find: 一致あり 終了 0' 0 $r.Code
 Assert-Match 'find: SJIS の日本語が当たる（Grep が漏らす）' $r.Out 'a.cmd'
-Assert-Match 'find: ◎ ヘッダ' $r.Out '◎"'
+Assert-Match 'find: ◎ ヘッダー' $r.Out '◎"'
 Assert-Match 'find: ◆ ファイル行に組' $r.Out '[sjis/crlf]'
 Assert-Match 'find: サブフォルダも当たる' $r.Out 'h.cmd'
 Assert-Match 'find: ■ サブフォルダ見出し' $r.Out '■"sub"'

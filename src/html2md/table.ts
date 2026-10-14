@@ -32,7 +32,7 @@ export class ListTableConverter {
 	 * 列全体が num のときだけ右寄せにする。
 	 */
 	convertTable(tableHtml: string, anchors: Map<string, string> | null): string {
-		// thead があればその範囲の行をヘッダとみなす
+		// thead があればその範囲の行をヘッダーとみなす
 		let headEnd = -1;
 		const mHead = /<thead\b[^>]*>[\s\S]*?<\/thead>/.exec(tableHtml);
 		if (mHead != null) { headEnd = mHead.index + mHead[0].length; }
@@ -79,7 +79,7 @@ export class ListTableConverter {
 						grid.set(key(rr, cc), (dr === 0 && dc === 0) ? cell.text : '');
 					}
 				}
-				// 数値列の判定はヘッダを除いたデータ行だけで行う
+				// 数値列の判定はヘッダーを除いたデータ行だけで行う
 				if (!cell.isHead) {
 					increment(dataCount, c);
 					if (cell.isNum) { increment(numCount, c); }

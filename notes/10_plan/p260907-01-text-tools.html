@@ -240,7 +240,7 @@
 <section class="ch04" id="ch04">
 <h1>text read（読む）</h1>
 
-<p>Read の代わり。何であろうと読み、<strong>UTF-8 に起こして見せる</strong>。加えて、続く <code>text edit</code> のためのメタ（組・サイズ・更新日時・合言葉）をヘッダに出す。</p>
+<p>Read の代わり。何であろうと読み、<strong>UTF-8 に起こして見せる</strong>。加えて、続く <code>text edit</code> のためのメタ（組・サイズ・更新日時・合言葉）をヘッダーに出す。</p>
 
 <h2>オプション</h2>
 <div class="tablewrap"><table>
@@ -254,7 +254,7 @@
 </table></div>
 
 <h2>表示のしかた</h2>
-<p><strong>1 行目は <code>◆</code> ファイルヘッダ</strong>（find と共通）、続いて<strong>行番号付きの中身</strong>。ヘッダは次の並び。パスは<strong>渡されたまま</strong>（read は単一ファイルなので相対化しない）、ダブルクォートで囲む（空白や <code>()</code> を含められる）。</p>
+<p><strong>1 行目は <code>◆</code> ファイルヘッダー</strong>（find と共通）、続いて<strong>行番号付きの中身</strong>。ヘッダーは次の並び。パスは<strong>渡されたまま</strong>（read は単一ファイルなので相対化しない）、ダブルクォートで囲む（空白や <code>()</code> を含められる）。</p>
 <pre><code>◆"&lt;path&gt;" [&lt;組&gt;] size=&lt;バイト&gt; mtime=&lt;yymmdd-hhmmss-ccc&gt; [lines=A-B] digest=&lt;hex&gt;</code></pre>
 <p>中身の各行は <strong>行番号を 6 桁右寄せ、続けて <code>:</code> とタブ、そのあと本文</strong>（書式 <code>%6d:\t%s</code>）。標準 Read の <code>cat -n</code>（6 桁右寄せ＋タブ）に <code>:</code> を 1 つ足した形。下の例では見やすさのためタブを空白で表す（実際は <code>:</code> の後がタブ）。</p>
 <pre><code># 全文を読む
@@ -276,7 +276,7 @@ text read data.txt --from sjis</code></pre>
 <h2>Claude Code 標準の Read との違い</h2>
 <p>標準の Read は <code>cat -n</code> と同じ「行番号（6 桁右寄せ）→ タブ → 中身」で、<strong>文字コードは UTF-8 決め打ち・メタは出ない</strong>。同じ SJIS の <code>build.cmd</code> を読むと差が出る（下の例のタブは空白で表す）。</p>
 <div class="tablewrap"><table>
-<thead><tr><th>標準 Read（6 桁右寄せ＋タブ）</th><th><code>text read</code>（<code>◆</code> ヘッダ＋<code>:</code>）</th></tr></thead>
+<thead><tr><th>標準 Read（6 桁右寄せ＋タブ）</th><th><code>text read</code>（<code>◆</code> ヘッダー＋<code>:</code>）</th></tr></thead>
 <tbody>
 <tr><td>
 <pre><code>     1  @echo off
@@ -292,7 +292,7 @@ text read data.txt --from sjis</code></pre>
 </table></div>
 <ul>
 <li><strong>SJIS・UTF-16 を正しく読む</strong>（標準は UTF-8 として読むので化ける）</li>
-<li><strong><code>◆</code> ヘッダで組・サイズ・更新日時・合言葉を返す</strong>（標準は本文だけ。編集の下ごしらえにならない）。ヘッダは find と共通の形</li>
+<li><strong><code>◆</code> ヘッダーで組・サイズ・更新日時・合言葉を返す</strong>（標準は本文だけ。編集の下ごしらえにならない）。ヘッダーは find と共通の形</li>
 <li><strong>行番号のあとに <code>:</code> を足す</strong>（標準は 6 桁右寄せ＋タブ、text read は 6 桁右寄せ＋<code>:</code>＋タブ）。数字だけの列と本文の境目がはっきりする</li>
 </ul>
 

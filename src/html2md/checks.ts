@@ -259,7 +259,7 @@ export function testUpdatedDate(htmlPath: string): string {
 		const y = mtime.getFullYear();
 		const mo = String(mtime.getMonth() + 1).padStart(2, '0');
 		const d = String(mtime.getDate()).padStart(2, '0');
-		return '更新日が古い可能性: ヘッダ ' + written + ' / ファイル更新 '
+		return '更新日が古い可能性: ヘッダー ' + written + ' / ファイル更新 '
 			+ y + '-' + mo + '-' + d + '（体裁だけの変更ならこのままでよい）';
 	}
 	return '';

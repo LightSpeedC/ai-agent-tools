@@ -1,6 +1,6 @@
 /*
 	text read — 何であろうと読み、UTF-8 で見せる。
-	◆ ヘッダに組・サイズ・更新日時・合言葉。
+	◆ ヘッダーに組・サイズ・更新日時・合言葉。
 */
 
 import { ToolError, comboName, decode, lineContent, splitLines } from './engine.ts';
@@ -42,7 +42,7 @@ export function run(a: string[]): number {
 	head += ' digest=' + digest;
 
 	if (args.flag('--no-number', '--no-number')) {
-		// 中身だけを別処理へ渡す用途。◆ ヘッダは出さない。
+		// 中身だけを別処理へ渡す用途。◆ ヘッダーは出さない。
 		const from = lines[a1 - 1].start;
 		const to = lines[b1 - 1].fullEnd;
 		outRaw(text.substring(from, to));
@@ -61,7 +61,7 @@ export function run(a: string[]): number {
 /*
 	--lines A-B を読む。clamp が真なら、B が全行数を超えたとき最後の行で打ち切る
 	（read だけ。「A 行目から最後まで」を A-10000 のように書く使い方が多いため。
-	実際の範囲はヘッダの lines= と行番号で分かる）。edit は書き換える範囲を取り違えないよう打ち切らない。
+	実際の範囲はヘッダーの lines= と行番号で分かる）。edit は書き換える範囲を取り違えないよう打ち切らない。
 	A が全行数を超えたときは、出すものが無いので打ち切りでもエラーにする。
 */
 export function parseLines(spec: string, count: number, clamp = false): { a: number; b: number } {

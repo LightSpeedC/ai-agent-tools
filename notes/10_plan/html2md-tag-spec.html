@@ -603,7 +603,7 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 		<thead><tr><th>クラス</th><th>意味</th><th>備考</th></tr></thead>
 		<tbody>
 			<tr><td class="nowrap"><code>chapters</code>（<code>ul</code>）</td><td>章一覧の入れ物</td><td><code>data-columns</code> が必須</td></tr>
-			<tr><td class="nowrap"><code>data-columns</code>（属性）</td><td>表のヘッダ 3 列をカンマ区切りで持つ（例 <code>"部,タイトル,内容"</code>）</td><td>HTML に無い文言を検査で拾わせないための持たせ方。<code>aria-label</code> と同じ扱いで、検査は属性値も「HTML にある文言」に含める</td></tr>
+			<tr><td class="nowrap"><code>data-columns</code>（属性）</td><td>表のヘッダー 3 列をカンマ区切りで持つ（例 <code>"部,タイトル,内容"</code>）</td><td>HTML に無い文言を検査で拾わせないための持たせ方。<code>aria-label</code> と同じ扱いで、検査は属性値も「HTML にある文言」に含める</td></tr>
 			<tr><td class="nowrap"><code>part</code>（<code>span</code>）</td><td>部・グループ（1 列目）</td><td><strong><code>no</code> ではなく <code>part</code>。</strong><code>issues.html</code> は課題番号に <code>no</code> を使っており、章番号とは意味が違う同名クラスになるため改名した</td></tr>
 			<tr><td class="nowrap"><code>ttl</code>（<code>span</code>）</td><td>タイトル（2 列目）。<code>&lt;a href&gt;</code> の中にあれば、その href をリンクにして出す</td><td>—</td></tr>
 			<tr><td class="nowrap"><code>desc</code>（<code>span</code>）</td><td>内容（3 列目）</td><td>—</td></tr>
