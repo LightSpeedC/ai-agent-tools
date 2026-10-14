@@ -93,6 +93,19 @@ if (-not (Test-Path $Exe)) { Write-Host ("[NG] 対象がありません: " + $Ex
 if (Test-Path $Work) { Remove-Item -Recurse -Force $Work }
 New-Item -ItemType Directory -Force $Work | Out-Null
 
+Write-Host '--- サブコマンドの --help'
+# 使い方を引くたびに「ファイルを指定してください」で終わると、TOOLS-USAGE まで読みに行くことになる
+foreach ($verb in 'read', 'find', 'edit', 'write') {
+	foreach ($h in '--help', '-h') {
+		$r = Run-Text @($verb, $h)
+		Assert-True ('text ' + $verb + ' ' + $h + ' は使い方を出して 0 で終わる') ($r.Code -eq 0 -and $r.Out.Contains('text ' + $verb)) ('code=' + $r.Code + ' out=' + $r.Out)
+	}
+}
+$r = Run-Text @('edit', '--help')
+Assert-True 'text edit --help はオプションを並べる' ($r.Out.Contains('--old') -and $r.Out.Contains('--new') -and $r.Out.Contains('--lines') -and $r.Out.Contains('--digest')) $r.Out
+$r = Run-Text @('--help')
+Assert-True 'text --help はサブコマンドごとの --help を案内する' ($r.Code -eq 0 -and $r.Out.Contains('--help')) $r.Out
+
 # テストデータ
 $fSjis = Join-Path $Work 'a.cmd'
 $fU8 = Join-Path $Work 'b.txt'
