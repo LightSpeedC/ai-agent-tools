@@ -597,6 +597,8 @@ convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</c
 	</table>
 	</div>
 
+	<p><strong>サブコマンドごとの書式とオプションは <code>text &lt;read|find|edit|write&gt; --help</code></strong>（<code>-h</code> も）で出る。<strong>サブコマンドの直後に置いたときだけ</strong>効く。後ろに置いた <code>--help</code> は、<code>--new "--help"</code> のような値と区別できないため。</p>
+
 	<h2>読む・探す</h2>
 
 <pre><code class="language-powershell">text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダーに組・digest）
@@ -833,6 +835,7 @@ transcribe --list voice/list.txt            # 一覧ファイルに書いた音�
 		<li>出力名は、音声の名前から拡張子を除いたもの。<code>.txt</code> は書き起こしの文、<code>.json</code> は区間ごとの時刻付き</li>
 		<li><strong>出力名がぶつかるとき（<code>--out</code> に同じ名前の音声を 2 つ渡す等）は、上書きせずに止まる</strong></li>
 		<li>標準出力には、出したファイルの一覧だけを出す。<strong>whisper-cli の出力は、失敗したときだけ標準エラーに出す。</strong>進捗や書き起こしの途中経過を見るなら <code>--verbose</code></li>
+		<li><strong>Bash から直接呼んでよい</strong>。UTF-8 で出すため化けない。<code>psh</code> で包まない</li>
 		<li>終了コード: 0 成功 ／ 1 書き起こしの失敗 ／ 2 引数の誤り、whisper-cli ・ モデル ・ 音声が無い</li>
 	</ul>
 
@@ -881,6 +884,7 @@ convert-audio --list voice/list.txt --to mp3         # 一覧ファイルに書�
 		<li><strong>多くの音声は <code>--list</code> ・ <code>--dir</code> で渡す。</strong>決まりは transcribe の<a href="#ch11">「多くの音声を渡す」</a>と同じ</li>
 		<li><strong>出力が既にあると、何も変換せずに止まる。</strong>上書きするなら <code>--force</code>。入力と出力が同じファイルになる指定（同じフォルダで wav から wav 等）は、<code>--force</code> でも誤り</li>
 		<li>標準出力には、出したファイルの一覧だけを出す。<strong>ffmpeg の出力は、失敗したときだけ標準エラーに出す</strong>（どの音声で失敗したかも出す）。1 件ずつ見るなら <code>--verbose</code></li>
+		<li><strong>Bash から直接呼んでよい</strong>。UTF-8 で出すため化けない。<code>psh</code> で包まない</li>
 		<li>終了コード: 0 成功 ／ 1 変換の失敗 ／ 2 引数の誤り、ffmpeg ・ 音声が無い、出力が既にある</li>
 	</ul>
 	<p><strong>ffmpeg は Git に入っていない。</strong>無い PC では、置き場を示して終了コード 2 で止まる。入手は ai-agent-tools 側で行うので、ai-chat-lite で依頼する。</p>
