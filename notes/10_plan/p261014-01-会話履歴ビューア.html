@@ -1,0 +1,580 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>会話履歴ビューア 計画（JSONL から公開用の HTML を作る）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（6 章 / 色相 280 → 0 を 56 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(224,78%,25%); --accent2:hsl(224,58%,55%); --soft:hsl(224,28%,95%); }
+	.ch03{ --accent:hsl(168,78%,25%); --accent2:hsl(168,58%,55%); --soft:hsl(168,28%,95%); }
+	.ch04{ --accent:hsl(112,78%,25%); --accent2:hsl(112,58%,55%); --soft:hsl(112,28%,95%); }
+	.ch05{ --accent:hsl(56,78%,25%);  --accent2:hsl(56,58%,55%);  --soft:hsl(56,28%,95%); }
+	.ch06{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	thead code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	figure{ margin:18px 0; }
+	figcaption{ font-size:.92em; color:var(--ink-soft,#4a5568); background:transparent; margin-top:6px; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>会話履歴ビューア 計画（JSONL から公開用の HTML を作る）</h1>
+		<p class="lead">自分のプロジェクトの <code>etc/history/jsonl/</code> に溜まる会話ログを読み、伏せ字を掛けた静的なページを同じプロジェクトの中に作る。外部のサイトでそのまま公開できる形にする。</p>
+		<p class="date">📅 作成: 2026-10-14 / 更新: 2026-10-14</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">背景と目的</a></li>
+		<li class="ch02"><a href="#ch02">入力と、載せるもの</a></li>
+		<li class="ch03"><a href="#ch03">伏せ字</a></li>
+		<li class="ch04"><a href="#ch04">出力とビューア</a></li>
+		<li class="ch05"><a href="#ch05">決めること</a></li>
+		<li class="ch06"><a href="#ch06">進め方とテスト</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>背景と目的</h1>
+	<p>会話ログ（JSONL）は、共通ルール「セッションログの自動保存」により、各プロジェクトの <code>etc/history/jsonl/</code> にコピーされる。<strong>そのままでは公開できない。</strong>ユーザーのパス、メールアドレス、ルールの全文、ほかのプロジェクトの発言が混ざっている。</p>
+	<p>これを、伏せ字を掛けた静的なページにする共有コマンド <code>history2html</code> を足す（決めたこと 12-A）。</p>
+	<ul>
+		<li><strong>使い方</strong>: 各プロジェクトのルートで実行する。<strong>自分のプロジェクトの履歴を読み、自分のプロジェクトの中に書く</strong>。ほかのプロジェクトの履歴は読まない</li>
+		<li><strong>見た目</strong>: Claude Code のセッション履歴や LINE のトーク画面のような、吹き出しの並び</li>
+		<li><strong>入力</strong>: Claude Code の JSONL だけ。LINE などは見た目の手本で、読み込む対象ではない</li>
+		<li><strong>出し先</strong>: 同じプロジェクトの <code>notes/91_history/</code>（決めたこと 17）。公開してよい形で出し、そのプロジェクトの GitHub Pages 等で公開できる。CDN の JS を読んでよい</li>
+		<li><strong>量</strong>: 長い履歴でも開くのが重くならないように、日ごとのデータを分けて置き、見えるところだけを描く</li>
+	</ul>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>もの</th><th>置き場</th><th>Git</th></tr></thead>
+		<tbody>
+			<tr><td>本体</td><td class="nowrap"><code>src/history2html/</code></td><td>管理</td></tr>
+			<tr><td>ビューア（HTML ・ CSS ・ JS）</td><td class="nowrap"><code>src/history2html/viewer/</code></td><td>管理。書き出すときに出し先へ写す</td></tr>
+			<tr><td>伏せ字 ・ 伏せ漏れ検査</td><td class="nowrap"><code>src/lib/</code></td><td>管理。check-public から切り出して共有する（第 3 章）</td></tr>
+			<tr><td>入口</td><td class="nowrap"><code>bin/history2html</code> ・ <code>bin/history2html.cmd</code></td><td>管理</td></tr>
+			<tr><td>テスト</td><td class="nowrap"><code>tools/40_test/run-history2html-tests.ts</code></td><td>管理</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>本体は TypeScript</strong>。bun を優先し、無ければ node で動かす（ほかの道具と同じ入口）。テストも両方で回す</li>
+		<li><strong>ビューアは JavaScript</strong>（決めたこと 19-A）。型は JSDoc で付け、<code>tsc --checkJs</code> で検査する。書き出すときは写すだけで、ビルドの手順を持たない</li>
+	</ul>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>入力と、載せるもの</h1>
+	<pre><code class="language-text">history2html [--path &lt;プロジェクト&gt;] [--out &lt;フォルダ&gt;] [--word-list &lt;パス&gt;] [--title &lt;題&gt;]</code></pre>
+	<ul>
+		<li><code>--path</code>: プロジェクトのフォルダ。省くとカレント（check-public と同じ）。<strong>読むのは <code>&lt;プロジェクト&gt;/etc/history/jsonl/</code></strong></li>
+		<li><code>--out</code>: 出し先。<strong>省くと <code>&lt;プロジェクト&gt;/notes/91_history/</code></strong>（決めたこと 17）。公開の前に試すときは <code>tmp/</code> の下を渡す</li>
+		<li><code>--word-list</code>: 伏せる語のリスト（第 3 章、決めること 16）</li>
+		<li><code>--title</code>: ページの題。省くとプロジェクトのフォルダ名</li>
+		<li>標準出力には件数だけを出す（日数 ・ 発言数 ・ 伏せた数を種類ごと）。<strong>本文は出さない</strong></li>
+		<li>終了コード: 0 成功 ／ 1 伏せ漏れがあり、書き出さなかった ／ 2 引数の誤り</li>
+	</ul>
+
+	<h2>JSONL の形（実測）</h2>
+	<p>2026-10-14 に、このプロジェクトの会話ログ（<code>~/.claude</code> 側、115 ファイル、76,482 行）の形を数えた。本文は見ていない。<code>etc/history/jsonl/</code> は Git の管理外なので、数も見ていない（<code>~/.claude</code> 側より多いかどうかは未確認）。</p>
+	<ul>
+		<li><strong>直下の 3 ファイルがセッションの本体</strong>。残りの 112 ファイルは <code>&lt;セッション&gt;/subagents/</code> の下のサブエージェントの記録</li>
+		<li><strong>1 ファイルが 1 セッション</strong>。sessionId が 2 つ以上あるファイルは 0。<code>uuid</code> の重複も 0</li>
+		<li><strong>セッションの時間は重なる</strong>。3 セッションのうち、時間が重なる組が 2、人の発言が互い違いに入る組が 1</li>
+		<li><strong>記録の種類は 20 を超える</strong>。会話の本体は <code>user</code> と <code>assistant</code> だけで、ほかは状態の控え（<code>file-history-*</code> ・ <code>bridge-session</code> ・ <code>cost-state</code> ・ <code>queue-operation</code> 等）</li>
+		<li><strong><code>&lt;system-reminder&gt;</code> ・ フックの追加文脈 ・ ルールの全文は、<code>attachment</code> という別の記録に入る</strong>。ユーザーのメールアドレスもここに入る</li>
+		<li>人の発言は <code>origin.kind = "human"</code>。<strong>古い記録には <code>origin</code> が無い</strong>ので、本文の形でも見分ける</li>
+		<li>待受け ・ 背面コマンドの完了通知は <code>user</code> の記録で、本文が <code>&lt;task-notification&gt;</code> で始まる（570 件）。<strong>ほかのプロジェクトの発言が入る</strong></li>
+		<li>サブエージェントの記録は <code>isSidechain</code> が付く。<code>subagents/</code> の下に別のファイルもある</li>
+		<li>セッションの題は <code>custom-title</code> の記録にある</li>
+	</ul>
+
+	<h2>拾うものを名指しする</h2>
+	<p><strong>載せる記録を名指しし、それ以外はすべて捨てる。</strong>捨てるものを並べる形にすると、Claude Code の更新で新しい種類が増えたとき、既定で載ってしまう。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>記録</th><th>扱い</th></tr></thead>
+		<tbody>
+			<tr><td>人の発言（<code>user</code>。本文が文字列 ・ text で、下の除外に当たらないもの）</td><td>載せる。右の吹き出し</td></tr>
+			<tr><td>AI の本文（<code>assistant</code> の <code>text</code>）</td><td>載せる。左の吹き出し</td></tr>
+			<tr><td>ツールの呼び出し（<code>tool_use</code>）・ 結果（<code>tool_result</code>）・ 思考（<code>thinking</code>）</td><td>ツールは名前と 1 行の要約だけを載せる。結果の中身と思考は載せない（決めたこと 14-A）</td></tr>
+			<tr><td>セッションの題（<code>custom-title</code>）</td><td>セッションの区切りに出す</td></tr>
+			<tr><td>compact の区切り（<code>system/compact_boundary</code>）</td><td>区切り線だけを出す。要約の本文（<code>isCompactSummary</code>）は載せない</td></tr>
+			<tr><td>画像（<code>image</code>）</td><td>載せない。「画像」とだけ出す</td></tr>
+			<tr><td><code>attachment</code> ・ <code>isMeta</code> ・ <code>isSidechain</code> ・ <code>&lt;task-notification&gt;</code> ・ ローカルコマンド（<code>&lt;command-name&gt;</code> 等）</td><td>載せない</td></tr>
+			<tr><td>上のどれでもないもの</td><td>載せない</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p><strong>日は JST で分ける</strong>。<code>timestamp</code> は UTC なので、日をまたぐセッションは 2 日に分かれる。</p>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>伏せ字</h1>
+	<p><strong>2 段で守る。</strong>拾った本文を置き換え、書き出す前に出力の全体をもう一度検査する。<strong>検査で 1 件でも残れば、何も書かずに終了コード 1</strong>。どこに何が残ったかは、ファイル名と種類だけを出す。</p>
+
+	<h2>置き換えるもの</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>もの</th><th>見つけ方</th><th>置き換え</th></tr></thead>
+		<tbody>
+			<tr><td>自分のユーザープロファイルのパス</td><td><code>C:\Users\&lt;名前&gt;</code>。区切りは <code>\</code> ・ <code>\\</code> ・ <code>/</code> のどれでも。<code>/c/Users/</code> も</td><td><code>~</code></td></tr>
+			<tr><td>ほかの <code>C:\Users\</code> 配下</td><td>同上</td><td><code>C:\Users\&lt;username&gt;</code></td></tr>
+			<tr><td>git の author</td><td><code>git config user.name</code> ・ <code>user.email</code></td><td><code>〈個人名〉</code> ・ <code>〈メールアドレス〉</code></td></tr>
+			<tr><td>ユーザー名 ・ マシン名</td><td>環境から取る</td><td><code>&lt;username&gt;</code> ・ <code>&lt;hostname&gt;</code></td></tr>
+			<tr><td>メールアドレス</td><td>一般的な形。<code>noreply@</code> ・ <code>example.com</code> は除く（check-public と同じ）</td><td><code>〈メールアドレス〉</code></td></tr>
+			<tr><td>伏せる語のリスト</td><td>単純一致。大小を区別しない</td><td><code>〈伏せ字〉</code></td></tr>
+			<tr><td>セッションの URL</td><td><code>claude.ai/code/session_…</code> 等</td><td>URL を消す</td></tr>
+			<tr><td>認証情報の形</td><td>よく知られた鍵の接頭辞、<code>password=</code> 等に値が続くもの</td><td><code>〈認証情報〉</code></td></tr>
+			<tr><td>内部のホスト名 ・ IP アドレス</td><td><code>*.local</code> ・ <code>*.internal</code>、プライベートの範囲（10/8 ・ 172.16/12 ・ 192.168/16）</td><td><code>&lt;hostname&gt;</code> ・ <code>&lt;IPアドレス&gt;</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>人の名前は、正規表現では見つけられない。</strong>伏せる語のリストに頼る。置き場は決めること 16</li>
+		<li><strong>リストが無ければ止める</strong>。check-public はその項目だけを飛ばして続けるが、こちらは公開する物を作るので、黙って通さない</li>
+		<li>見つけ方は check-public と同じものを使う。<strong><code>src/lib/</code> に切り出して両方から呼ぶ</strong>。2 か所に書くと、片方だけが古くなる</li>
+	</ul>
+	<ul>
+		<li><strong>書き出したものは、そのプロジェクトの Git の管理下に入る</strong>。<code>git add</code> したあとは check-public の検査の対象にも入るので、push の前にもう一度、同じ見つけ方で見られる</li>
+	</ul>
+	<div class="callout callout-important">
+		<p><strong>機械の伏せ字は、公開してよいことの保証にならない。</strong>リストに無い名前、文脈で人が分かる話は残る。書き出したら、公開する前に人が目で読む。</p>
+	</div>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>出力とビューア</h1>
+	<pre><code class="language-text">notes/91_history/                    --out を省いたときの出し先
+  index.html                         ビューア（ヘッダー ・ 左の目盛り ・ 右の会話）
+  viewer.js ・ viewer.css
+  data/index.js                      目次。月 ・ 日 ・ 発言の一覧と、日ごとの量
+  data/2026-10/2026-10-14.js         その日の人の発言と、応答のある位置
+  data/2026-10/2026-10-14-res.js     その日の応答（AI の本文とツールの要約）。展開したときに読む</code></pre>
+	<ul>
+		<li><strong>出し先が空でなく、前回この道具が作った印（<code>data/index.js</code>）も無ければ、書かない</strong>。別のものを上書きしない</li>
+		<li>印があれば <code>data/</code> を作り直す。消えた日のファイルを残さない</li>
+		<li><strong>発言と応答を別のファイルに分ける</strong>。既定では応答を出さないので、開いたときに読むのは人の発言だけで済む。量は 5.3 万字と 174 万字で、30 倍ほど違う（決めること 14 の実測）</li>
+		<li><strong><code>notes/</code> の下なので html2md の対象に入る</strong>。<code>index.html</code> は html2md が既定で除外するが、<code>&lt;meta name="md-skip"&gt;</code> も入れておく</li>
+	</ul>
+
+	<figure>
+	<svg viewBox="0 0 900 420" role="img" aria-label="ビューアの画面の見取り図" style="max-width:100%;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg">
+		<defs>
+			<linearGradient id="g-p261014-01-1-a" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(280,78%,25%)"/><stop offset="1" stop-color="hsl(280,58%,55%)"/></linearGradient>
+			<linearGradient id="g-p261014-01-1-b" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(140,78%,25%)"/><stop offset="1" stop-color="hsl(140,58%,55%)"/></linearGradient>
+			<linearGradient id="g-p261014-01-1-c" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(210,78%,25%)"/><stop offset="1" stop-color="hsl(210,58%,55%)"/></linearGradient>
+			<linearGradient id="g-p261014-01-1-d" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(56,78%,25%)"/><stop offset="1" stop-color="hsl(56,58%,55%)"/></linearGradient>
+			<linearGradient id="g-p261014-01-1-e" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#12224d"/><stop offset="1" stop-color="#2f5fbf"/></linearGradient>
+		</defs>
+		<rect width="100%" height="100%" fill="#ffffff"/>
+		<!-- 上: 固定のヘッダー -->
+		<rect x="20" y="14" width="860" height="40" rx="6" fill="url(#g-p261014-01-1-e)"/>
+		<text x="34" y="40" font-size="16" fill="#fff">⌂</text>
+		<text x="60" y="40" font-size="15" fill="#fff">プロジェクト名 ・ 会話履歴</text>
+		<rect x="640" y="21" width="110" height="26" rx="5" fill="#ffffff"/>
+		<text x="667" y="39" font-size="13" fill="#12224d">応答なし</text>
+		<rect x="756" y="21" width="110" height="26" rx="5" fill="none" stroke="#fff"/>
+		<text x="776" y="39" font-size="13" fill="#fff">すべて展開</text>
+		<!-- 左: 目盛り -->
+		<rect x="20" y="64" width="170" height="340" rx="8" fill="#f2f5fb" stroke="#d9dfe8"/>
+		<text x="30" y="90" font-size="13" fill="#1c2330">2026/09</text>
+		<line x1="30" y1="98" x2="180" y2="98" stroke="#12224d" stroke-width="3"/>
+		<line x1="110" y1="122" x2="180" y2="122" stroke="#2f5fbf" stroke-width="2"/>
+		<text x="84" y="127" font-size="12" fill="#1c2330">29</text>
+		<line x1="150" y1="132" x2="180" y2="132" stroke="#4a5568"/>
+		<line x1="150" y1="140" x2="180" y2="140" stroke="#4a5568"/>
+		<line x1="110" y1="162" x2="180" y2="162" stroke="#2f5fbf" stroke-width="2"/>
+		<text x="84" y="167" font-size="12" fill="#1c2330">30</text>
+		<line x1="150" y1="172" x2="180" y2="172" stroke="#4a5568"/>
+		<text x="30" y="202" font-size="13" fill="#1c2330">2026/10</text>
+		<line x1="30" y1="210" x2="180" y2="210" stroke="#12224d" stroke-width="3"/>
+		<line x1="110" y1="238" x2="180" y2="238" stroke="#2f5fbf" stroke-width="2"/>
+		<text x="84" y="243" font-size="12" fill="#1c2330">13</text>
+		<line x1="150" y1="248" x2="180" y2="248" stroke="#4a5568"/>
+		<line x1="110" y1="290" x2="180" y2="290" stroke="#2f5fbf" stroke-width="2"/>
+		<text x="84" y="295" font-size="12" fill="#1c2330">14</text>
+		<line x1="150" y1="304" x2="180" y2="304" stroke="#4a5568"/>
+		<line x1="150" y1="318" x2="180" y2="318" stroke="#4a5568"/>
+		<line x1="150" y1="334" x2="180" y2="334" stroke="#4a5568"/>
+		<line x1="150" y1="352" x2="180" y2="352" stroke="#4a5568"/>
+		<line x1="150" y1="370" x2="180" y2="370" stroke="#4a5568"/>
+		<line x1="150" y1="388" x2="180" y2="388" stroke="#4a5568"/>
+		<!-- つまみ（いま見えている範囲。開いたときは下端＝最新） -->
+		<rect x="24" y="326" width="162" height="74" rx="4" fill="rgba(47,95,191,0.14)" stroke="#2f5fbf" stroke-width="2"/>
+		<!-- 右: 会話 -->
+		<rect x="210" y="64" width="670" height="340" rx="8" fill="#ffffff" stroke="#d9dfe8"/>
+		<rect x="220" y="74" width="650" height="30" rx="6" fill="url(#g-p261014-01-1-a)"/>
+		<text x="236" y="95" font-size="15" fill="#fff">2026/10/14(水)　セッションの題</text>
+		<rect x="560" y="114" width="300" height="38" rx="14" fill="url(#g-p261014-01-1-b)"/>
+		<text x="576" y="138" font-size="14" fill="#fff">人の発言</text>
+		<text x="500" y="148" font-size="11" fill="#8a94a3">09:31:05</text>
+		<!-- 隠した応答の位置に、薄い展開の記号 -->
+		<line x1="230" y1="170" x2="860" y2="170" stroke="#e3e7ee" stroke-dasharray="4 4"/>
+		<circle cx="545" cy="170" r="10" fill="#ffffff" stroke="#c3cad5"/>
+		<text x="540" y="175" font-size="13" fill="#9aa3b0">↕</text>
+		<rect x="560" y="188" width="300" height="38" rx="14" fill="url(#g-p261014-01-1-b)"/>
+		<text x="576" y="212" font-size="14" fill="#fff">人の発言</text>
+		<text x="500" y="222" font-size="11" fill="#8a94a3">09:40:12</text>
+		<!-- クリックして展開したところ -->
+		<line x1="230" y1="242" x2="860" y2="242" stroke="#e3e7ee" stroke-dasharray="4 4"/>
+		<circle cx="545" cy="242" r="10" fill="#ffffff" stroke="#c3cad5"/>
+		<text x="540" y="247" font-size="13" fill="#9aa3b0">↕</text>
+		<rect x="230" y="256" width="420" height="48" rx="14" fill="url(#g-p261014-01-1-c)"/>
+		<text x="246" y="285" font-size="14" fill="#fff">AI の本文（Markdown。表も描く）</text>
+		<text x="658" y="300" font-size="11" fill="#8a94a3">09:40:30</text>
+		<rect x="230" y="312" width="420" height="26" rx="6" fill="url(#g-p261014-01-1-d)"/>
+		<text x="246" y="330" font-size="13" fill="#fff">Bash　git status</text>
+		<text x="658" y="330" font-size="11" fill="#8a94a3">09:40:31</text>
+		<line x1="230" y1="352" x2="860" y2="352" stroke="#e3e7ee" stroke-dasharray="4 4"/>
+		<circle cx="545" cy="352" r="10" fill="#ffffff" stroke="#c3cad5"/>
+		<text x="540" y="357" font-size="13" fill="#9aa3b0">↕</text>
+		<rect x="560" y="366" width="300" height="30" rx="14" fill="url(#g-p261014-01-1-b)"/>
+		<text x="576" y="386" font-size="14" fill="#fff">人の発言</text>
+	</svg>
+	<figcaption>既定では人の発言だけを出し、応答の位置には薄い記号（↕）を置く。記号をクリックすると、その応答だけを展開する。左の目盛りは右の会話の全体の高さに比例して線を引くので、つまみの位置とスクロールの位置が一致する。</figcaption>
+	</figure>
+
+	<h2>左: 目盛り</h2>
+	<ul>
+		<li>縦の帯 1 本に、全期間を描く。<strong>位置は右の会話の高さに比例させる</strong>。だから、つまみを動かした量と右が動く量が一致する</li>
+		<li><strong>月は長い横線</strong>（ラベル <code>2026/10</code>）、<strong>日は中くらいの線を右寄せ</strong>（ラベル <code>14</code>）、<strong>発言は短い線を右寄せ</strong>。短い線の単位は決めること 15</li>
+		<li>線が詰まったところでは、ラベルを間引く。線は残す</li>
+		<li><strong>つまみ</strong>: いま見えている範囲を枠で示す。上下にドラッグすると右が動く。右をスクロールすると、つまみが追う</li>
+		<li>線や帯をクリックすると、その位置へ飛ぶ</li>
+		<li><strong>線にマウスを乗せて 0.5 秒ほど置くと、日時を出す</strong>。すぐには出さない（目盛りの上をなぞっただけで次々に出ないように）。つまみをドラッグしている間は出さない
+			<ul>
+				<li><strong>一度出たあとは、上下に動かすだけで即座に追従する</strong>。待ち時間を挟まず、ポインタにいちばん近い線の日時に切り替え、枠もポインタの高さに付いて動く</li>
+				<li><strong>左ペインの外に出たら消し、最初からにする</strong>。また入ったときは、0.5 秒の待ちからやり直す</li>
+			</ul>
+		</li>
+		<li>出す中身
+			<ul>
+				<li>月の線: <code>2026/10</code></li>
+				<li>日の線: <code>2026/10/14(水)</code></li>
+				<li>発言の線: <code>2026/10/14(水) 09:31:05</code>。その下に発言の先頭（30 字ほど）</li>
+			</ul>
+		</li>
+		<li>線は細いので、乗せたと見なす範囲は線の上下数 px まで広げる</li>
+		<li>ブラウザの <code>title</code> は出るまでの時間を決められないので使わない。自前の小さな枠で出す</li>
+	</ul>
+
+	<h2>上: 固定のヘッダー</h2>
+	<ul>
+		<li>スクロールしても動かない。左に ⌂（README へ戻る）と題、右に応答の出し方の切り替え</li>
+		<li><strong>切り替えは「応答なし」と「すべて展開」の 2 つ。既定は「応答なし」</strong>。「すべて展開」にすると、決めたこと 14-A の形（AI の本文とツールの要約）で、すべての応答を出す</li>
+		<li>切り替えると、1 つずつ展開 ・ 畳んだ状態は捨てて、全部がそちらにそろう</li>
+		<li><strong>選んだ状態は覚えない</strong>。開くたびに「応答なし」から始まる（共通ルール「Web で設定を残すときは、保存先とキーを聞いてから決める」の手前で止める）</li>
+	</ul>
+
+	<h2>右: 会話</h2>
+	<ul>
+		<li><strong>既定では人の発言だけを出す</strong>。応答のある位置（発言と発言の間）には、展開を表す記号（↕）を薄く置く</li>
+		<li><strong>記号をクリックすると、その応答だけを展開する</strong>。展開した応答の上下にも同じ記号を置き、どちらをクリックしても畳む</li>
+		<li>展開 ・ 畳むときは、クリックした記号が画面の同じ位置に残るように直す。目盛りも引き直す</li>
+		<li><strong>日付は、変わるまで 1 つだけ出す</strong>。日の見出し（<code>2026/10/14(水)</code>。曜日のかっこは半角）が上に貼り付く（<code>position: sticky</code>）。compact の区切りに線を出す</li>
+		<li><strong>セッションをまたいで、依頼を人の発言の時刻順に並べる</strong>（決めたこと 20-A）。セッションは色の帯で見分け、変わったところで題を出す</li>
+		<li><strong>時刻は秒まで（JST の <code>hh:mm:ss</code>）を、小さく薄い灰色の字で</strong>吹き出しの横に出す。ツールの要約の行にも出す</li>
+		<li>人の発言は右、AI は左の吹き出し。ツールの要約は AI の側に、小さな 1 行で出す。失敗したものには ❌</li>
+		<li><strong>Markdown は marked で描く</strong>。GFM の表 ・ 取り消し線 ・ タスクリストに対応する</li>
+		<li><strong>本文中の生の HTML はタグとして効かせず、文字のまま出す</strong>。会話には HTML の話が多く、効かせると崩れる。描いた結果は DOMPurify にも通す（公開するページに、会話の中身から script を入れない）</li>
+		<li>コードの色付けはしない。要るときに足す</li>
+		<li>色は共通ルール「HTMLデザインルール」に従う（背景は淡く、タイトルバーは紺）</li>
+	</ul>
+
+	<h2>長い履歴を軽く開く</h2>
+	<ul>
+		<li><strong>開いたときは最新を出す</strong>。並びは古い順（上が古く、下が新しい）のまま、いちばん下に位置を合わせる。最後の日から読んで描き、上へ戻るにつれて古い日を読む。つまみも目盛りの下端から始まる</li>
+		<li><strong>最初は目次（<code>data/index.js</code>）だけを読む</strong>。日ごとに、目次の量（発言数 ・ 文字数）から高さを見積もった空の箱を並べる。これで目盛りが描ける</li>
+		<li><strong>画面と前後 1 画面ぶりに入った日だけを読み、描く</strong>（IntersectionObserver）</li>
+		<li><strong>応答のファイル（<code>-res.js</code>）は、展開したときに初めて読む</strong>。「すべて展開」のときも、画面の近くの日の分だけを読む</li>
+		<li>描いた日には <code>content-visibility: auto</code> を付け、画面の外の描画を省く</li>
+		<li>上の日が描かれて高さが変わっても、見ている位置がずれないように直す。目盛りも引き直す</li>
+		<li>目盛りから遠くへ飛ぶときは、飛び先の日を先に読み、描いてから位置を合わせる</li>
+		<li>1 日分が大きいとき（数百の発言）は、少しずつ分けて描き、画面を止めない</li>
+	</ul>
+
+	<h2>CDN</h2>
+	<ul>
+		<li>marked と DOMPurify を、cdnjs か jsDelivr から読む。<strong>版を固定して書き、<code>integrity</code>（SRI）を付ける</strong>。版は実装のときに決める</li>
+		<li>CDN が読めないときは、本文を文字のまま出す。白い画面にしない</li>
+	</ul>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>決めること</h1>
+	<p><strong>決めたこと（2026-10-14、利用者の判断）。</strong>12-A ・ 13-A ・ 14-A ・ 15-A ・ 16-A。14-A は、まずこれで進めて様子を見る。あわせて、<strong>既定では応答を出さず、ヘッダーで「すべて展開」に切り替えられる</strong>形にする（第 4 章）。17 は <code>notes/91_history/</code>（案の外から選んだ）。19-A ・ 20-A。<strong>この計画を承認（2026-10-14）</strong>。</p>
+
+	<h3>12. 道具の名前</h3>
+	<ul>
+		<li><strong>12-A（推奨）</strong>: <code>history2html</code>。推す理由: <code>html2md</code> と同じ「入力 2 出力」の形で、何を何にするかが名前で分かる</li>
+		<li><strong>12-B</strong>: <code>publish-history</code>。公開用と分かるが、サイトへ上げるところまでするように読める</li>
+		<li><strong>12-C</strong>: <code>chat-viewer</code>。見る道具に読め、伏せ字を掛けて書き出す役目が名前に出ない</li>
+	</ul>
+
+	<h3>13. 日ごとのデータの形</h3>
+	<ul>
+		<li><strong>13-A（推奨）</strong>: <code>.js</code>。<code>&lt;script&gt;</code> を足して読み、中で決まった関数に渡す。推す理由: <strong>出したものを手元で <code>file://</code> のまま開いて確かめられる</strong>。公開の前に人が目で読む手順（第 3 章）が、サーバ無しで済む</li>
+		<li><strong>13-B</strong>: <code>.json</code>。<code>fetch</code> で読む。データとして素直だが、手元で見るにはサーバが要る（ブラウザは <code>file://</code> の <code>fetch</code> を止める）</li>
+	</ul>
+
+	<h3>14. ツールと思考をどこまで載せるか</h3>
+	<ul>
+		<li><strong>14-A（推奨）</strong>: ツールは名前と 1 行の要約（下の表）だけ。結果の中身と思考は載せない。失敗した呼び出しには ❌ の印だけを付ける。推す理由: 何をしたかの流れは追え、<strong>ファイルの中身（伏せ字で拾えない秘密が混ざる所）は出ない</strong></li>
+		<li><strong>14-B</strong>: 14-A に加えて、ツールの結果を先頭 20 行まで、畳んで載せる。作業の中身まで読めるが、伏せ漏れの余地が広がる</li>
+		<li><strong>14-C</strong>: 発言の本文だけ。ツールも思考も載せない。いちばん安全だが、AI が何をしたかが見えない</li>
+	</ul>
+	<p>このプロジェクトの会話ログで量を数えた（2026-10-14、サブエージェントを除く。本文は見ていない）。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>もの</th><th>件</th><th>字</th><th>A</th><th>B</th><th>C</th></tr></thead>
+		<tbody>
+			<tr><td>人の発言</td><td class="num">1,113</td><td class="num">5.3 万</td><td>載せる</td><td>載せる</td><td>載せる</td></tr>
+			<tr><td>AI の本文</td><td class="num">4,358</td><td class="num">110 万</td><td>載せる</td><td>載せる</td><td>載せる</td></tr>
+			<tr><td>ツールの要約（1 行目、200 字まで）</td><td class="num">9,494</td><td class="num">64 万</td><td>載せる</td><td>載せる</td><td>—</td></tr>
+			<tr><td>ツールの結果（先頭 20 行まで）</td><td class="num">9,494</td><td class="num">343 万</td><td>—</td><td>載せる</td><td>—</td></tr>
+			<tr><td>思考（中身が残っているもの）</td><td class="num">138</td><td class="num">1.5 万</td><td>—</td><td>—</td><td>—</td></tr>
+			<tr><td><strong>載せる量の計</strong></td><td></td><td></td><td class="num">179 万</td><td class="num">523 万</td><td class="num">115 万</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>1 つの依頼につき、ツールは平均で約 8.5 回</strong>。A では、吹き出しの間に小さな行がそれだけ挟まる</li>
+		<li><strong>B は A の約 2.9 倍</strong>。結果の全体は 587 万字あり、20 行を超える結果は 1,433 件</li>
+		<li><strong>思考は、ほとんどログに残っていない</strong>（3,973 件のうち中身があるのは 138 件）。載せるかどうかで差がほぼ出ない</li>
+		<li>失敗した呼び出しは 339 件</li>
+	</ul>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ツール</th><th>A の要約に出すもの</th><th>出さないもの</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">Bash ・ PowerShell</td><td>コマンドの 1 行目（200 字まで）。2 行目以降があれば「…」</td><td>2 行目以降（939 件。ヒアドキュメントの中身等）</td></tr>
+			<tr><td class="nowrap">Read</td><td>パスと行の範囲</td><td>読んだ中身</td></tr>
+			<tr><td class="nowrap">Edit ・ Write</td><td>パス</td><td>書いた中身</td></tr>
+			<tr><td class="nowrap">Grep ・ Glob</td><td>検索語とパス</td><td>当たった行</td></tr>
+			<tr><td class="nowrap">WebFetch ・ WebSearch</td><td>URL ・ 検索語</td><td>取ってきた中身</td></tr>
+			<tr><td class="nowrap">Agent</td><td>説明（<code>description</code>）</td><td>頼んだ文（<code>prompt</code>）</td></tr>
+			<tr><td class="nowrap">そのほか</td><td>ツール名だけ</td><td>入力</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>A でも残るもの</strong>: コマンドの 1 行目に書いた値（鍵を付けた <code>curl</code> 等）。認証情報の形で拾う</li>
+		<li><strong>B で増えるもの</strong>: 読んだファイルの中身（Git の管理外のものを含む）、<code>git log</code> の出力、待受けで受けたほかのプロジェクトの発言。伏せる語のリストに無い名前は素通りする</li>
+		<li><strong>C で失うもの</strong>: AI が「直しました」と書いたとき、どのファイルを触り、何を実行したかが見えない</li>
+	</ul>
+
+	<h3>15. 左の短い横線の単位</h3>
+	<ul>
+		<li><strong>15-A（推奨）</strong>: 人の発言（依頼）ごと。推す理由: 依頼の単位で飛べる。LINE の吹き出し 1 つに近い</li>
+		<li><strong>15-B</strong>: セッションごと。線が少なく、発言の多い日でも潰れない</li>
+	</ul>
+
+	<h3>16. 伏せる語のリストの置き場</h3>
+	<ul>
+		<li><strong>16-A（推奨）</strong>: check-public と同じ、プロジェクト直下の <code>_public-ng-words.txt</code>。<code>--word-list</code> で差し替えられる。推す理由: 公開前の検査と同じ語で伏せられ、リストを 2 つ持たない</li>
+		<li><strong>16-B</strong>: ホーム配下に 1 つ置き、全プロジェクトで使う。プロジェクトごとに書かずに済むが、check-public とリストが分かれる</li>
+	</ul>
+
+	<h3>17. 出し先の既定（<code>notes/</code> の下の番号）</h3>
+	<p>案は、共通ルール「番号付きフォルダ」の <code>notes/</code> の空き番号から 17-A <code>70_history</code>（推奨）・ 17-B <code>50_history</code> を出した。</p>
+	<p><strong>決めたこと（2026-10-14、利用者の判断）。</strong><code>notes/91_history/</code>。<strong>本編のフェーズに属さない特殊なもの</strong>で、毎回作るわけではなく、一部のプロジェクトだけで生成するため、90（常に参照するもの）の後ろに置く。</p>
+	<p>91 は、共通ルールの「10 刻み」から外れる。<strong>ツールができてから、共通ルール「番号付きフォルダ」に書き足す</strong>（<a href="../40_issues/issues.html">課題 i261014-01</a>）。</p>
+
+	<h3>19. ビューアの書き方</h3>
+	<p>ブラウザは <code>.ts</code> をそのまま動かせない。本体（TypeScript）とは別に決める。</p>
+	<ul>
+		<li><strong>19-A（推奨）</strong>: JavaScript で書く。型は JSDoc で付け、<code>tsc --checkJs</code> で検査する。推す理由: 書き出すときに写すだけで済み、ビルドの手順が要らない。node で動かすときも同じ</li>
+		<li><strong>19-B</strong>: TypeScript で書き、JavaScript に変換して置く。変換に <code>bun build</code> が要り、node だけの環境では書き出しのたびに変換できない。変換済みを Git に入れると、元と変換後の 2 つを揃えて保つ手間が増える</li>
+	</ul>
+
+	<h3>20. 時間が重なったセッションの並べ方</h3>
+	<p>同じプロジェクトで複数のセッションを同時に動かすと、時刻が重なる（第 2 章の実測）。時間軸で並べる単位を決める。</p>
+	<ul>
+		<li><strong>20-A（推奨）</strong>: 依頼の単位で、人の発言の時刻順に並べる。応答はその依頼の下にまとめる。推す理由: 既定の表示は人の発言だけなので、そのまま時間軸の順になる。展開しても、1 つの依頼への応答の途中に別のセッションの応答が割り込まない。代わりに、展開した応答の時刻が次の依頼より後になることがある</li>
+		<li><strong>20-B</strong>: 記録を 1 件ずつ、すべて時刻順に並べる。厳密な時間軸になるが、展開すると 2 つのセッションの応答が交互に入り、どの依頼への応答かを追いにくい</li>
+	</ul>
+	<p>どちらでも、次の 2 つを足す。</p>
+	<ul>
+		<li><strong>セッションの見分け</strong>: 吹き出しの端に、セッションごとの色の細い帯を付ける。前の発言とセッションが変わったところで、セッションの題を小さく出す</li>
+		<li><strong>人の発言なしで始まる応答</strong>: 待受けの通知などで、人の発言が無いまま AI が応答することがある。通知の中身は載せないので、その位置に薄い「通知」の印を置き、そこから別の依頼として扱う。何時間も後の応答が、前の依頼の下にまとめられないように</li>
+	</ul>
+</section>
+
+<section class="ch06" id="ch06">
+	<h1>進め方とテスト</h1>
+	<ol>
+		<li>決めることの承認を得る（2026-10-14 済）</li>
+		<li>check-public の見つけ方（メールアドレス ・ パス ・ 認証情報 ・ 伏せる語 ・ author）を <code>src/lib/</code> に切り出す。check-public のテストが変わらず通ることを確かめる</li>
+		<li>テストを先に書く。落ちるのを見てから実装する</li>
+		<li>実装する。読む → 拾う → 伏せる → 日ごとに分ける → 検査する → 書く</li>
+		<li>ビューアを作り、PlayWright 共有環境で動きを確かめる。check-contrast も通す</li>
+		<li>このプロジェクトの履歴を <code>--out</code> で <code>tmp/</code> の下に書き出し、件数と所要時間を報告する（本文は報告に出さない）</li>
+		<li>TOOLS-USAGE に使い方を書く。README の一覧に足す</li>
+		<li>共通ルール「番号付きフォルダ」に <code>91_history</code> を書き足す案を出し、反映したら周知する（課題 i261014-01）</li>
+	</ol>
+	<h2>テスト</h2>
+	<p>JSONL はテストの中で合成する。人を表す値は <code>user1</code>、アドレスは <code>example.com</code> にする（共通ルール「テストのルール」）。</p>
+	<ul>
+		<li><strong>拾う</strong>: 人の発言と AI の本文だけが出る。<code>attachment</code> ・ <code>isMeta</code> ・ サイドチェーン ・ <code>&lt;task-notification&gt;</code> ・ 知らない種類の記録は出ない</li>
+		<li><strong>伏せる</strong>: 第 3 章の表の 1 行ごとに 1 件。パスは区切りの 3 通りを入れる</li>
+		<li><strong>伏せ漏れ</strong>: 置き換えをすり抜ける値を仕込むと、何も書かずに終了コード 1</li>
+		<li><strong>リストが無い</strong>: 止まる</li>
+		<li><strong>日の分け方</strong>: UTC 15:00 の発言が JST の翌日に入る</li>
+		<li><strong>重なったセッション</strong>: 2 つのセッションの発言が互い違いのとき、依頼が人の発言の時刻順に並び、応答はそれぞれの依頼の下に入る。通知で始まった応答は、前の依頼に混ざらず「通知」の印の下に入る</li>
+		<li><strong>置き場の既定</strong>: <code>--path</code> のプロジェクトの <code>etc/history/jsonl/</code> を読み、<code>notes/91_history/</code> に書く。<code>--path</code> を省くとカレント</li>
+		<li><strong>分け方</strong>: 人の発言と応答が別のファイルに入る。日の時刻が <code>hh:mm:ss</code>（JST）で入る</li>
+		<li><strong>出し先</strong>: 印の無い空でないフォルダには書かない。印があれば、消えた日のファイルが残らない</li>
+		<li><strong>ビューア</strong>（PlayWright）:
+			<ul>
+				<li>開いたときに最新（いちばん下）が見え、応答は出ていない。応答のファイルを読んでいない</li>
+				<li>↕ をクリックするとその応答だけが出て、もう一度で畳む。ヘッダーの「すべて展開」「応答なし」で全部がそろう</li>
+				<li>日付の見出しが日ごとに 1 つだけ。時刻が <code>hh:mm:ss</code></li>
+				<li>目盛りの線をクリック ・ つまみをドラッグすると、その日へ動く</li>
+				<li>目盛りの線に乗せると、すぐには出ず、0.5 秒ほどで日時が出る。出たあとに上下へ動かすと、待たずに別の線の日時へ切り替わる。左ペインの外へ出ると消え、戻ったときはまた 0.5 秒待つ</li>
+				<li>表が <code>&lt;table&gt;</code> として描かれる。本文中の <code>&lt;script&gt;</code> が動かない</li>
+			</ul>
+		</li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420" role="img" aria-label="ビューアの画面の見取り図">
+		<defs>
+			<linearGradient id="i1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(280,78%,25%)"/><stop offset="1" stop-color="hsl(280,58%,55%)"/></linearGradient>
+			<linearGradient id="i2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(140,78%,25%)"/><stop offset="1" stop-color="hsl(140,58%,55%)"/></linearGradient>
+			<linearGradient id="i3" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(210,78%,25%)"/><stop offset="1" stop-color="hsl(210,58%,55%)"/></linearGradient>
+			<linearGradient id="i4" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="hsl(56,78%,25%)"/><stop offset="1" stop-color="hsl(56,58%,55%)"/></linearGradient>
+			<linearGradient id="i5" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#12224d"/><stop offset="1" stop-color="#2f5fbf"/></linearGradient>
+		</defs>
+	<rect width="100%" height="100%" fill="#ffffff"/>
+		<rect width="100%" height="100%" fill="#ffffff"/>
+		
+		<rect x="20" y="14" width="860" height="40" rx="6" fill="url(#i5)"/>
+		<text x="34" y="40" font-size="16" fill="#fff">⌂</text>
+		<text x="60" y="40" font-size="15" fill="#fff">プロジェクト名 ・ 会話履歴</text>
+		<rect x="640" y="21" width="110" height="26" rx="5" fill="#ffffff"/>
+		<text x="667" y="39" font-size="13" fill="#12224d">応答なし</text>
+		<rect x="756" y="21" width="110" height="26" rx="5" fill="none" stroke="#fff"/>
+		<text x="776" y="39" font-size="13" fill="#fff">すべて展開</text>
+		
+		<rect x="20" y="64" width="170" height="340" rx="8" fill="#f2f5fb" stroke="#d9dfe8"/>
+		<text x="30" y="90" font-size="13" fill="#1c2330">2026/09</text>
+		<line x1="30" y1="98" x2="180" y2="98" stroke="#12224d" stroke-width="3"/>
+		<line x1="110" y1="122" x2="180" y2="122" stroke="#2f5fbf" stroke-width="2"/>
+		<text x="84" y="127" font-size="12" fill="#1c2330">29</text>
+		<line x1="150" y1="132" x2="180" y2="132" stroke="#4a5568"/>
+		<line x1="150" y1="140" x2="180" y2="140" stroke="#4a5568"/>
+		<line x1="110" y1="162" x2="180" y2="162" stroke="#2f5fbf" stroke-width="2"/>
+		<text x="84" y="167" font-size="12" fill="#1c2330">30</text>
+		<line x1="150" y1="172" x2="180" y2="172" stroke="#4a5568"/>
+		<text x="30" y="202" font-size="13" fill="#1c2330">2026/10</text>
+		<line x1="30" y1="210" x2="180" y2="210" stroke="#12224d" stroke-width="3"/>
+		<line x1="110" y1="238" x2="180" y2="238" stroke="#2f5fbf" stroke-width="2"/>
+		<text x="84" y="243" font-size="12" fill="#1c2330">13</text>
+		<line x1="150" y1="248" x2="180" y2="248" stroke="#4a5568"/>
+		<line x1="110" y1="290" x2="180" y2="290" stroke="#2f5fbf" stroke-width="2"/>
+		<text x="84" y="295" font-size="12" fill="#1c2330">14</text>
+		<line x1="150" y1="304" x2="180" y2="304" stroke="#4a5568"/>
+		<line x1="150" y1="318" x2="180" y2="318" stroke="#4a5568"/>
+		<line x1="150" y1="334" x2="180" y2="334" stroke="#4a5568"/>
+		<line x1="150" y1="352" x2="180" y2="352" stroke="#4a5568"/>
+		<line x1="150" y1="370" x2="180" y2="370" stroke="#4a5568"/>
+		<line x1="150" y1="388" x2="180" y2="388" stroke="#4a5568"/>
+		
+		<rect x="24" y="326" width="162" height="74" rx="4" fill="rgba(47,95,191,0.14)" stroke="#2f5fbf" stroke-width="2"/>
+		
+		<rect x="210" y="64" width="670" height="340" rx="8" fill="#ffffff" stroke="#d9dfe8"/>
+		<rect x="220" y="74" width="650" height="30" rx="6" fill="url(#i1)"/>
+		<text x="236" y="95" font-size="15" fill="#fff">2026/10/14(水)　セッションの題</text>
+		<rect x="560" y="114" width="300" height="38" rx="14" fill="url(#i2)"/>
+		<text x="576" y="138" font-size="14" fill="#fff">人の発言</text>
+		<text x="500" y="148" font-size="11" fill="#8a94a3">09:31:05</text>
+		
+		<line x1="230" y1="170" x2="860" y2="170" stroke="#e3e7ee" stroke-dasharray="4 4"/>
+		<circle cx="545" cy="170" r="10" fill="#ffffff" stroke="#c3cad5"/>
+		<text x="540" y="175" font-size="13" fill="#9aa3b0">↕</text>
+		<rect x="560" y="188" width="300" height="38" rx="14" fill="url(#i2)"/>
+		<text x="576" y="212" font-size="14" fill="#fff">人の発言</text>
+		<text x="500" y="222" font-size="11" fill="#8a94a3">09:40:12</text>
+		
+		<line x1="230" y1="242" x2="860" y2="242" stroke="#e3e7ee" stroke-dasharray="4 4"/>
+		<circle cx="545" cy="242" r="10" fill="#ffffff" stroke="#c3cad5"/>
+		<text x="540" y="247" font-size="13" fill="#9aa3b0">↕</text>
+		<rect x="230" y="256" width="420" height="48" rx="14" fill="url(#i3)"/>
+		<text x="246" y="285" font-size="14" fill="#fff">AI の本文（Markdown。表も描く）</text>
+		<text x="658" y="300" font-size="11" fill="#8a94a3">09:40:30</text>
+		<rect x="230" y="312" width="420" height="26" rx="6" fill="url(#i4)"/>
+		<text x="246" y="330" font-size="13" fill="#fff">Bash　git status</text>
+		<text x="658" y="330" font-size="11" fill="#8a94a3">09:40:31</text>
+		<line x1="230" y1="352" x2="860" y2="352" stroke="#e3e7ee" stroke-dasharray="4 4"/>
+		<circle cx="545" cy="352" r="10" fill="#ffffff" stroke="#c3cad5"/>
+		<text x="540" y="357" font-size="13" fill="#9aa3b0">↕</text>
+		<rect x="560" y="366" width="300" height="30" rx="14" fill="url(#i2)"/>
+		<text x="576" y="386" font-size="14" fill="#fff">人の発言</text>
+	</svg>
