@@ -7,39 +7,48 @@
 */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { type Sources, takeSourceOption, checkSources } from '../audio-files/audio-files.ts';
 
 /** --lang を省いたときの言語（使う側はほぼ日本語） */
 export const DefaultLang = 'ja';
 /** _vendor/whisper/ の下のモデルの置き場 */
 export const DefaultModel = path.join('model', 'ggml-large-v3-turbo-q5_0.bin');
 
-export interface Options {
-	files: string[];
+export interface Options extends Sources {
 	lang: string;
 	/** null なら _vendor/whisper/ の既定のモデル */
 	model: string | null;
 	/** null なら音声と同じフォルダ */
 	out: string | null;
+	/** whisper-cli の出力を出す。既定では失敗したときだけ出す（決めたこと 8 ・ 10-A） */
+	verbose: boolean;
 }
 
 export function parseArgs(argv: string[]): Options | { error: string } {
-	const o: Options = { files: [], lang: DefaultLang, model: null, out: null };
+	const o: Options = { files: [], lists: [], dirs: [], exts: [], lang: DefaultLang, model: null, out: null, verbose: false };
 	for (let i = 0; i < argv.length; i++) {
 		const a = argv[i];
-		if (a === '--lang' || a === '--model' || a === '--out') {
+		const took = takeSourceOption(o, a, argv[i + 1]);
+		if (took !== null) {
+			if (typeof took !== 'number') { return took; }
+			i += took;
+		} else if (a === '--lang' || a === '--model' || a === '--out') {
 			const v = argv[i + 1];
 			if (v === undefined || v.startsWith('--')) { return { error: a + ' に値がありません' }; }
 			if (a === '--lang') { o.lang = v; }
 			else if (a === '--model') { o.model = v; }
 			else { o.out = v; }
 			i++;
+		} else if (a === '--verbose') {
+			o.verbose = true;
 		} else if (a.startsWith('--')) {
 			return { error: '知らないオプションです: ' + a };
 		} else {
 			o.files.push(a);
 		}
 	}
-	if (o.files.length === 0) { return { error: '音声のファイルを渡してください' }; }
+	const bad = checkSources(o);
+	if (bad !== null) { return { error: bad }; }
 	return o;
 }
 
@@ -53,7 +62,7 @@ function outputOf(file: string, out: string | null): string {
  * whisper-cli に渡す引数を組み立てる。-f と -of を組で並べると、
  * 1 回の起動でファイルごとに .txt ・ .json が出る。
  */
-export function buildWhisperArgs(o: Options & { model: string }): { args: string[], outputs: string[] } | { error: string } {
+export function buildWhisperArgs(o: Pick<Options, 'files' | 'lang' | 'out'> & { model: string }): { args: string[], outputs: string[] } | { error: string } {
 	const args = ['-m', o.model, '-l', o.lang, '-np', '-otxt', '-oj'];
 	const outputs: string[] = [];
 	const seen = new Set<string>();

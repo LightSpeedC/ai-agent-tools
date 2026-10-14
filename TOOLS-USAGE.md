@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-10-12
+> 📅 作成: 2026-09-04 / 更新: 2026-10-14
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -19,6 +19,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 9. [HTTP で受けたコマンドを新しい窓で起動する（spawn-server）](#9-http-で受けたコマンドを新しい窓で起動するspawn-server)
 10. [クラウドのセッションを準備する（cloud-session-start）](#10-クラウドのセッションを準備するcloud-session-start)
 11. [音声を書き起こす（transcribe）](#11-音声を書き起こすtranscribe)
+12. [音声の形式を変える（convert-audio）](#12-音声の形式を変えるconvert-audio)
 
 ## 1. 使えるコマンド
 
@@ -36,6 +37,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `psls` | プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（「プロセス一覧を見る（psls）」） |
 | `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま**新しい窓で起動する**（「HTTP で受けたコマンドを新しい窓で起動する（spawn-server）」） |
 | `transcribe` | 音声を whisper.cpp で**書き起こす**。複数の音声を 1 回の起動でまとめて処理する（「音声を書き起こす（transcribe）」） |
+| `convert-audio` | 音声の形式を ffmpeg で**変える**（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」） |
 | `cloud-session-start` | クラウドのセッションで、**共通ルールと共有ツールを隣に置き、PATH と git の author を整える**（「クラウドのセッションを準備する（cloud-session-start）」） |
 
 `check-markdown` は<strong>推測せず実物で判定する。</strong>Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。
@@ -384,13 +386,13 @@ SJIS に無い文字（絵文字・ハングル・簡体字など）は `?` に�
 ### 読む・探す
 
 ```powershell
-text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダに組・digest）
+text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダーに組・digest）
 text read tools/80_ops/foo.cmd --lines 3-5  # 範囲を絞る（省トークン）
 text read tools/80_ops/foo.cmd --lines 3-10000  # 3 行目から最後まで
 text find 日本語 --path . --recurse --include "*.cmd,*.reg"
 ```
 
-`read` の `--lines` は、<strong>終わりが全行数を超えたら最後の行で打ち切る。</strong>実際に出した範囲はヘッダの `lines=` と行番号で分かる。開始が全行数を超えたときはエラー（終了コード 2）。**`edit` の `--lines` は打ち切らず、はみ出せばエラーにする**（書き換える範囲を取り違えないため）。
+`read` の `--lines` は、<strong>終わりが全行数を超えたら最後の行で打ち切る。</strong>実際に出した範囲はヘッダーの `lines=` と行番号で分かる。開始が全行数を超えたときはエラー（終了コード 2）。**`edit` の `--lines` は打ち切らず、はみ出せばエラーにする**（書き換える範囲を取り違えないため）。
 
 `find` は**ファイルごとに ◆ 見出し＋一致行**を出す（サクラエディタの grep 風）。**複数の glob はダブルクォートで囲む**（`"*.cmd,*.reg"`）。フォルダを外すのは `--exclude-dir`。
 
@@ -584,6 +586,9 @@ transcribe a.wav b.wav                      # a.txt ・ a.json ・ b.txt ・ b.j
 transcribe voice/*.wav --out tmp/asr        # 出し先を指定する
 transcribe talk.wav --lang en               # 言語を指定する（既定は ja、auto で自動判定）
 transcribe talk.wav --model <モデルのパス>  # 別のモデルを使う
+transcribe talk.wav --verbose                # whisper-cli の出力（進捗 ・ 途中経過）も出す
+transcribe --dir voice --ext "wav,mp3"      # フォルダ直下の wav ・ mp3 をすべて渡す
+transcribe --list voice/list.txt            # 一覧ファイルに書いた音声を渡す
 ```
 
 <strong>中身は whisper.cpp の `whisper-cli`。</strong>渡した音声を**すべて 1 回の起動でまとめて**書き起こす。モデルの読み込みは 1 回で済むので、細かいファイルが多いときほど、1 本ずつ呼ぶより速い。
@@ -591,14 +596,54 @@ transcribe talk.wav --model <モデルのパス>  # 別のモデルを使う
 - <strong>音声は変換せずに渡してよい。</strong>whisper-cli が自分で 16kHz ・ モノラルに直す（24kHz ・ ステレオの WAV で確かめた。mp3 等は未確認）
 - 出力名は、音声の名前から拡張子を除いたもの。`.txt` は書き起こしの文、`.json` は区間ごとの時刻付き
 - **出力名がぶつかるとき（`--out` に同じ名前の音声を 2 つ渡す等）は、上書きせずに止まる**
-- 標準出力には、出したファイルの一覧だけを出す。whisper-cli の進捗は標準エラーに出る
+- 標準出力には、出したファイルの一覧だけを出す。<strong>whisper-cli の出力は、失敗したときだけ標準エラーに出す。</strong>進捗や書き起こしの途中経過を見るなら `--verbose`
 - 終了コード: 0 成功 ／ 1 書き起こしの失敗 ／ 2 引数の誤り、whisper-cli ・ モデル ・ 音声が無い
 
 > [!WARNING]
 > <strong>無音や雑音から文を作ることがある。</strong>無音の WAV を渡すと「ご視聴ありがとうございました」と書き起こした。whisper によく知られた現象。書き起こしが空でないことを、音声が入っている証拠にしない。
 
+### 多くの音声を渡す（--list ・ --dir）
+
+<strong>cmd から呼ぶと、1 行の長さに上限がある。</strong>100 本を超える音声のパスを並べると `The command line is too long.` で落ちる。そのときは引数に並べずに、次のどちらかで渡す。convert-audio も同じ。
+
+- `--list <一覧ファイル>`: 1 行に 1 つのパス（UTF-8）。空行と `#` で始まる行は読み飛ばす。**相対パスは、一覧ファイルのあるフォルダから見る**
+- `--dir <フォルダ> --ext <拡張子>`: フォルダ直下の、拡張子が合うファイルを名前順に渡す。`--ext` は必須で、カンマ区切りで複数渡せる（大小と先頭の `.` は問わない）。**下の階層は見ない**
+- 音声の引数 ・ `--list` ・ `--dir` は一緒に使え、どれも何回でも渡せる。同じファイルが重なったら 1 回だけ処理する
+- 一覧ファイル ・ フォルダが無いとき、`--dir` で 1 本も見つからないときは、終了コード 2
+
 ### whisper-cli とモデルが無いとき
 
 <strong>whisper-cli とモデルは Git に入っていない。</strong>無い PC では、置き場を示して終了コード 2 で止まる。入手は ai-agent-tools 側で行うので、ai-chat-lite で依頼する。
+
+## 12. 音声の形式を変える（convert-audio）
+
+```powershell
+convert-audio voice/*.wav --to mp3                   # 64kbps の mp3 を音声と同じフォルダに出す
+convert-audio voice/*.wav --to mp3 --out dist/voice  # 出し先を指定する
+convert-audio talk.wav --to mp3 --bitrate 128        # ビットレートを指定する（kbps）
+convert-audio talk.wav --to wav --rate 16000 --mono --out tmp  # 16kHz ・ モノラルの WAV にする
+convert-audio talk.wav --to mp3 --force              # 既にある出力を上書きする
+convert-audio talk.wav --to mp3 --verbose            # ffmpeg の出力を 1 件ずつ出す
+convert-audio --dir voice --ext wav --to mp3         # フォルダ直下の wav をすべて変える
+convert-audio --list voice/list.txt --to mp3         # 一覧ファイルに書いた音声を変える
+```
+
+<strong>中身は ffmpeg。</strong>出力名は、音声の名前の拡張子だけを変えたもの。
+
+| `--to` | 中身 | `--bitrate` |
+|---|---|---|
+| `mp3` | MP3 | 受ける（既定 64） |
+| `ogg` | Ogg Vorbis | 受ける（既定 64） |
+| `m4a` | AAC | 受ける（既定 64） |
+| `flac` | FLAC（可逆） | 受けない（渡すと誤り） |
+| `wav` | 16bit PCM（無圧縮） | 受けない（渡すと誤り） |
+
+- `--rate`（周波数）・ `--mono` を省くと、元のまま
+- <strong>多くの音声は `--list` ・ `--dir` で渡す。</strong>決まりは transcribe の[「多くの音声を渡す」](#11-音声を書き起こすtranscribe)と同じ
+- <strong>出力が既にあると、何も変換せずに止まる。</strong>上書きするなら `--force`。入力と出力が同じファイルになる指定（同じフォルダで wav から wav 等）は、`--force` でも誤り
+- 標準出力には、出したファイルの一覧だけを出す。**ffmpeg の出力は、失敗したときだけ標準エラーに出す**（どの音声で失敗したかも出す）。1 件ずつ見るなら `--verbose`
+- 終了コード: 0 成功 ／ 1 変換の失敗 ／ 2 引数の誤り、ffmpeg ・ 音声が無い、出力が既にある
+
+<strong>ffmpeg は Git に入っていない。</strong>無い PC では、置き場を示して終了コード 2 で止まる。入手は ai-agent-tools 側で行うので、ai-chat-lite で依頼する。
 
 [^^](README.md)

@@ -141,7 +141,7 @@
 	<div class="inner">
 		<h1>convert-audio 計画（ffmpeg で音声の形式を変える）</h1>
 		<p class="lead">WAV 等の音声を ffmpeg で mp3 等に変える共有コマンド <code>convert-audio</code> を足す（i261012-02）。</p>
-		<p class="date">📅 作成: 2026-10-12 / 更新: 2026-10-12</p>
+		<p class="date">📅 作成: 2026-10-12 / 更新: 2026-10-14</p>
 	</div>
 </div>
 
@@ -186,7 +186,8 @@
 		<li>入手先: gyan.dev の release essentials ビルド。2026-10-12 時点で 9.0.2（2026-09-19）、zip は 109MB</li>
 		<li>essentials に mp3 のエンコーダ（libmp3lame）が入っている。64bit ・ 静的リンク。ライセンスは GPLv3</li>
 		<li><strong>入手したら <code>.sha256</code> と照合してから展開する</strong>。合わなければ展開しない</li>
-		<li>zip の中は版の名前のフォルダ（<code>ffmpeg-9.0.2-essentials_build/bin/ffmpeg.exe</code> 等、未確認）。convert-audio は <code>_vendor/ffmpeg/</code> の下から <code>ffmpeg.exe</code> を探す。transcribe と同じ形</li>
+		<li>zip の中は版の名前のフォルダ（<code>ffmpeg-9.0.2-essentials_build/bin/ffmpeg.exe</code>）。convert-audio は <code>_vendor/ffmpeg/</code> の下から <code>ffmpeg.exe</code> を探す。transcribe と同じ形</li>
+		<li><strong>取り込んだもの（2026-10-12）</strong>: 9.0.2 essentials。zip の SHA-256 が <code>.sha256</code> と一致してから展開した。<code>libmp3lame</code> ・ <code>libvorbis</code> ・ <code>aac</code> ・ <code>flac</code> ・ <code>pcm_s16le</code> のエンコーダがあることを <code>ffmpeg -encoders</code> で確かめた</li>
 	</ul>
 	<pre><code class="language-text">https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
 https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip.sha256</code></pre>
@@ -203,15 +204,26 @@ https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip.sha256</code></
 		<li><code>--mono</code>: モノラルにする。省くと元のまま</li>
 		<li><code>--out</code>: 出し先。省くと音声と同じフォルダ（transcribe と揃える）。名前は拡張子だけを変える</li>
 		<li><strong>出力が既にあれば上書きしない</strong>（決めること 3）。入力と出力が同じファイルになる指定は誤りにする</li>
-		<li>標準出力には出したファイルの一覧だけを出す。ffmpeg の進捗は標準エラーへ</li>
+		<li>標準出力には出したファイルの一覧だけを出す。ffmpeg の出力は失敗したときだけ標準エラーへ。<code>--verbose</code> なら 1 件ずつ出す（決めたこと 8）</li>
 		<li>終了コード: 0 成功 ／ 1 変換の失敗 ／ 2 引数の誤り、ffmpeg ・ 音声が無い</li>
 		<li>ffmpeg は 1 ファイルにつき 1 回起動する（transcribe と違い、まとめて渡す利点が小さい）</li>
+	</ul>
+	<h2>多くの音声を渡す（--list ・ --dir）</h2>
+	<p>cmd の入口を通すと 1 行の長さに上限があり、108 本の絶対パスを並べると <code>The command line is too long.</code> で落ちた（ai-chat-lite #1445）。引数に並べずに渡す口を 2 つ足す。transcribe にも同じものを付ける。</p>
+	<ul>
+		<li><code>--list &lt;ファイル&gt;</code>: 1 行に 1 つのパス。空行と <code>#</code> で始まる行は読み飛ばす。<strong>相対パスは一覧ファイルのあるフォルダから見る</strong>（決めたこと 5-A）。何回でも渡せる</li>
+		<li><code>--dir &lt;フォルダ&gt; --ext &lt;拡張子&gt;</code>: フォルダ直下の、拡張子が合うファイルを名前順に渡す。<strong><code>--ext</code> は必須</strong>で、カンマ区切りで複数受ける（<code>--ext "wav,mp3"</code>。大小 ・ 先頭の <code>.</code> は問わない。決めたこと 6-A）。<strong>下の階層は見ない</strong>（決めたこと 7-A）。<code>--dir</code> は何回でも渡せる</li>
+		<li>音声の引数 ・ <code>--list</code> ・ <code>--dir</code> は一緒に使える。同じファイル（大小を問わない）が重なったら 1 回だけ処理する</li>
+		<li>一覧ファイル ・ フォルダが無い、<code>--dir</code> で 1 本も見つからない、<code>--ext</code> だけ ・ <code>--dir</code> だけは、引数の誤り（終了コード 2）</li>
 	</ul>
 </section>
 
 <section class="ch04" id="ch04">
 	<h1>決めること</h1>
-	<h3>1. <code>--to</code> で受ける形</h3>
+	<p><strong>決めたこと（2026-10-12、利用者の判断）。</strong>1-B ・ 2-A ・ 3-A。形式を足す手間は、拡張子とエンコーダの対応表に 1 行と、テスト 1 件で小さいため、1-B にした。<code>--bitrate</code> は flac ・ wav（無圧縮 ・ 可逆）では効かないので、渡したら誤りにする。</p>
+	<p><strong>追加で決めたこと（2026-10-12、利用者の判断）。</strong>cmd の行の長さの上限への対策として、4-A（<code>--list</code>）と 4-B（<code>--dir</code>）の両方を足す。5-A（相対パスは一覧ファイルから見る）・ 6-A（<code>--ext</code> は必須でカンマ区切り）・ 7-A（下の階層は見ない）。中身は「多くの音声を渡す」の節。</p>
+	<p><strong>追加で決めたこと（2026-10-12 ・ 14、利用者の判断）。</strong>8: ffmpeg の出力は既定では出さず、失敗したときは詳しく出す。<code>--verbose</code> なら 1 件ずつ出す（報告元の要望 #1449）。10-A: transcribe も同じ形にそろえる（whisper-cli は 1 回の起動で全件を書き起こすので、<code>--verbose</code> ではその 1 回分を出す）。</p>
+	<h3>1.<code>--to</code> で受ける形</h3>
 	<ul>
 		<li><strong>1-A（推奨）</strong>: <code>mp3</code> と <code>wav</code> だけ。推す理由: 依頼は mp3 で、wav は元に戻す ・ 周波数を変えるのに要る。ほかは要るときに足す</li>
 		<li><strong>1-B</strong>: <code>mp3</code> ・ <code>wav</code> ・ <code>ogg</code> ・ <code>m4a</code> ・ <code>flac</code>。essentials で書けるものを広く受ける</li>

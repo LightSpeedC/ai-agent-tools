@@ -44,8 +44,8 @@ function makeWav(p: string, rate: number, channels: number): void {
 }
 
 /** transcribe を node で起動する */
-function run(args: string[], env: Record<string, string> = {}): { code: number, out: string, err: string } {
-	const r = spawnSync(process.execPath, [main, ...args], { encoding: 'utf8', env: { ...process.env, ...env }, timeout: 600000 });
+function run(args: string[], env: Record<string, string> = {}, cwd: string = root): { code: number, out: string, err: string } {
+	const r = spawnSync(process.execPath, [main, ...args], { encoding: 'utf8', env: { ...process.env, ...env }, timeout: 600000, cwd: cwd });
 	return { code: r.status ?? -1, out: r.stdout ?? '', err: r.stderr ?? '' };
 }
 
@@ -70,8 +70,20 @@ makeWav(b, 24000, 2);
 	check('--lang ・ --model ・ --out を受ける', 'files' in r && r.lang === 'en' && r.model === 'm.bin' && r.out === 'o');
 }
 check('音声が無ければ誤り', 'error' in parseArgs(['--lang', 'ja']));
+{
+	// cmd の行の長さの上限への対策（ai-chat-lite #1445）。集め方は convert-audio と共通（audio-files.ts）
+	const r = parseArgs(['--list', 'l.txt', '--dir', 'd', '--ext', 'wav']);
+	check('--list ・ --dir ・ --ext を受け、音声の引数が無くてもよい', 'files' in r &&
+		JSON.stringify(r.lists) === JSON.stringify(['l.txt']) && JSON.stringify(r.dirs) === JSON.stringify(['d']) && JSON.stringify(r.exts) === JSON.stringify(['wav']));
+	check('--dir に --ext が無ければ誤り', 'error' in parseArgs(['--dir', 'd']));
+}
 check('値の無いオプションは誤り', 'error' in parseArgs([a, '--lang']));
 check('知らないオプションは誤り', 'error' in parseArgs([a, '--xyz']));
+{
+	const r = parseArgs([a]);
+	const v = parseArgs([a, '--verbose']);
+	check('--verbose を省くと false、渡すと true（決めたこと 8 ・ 10-A）', 'files' in r && r.verbose === false && 'files' in v && v.verbose === true);
+}
 
 // --- whisper-cli に渡す引数 ---
 {
@@ -111,6 +123,10 @@ check('知らないオプションは誤り', 'error' in parseArgs([a, '--xyz'])
 	check('音声が無ければ終了コード 2', r.code === 2, 'code=' + r.code);
 }
 {
+	const r = run(['--dir', path.join(work, 'none'), '--ext', 'wav']);
+	check('--dir のフォルダが無ければ終了コード 2', r.code === 2, 'code=' + r.code);
+}
+{
 	const r = run([a], { TRANSCRIBE_VENDOR: path.join(work, 'empty') });
 	check('whisper-cli が無ければ終了コード 2 で、置き場を案内する', r.code === 2 && r.err.includes('_vendor/whisper'), 'code=' + r.code + ' err=' + r.err.trim());
 }
@@ -130,6 +146,25 @@ if (findWhisperCli(vendor) === null) {
 	check('2 本を 1 回で書き起こし、ファイルごとに .txt と .json が出る（24kHz ステレオも変換せずに渡す）', r.code === 0 && made, 'code=' + r.code + ' err=' + r.err.slice(-300));
 	const listed = r.out.trim().split(/\r?\n/);
 	check('標準出力には出したファイルの一覧だけを出す', listed.length === 4 && listed.every(l => /\.(txt|json)$/.test(l)), JSON.stringify(listed));
+
+	// bun は、既にあるフォルダを .. を含む相対パスで mkdirSync(recursive) すると EEXIST を投げる（ai-chat-lite #1445）
+	fs.mkdirSync(path.join(work, 'exists'), { recursive: true });
+	const r2 = run([a, '--out', '..\\exists'], {}, path.join(work, 'sub'));
+	check('既にあるフォルダを .. を含む相対パスで --out に渡せる', r2.code === 0 && fs.existsSync(path.join(work, 'exists', 'a.txt')), 'code=' + r2.code + ' err=' + r2.err.slice(-200));
+
+	const out3 = path.join(work, 'fromdir');
+	fs.writeFileSync(path.join(work, 'list.txt'), 'a.wav\n');
+	const r3 = run(['--dir', path.join(work, 'sub'), '--ext', 'wav', '--list', path.join(work, 'list.txt'), '--out', out3]);
+	check('--dir と --list で渡した音声を書き起こす', r3.code === 0 && fs.existsSync(path.join(out3, 'a.txt')) && fs.existsSync(path.join(out3, 'b.txt')), 'code=' + r3.code + ' err=' + r3.err.slice(-200));
+
+	// 決めたこと 8 ・ 10-A: convert-audio と同じく、既定では whisper-cli の出力を出さず、失敗したときだけ詳しく出す
+	check('既定では成功した whisper-cli の出力を出さない', r.code === 0 && !r.err.includes('output_txt'), 'err=' + r.err.slice(-200));
+	const r4 = run([a, '--out', path.join(work, 'loud'), '--verbose']);
+	check('--verbose なら whisper-cli の出力を出す', r4.code === 0 && r4.err.includes('output_txt'), 'code=' + r4.code + ' err=' + r4.err.slice(-200));
+	const broken = path.join(work, 'broken.wav');
+	fs.writeFileSync(broken, 'これは音声ではない');
+	const r5 = run([broken, '--out', path.join(work, 'ng')]);
+	check('失敗したときは whisper-cli の出力を詳しく出し、終了コード 1', r5.code === 1 && r5.err.includes('[NG]') && r5.err.includes('broken.wav') && r5.err.split('\n').length > 2, 'code=' + r5.code + ' err=' + r5.err.slice(-300));
 }
 
 fs.rmSync(work, { recursive: true, force: true });

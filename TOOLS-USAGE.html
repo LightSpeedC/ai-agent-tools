@@ -11,18 +11,19 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（11 章 / 色相 280 → 0 を 28 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(252,78%,25%); --accent2:hsl(252,58%,55%); --soft:hsl(252,28%,95%); }
-	.ch03{ --accent:hsl(224,78%,25%); --accent2:hsl(224,58%,55%); --soft:hsl(224,28%,95%); }
-	.ch04{ --accent:hsl(196,78%,25%); --accent2:hsl(196,58%,55%); --soft:hsl(196,28%,95%); }
-	.ch05{ --accent:hsl(168,78%,25%); --accent2:hsl(168,58%,55%); --soft:hsl(168,28%,95%); }
-	.ch06{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
-	.ch07{ --accent:hsl(112,78%,25%); --accent2:hsl(112,58%,55%); --soft:hsl(112,28%,95%); }
-	.ch08{ --accent:hsl(84,78%,25%);  --accent2:hsl(84,58%,55%);  --soft:hsl(84,28%,95%); }
-	.ch09{ --accent:hsl(56,78%,25%);  --accent2:hsl(56,58%,55%);  --soft:hsl(56,28%,95%); }
-	.ch10{ --accent:hsl(28,78%,25%);  --accent2:hsl(28,58%,55%);  --soft:hsl(28,28%,95%); }
-	.ch11{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+	/* 章のアクセント色（12 章 / 色相 280 → 0 を 25.5 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(254.5,78%,25%); --accent2:hsl(254.5,58%,55%); --soft:hsl(254.5,28%,95%); }
+	.ch03{ --accent:hsl(229.1,78%,25%); --accent2:hsl(229.1,58%,55%); --soft:hsl(229.1,28%,95%); }
+	.ch04{ --accent:hsl(203.6,78%,25%); --accent2:hsl(203.6,58%,55%); --soft:hsl(203.6,28%,95%); }
+	.ch05{ --accent:hsl(178.2,78%,25%); --accent2:hsl(178.2,58%,55%); --soft:hsl(178.2,28%,95%); }
+	.ch06{ --accent:hsl(152.7,78%,25%); --accent2:hsl(152.7,58%,55%); --soft:hsl(152.7,28%,95%); }
+	.ch07{ --accent:hsl(127.3,78%,25%); --accent2:hsl(127.3,58%,55%); --soft:hsl(127.3,28%,95%); }
+	.ch08{ --accent:hsl(101.8,78%,25%); --accent2:hsl(101.8,58%,55%); --soft:hsl(101.8,28%,95%); }
+	.ch09{ --accent:hsl(76.4,78%,25%);  --accent2:hsl(76.4,58%,55%);  --soft:hsl(76.4,28%,95%); }
+	.ch10{ --accent:hsl(50.9,78%,25%);  --accent2:hsl(50.9,58%,55%);  --soft:hsl(50.9,28%,95%); }
+	.ch11{ --accent:hsl(25.5,78%,25%);  --accent2:hsl(25.5,58%,55%);  --soft:hsl(25.5,28%,95%); }
+	.ch12{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -159,7 +160,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-12</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-14</p>
 	</div>
 </div>
 
@@ -181,6 +182,7 @@
 		<li class="ch09"><a href="#ch09">HTTP で受けたコマンドを新しい窓で起動する（spawn-server）</a></li>
 		<li class="ch10"><a href="#ch10">クラウドのセッションを準備する（cloud-session-start）</a></li>
 		<li class="ch11"><a href="#ch11">音声を書き起こす（transcribe）</a></li>
+		<li class="ch12"><a href="#ch12">音声の形式を変える（convert-audio）</a></li>
 	</ol>
 </div>
 
@@ -203,6 +205,7 @@
 			<tr><td class="nowrap"><code>psls</code></td><td>プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（「プロセス一覧を見る（psls）」）</td></tr>
 			<tr><td class="nowrap"><code>spawn-server</code></td><td>HTTP で受けたコマンドを、同じユーザーのまま<strong>新しい窓で起動する</strong>（「HTTP で受けたコマンドを新しい窓で起動する（spawn-server）」）</td></tr>
 			<tr><td class="nowrap"><code>transcribe</code></td><td>音声を whisper.cpp で<strong>書き起こす</strong>。複数の音声を 1 回の起動でまとめて処理する（「音声を書き起こす（transcribe）」）</td></tr>
+			<tr><td class="nowrap"><code>convert-audio</code></td><td>音声の形式を ffmpeg で<strong>変える</strong>（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」）</td></tr>
 			<tr><td class="nowrap"><code>cloud-session-start</code></td><td>クラウドのセッションで、<strong>共通ルールと共有ツールを隣に置き、PATH と git の author を整える</strong>（「クラウドのセッションを準備する（cloud-session-start）」）</td></tr>
 		</tbody>
 	</table>
@@ -596,12 +599,12 @@ convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</c
 
 	<h2>読む・探す</h2>
 
-<pre><code class="language-powershell">text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダに組・digest）
+<pre><code class="language-powershell">text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダーに組・digest）
 text read tools/80_ops/foo.cmd --lines 3-5  # 範囲を絞る（省トークン）
 text read tools/80_ops/foo.cmd --lines 3-10000  # 3 行目から最後まで
 text find 日本語 --path . --recurse --include "*.cmd,*.reg"</code></pre>
 
-	<p><code>read</code> の <code>--lines</code> は、<strong>終わりが全行数を超えたら最後の行で打ち切る。</strong>実際に出した範囲はヘッダの <code>lines=</code> と行番号で分かる。開始が全行数を超えたときはエラー（終了コード 2）。<strong><code>edit</code> の <code>--lines</code> は打ち切らず、はみ出せばエラーにする</strong>（書き換える範囲を取り違えないため）。</p>
+	<p><code>read</code> の <code>--lines</code> は、<strong>終わりが全行数を超えたら最後の行で打ち切る。</strong>実際に出した範囲はヘッダーの <code>lines=</code> と行番号で分かる。開始が全行数を超えたときはエラー（終了コード 2）。<strong><code>edit</code> の <code>--lines</code> は打ち切らず、はみ出せばエラーにする</strong>（書き換える範囲を取り違えないため）。</p>
 
 	<p><code>find</code> は<strong>ファイルごとに ◆ 見出し＋一致行</strong>を出す（サクラエディタの grep 風）。<strong>複数の glob はダブルクォートで囲む</strong>（<code>"*.cmd,*.reg"</code>）。フォルダを外すのは <code>--exclude-dir</code>。</p>
 
@@ -819,21 +822,68 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8790/run -ContentType 'appl
 	<pre><code class="language-powershell">transcribe a.wav b.wav                      # a.txt ・ a.json ・ b.txt ・ b.json を音声と同じフォルダに出す
 transcribe voice/*.wav --out tmp/asr        # 出し先を指定する
 transcribe talk.wav --lang en               # 言語を指定する（既定は ja、auto で自動判定）
-transcribe talk.wav --model &lt;モデルのパス&gt;  # 別のモデルを使う</code></pre>
+transcribe talk.wav --model &lt;モデルのパス&gt;  # 別のモデルを使う
+transcribe talk.wav --verbose                # whisper-cli の出力（進捗 ・ 途中経過）も出す
+transcribe --dir voice --ext "wav,mp3"      # フォルダ直下の wav ・ mp3 をすべて渡す
+transcribe --list voice/list.txt            # 一覧ファイルに書いた音声を渡す</code></pre>
 
 	<p><strong>中身は whisper.cpp の <code>whisper-cli</code>。</strong>渡した音声を<strong>すべて 1 回の起動でまとめて</strong>書き起こす。モデルの読み込みは 1 回で済むので、細かいファイルが多いときほど、1 本ずつ呼ぶより速い。</p>
 	<ul>
 		<li><strong>音声は変換せずに渡してよい。</strong>whisper-cli が自分で 16kHz ・ モノラルに直す（24kHz ・ ステレオの WAV で確かめた。mp3 等は未確認）</li>
 		<li>出力名は、音声の名前から拡張子を除いたもの。<code>.txt</code> は書き起こしの文、<code>.json</code> は区間ごとの時刻付き</li>
 		<li><strong>出力名がぶつかるとき（<code>--out</code> に同じ名前の音声を 2 つ渡す等）は、上書きせずに止まる</strong></li>
-		<li>標準出力には、出したファイルの一覧だけを出す。whisper-cli の進捗は標準エラーに出る</li>
+		<li>標準出力には、出したファイルの一覧だけを出す。<strong>whisper-cli の出力は、失敗したときだけ標準エラーに出す。</strong>進捗や書き起こしの途中経過を見るなら <code>--verbose</code></li>
 		<li>終了コード: 0 成功 ／ 1 書き起こしの失敗 ／ 2 引数の誤り、whisper-cli ・ モデル ・ 音声が無い</li>
 	</ul>
 
 	<div class="callout callout-warning"><strong>無音や雑音から文を作ることがある。</strong>無音の WAV を渡すと「ご視聴ありがとうございました」と書き起こした。whisper によく知られた現象。書き起こしが空でないことを、音声が入っている証拠にしない。</div>
 
+	<h2>多くの音声を渡す（--list ・ --dir）</h2>
+	<p><strong>cmd から呼ぶと、1 行の長さに上限がある。</strong>100 本を超える音声のパスを並べると <code>The command line is too long.</code> で落ちる。そのときは引数に並べずに、次のどちらかで渡す。convert-audio も同じ。</p>
+	<ul>
+		<li><code>--list &lt;一覧ファイル&gt;</code>: 1 行に 1 つのパス（UTF-8）。空行と <code>#</code> で始まる行は読み飛ばす。<strong>相対パスは、一覧ファイルのあるフォルダから見る</strong></li>
+		<li><code>--dir &lt;フォルダ&gt; --ext &lt;拡張子&gt;</code>: フォルダ直下の、拡張子が合うファイルを名前順に渡す。<code>--ext</code> は必須で、カンマ区切りで複数渡せる（大小と先頭の <code>.</code> は問わない）。<strong>下の階層は見ない</strong></li>
+		<li>音声の引数 ・ <code>--list</code> ・ <code>--dir</code> は一緒に使え、どれも何回でも渡せる。同じファイルが重なったら 1 回だけ処理する</li>
+		<li>一覧ファイル ・ フォルダが無いとき、<code>--dir</code> で 1 本も見つからないときは、終了コード 2</li>
+	</ul>
+
 	<h2>whisper-cli とモデルが無いとき</h2>
 	<p><strong>whisper-cli とモデルは Git に入っていない。</strong>無い PC では、置き場を示して終了コード 2 で止まる。入手は ai-agent-tools 側で行うので、ai-chat-lite で依頼する。</p>
+</section>
+
+<section class="ch12" id="ch12">
+	<h1>音声の形式を変える（convert-audio）</h1>
+
+	<pre><code class="language-powershell">convert-audio voice/*.wav --to mp3                   # 64kbps の mp3 を音声と同じフォルダに出す
+convert-audio voice/*.wav --to mp3 --out dist/voice  # 出し先を指定する
+convert-audio talk.wav --to mp3 --bitrate 128        # ビットレートを指定する（kbps）
+convert-audio talk.wav --to wav --rate 16000 --mono --out tmp  # 16kHz ・ モノラルの WAV にする
+convert-audio talk.wav --to mp3 --force              # 既にある出力を上書きする
+convert-audio talk.wav --to mp3 --verbose            # ffmpeg の出力を 1 件ずつ出す
+convert-audio --dir voice --ext wav --to mp3         # フォルダ直下の wav をすべて変える
+convert-audio --list voice/list.txt --to mp3         # 一覧ファイルに書いた音声を変える</code></pre>
+
+	<p><strong>中身は ffmpeg。</strong>出力名は、音声の名前の拡張子だけを変えたもの。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th><code>--to</code></th><th>中身</th><th><code>--bitrate</code></th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>mp3</code></td><td>MP3</td><td>受ける（既定 64）</td></tr>
+			<tr><td class="nowrap"><code>ogg</code></td><td>Ogg Vorbis</td><td>受ける（既定 64）</td></tr>
+			<tr><td class="nowrap"><code>m4a</code></td><td>AAC</td><td>受ける（既定 64）</td></tr>
+			<tr><td class="nowrap"><code>flac</code></td><td>FLAC（可逆）</td><td>受けない（渡すと誤り）</td></tr>
+			<tr><td class="nowrap"><code>wav</code></td><td>16bit PCM（無圧縮）</td><td>受けない（渡すと誤り）</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><code>--rate</code>（周波数）・ <code>--mono</code> を省くと、元のまま</li>
+		<li><strong>多くの音声は <code>--list</code> ・ <code>--dir</code> で渡す。</strong>決まりは transcribe の<a href="#ch11">「多くの音声を渡す」</a>と同じ</li>
+		<li><strong>出力が既にあると、何も変換せずに止まる。</strong>上書きするなら <code>--force</code>。入力と出力が同じファイルになる指定（同じフォルダで wav から wav 等）は、<code>--force</code> でも誤り</li>
+		<li>標準出力には、出したファイルの一覧だけを出す。<strong>ffmpeg の出力は、失敗したときだけ標準エラーに出す</strong>（どの音声で失敗したかも出す）。1 件ずつ見るなら <code>--verbose</code></li>
+		<li>終了コード: 0 成功 ／ 1 変換の失敗 ／ 2 引数の誤り、ffmpeg ・ 音声が無い、出力が既にある</li>
+	</ul>
+	<p><strong>ffmpeg は Git に入っていない。</strong>無い PC では、置き場を示して終了コード 2 で止まる。入手は ai-agent-tools 側で行うので、ai-chat-lite で依頼する。</p>
 </section>
 
 </div>
