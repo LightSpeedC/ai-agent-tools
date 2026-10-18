@@ -1,0 +1,328 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>check-public の除外指定 計画（ファイル名とキーワードの組で誤検出を外す）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>check-public の除外指定 計画（ファイル名とキーワードの組で誤検出を外す）</h1>
+		<p class="lead">公開前の検査 <code>check-public</code> の誤検出を、「このファイルの、この語に当たった、この項目だけ」の指定で外せるようにする。外した件数は、出力に出す。</p>
+		<p class="date">📅 作成: 2026-10-18 / 更新: 2026-10-18</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a> ／ <a href="../40_issues/issues.html">課題 i261018-02</a> ／ <a href="p260912-01-check-public.html">check-public 計画</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">依頼と、いまの動き</a></li>
+		<li class="ch02"><a href="#ch02">設計（決める点 55 〜 59。決まった）</a></li>
+		<li class="ch03"><a href="#ch03">テスト</a></li>
+		<li class="ch04"><a href="#ch04">置き場 ・ 進め方</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>依頼と、いまの動き</h1>
+	<p>2026-10-18、20260828-typescript-learn から依頼が来た（ai-chat-lite #1550）。配布物の TypeScript 本体（<code>docs/js/lib/typescript.js</code>）で、<code>[認証情報]</code> が 53 件出る。依頼元は、全件が字句解析器の変数名（<code>token = scanner.scan()</code> 等）への誤検出だと見ている。</p>
+	<h2>欲しいもの</h2>
+	<ul>
+		<li><strong>「このファイルの、この語に当たった <code>[認証情報]</code> だけを外す」指定</strong>。ファイル全体や種別全体（<code>--skip secret</code>）を外すと、本物の鍵を見逃す</li>
+		<li><strong>外した件数を、出力に出す</strong>。外しすぎに気づけるように</li>
+		<li>指定の形（引数か設定ファイルか）は、こちらに任された</li>
+	</ul>
+
+	<h2>いまの動き（コードを読んだ範囲）</h2>
+	<ul>
+		<li>指摘は、1 行ずつ、項目（<code>mail</code> ・ <code>path</code> ・ <code>secret</code> ・ <code>script</code> ・ <code>words</code> ・ <code>author</code>）ごとに数える。出力は <code>ファイル:行  [項目]</code> で、<strong>当たった値は出さない</strong></li>
+		<li>外す手段は <code>--skip &lt;項目&gt;</code> だけ。<strong>項目ごと、すべてのファイルで外れる</strong>。ファイル単位も、語単位も無い</li>
+		<li><code>[認証情報]</code> は、<code>password</code> ・ <code>passwd</code> ・ <code>secret</code> ・ <code>api_key</code> ・ <code>token</code> の語に <code>=</code> か <code>:</code> と値が続くもの。<strong>値が「8 文字以上で、英字と数字を両方含み、識別子や呼び出しの形でない」ときだけ</strong>当てる</li>
+	</ul>
+	<div class="callout callout-important">
+		<p><strong>依頼の事例は、読んだ限りでは、いまの判定で当たらない形に見える。</strong><code>token = scanner.scan()</code> は、値に数字が無く、「英字と数字の両方を含む」条件に当たらないので外れる。53 件の実際の行を見ないと、除外の指定で外すべきものか、判定そのものの誤りかが分からない（決める点 60）。</p>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>設計（決める点 55 〜 59）</h1>
+	<p>案の形は、依頼元の「ファイル名と語の組」を満たすものに絞った。推す案を A にしてある。</p>
+
+	<h3>55. 指定の形</h3>
+	<p><strong>決めたこと（2026-10-18、利用者の判断）。</strong>55-A。設定ファイルに書く。</p>
+	<ul>
+		<li><strong>55-A（推奨）</strong>: 設定ファイルに書く。推す理由: 53 件でも、指定は「ファイル 1 つ ・ 語 1 つ」で済む。ただし、プロジェクトごとに増える。毎回の呼び出しに書く形だと、Stop フック等の呼び出しすべてに同じ長い引数が要り、書き違えると結果が変わる</li>
+		<li><strong>55-B</strong>: 引数 <code>--allow "&lt;パス&gt; &lt;項目&gt; &lt;語&gt;"</code>（何度でも渡せる）。設定ファイルが増えないが、呼び出しのたびに同じ指定を渡す</li>
+	</ul>
+
+	<h3>56. 設定ファイルの名前と置き場</h3>
+	<p><strong>決めたこと（2026-10-18、利用者の判断）。</strong>56-A。プロジェクト直下の <code>check-public-allow.txt</code>。Git で管理する。</p>
+	<ul>
+		<li><strong>56-A（推奨）</strong>: プロジェクト直下の <code>check-public-allow.txt</code>。<strong>Git で管理する</strong>（<code>--allow-list &lt;パス&gt;</code> で差し替えられる。除外語リストの <code>--word-list</code> と同じ形）。推す理由: 中身はパスと語だけで、秘密ではない。別のセッション ・ 別の PC ・ クラウドで、同じ結果になる。<strong>外す指定が履歴に残り、あとから見直せる</strong></li>
+		<li><strong>56-B</strong>: <code>_public-allow.txt</code>（先頭 <code>_</code> で Git の管理外）。人の名前を書く除外語リストと同じ扱いだが、別の環境で結果が変わる。外した指定が履歴に残らない</li>
+	</ul>
+	<p>設定ファイルが無いときは、いまと同じに動く（除外語リストのような「飛ばしました」の表示は出さない）。</p>
+
+	<h3>57. 語の当て方</h3>
+	<p><strong>決めたこと（2026-10-18、利用者の判断）。</strong>57-A。当たった行に、その語が含まれるときだけ外す（部分一致 ・ 大小を無視）。</p>
+	<p>書式は、1 行に 1 指定。空白で 3 つに分け、3 つ目は行の残り全部（語に空白を含められる）。<code>#</code> で始まる行と空行は読み飛ばす。</p>
+	<pre><code class="language-text"># パス          項目     語
+docs/js/lib/typescript.js   secret   scanner.</code></pre>
+	<ul>
+		<li><strong>57-A（推奨）</strong>: <strong>当たった行に、その語が含まれるときだけ外す</strong>（部分一致 ・ 大小を無視）。推す理由: どの項目（<code>mail</code> ・ <code>words</code> 等）にも同じ決まりで使える。語を空にする指定（ファイル × 項目の全部を外す）は、依頼の趣旨に反するので、誤りとして止める（終了コード 2）</li>
+		<li><strong>57-B</strong>: 当たった<strong>値</strong>（<code>[認証情報]</code> なら <code>=</code> の右側）が、語で始まるときだけ外す。外す範囲は狭いが、「値」の定義が項目ごとに違い、<code>mail</code> や <code>path</code> では別の決めが要る</li>
+		<li><strong>57-C</strong>: 当たった<strong>キーワード</strong>（<code>token</code> ・ <code>secret</code> 等）だけを語にする。<code>token</code> を外すと、そのファイルの <code>token = '本物の鍵'</code> も外れる。依頼の「本物の鍵を見逃さない」に反する</li>
+	</ul>
+
+	<h3>58. パスの書き方</h3>
+	<p><strong>決めたこと（2026-10-18、利用者の判断）。</strong>58-A。相対パスの完全一致。末尾が <code>/</code> のときは、そのフォルダの下すべて。</p>
+	<ul>
+		<li><strong>58-A（推奨）</strong>: プロジェクトからの相対パス（<code>/</code> 区切り）。<strong>完全一致</strong>。末尾が <code>/</code> のときは、そのフォルダの下すべて。推す理由: 配布物のライブラリ置き場（<code>docs/js/lib/</code>）をまとめて指せる。ワイルドカードは持たず、広がりすぎない</li>
+		<li><strong>58-B</strong>: 完全一致だけ。いちばん狭いが、ファイルごとに 1 行ずつ書く</li>
+		<li><strong>58-C</strong>: <code>*</code> を使えるワイルドカード。書き方の幅が広がるが、<code>*</code> の置き方を誤ると、広く外してしまう</li>
+	</ul>
+
+	<h3>59. 出力（外した件数）</h3>
+	<p><strong>決めたこと（2026-10-18、利用者の判断）。</strong>59-A'。外した合計 ・ 指定ごとの件数 ・ <code>[認証情報]</code> では、当たったキーワードの内訳 ・ 使われていない指定の警告を出す。</p>
+	<pre><code class="language-text">  除外した指摘: 55 件
+    docs/js/lib/typescript.js  [認証情報]  「scanner.」  53 件（token 50 ・ secret 3）
+    docs/js/lib/typescript.js  [メールアドレス]  「@example.」  2 件
+  ⚠️ 使われていない除外の指定: docs/old.js  [メールアドレス]  「foo」
+=== 指摘はありません（除外 55 件）===</code></pre>
+	<ul>
+		<li><strong>内訳に出すキーワードは、規則に決まっている固定の語</strong>（<code>password</code> ・ <code>passwd</code> ・ <code>secret</code> ・ <code>api_key</code> ・ <code>token</code>）。大小は小文字に寄せ、<code>api-key</code> ・ <code>apikey</code> も <code>api_key</code> にまとめる。<strong>検査したファイルの中身（当たった値）ではない</strong>ので、「当たった値は出さない」を破らない</li>
+		<li>内訳は <code>[認証情報]</code> のときだけ出す。<code>mail</code> ・ <code>path</code> 等には、キーワードの概念が無い</li>
+		<li>語（<code>scanner.</code>）は設定ファイルに書かれたもので、これも検査したファイルの中身ではない</li>
+		<li>1 つの指定で外れた件数が多すぎる（外しすぎ）ことと、<code>secret</code> のような想定外のキーワードが混ざっていることに、気づける。古くなった指定（件数 0）には、警告を出す</li>
+		<li>終了コードは変えない。外した分は、指摘の件数に数えない</li>
+		<li>実装: 規則に、当たったキーワードを返す口を足す（<code>src/lib/public-rules.ts</code>。history2html は使わない）</li>
+	</ul>
+	<p>検討して採らなかった案: 59-A（キーワードの内訳なし）、59-B（合計の 1 行だけ。どの指定が効いたかが分からない）。</p>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>テスト</h1>
+	<p><strong>先に書き、落ちるのを見てから実装する</strong>（❌Red → ✅Green）。<code>tests/check-public/</code> の材料と <code>run-check-public-tests.ts</code> に足す。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>#</th><th>テスト名（何を保証するか）</th></tr></thead>
+		<tbody>
+			<tr><td class="num">1</td><td>設定ファイルが無ければ、いまと同じ結果と出力になる</td></tr>
+			<tr><td class="num">2</td><td>指定したファイル ・ 項目 ・ 語に当たった行だけが外れる</td></tr>
+			<tr><td class="num">3</td><td><strong>同じファイルの、語を含まない本物の鍵の行は、外れずに指摘される</strong>（依頼の核心）</td></tr>
+			<tr><td class="num">4</td><td>別のファイルに同じ語があっても、外れない</td></tr>
+			<tr><td class="num">5</td><td>別の項目（例: <code>mail</code>）は、同じファイルの同じ語でも外れない</td></tr>
+			<tr><td class="num">6</td><td>パスの末尾が <code>/</code> のとき、フォルダの下のファイルすべてで外れる。<code>/</code> が無ければ、完全一致だけ</td></tr>
+			<tr><td class="num">7</td><td>語の部分一致と、大小の無視</td></tr>
+			<tr><td class="num">8</td><td>外した件数が、合計と指定ごとに出る。外した分は、指摘の件数と終了コードに数えない</td></tr>
+			<tr><td class="num">8b</td><td><code>[認証情報]</code> の指定には、当たったキーワードの内訳（<code>token 50 ・ secret 3</code>）が出る。<code>mail</code> 等には出ない。大小と <code>api-key</code> の書き方の違いは、まとめる</td></tr>
+			<tr><td class="num">9</td><td>1 件も外していない指定に、「使われていない」と警告が出る（終了コードは変えない）</td></tr>
+			<tr><td class="num">10</td><td>語が空の指定 ・ 書式の誤り ・ 知らない項目名は、終了コード 2 で止まる。設定ファイルの何行目かを出す</td></tr>
+			<tr><td class="num">11</td><td>出力に、検査したファイルの中身（当たった値）を含まない</td></tr>
+			<tr><td class="num">12</td><td><code>--allow-list</code> で設定ファイルの場所を差し替えられる</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li>bun と node の両方で回す（既存の <code>check-public</code> のテストと同じ）。<code>run-all-tests</code> には、すでに入っている</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>置き場 ・ 進め方</h1>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>もの</th><th>置き場</th></tr></thead>
+		<tbody>
+			<tr><td>本体</td><td class="nowrap"><code>src/check-public/main.ts</code>（除外の読み込みと適用）。書式を読む部分は、同じファイルに置く（ほかのツールは使わないので、<code>src/lib/</code> へは出さない）</td></tr>
+			<tr><td>テスト</td><td class="nowrap"><code>tools/40_test/run-check-public-tests.ts</code> ・ <code>tests/check-public/</code></td></tr>
+			<tr><td>資料</td><td class="nowrap">TOOLS-USAGE の「検証する」の check-public の項 ・ <a href="p260912-01-check-public.html">check-public 計画</a></td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h3>60. 検出の判定そのものの見直し（調べること。決める点ではない）</h3>
+	<p>依頼の事例は、読んだ限りでは、いまの判定では当たらない形に見える。<strong>実際に当たった行の「形」を、依頼元に聞く</strong>（値は伏せて、<code>token = &lt;式&gt;</code> の式の形だけでよい。ファイルの中身を、こちらが読みに行かない）。</p>
+	<ul>
+		<li>式の形が、字句解析の変数名として普通のものなら、除外の指定で外す（この計画）</li>
+		<li>判定の穴（呼び出しに引数がある形 ・ 数字を含む識別子等）が原因なら、判定を直す。<strong>別の課題として立て、利用者の判断を待つ</strong>。判定を緩めると、本物の鍵を見逃す側に倒れるため</li>
+	</ul>
+
+	<h2>実装の結果（2026-10-18）</h2>
+	<p>計画を承認（利用者の判断）のあと、テストを先に書き、❌Red（21 件が落ちる。<code>--allow-list</code> が無い）を確かめてから実装した。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>結果</th></tr></thead>
+		<tbody>
+			<tr><td>テスト（<code>run-check-public-tests.ts</code>。計画の 13 項目）</td><td>✅ 58 件すべて成功（bun ・ node の両方）</td></tr>
+			<tr><td>型チェック</td><td>✅ 食い違いなし</td></tr>
+			<tr><td>このリポジトリ自身への検査</td><td>✅ 指摘は、わざと入れてある見本（<code>tests/check-public/ng/</code>）の 7 件だけ。テストのソースは当たらない</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h3>実装で、計画から足した点</h3>
+	<ul>
+		<li><strong>指摘があるときも、見出しに外した件数を添える</strong>（<code>=== 6 件の指摘があります（除外 3 件）===</code>）。指摘が 0 のときだけでは、外したものがあったことが、指摘の多い回で見えなくなる</li>
+		<li>設定ファイルを読んだら、<code>除外の指定: N 件（ファイル名）</code> を 1 行出す。読まれているかが分かる</li>
+		<li><code>--allow-list</code> で渡したファイルが無ければ、終了コード 2 で止める。既定の置き場に無いときは、黙って通す（除外語リストと違い、無くても検査は弱くならない）</li>
+		<li><code>--skip</code> で項目ごと見ていないものの指定は、「使われていない」と警告しない</li>
+		<li>実装は <code>src/check-public/main.ts</code> と <code>src/lib/public-rules.ts</code>（規則に、当たったキーワードを返す口 <code>detail</code> を足した）</li>
+	</ul>
+	<h3>まだ分かっていないこと</h3>
+	<ul>
+		<li>依頼の事例（<code>token = scanner.scan()</code> の 53 件）が、なぜ当たるのかは、まだ分からない（決める点 60）。依頼元に、当たった行の形を聞く</li>
+	</ul>
+
+	<h2>進め方</h2>
+	<ol>
+		<li>この計画の承認を得る（決める点 55 〜 59 は、すべて決まった。<strong>承認済み</strong>）</li>
+		<li>依頼元に、当たった行の形を聞く（決める点 60）。返事は、承認を待たずに進めてよい</li>
+		<li>テストを先に書き、落ちるのを見てから実装する</li>
+		<li>実装する。TOOLS-USAGE と、check-public 計画に書く</li>
+		<li>依頼元へ使い方を返信し、確認を依頼する。<strong>依頼元から OK が出るまで、課題を「済」にしない</strong>（共通ルール「課題の管理」）</li>
+	</ol>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

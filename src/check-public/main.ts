@@ -20,6 +20,10 @@
 	公開されないため見る必要が無く、見れば必ず誤検出になる
 	（除外語リスト自身がそこにある）。--all で全部を見られる。
 
+	誤検出は、設定ファイル（check-public-allow.txt）で外せる（計画 i261018-02）。
+	**「このファイルの、この項目で、この語を含む行」だけ**を外す。項目全体（--skip）と違い、
+	同じファイルの本物の鍵は外れない。外した件数は出力に出し、外しすぎに気づけるようにする。
+
 	計画は notes/10_plan/p260912-01-check-public.html。
 */
 
@@ -42,13 +46,71 @@ const Specs: OptionSpec[] = [
 	// 何度でも渡せる（--skip mail --skip path）。カンマ区切りも受ける
 	{ name: 'skip', kind: 'list', short: 's' },
 	{ name: 'all', kind: 'boolean', short: 'a' },
+	{ name: 'allow-list', kind: 'string', short: 'l' },
 ];
 
 const Defaults = {
 	path: '.',
 	'word-list': '_public-ng-words.txt',
 	all: false,
+	'allow-list': 'check-public-allow.txt',
 };
+
+/*
+	除外の指定（計画 i261018-02）。1 行に 1 指定で、空白で「パス 項目 語」に分ける（語は行の残り全部）。
+	# で始まる行と空行は読み飛ばす。
+
+	  ・パスは、プロジェクトからの相対（/ 区切り）。完全一致。末尾が / ならそのフォルダの下すべて
+	  ・項目は --skip と同じ名前
+	  ・語は、当たった行に含まれるときだけ外す（部分一致 ・ 大小を無視）。**語を空にはできない**
+	    （ファイルと項目の全部を外すと、本物の鍵を見逃すため）
+*/
+type AllowEntry = {
+	path: string;
+	key: string;
+	word: string;
+	wordLower: string;
+	count: number;
+	/** 規則が返した内訳の名前ごとの件数（[認証情報] のキーワード） */
+	details: Map<string, number>;
+};
+
+const ItemLabels: Record<string, string> = {
+	...Object.fromEntries(Rules.map((r) => [r.key, r.label])),
+	words: '除外語',
+	author: 'git の author',
+};
+
+/** 読めたら指定の一覧、書式の誤りなら「ファイル名:行: 理由」 */
+function loadAllow(file: string): AllowEntry[] | string {
+	const name = path.basename(file);
+	const entries: AllowEntry[] = [];
+	const lines = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/);
+	for (let i = 0; i < lines.length; i++) {
+		const t = lines[i].trim();
+		if (t.length === 0 || t.startsWith('#')) { continue; }
+		const where = name + ':' + (i + 1) + ': ';
+		const m = /^(\S+)\s+(\S+)(?:\s+(.+))?$/.exec(t);
+		if (m == null) { return where + '書式は「パス 項目 語」です（空白で区切る）。'; }
+		const key = m[2];
+		if (!Object.prototype.hasOwnProperty.call(ItemLabels, key)) {
+			return where + '知らない項目名です: ' + key + '（' + Object.keys(ItemLabels).join(' ・ ') + '）';
+		}
+		const word = (m[3] ?? '').trim();
+		if (word.length === 0) {
+			return where + '語がありません。語を空にする指定は、ファイルと項目の全部を外してしまうので、受けません。';
+		}
+		entries.push({
+			path: m[1].split('\\').join('/').replace(/^\.\//, ''),
+			key, word, wordLower: word.toLowerCase(), count: 0, details: new Map(),
+		});
+	}
+	return entries;
+}
+
+function allowMatches(e: AllowEntry, rel: string): boolean {
+	return e.path.endsWith('/') ? rel.startsWith(e.path) : rel === e.path;
+}
 
 /*
 	見ないもの。
@@ -95,6 +157,8 @@ function usage(toStdout: boolean): void {
 	write('  -s, --skip <名前>       飛ばす項目。カンマ区切り');
 	write('                          mail ・ path ・ secret ・ script ・ words ・ author');
 	write('  -a, --all               git が追跡していないファイルも見る');
+	write('  -l, --allow-list <パス> 誤検出を外す指定。既定は check-public-allow.txt');
+	write('                          1 行に「パス 項目 語」。その行に語を含むものだけを外す');
 	write('  -h, --help              この使い方を出す');
 	write('');
 	write('終了コードは 0（指摘なし）・ 1（指摘あり）・ 2（引数や対象の誤り）。');
@@ -221,12 +285,45 @@ async function main(): Promise<number> {
 		authors = (await gitAuthor(target)).map((s) => s.toLowerCase());
 	}
 
+	// 誤検出を外す指定。無ければ、いままでと同じ（黙って通す。除外語リストと違い、無くても検査は弱くならない）
+	const allowArg = String(parsed.values['allow-list']);
+	const explicitAllow = allowArg !== Defaults['allow-list'];
+	const baseDir = fs.statSync(target).isDirectory() ? target : path.dirname(target);
+	const allowPath = path.isAbsolute(allowArg) ? allowArg : path.join(baseDir, allowArg);
+	let allow: AllowEntry[] = [];
+	if (fs.existsSync(allowPath)) {
+		const loaded = loadAllow(allowPath);
+		if (typeof loaded === 'string') {
+			console.error('[NG] ' + loaded);
+			return ExitBadArgs;
+		}
+		allow = loaded;
+	}
+	else if (explicitAllow) {
+		console.error('[NG] 除外の指定のファイルがありません: ' + allowArg);
+		return ExitBadArgs;
+	}
+
 	console.log('  対象: ' + files.length + ' ファイル');
+	if (allow.length > 0) {
+		console.log('  除外の指定: ' + allow.length + ' 件（' + path.basename(allowPath) + '）');
+	}
 	console.log('');
 
 	// ---- 見る ----
 	let hits = 0;
 	let skipped = 0;
+	let excluded = 0;
+
+	/** 指定に当たれば外して数える（外したら true）。同じ行・同じ項目でも、指定は先に当たった 1 つだけ */
+	function absorb(rel: string, key: string, lowerLine: string, detail: string | null): boolean {
+		const e = allow.find((a) => a.key === key && allowMatches(a, rel) && lowerLine.includes(a.wordLower));
+		if (e == null) { return false; }
+		e.count++;
+		excluded++;
+		if (detail != null) { e.details.set(detail, (e.details.get(detail) ?? 0) + 1); }
+		return true;
+	}
 
 	for (const file of files) {
 		const lines = readLines(file);
@@ -241,19 +338,24 @@ async function main(): Promise<number> {
 
 			for (const rule of rules) {
 				if (rule.test(line)) {
+					if (absorb(rel, rule.key, lower, rule.detail?.(line) ?? null)) { continue; }
 					console.log('  ' + rel + ':' + (i + 1) + '  [' + rule.label + ']');
 					hits++;
 				}
 			}
 
 			if (words != null && words.some((w) => lower.includes(w))) {
-				console.log('  ' + rel + ':' + (i + 1) + '  [除外語]');
-				hits++;
+				if (!absorb(rel, 'words', lower, null)) {
+					console.log('  ' + rel + ':' + (i + 1) + '  [除外語]');
+					hits++;
+				}
 			}
 
 			if (authors.length > 0 && authors.some((a) => lower.includes(a))) {
-				console.log('  ' + rel + ':' + (i + 1) + '  [git の author]');
-				hits++;
+				if (!absorb(rel, 'author', lower, null)) {
+					console.log('  ' + rel + ':' + (i + 1) + '  [git の author]');
+					hits++;
+				}
 			}
 		}
 	}
@@ -263,12 +365,36 @@ async function main(): Promise<number> {
 		console.log('  読めなかった ' + skipped + ' ファイルは飛ばしました');
 	}
 
+	// 外した件数。外しすぎ（1 つの指定で多すぎる）にも、想定外のキーワードの混入にも気づけるように、指定ごとに出す。
+	// 出す語は、設定ファイルに書かれたものと、規則に決まっているキーワードで、検査したファイルの中身ではない
+	if (excluded > 0) {
+		console.log('  除外した指摘: ' + excluded + ' 件');
+		for (const e of allow) {
+			if (e.count === 0) { continue; }
+			let breakdown = '';
+			if (e.details.size > 0) {
+				const sorted = [...e.details.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+				breakdown = '（' + sorted.map(([k, n]) => k + ' ' + n).join(' ・ ') + '）';
+			}
+			console.log('    ' + e.path + '  [' + ItemLabels[e.key] + ']  「' + e.word + '」  ' + e.count + ' 件' + breakdown);
+		}
+	}
+	// 1 件も外していない指定は、古くなっている。--skip で項目ごと見ていないものは、数えない
+	for (const e of allow) {
+		if (e.count === 0 && skip.indexOf(e.key) < 0) {
+			console.log('  ⚠️ 使われていない除外の指定: ' + e.path + '  [' + ItemLabels[e.key] + ']  「' + e.word + '」');
+		}
+	}
+	// 外した件数は、見出しにも添える（指摘が 0 でも、外したものがあったことが分かる）
+	const tail = excluded > 0 ? '（除外 ' + excluded + ' 件）===' : ' ===';
+
 	if (hits === 0) {
-		console.log('=== 指摘はありません ===');
+		console.log('');
+		console.log('=== 指摘はありません' + tail);
 		return 0;
 	}
 
-	console.log('=== ' + hits + ' 件の指摘があります ===');
+	console.log('=== ' + hits + ' 件の指摘があります' + tail);
 	console.log('');
 	console.log('値そのものは出していません。場所を頼りに中身を見てください。');
 	return ExitFound;

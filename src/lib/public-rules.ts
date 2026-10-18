@@ -15,6 +15,11 @@ export type Rule = {
 	key: string;
 	label: string;
 	test: (line: string) => boolean;
+	/**
+	 * 当たったときの内訳の名前（任意）。**規則に決まっている固定の語に限る**（当たった値は返さない）。
+	 * check-public の除外の件数に、内訳として出す（i261018-02）
+	 */
+	detail?: (line: string) => string | null;
 };
 
 /*
@@ -88,6 +93,17 @@ export function hasUserPath(line: string): boolean {
 /** 認証情報が続く語と、その値 */
 export const SecretPattern = /(password|passwd|secret|api[_-]?key|token)\s*[:=]=*\s*(\S+)/i;
 
+/**
+ * 当たったキーワードの名前。小文字に寄せ、api-key ・ apikey は api_key にまとめる。
+ * 返すのは規則の語（password ・ passwd ・ secret ・ api_key ・ token）だけで、値は返さない
+ */
+export function secretKeyword(line: string): string | null {
+	const m = line.match(SecretPattern);
+	if (m == null) { return null; }
+	const kw = m[1].toLowerCase();
+	return /^api[_-]?key$/.test(kw) ? 'api_key' : kw;
+}
+
 export const Rules: Rule[] = [
 	{
 		key: 'mail',
@@ -117,6 +133,7 @@ export const Rules: Rule[] = [
 			if (m == null) { return false; }
 			return looksLikeSecret(m[2]);
 		},
+		detail: (line) => secretKeyword(line),
 	},
 	{
 		key: 'script',

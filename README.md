@@ -78,6 +78,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | [convert-audio 計画](notes/10_plan/i261012-02-convert-audio-ffmpeg.md) | WAV 等の音声を ffmpeg で mp3 等に変える |
 | [会話履歴ビューア 計画](notes/10_plan/p261014-01-会話履歴ビューア.md) | 会話ログ（JSONL）に伏せ字を掛け、外部のサイトに置ける静的なページにする |
 | [応答の言語の検査 計画](notes/10_plan/p261014-02-応答の言語の検査.md) | AI の応答に英語の文が混ざったら、フックで差し戻す |
+| [check-public の除外指定 計画](notes/10_plan/i261018-02-check-public-allow.md) | 公開前の検査の誤検出を、「このファイルの、この語に当たった、この項目だけ」の指定で外し、外した件数を出す |
 | [safe-push 計画](notes/10_plan/i261018-01-safe-push.md) | 複数の場所から書き換えられるリポジトリを、commit ・ pull --rebase ・ push の一続きで、壊さずに GitHub と同期する |
 
 ## 3. 課題

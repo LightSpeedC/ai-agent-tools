@@ -1041,6 +1041,26 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	<p>ai-chat-lite で他のプロジェクトから届いた要求と指摘。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
 
 	<details open>
+		<summary><span class="badge b-warn">着手</span><span class="no">i261018-02</span>check-public の誤検出を、ファイル名とキーワードの組で除外できるようにする</summary>
+		<div class="issue-body">
+			<p>2026-10-18 に <code>20260828-typescript-learn</code> から依頼（ai-chat-lite #1550）。</p>
+			<ul>
+				<li>事例: 配布物の TypeScript 本体（<code>docs/js/lib/typescript.js</code>）で <code>[認証情報]</code> が 53 件出る。全件が字句解析器の変数名（<code>token = scanner.scan()</code> 等）への誤検出</li>
+				<li>欲しい形: 「このファイルの、この語に当たった <code>[認証情報]</code> だけを外す」指定。ファイル全体や種別全体（<code>--skip secret</code>）を外すと、本物の鍵を見逃すため</li>
+				<li>あわせて: 外した件数を出力に出す（外しすぎに気づけるように）</li>
+				<li>引数か設定ファイルかなど、形はこちらに任された</li>
+			</ul>
+			<p>決めること: 指定の形（引数か設定ファイルか。置き場と書き方）、語の当て方（完全一致か部分一致か）、外した件数の出力の形。仕様を決めるものなので、計画を出して利用者の判断を待つ。計画は <a href="../10_plan/i261018-02-check-public-allow.html">check-public の除外指定 計画</a>（決める点 55 〜 59。あわせて、当たった行の形を依頼元に聞く）。<strong>決めたこと（2026-10-18、利用者の判断）。</strong>55-A ・ 56-A ・ 57-A ・ 58-A ・ 59-A'。<strong>計画を承認（利用者の判断）。</strong></p>
+			<ul>
+				<li><span class="badge b-ok">済</span>テストを先に書き（<code>run-check-public-tests.ts</code>）、落ちるのを見てから実装した（❌Red 21 件 → ✅Green。58 件。bun ・ node とも）</li>
+				<li><span class="badge b-ok">済</span>実装（<code>src/check-public/main.ts</code> ・ <code>src/lib/public-rules.ts</code>）</li>
+				<li><span class="badge b-ok">済</span>TOOLS-USAGE と check-public 計画に書いた</li>
+				<li><span class="badge b-warn">着手</span>依頼元へ、使い方を返信し、確認を依頼する。あわせて、当たった行の形を聞く（確認が取れるまで「済」にしない）</li>
+			</ul>
+		</div>
+	</details>
+
+	<details open>
 		<summary><span class="badge b-warn">着手</span><span class="no">i261018-01</span>Git の同期を壊さずに行う共有ツールを作る（ai-agent-rules の p261018-01）</summary>
 		<div class="issue-body">
 			<p>2026-10-18 に <code>ai-agent-rules</code> から依頼（ai-chat-lite #1530）。複数のセッション・PC・クラウドから書き換えられるリポジトリ（Obsidian Vault・共通ルール）を、壊さずに GitHub と同期する。名前・引数・ロックの持ち方・期限・終了コードなどの決め事は、こちらに任せるとのこと。</p>

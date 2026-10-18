@@ -400,7 +400,8 @@ html2md --root . --dry-run                # 書き出さず、結果と指摘だ
 	<h2>公開前に、出してはいけないものが混ざっていないか</h2>
 
 <pre><code class="language-shell">check-public                      # カレントのプロジェクトを見る
-check-public --word-list _ng.txt  # 除外語リストを指定する</code></pre>
+check-public --word-list _ng.txt  # 除外語リストを指定する
+check-public --allow-list ng/allow.txt  # 誤検出を外す指定を、別の場所から読む</code></pre>
 
 	<p>コミットは履歴に残る。<strong>一度上げたものを消すには履歴の書き換えが要る。</strong>上げる前に機械で見る。</p>
 
@@ -440,6 +441,35 @@ check-public --word-list _ng.txt  # 除外語リストを指定する</code></pr
 	</div>
 
 	<p>除外語リストは<strong>先頭 <code>_</code> のファイルを既定にする</strong>（<code>_public-ng-words.txt</code>）。リスト自体が機密になるため、共通ルールにより全階層が Git 管理外になる置き方を採る。<strong>リストが無ければ、その項目を飛ばしたことを画面に出す。</strong>黙っては通さない。</p>
+
+	<h3>誤検出を外す（check-public-allow.txt）</h3>
+
+	<p>配布物のライブラリ等で、同じ誤検出が続くときは、<strong>「このファイルの、この項目で、この語を含む行」だけ</strong>を外せる。<code>--skip</code> は項目の全部（すべてのファイル）を外すので、本物の鍵まで見逃す。</p>
+
+<pre><code class="language-text"># パス                      項目     語
+docs/js/lib/typescript.js   secret   scanner.
+docs/js/lib/                mail     @example.</code></pre>
+
+	<ul>
+		<li><strong>置き場は、プロジェクト直下の <code>check-public-allow.txt</code>。Git で管理する</strong>（中身はパスと語だけで、秘密ではない。外す指定が履歴に残る）。<code>--allow-list &lt;パス&gt;</code> で差し替えられる。無ければ、いままでと同じ（黙って通す）</li>
+		<li>1 行に 1 指定。空白で「パス 項目 語」に分ける（語は行の残り全部）。<code>#</code> で始まる行と空行は読み飛ばす</li>
+		<li><strong>パス</strong>は、プロジェクトからの相対（<code>/</code> 区切り）。完全一致。<strong>末尾が <code>/</code> のときは、そのフォルダの下すべて</strong>（<code>vendor/</code> は <code>vendor-x/</code> に当たらない）。ワイルドカードは無い</li>
+		<li><strong>項目</strong>は <code>--skip</code> と同じ名前（<code>mail</code> ・ <code>path</code> ・ <code>secret</code> ・ <code>script</code> ・ <code>words</code> ・ <code>author</code>）</li>
+		<li><strong>語</strong>は、当たった行に含まれるときだけ外す（部分一致 ・ 大小を無視）。<strong>語は空にできない</strong>（ファイルと項目の全部を外してしまうため。誤りとして、終了コード 2 で止まる。何行目かを出す）</li>
+		<li>同じファイルでも、語を含まない行は外れない（本物の鍵は指摘される）。別のファイル ・ 別の項目も外れない</li>
+	</ul>
+
+<pre><code class="language-text">  除外した指摘: 55 件
+    docs/js/lib/typescript.js  [認証情報]  「scanner.」  53 件（token 50 ・ secret 3）
+    docs/js/lib/typescript.js  [メールアドレス]  「@example.」  2 件
+  ⚠️ 使われていない除外の指定: docs/old.js  [メールアドレス]  「foo」
+=== 指摘はありません（除外 55 件）===</code></pre>
+
+	<ul>
+		<li><strong>外した件数を、合計と指定ごとに出す。</strong>1 つの指定で外れた件数が多すぎないか、想定外のキーワード（<code>secret</code> 等）が混ざっていないかを見る。<code>[認証情報]</code> には、当たったキーワードの内訳（件数の多い順）が付く</li>
+		<li>1 件も外していない指定には、⚠️ を出す（古くなっている）。終了コードは変えない。外した分は、指摘の件数にも終了コードにも数えない</li>
+		<li>出す語は、設定ファイルに書いた語と、規則に決まっているキーワードだけ。<strong>検査したファイルの中身は出さない</strong></li>
+	</ul>
 
 	<h2>既定で除外するフォルダがある</h2>
 
