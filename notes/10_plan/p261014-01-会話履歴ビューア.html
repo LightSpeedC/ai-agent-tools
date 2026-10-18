@@ -146,7 +146,7 @@
 	<div class="inner">
 		<h1>会話履歴ビューア 計画（JSONL から公開用の HTML を作る）</h1>
 		<p class="lead">自分のプロジェクトの <code>etc/history/jsonl/</code> に溜まる会話ログを読み、伏せ字を掛けた静的なページを同じプロジェクトの中に作る。外部のサイトでそのまま公開できる形にする。</p>
-		<p class="date">📅 作成: 2026-10-14 / 更新: 2026-10-15</p>
+		<p class="date">📅 作成: 2026-10-14 / 更新: 2026-10-18</p>
 	</div>
 </div>
 
@@ -462,6 +462,7 @@
 		<li><strong>警告</strong>（34-A）: 伏せる語のリストが空のとき、git の author が取れなかったときに ⚠️ を出す。書き出しは止めない。あわせて、<strong>伏せた後の語と件数を ✅ 付きで並べる</strong>（元の値は出さない）</li>
 	</ul>
 	<h3>ブラウザに残すもの（共通ルール「Web で設定を残すときは、保存先とキーを聞いてから決める」）</h3>
+	<p><strong>決めたこと（2026-10-18、利用者の判断）。40-A。</strong>キーは全プロジェクトで 1 つを共有する（題ごとに分けない）。<code>file://</code> では全部のページが同じ置き場になるため、同じタブで開いた別プロジェクトのページにも同じモードが効く。</p>
 	<div class="tablewrap">
 	<table>
 		<thead><tr><th>キー</th><th>保存先</th><th>値</th><th>消えるとき</th></tr></thead>
@@ -546,6 +547,7 @@
 	<p>案は、共通ルール「番号付きフォルダ」の <code>notes/</code> の空き番号から 17-A <code>70_history</code>（推奨）・ 17-B <code>50_history</code> を出した。</p>
 	<p><strong>決めたこと（2026-10-14、利用者の判断）。</strong><code>notes/91_history/</code>。<strong>本編のフェーズに属さない特殊なもの</strong>で、毎回作るわけではなく、一部のプロジェクトだけで生成するため、90（常に参照するもの）の後ろに置く。</p>
 	<p>91 は、共通ルールの「10 刻み」から外れる。<strong>ツールができてから、共通ルール「番号付きフォルダ」に書き足す</strong>（<a href="../40_issues/issues.html">課題 i261014-01</a>）。</p>
+	<p><strong>決めたこと（2026-10-18、利用者の判断）。</strong>18-B。共通ルールに、<strong>91〜99 をフェーズに属さない特殊なものの枠</strong>として定め、<code>notes/</code> の行に <code>91_history</code> を足した。反映して、public ルームへ周知した。</p>
 
 	<h3>19. ビューアの書き方</h3>
 	<p>ブラウザは <code>.ts</code> をそのまま動かせない。本体（TypeScript）とは別に決める。</p>
@@ -597,7 +599,7 @@
 	</div>
 	<ul>
 		<li>目盛りから日へ飛ぶと 14px ずれる不具合を、テストで見つけて直した。描いた日の最初の子の上の余白が箱の外へはみ出し、位置を保つ目印の箱が動いていた（<code>display: flow-root</code> で閉じ込めた）</li>
-		<li>PlayWright 共有環境から <code>@playwright/test</code> を読めなかった。このリポジトリは <code>"type": "module"</code> で、テストが ESM として読まれ、共有環境が渡す <code>NODE_PATH</code> が効かない。テストを <code>.cts</code>（CommonJS）にして回した</li>
+		<li>PlayWright 共有環境から <code>@playwright/test</code> を読めなかった。このリポジトリは <code>"type": "module"</code> で、テストが ESM として読まれ、共有環境が渡す <code>NODE_PATH</code> が効かない。テストを <code>.cts</code>（CommonJS）にして回した。<strong>決めたこと（2026-10-18、利用者の判断）。</strong>27-A。<code>.cts</code> は暫定で、共有環境の側で直してもらうため、<code>:PlayWright:</code> へ報告した（ai-chat-lite #1533）。返事が来たら、テストの拡張子を戻せるか確かめる</li>
 		<li>ビューアのひな形（<code>src/history2html/viewer/index.html</code>）は資料ではないので、HTML の規則の検査（<code>check-html-rules.ts</code>）から <code>src/</code> を外した</li>
 	</ul>
 	<h2>テスト</h2>
