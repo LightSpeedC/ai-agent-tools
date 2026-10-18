@@ -52,6 +52,8 @@ $Suites = @(
 	# ビューアをブラウザ 3 種で確かめる（PlayWright 共有環境）。材料を作って渡すだけなので 1 周でよい
 	@{ Name = 'history2html のビューア'; Script = 'run-history2html-viewer-tests.ts'; Once = $true },
 	@{ Name = 'convert-audio'; Script = 'run-convert-audio-tests.ts' },
+	# 複数の場所から書き換えられるリポジトリの同期。裸のリポジトリと clone 2 つで、ロック ・ 衝突 ・ 時間切れまで見る
+	@{ Name = 'safe-push'; Script = 'run-safe-push-tests.ts' },
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },
 	@{ Name = 'text'; Script = 'run-text-tests.ps1'; NodeTarget = 'runners\text-node.cmd' },
 	# psh のテストだけ ts で書いてある。道具自体が PowerShell を呼ぶため、

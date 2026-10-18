@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。プロジェクトを問わず使う道具の置き場。
 
-> 📅 作成: 2026-08-27 / 更新: 2026-10-14
+> 📅 作成: 2026-08-27 / 更新: 2026-10-18
 
 [^^](../)
 
@@ -26,6 +26,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | `transcribe` | 音声を whisper.cpp で書き起こす。複数の音声を 1 回の起動でまとめて処理する |
 | `convert-audio` | 音声の形式を ffmpeg で変える（WAV を mp3 にする等） |
 | `history2html` | 会話ログ（etc/history/jsonl）から、伏せ字を掛けた公開用のページを作る |
+| `safe-push` | 複数の場所から書き換えられるリポジトリを、commit ・ pull --rebase ・ push の一続きで、壊さずに GitHub と同期する |
 | `cloud-session-start` | クラウドのセッションで、共通ルールと共有ツールを隣に置き、PATH と git の author を整える |
 
 `bin/` にはほかに、このリポジトリの持ち主が使う起動用の cmd（`cc` ・ `cx` ・ `w` など）も置いている。
@@ -77,6 +78,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | [convert-audio 計画](notes/10_plan/i261012-02-convert-audio-ffmpeg.md) | WAV 等の音声を ffmpeg で mp3 等に変える |
 | [会話履歴ビューア 計画](notes/10_plan/p261014-01-会話履歴ビューア.md) | 会話ログ（JSONL）に伏せ字を掛け、外部のサイトに置ける静的なページにする |
 | [応答の言語の検査 計画](notes/10_plan/p261014-02-応答の言語の検査.md) | AI の応答に英語の文が混ざったら、フックで差し戻す |
+| [safe-push 計画](notes/10_plan/i261018-01-safe-push.md) | 複数の場所から書き換えられるリポジトリを、commit ・ pull --rebase ・ push の一続きで、壊さずに GitHub と同期する |
 
 ## 3. 課題
 

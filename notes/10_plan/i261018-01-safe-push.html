@@ -1,0 +1,398 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>safe-push 計画（Git の同期を壊さずに行う共有ツール）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>safe-push 計画（Git の同期を壊さずに行う共有ツール）</h1>
+		<p class="lead">複数のセッション ・ PC ・ クラウドから書き換えられるリポジトリを、<code>commit → pull --rebase → push</code> の一続きで、壊さずに GitHub と同期する共有コマンドを足す。</p>
+		<p class="date">📅 作成: 2026-10-18 / 更新: 2026-10-18</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a> ／ <a href="../40_issues/issues.html">課題 i261018-01</a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">背景と依頼の条件</a></li>
+		<li class="ch02"><a href="#ch02">動き（一続きの手順）</a></li>
+		<li class="ch03"><a href="#ch03">決める点</a></li>
+		<li class="ch04"><a href="#ch04">テスト</a></li>
+		<li class="ch05"><a href="#ch05">置き場 ・ 進め方</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>背景と依頼の条件</h1>
+	<p>2026-10-18、ai-agent-rules から依頼が来た（ai-chat-lite #1530。ai-agent-rules の計画 p261018-01）。Obsidian Vault と、ai-agent-rules の共通ルールは、複数のセッション ・ PC ・ クラウドから書き換えられる。<strong>commit ・ push は Stop フックが行う</strong>ので、同じ clone に同時に何本も来る。壊さずに GitHub と同期する共有ツールを、こちらで作る。名前 ・ 引数 ・ ロックの持ち方 ・ 期限 ・ 終了コードは、こちらに任された。</p>
+	<h2>満たすこと</h2>
+	<ul>
+		<li><strong>排他</strong>: 同じ clone で同時に呼ばれても、<code>commit → pull --rebase → push</code> の一続きが重ならない。ロックが取れないときは 3 秒おきに 9 秒まで取り直し、だめなら飛ばす。残ったロックで止まり続けない</li>
+		<li><strong>載せ方は 2 通り</strong>: 変更をすべて載せる呼び方と、名指しのパスだけを載せる呼び方。<strong>名指しのときは、名指し以外の commit 前の変更を残したまま</strong>同期できる</li>
+		<li><strong>取り込んでから送る</strong>: ほかの clone の push を取り込んでから送る。ぶつかったら止めて報告し、手元の commit と変更を消さない</li>
+		<li><strong>動く場所</strong>: Windows ・ Linux ・ Mac ・ クラウド（sh のみ）。git の呼び出しは timeout 付き。日時は JST。出力は短く</li>
+		<li><strong>使わない操作</strong>: <code>reset --hard</code> ・ <code>stash</code> ・ <code>checkout --</code>。git の設定は書き換えない</li>
+		<li><strong>テストを先に</strong>: 裸のリポジトリと clone 2 つで書く。名前は <code>safe-push</code> に決まり、依頼元へ知らせる</li>
+	</ul>
+	<div class="callout callout-important">
+		<p><strong>Stop フックから呼ばれる前提で作る。</strong>Stop フックは、終了コード 2 を「終わらずに続ける」と読む（連続 8 回まで）。引数の誤りなどでこのツールが 2 を返すと、利用者の応答が終わらなくなる。<strong>終了コードに 2 を使わない</strong>（決める点 46）。</p>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>動き（一続きの手順）</h1>
+	<pre><code class="language-text">1. 引数を調べる（clone か。ブランチは上流を持つか）
+2. ロックを取る（3 秒おきに 4 回。約 9 秒まで。だめなら飛ばして終了）
+3. 載せる
+     --all:      git add -A して commit
+     名指し:     git add -- &lt;パス&gt; して、そのパスだけを commit
+     載せるものが無ければ、commit を飛ばす
+4. 取り込む（git pull --rebase）
+     名指しで、追跡しているファイルの書きかけが残っていれば、取り込まない（決める点 43）
+     浅い clone で失敗したら、fetch --unshallow してやり直す（決める点 52）
+     ぶつかったら rebase --abort で手元に戻し、止めて報告（終了）
+5. git push（失敗したら、やり直さず、エラーとして終了）
+6. ロックを外す（どの終わり方でも、自分のロックだけを外す）</code></pre>
+	<ul>
+		<li><strong>やり直しは 2 つだけ</strong>: ロックの取り直し（3 秒おき ・ 4 回）と、浅い clone の <code>fetch --unshallow</code> の 1 回。<strong>push は、やり直さない</strong>（失敗したらエラー。commit は手元に残り、次の回の呼び出しが送る）</li>
+		<li><strong>git の呼び出しは 1 回ごとに timeout を付ける</strong>（60 秒。決める点 50）。<code>〜Sync</code> の API は使わず、非同期で呼ぶ</li>
+		<li><strong>一続き全体の上限は 3 分</strong>。超えたら、動いている git を止め、ロックを放して、終了コード 1（決める点 54）</li>
+		<li><strong>git の設定は書かない</strong>。必要な設定は、呼び出しごとの <code>-c</code> で渡す</li>
+		<li><strong><code>rebase --abort</code> は使う</strong>。rebase を始める前の手元の commit に戻すだけで、<code>reset --hard</code> ではない。手元の commit と変更は残る</li>
+		<li>commit のメッセージは固定で、<code>safe-push yyyy/mm/dd hh:mm:ss</code>（JST。決める点 48）</li>
+	</ul>
+
+	<h2>出力</h2>
+	<p>1 行。件数とファイル名だけを出す。会話や中身は出さない。</p>
+	<pre><code class="language-text">✅10/18 12:34 同期しました（commit 1 ・ push 済）
+⬜10/18 12:34 別の同期が動いているため、飛ばしました（約 9 秒待ちました）
+❌10/18 12:34 取り込みでぶつかりました: notes/a.md ・ notes/b.md（手元の commit と変更は残してあります）
+❌10/18 12:34 push に失敗しました（commit は手元に残してあります）
+⚠️10/18 12:34 古いロックを取り除きました（pid 1234 ・ 開始 10/18 12:30 ・ 別のホスト）。同期しました（commit 1 ・ push 済）</code></pre>
+	<p>ホスト名は出力に出さない（共通ルール「機密情報のマスキング」）。同じホストか、別のホストかだけを書く。</p>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>決める点</h1>
+	<h3>41. 名前</h3>
+	<p>案は、41-A <code>safe-push</code>（推奨）・ 41-B <code>sync-push</code> ・ 41-C <code>commit-sync</code> ・ 41-D <code>repo-sync</code>。<code>git-</code> で始まる名前は、同じ名前の既存のツールがあり、Git のサブコマンドと誤解されるため、案から外した。</p>
+	<p><strong>決めたこと（2026-10-18、利用者の判断）。</strong>41-A。名前は <code>safe-push</code>。「壊さずに送る」という目的が、名前で伝わる。</p>
+
+	<p>依頼元の計画（ai-agent-rules の p261018-01）と比べ、47 〜 53 を取り入れた。<strong>決めたこと</strong>は、利用者の判断（2026-10-18）。</p>
+
+	<h3>42. すべて載せる呼び方</h3>
+	<pre><code class="language-text">safe-push "&lt;リポジトリ&gt;" --all               # 変更をすべて載せる
+safe-push "&lt;リポジトリ&gt;" &lt;パス&gt; [&lt;パス&gt; …]    # 名指しのパスだけ載せる</code></pre>
+	<p><strong>決めたこと（42-B）。</strong>すべて載せるときも <code>--all</code> を必ず付ける。パスも <code>--all</code> も無ければ、止める（終了コード 5）。パスの渡し忘れで、全部を載せてしまう事故を防ぐ。依頼元の計画（パスなしで全部）とは形が違うので、依頼元へ知らせる。</p>
+	<ul>
+		<li><code>--all</code> とパスを両方渡したときも、止める（終了コード 5）</li>
+		<li>Stop フックの登録は、リポジトリと <code>--all</code> を渡す</li>
+	</ul>
+	<p>検討して採らなかった案: 42-A（パスなしで全部載せる）。渡し忘れで全部を載せるおそれがある。</p>
+
+	<h3>43. 名指しで、ほかの未 commit の変更が残っているときの取り込み方</h3>
+	<p><code>git pull --rebase</code> は、作業ツリーに未 commit の変更があると、取り込み側とぶつからなくても止まる。名指し以外の変更を残したまま同期するための決め。</p>
+	<p><strong>決めたこと（43-B）。</strong>作業ツリーに、名指し以外の未 commit の変更（追跡しているファイルの書きかけ）が残っているときは、<strong>取り込みをしない</strong>。名指しのパスを commit して、そのまま <code>git push</code> だけを試す。</p>
+	<ul>
+		<li>別の clone がまだ push していなければ、push が通る</li>
+		<li>別の clone が先に push していたら、push が拒否され、終了コード 4 で止まる。commit は手元に残り、書きかけが commit されるか無くなったあとの呼び出しで、取り込んで送られる</li>
+		<li>追跡していないファイル（新しいファイル）は、<code>pull --rebase</code> を止めないので、書きかけに数えない</li>
+		<li>書きかけが無いとき（すべて載せる呼び方を含む）は、ふつうの <code>pull --rebase</code> で取り込む</li>
+	</ul>
+	<p>書きかけが残る間は取り込みが遅れる。取り込んだ結果を壊すことは無い。</p>
+	<p><strong>検討して採らなかった案</strong></p>
+	<ul>
+		<li>43-A（一時の作業ツリーで載せ替える）: 実装が重く、手元の変更を残したままブランチを進める操作が要る。採らない</li>
+		<li>43-C（ロックを持ったまま <code>stash</code> → <code>fetch</code> → <code>rebase</code> → <code>stash pop</code>）: ロックは、ファイルを直接書く側のセッションを止めない。stash の間に書きかけが一時的に元へ戻り、その間の読み書きが壊れる。依頼の「stash は使わない」にも反する。却下</li>
+		<li>51-A（<code>pull --rebase --autostash</code>）: 同じ理由で外した（依頼元の計画の指摘）</li>
+	</ul>
+
+	<h3>44. ロックの持ち方</h3>
+	<p><strong>決めたこと（49-A）。</strong><code>.git/safe-push.lock</code> というファイルを、「無いときだけ作る」書き方で作る（<code>wx</code>）。中に<strong>ホスト名 ・ pid ・ 開始時刻（JST）</strong>を書く。<code>.git/</code> の中なので、追跡されず、別の clone と混ざらない。</p>
+	<ul>
+		<li><strong>古いロックの判定</strong>: 同じホストで、pid のプロセスが無ければ、残骸として取り除く。ホストが違うときは、pid を確かめられないので、期限（5 分。決める点 54）だけで判断する</li>
+		<li><strong>放すのは自分のロックだけ</strong>: 中のホスト名と pid が自分のときだけ消す。古いと見なされて取り除かれ、別の呼び出しが取り直したロックを、消さないため</li>
+		<li>作るのと中身を書くのが 1 つの操作で、Windows ・ Linux ・ Mac で同じに動く</li>
+	</ul>
+	<p>期限と、古いロックの扱いは、決める点 54。</p>
+
+	<h3>45. ロックを取る待ち（依頼のとおり。決める点ではない）</h3>
+	<p><strong>決めたこと。</strong>取れなければ、3 秒おきに取り直す。初回を含めて 4 回、約 9 秒まで。それでも取れなければ、飛ばして終了する。待つのは長くても約 9 秒。</p>
+
+	<h3>46. 終了コード</h3>
+	<p><strong>決めたこと（46-A）。</strong>2 を使わない。Stop フックは終了コード 2 を「続ける」と読む。引数の誤りや衝突が 2 だと、応答が終わらなくなる。ほかのツールは引数の誤りを 2 にしているが、このツールはフックから呼ばれるので変える。依頼元の計画の「衝突 ＝ 2、push 失敗 ＝ 3」は、「3、4」に変わるので、依頼元へ知らせる。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>コード</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="num">0</td><td>同期した、載せるものも取り込むものも無かった、またはロックが取れず飛ばした（出力で区別する。飛ばしても、フックに誤りの表示を出さないため）</td></tr>
+			<tr><td class="num">1</td><td>そのほかの失敗（commit の失敗 ・ git が時間切れ）。手元の commit と変更は残してある</td></tr>
+			<tr><td class="num">3</td><td>取り込みでぶつかった。ぶつかったファイル名を出す。人の対応が要る</td></tr>
+			<tr><td class="num">4</td><td>push に失敗した（認証 ・ 回線 ・ 拒否）。やり直さない。commit は手元に残り、次の回が送る</td></tr>
+			<tr><td class="num">5</td><td>引数や置き場の誤り（clone でない ・ 上流が無い ・ パスが clone の外）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h3>47. リポジトリの渡し方</h3>
+	<p><strong>決めたこと（47-A）。</strong>リポジトリを<strong>最初の引数に必須</strong>で渡す。<code>--path</code> は無い。Stop フックも cron も、必ずリポジトリを渡すので、カレントの取り違えで別の clone を触る事故が起きない。</p>
+
+	<h3>48. commit のメッセージ</h3>
+	<p><strong>決めたこと（48-A）。</strong>固定で <code>safe-push yyyy/mm/dd hh:mm:ss</code>（JST）。<code>--message</code> は無い。</p>
+
+	<h3>50. 時間切れ（git の 1 回と、一続き全体）</h3>
+	<p><strong>決めたこと（利用者の判断。案の外から選んだ）。</strong>git の 1 回は <strong>60 秒</strong>で打ち切る。一続き全体の上限は <strong>3 分</strong>（決める点 54）。</p>
+
+	<h3>52. 浅い clone</h3>
+	<p><strong>決めたこと（52-A）。</strong>クラウドの clone は浅い。<code>pull --rebase</code> が失敗したら、<code>git fetch --unshallow</code> をして、<strong>この回の中で 1 回だけ</strong>取り込みをやり直す。2 回目も失敗したら、エラーで終わる。初回だけ時間がかかる。</p>
+
+	<h3>53. 衝突のときの出力</h3>
+	<p><strong>決めたこと（53-A）。</strong>ぶつかったファイル名を出す（リポジトリ内の相対パス）。中身は出さない。</p>
+
+	<h3>54. 一続き全体の上限と、ロックの期限</h3>
+	<p>一続きの呼び出しは、<code>status</code> ・ <code>add</code> ・ <code>commit</code> ・ <code>pull --rebase</code> ・ <code>push</code> の 5 回前後（浅い clone では <code>fetch --unshallow</code> が加わる）。git は 1 回ごとに 60 秒で打ち切るので、全部が詰まった最悪は 300 〜 360 秒になる。ふつうは数秒で終わる（見込み。実測はしていない）。固定の期限だけでは、最悪の場合に超えるため、一続き全体にも上限を付ける。</p>
+	<p><strong>決めたこと（54-A）。</strong></p>
+	<ul>
+		<li><strong>一続き全体の上限は 3 分</strong>。超えたら、動いている git を止め、ロックを放して、終了コード 1 で終わる</li>
+		<li><strong>ロックの期限は 5 分</strong>。持ち主は 3 分以内に必ず終わるので、5 分より古いロックは、確実に持ち主が居ない</li>
+		<li>古いロックは、<strong>取り除いて、報告する</strong>。出力に「古いロックを取り除きました（pid ・ 開始時刻 ・ 同じホストか別のホストか）」を足し、そのまま同期を続ける。取り除かずに止めると、残ったロックで止まり続けてしまう（依頼の条件に反する）</li>
+		<li>同じホストで pid が無ければ、期限を待たず、すぐに取り除く（取り除いたことは、同じく報告する）</li>
+		<li>ホストが違うロックは、pid を確かめられないので、期限（5 分）だけで判断する</li>
+	</ul>
+	<p>検討して採らなかった案: 54-B（全体の上限は無しで、ロックの期限を 5 分にする）。極端に遅い回で、動いているロックを取り除くおそれが残る。</p>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>テスト</h1>
+	<p><strong>先に書き、落ちるのを見てから実装する</strong>（❌Red → ✅Green）。<code>tmp/</code> の下に、裸のリポジトリ 1 つと clone 2 つ（A ・ B）を作る。毎回作り直し、本物のリポジトリには触らない。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>#</th><th>テスト名（何を保証するか）</th></tr></thead>
+		<tbody>
+			<tr><td class="num">1</td><td>変更も取り込むものも無ければ、何もせず終了コード 0</td></tr>
+			<tr><td class="num">2</td><td><code>--all</code> で、A の変更が裸のリポジトリに載る。パスも <code>--all</code> も無いとき、<code>--all</code> とパスの両方を渡したときは、終了コード 5 で何も載せない</td></tr>
+			<tr><td class="num">3</td><td>名指しで、指したパスだけが載り、ほかの変更は未 commit のまま残る（中身も同じ）</td></tr>
+			<tr><td class="num">4</td><td>B の push を取り込んでから送る。履歴は一直線になる</td></tr>
+			<tr><td class="num">5</td><td>名指しで、ほかに未 commit の変更があるとき、取り込まずに push だけを試す。B が先に push していなければ通り、書きかけは残る。B が先に push していれば、終了コード 4 で止まり、A の commit と書きかけは消えない</td></tr>
+			<tr><td class="num">6</td><td>同じ箇所の変更でぶつかったら終了コード 3 で、ぶつかったファイル名を出す。A の commit と変更は消えず、rebase の途中の状態も残らない</td></tr>
+			<tr><td class="num">7</td><td>書きかけが無く、追跡していない新しいファイルだけがあるときは、ふつうに取り込んで同期できる</td></tr>
+			<tr><td class="num">8</td><td>同じ clone で 2 本を同時に呼んでも、一続きが重ならず、どちらも壊れない</td></tr>
+			<tr><td class="num">9</td><td>ロックが取れなければ、3 秒おきに 4 回（約 9 秒）取り直し、それでも取れなければ、飛ばして終了コード 0。ロックを壊さない（待ちはテストだけ短くできる）</td></tr>
+			<tr><td class="num">10</td><td>同じホストで pid が生きていないロックは、期限を待たず取り除いて進み、出力で報告する。別のホストのロックは、pid を確かめず、5 分の期限だけで判断する（5 分以内は取り除かない）。放すのは、自分のホスト名と pid のロックだけ</td></tr>
+			<tr><td class="num">11</td><td>git が時間切れになっても、終了コード 1 で終わり、ロックが残らない</td></tr>
+			<tr><td class="num">12</td><td>終わったあと、<code>.git/config</code> が変わらず、stash が空で、<code>reset --hard</code> ・ <code>stash</code> ・ <code>checkout --</code> を呼んでいない</td></tr>
+			<tr><td class="num">13</td><td>clone でない場所 ・ 上流が無いブランチ ・ clone の外のパス ・ リポジトリの渡し忘れは終了コード 5。<strong>どの場合も 2 を返さない</strong></td></tr>
+			<tr><td class="num">14</td><td>出力が 1 行で、日時は JST、会話や中身を含まない（衝突のときだけファイル名を含む）</td></tr>
+			<tr><td class="num">15</td><td>push が拒否されても、やり直さず、終了コード 4 で終わる。commit は手元に残り、次の回の呼び出しで送られる</td></tr>
+			<tr><td class="num">16</td><td>浅い clone で取り込みが失敗したら、<code>fetch --unshallow</code> をして 1 回だけやり直す</td></tr>
+			<tr><td class="num">17</td><td>commit のメッセージが <code>safe-push yyyy/mm/dd hh:mm:ss</code>（JST）になる</td></tr>
+			<tr><td class="num">18</td><td>一続き全体が 3 分を超えたら、動いている git を止め、ロックを放して、終了コード 1 で終わる（上限はテストだけ短くできる）</td></tr>
+			<tr><td class="num">19</td><td>浅い clone で、取り込みが 2 回失敗したら、<code>fetch --unshallow</code> のあと 1 回だけやり直して、エラーで終わる</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li>bun と node の両方で回す（共通ルール「テストのルール」）。<code>run-all-tests</code> に足す</li>
+		<li>クラウド（sh のみ）では、入口の sh から動くことを、Linux で確かめる。<strong>Mac は実機が無ければ未確認と書く</strong></li>
+	</ul>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>置き場 ・ 進め方</h1>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>もの</th><th>置き場</th></tr></thead>
+		<tbody>
+			<tr><td>本体（TypeScript）</td><td class="nowrap"><code>src/safe-push/main.ts</code></td></tr>
+			<tr><td>入口</td><td class="nowrap"><code>bin/safe-push</code> ・ <code>bin/safe-push.cmd</code></td></tr>
+			<tr><td>テスト</td><td class="nowrap"><code>tools/40_test/run-safe-push-tests.ts</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h2>実装の結果（2026-10-18）</h2>
+	<p>計画を承認（利用者の判断）のあと、テストを先に書き、❌Red（<code>src/safe-push/main.ts</code> が無く、全件落ちる）を確かめてから実装した。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>結果</th></tr></thead>
+		<tbody>
+			<tr><td>テスト（<code>run-safe-push-tests.ts</code>。計画の 19 項目）</td><td>✅ 85 件すべて成功（bun ・ node の両方）</td></tr>
+			<tr><td>型チェック</td><td>✅ 食い違いなし</td></tr>
+			<tr><td>動かしたことのある環境</td><td>Windows だけ。<strong>Linux ・ Mac ・ クラウドの sh は、まだ実機で動かしていない</strong>（入口の <code>bin/safe-push</code> は書いたが、未確認）</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h3>実装で、計画から変えた点</h3>
+	<ul>
+		<li><strong>出力にホスト名を出さない</strong>。計画の例には「ホスト」と書いたが、共通ルール「機密情報のマスキング」に合わせ、「同じホスト ・ 別のホスト」とだけ書く（ロックの中身には、ホスト名を書く）</li>
+		<li><strong>リポジトリは、最上位のフォルダだけを受ける</strong>。サブフォルダを渡すと、終了コード 5。別の clone や、親のリポジトリを取り違えないため</li>
+		<li>全体の上限（3 分）は、<strong>ロックを取ったあと</strong>から数える（ロックの待ちは数えない）</li>
+		<li>載せるものがあるかは、<code>git add</code> のあと <code>git diff --cached --quiet</code> で見る。無ければ commit を飛ばす</li>
+		<li>push は、<code>git push &lt;remote&gt; HEAD:&lt;上流の ref&gt;</code> と、先を明示する（設定の <code>push.default</code> に左右されない。設定は読むだけ）</li>
+		<li>失敗の種類は、git の出力の文字で見分ける（<code>LC_ALL=C</code> で言語を揃える）。出力そのものは、画面に出さない</li>
+	</ul>
+	<h3>踏んだ落とし穴（テスト）</h3>
+	<ul>
+		<li><strong>2 つ目の clone を、改行の変換が有効なまま作ると、全ファイルが「変更あり」になり、ありもしない衝突が出た</strong>。Git for Windows は、既定で checkout 時に CRLF へ変換する。clone の時点で <code>-c core.autocrlf=false</code> を渡す（あとから設定しても、すでに変換されている）</li>
+		<li>テストの補助が出力の前後の空白を削るため、<code>git status --porcelain</code> の先頭の行の空白が落ち、照合が外れた。落ちた原因は、道具ではなくテストだった</li>
+	</ul>
+	<h3>残っている穴</h3>
+	<ul>
+		<li>古いロックを取り除く瞬間に、別の呼び出しが同じロックを取り除き、取り直されたロックを消す窓が、ごく狭く残る（取り除く直前に中身を読み直して、変わっていれば消さない形にして、狭めてある）</li>
+	</ul>
+
+	<h2>進め方</h2>
+	<ol>
+		<li>この計画の承認を得る（決める点は、すべて決まった。<strong>承認済み</strong>）</li>
+		<li>名前（<code>safe-push</code>）と、依頼元の計画と違う点を、依頼元（ai-agent-rules）へ知らせる。違う点は、すべて載せる呼び方（<code>--all</code> が要る）と、終了コード（衝突は 3、push 失敗は 4、飛ばしは 0、引数の誤りは 5）</li>
+		<li>テストを先に書き、落ちるのを見てから実装する</li>
+		<li>実装する。TOOLS-USAGE に使い方を書き、README の一覧に足す</li>
+		<li>依頼元へ使い方を返信し、確認を依頼する。<strong>依頼元から OK が出るまで、課題を「済」にしない</strong>（共通ルール「課題の管理」）</li>
+	</ol>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

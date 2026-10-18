@@ -11,20 +11,21 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（12 章 / 色相 280 → 0 を 25.5 度刻み） */
+	/* 章のアクセント色（14 章 / 色相 280 → 0 を 21.5 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(256.7,78%,25%); --accent2:hsl(256.7,58%,55%); --soft:hsl(256.7,28%,95%); }
-	.ch03{ --accent:hsl(233.3,78%,25%); --accent2:hsl(233.3,58%,55%); --soft:hsl(233.3,28%,95%); }
-	.ch04{ --accent:hsl(210,78%,25%);   --accent2:hsl(210,58%,55%);   --soft:hsl(210,28%,95%); }
-	.ch05{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
-	.ch06{ --accent:hsl(163.3,78%,25%); --accent2:hsl(163.3,58%,55%); --soft:hsl(163.3,28%,95%); }
-	.ch07{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
-	.ch08{ --accent:hsl(116.7,78%,25%); --accent2:hsl(116.7,58%,55%); --soft:hsl(116.7,28%,95%); }
-	.ch09{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
-	.ch10{ --accent:hsl(70,78%,25%);    --accent2:hsl(70,58%,55%);    --soft:hsl(70,28%,95%); }
-	.ch11{ --accent:hsl(46.7,78%,25%);  --accent2:hsl(46.7,58%,55%);  --soft:hsl(46.7,28%,95%); }
-	.ch12{ --accent:hsl(23.3,78%,25%);  --accent2:hsl(23.3,58%,55%);  --soft:hsl(23.3,28%,95%); }
-	.ch13{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(258.5,78%,25%); --accent2:hsl(258.5,58%,55%); --soft:hsl(258.5,28%,95%); }
+	.ch03{ --accent:hsl(236.9,78%,25%); --accent2:hsl(236.9,58%,55%); --soft:hsl(236.9,28%,95%); }
+	.ch04{ --accent:hsl(215.4,78%,25%); --accent2:hsl(215.4,58%,55%); --soft:hsl(215.4,28%,95%); }
+	.ch05{ --accent:hsl(193.8,78%,25%); --accent2:hsl(193.8,58%,55%); --soft:hsl(193.8,28%,95%); }
+	.ch06{ --accent:hsl(172.3,78%,25%); --accent2:hsl(172.3,58%,55%); --soft:hsl(172.3,28%,95%); }
+	.ch07{ --accent:hsl(150.8,78%,25%); --accent2:hsl(150.8,58%,55%); --soft:hsl(150.8,28%,95%); }
+	.ch08{ --accent:hsl(129.2,78%,25%); --accent2:hsl(129.2,58%,55%); --soft:hsl(129.2,28%,95%); }
+	.ch09{ --accent:hsl(107.7,78%,25%); --accent2:hsl(107.7,58%,55%); --soft:hsl(107.7,28%,95%); }
+	.ch10{ --accent:hsl(86.2,78%,25%);  --accent2:hsl(86.2,58%,55%);  --soft:hsl(86.2,28%,95%); }
+	.ch11{ --accent:hsl(64.6,78%,25%);  --accent2:hsl(64.6,58%,55%);  --soft:hsl(64.6,28%,95%); }
+	.ch12{ --accent:hsl(43.1,78%,25%);  --accent2:hsl(43.1,58%,55%);  --soft:hsl(43.1,28%,95%); }
+	.ch13{ --accent:hsl(21.5,78%,25%);  --accent2:hsl(21.5,58%,55%);  --soft:hsl(21.5,28%,95%); }
+	.ch14{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -161,7 +162,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-15</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-18</p>
 	</div>
 </div>
 
@@ -185,6 +186,7 @@
 		<li class="ch11"><a href="#ch11">音声を書き起こす（transcribe）</a></li>
 		<li class="ch12"><a href="#ch12">音声の形式を変える（convert-audio）</a></li>
 		<li class="ch13"><a href="#ch13">会話ログから公開用のページを作る（history2html）</a></li>
+		<li class="ch14"><a href="#ch14">リポジトリを壊さずに GitHub と同期する（safe-push）</a></li>
 	</ol>
 </div>
 
@@ -209,6 +211,7 @@
 			<tr><td class="nowrap"><code>transcribe</code></td><td>音声を whisper.cpp で<strong>書き起こす</strong>。複数の音声を 1 回の起動でまとめて処理する（「音声を書き起こす（transcribe）」）</td></tr>
 			<tr><td class="nowrap"><code>convert-audio</code></td><td>音声の形式を ffmpeg で<strong>変える</strong>（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」）</td></tr>
 			<tr><td class="nowrap"><code>history2html</code></td><td>会話ログ（<code>etc/history/jsonl</code>）から、<strong>伏せ字を掛けた公開用のページ</strong>を作る（「会話ログから公開用のページを作る（history2html）」）</td></tr>
+			<tr><td class="nowrap"><code>safe-push</code></td><td>複数のセッション ・ PC ・ クラウドから書き換えられるリポジトリを、<strong>commit → pull --rebase → push の一続きで、壊さずに</strong> GitHub と同期する（「リポジトリを壊さずに GitHub と同期する（safe-push）」）</td></tr>
 			<tr><td class="nowrap"><code>cloud-session-start</code></td><td>クラウドのセッションで、<strong>共通ルールと共有ツールを隣に置き、PATH と git の author を整える</strong>（「クラウドのセッションを準備する（cloud-session-start）」）</td></tr>
 		</tbody>
 	</table>
@@ -929,6 +932,43 @@ history2html --title "紙芝居" --lead "紙芝居アニメを作る"  # 題と 
 		<p><strong>機械の伏せ字は、公開してよいことの保証にならない。</strong>リストに無い名前、文脈で人が分かる話は残る。公開する前に、人が目で読む。</p>
 	</div>
 	<p>commit したあとに check-public が書き出したものを <code>[異体字]</code> と指摘することがある。会話にキリル文字 ・ ハングルが入っていたときで、秘密ではない。history2html の検査は、この項目を見ない。</p>
+</section>
+
+<section class="ch14" id="ch14">
+	<h1>リポジトリを壊さずに GitHub と同期する（safe-push）</h1>
+
+	<pre><code class="language-powershell">safe-push "&lt;リポジトリ&gt;" --all                 # 変更をすべて載せて同期する
+safe-push "&lt;リポジトリ&gt;" common-rules.md rules  # 名指しのパスだけを載せて同期する</code></pre>
+
+	<p><strong>複数のセッション ・ PC ・ クラウドから書き換えられるリポジトリ</strong>（Obsidian Vault ・ 共通ルール等）を、<code>commit → pull --rebase → push</code> の一続きで同期する。Stop フックや cron から呼ぶ前提で作ってある。</p>
+	<ul>
+		<li><strong>リポジトリは最初の引数に必ず渡す。</strong>リポジトリの最上位のフォルダを指す。カレントは見ない。<strong>載せ方は <code>--all</code> か、パスのどちらか一方</strong>（どちらも無い ・ 両方、は誤り）</li>
+		<li><strong>同じ clone に同時に来ても、一続きは重ならない。</strong><code>.git/safe-push.lock</code> でロックを取る。取れなければ 3 秒おきに 4 回（約 9 秒）取り直し、それでも取れなければ飛ばす（終了コード 0。出力に「飛ばしました」と出る）</li>
+		<li>残ったロックは、持ち主（同じホストの pid）が居なければすぐ、居るかどうか分からなければ 5 分を過ぎたら取り除き、出力に報告する。放すのは自分のロックだけ</li>
+		<li><strong>名指しのときは、名指し以外の変更を載せない。</strong>名指し以外の<strong>追跡しているファイルの書きかけ</strong>が残っているときは、<strong>取り込まず</strong>、commit と push だけを試す。別の clone が先に push していれば、push が拒否されて終了コード 4（書きかけが commit されるか無くなってから、取り込まれて送られる）</li>
+		<li>commit のメッセージは <code>safe-push yyyy/mm/dd hh:mm:ss</code>（JST）で固定</li>
+		<li><strong>push は、やり直さない。</strong>失敗したらエラーで、commit は手元に残り、次の回が送る。浅い clone で取り込みが失敗したときだけ、<code>fetch --unshallow</code> のあと 1 回やり直す</li>
+		<li>git は 1 回ごとに 60 秒、一続き全体は 3 分で打ち切る。<strong>reset --hard ・ stash ・ checkout -- は使わない。git の設定は書き換えない</strong>（読むだけ）</li>
+		<li>出力は 1 行。件数とファイル名だけを出し、<strong>ホスト名も中身も出さない</strong>。成功は標準出力、失敗は標準エラー</li>
+		<li><strong>Bash から直接呼んでよい</strong>。UTF-8 で出すため化けない。<code>psh</code> で包まない</li>
+	</ul>
+
+	<h2>終了コード</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>コード</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="num">0</td><td>同期した、載せるものも取り込むものも無かった、またはロックが取れず飛ばした（出力で区別する）</td></tr>
+			<tr><td class="num">1</td><td>そのほかの失敗（commit の失敗 ・ git が時間切れ ・ 取り込みの失敗 ・ 一続き全体の上限）</td></tr>
+			<tr><td class="num">3</td><td>取り込みでぶつかった。ぶつかったファイル名を出す。手元の commit と変更は残してある（人の対応が要る）</td></tr>
+			<tr><td class="num">4</td><td>push に失敗した（認証 ・ 回線 ・ 拒否）</td></tr>
+			<tr><td class="num">5</td><td>引数や置き場の誤り（clone の最上位でない ・ 上流が無い ・ detached ・ パスが外 ・ 存在しない）</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<div class="callout callout-important">
+		<p><strong>終了コードに 2 を使わない。</strong>Stop フックは終了コード 2 を「終わらずに続ける」と読む。ほかのツールは引数の誤りを 2 にしているが、このツールはフックから呼ばれるので変えてある。</p>
+	</div>
 </section>
 
 </div>

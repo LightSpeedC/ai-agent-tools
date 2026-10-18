@@ -140,7 +140,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。プロジェクトを問わず使う道具の置き場。</p>
-		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-10-14</p>
+		<p class="date">📅 作成: 2026-08-27 / 更新: 2026-10-18</p>
 	</div>
 </div>
 
@@ -170,6 +170,7 @@
 		<tr><td class="nowrap"><code>transcribe</code></td><td>音声を whisper.cpp で書き起こす。複数の音声を 1 回の起動でまとめて処理する</td></tr>
 		<tr><td class="nowrap"><code>convert-audio</code></td><td>音声の形式を ffmpeg で変える（WAV を mp3 にする等）</td></tr>
 		<tr><td class="nowrap"><code>history2html</code></td><td>会話ログ（etc/history/jsonl）から、伏せ字を掛けた公開用のページを作る</td></tr>
+		<tr><td class="nowrap"><code>safe-push</code></td><td>複数の場所から書き換えられるリポジトリを、commit ・ pull --rebase ・ push の一続きで、壊さずに GitHub と同期する</td></tr>
 		<tr><td class="nowrap"><code>cloud-session-start</code></td><td>クラウドのセッションで、共通ルールと共有ツールを隣に置き、PATH と git の author を整える</td></tr>
 	</tbody>
 </table>
@@ -242,6 +243,7 @@
 			<tr><td class="nowrap"><a href="notes/10_plan/i261012-02-convert-audio-ffmpeg.html">convert-audio 計画</a></td><td>WAV 等の音声を ffmpeg で mp3 等に変える</td></tr>
 			<tr><td class="nowrap"><a href="notes/10_plan/p261014-01-会話履歴ビューア.html">会話履歴ビューア 計画</a></td><td>会話ログ（JSONL）に伏せ字を掛け、外部のサイトに置ける静的なページにする</td></tr>
 			<tr><td class="nowrap"><a href="notes/10_plan/p261014-02-応答の言語の検査.html">応答の言語の検査 計画</a></td><td>AI の応答に英語の文が混ざったら、フックで差し戻す</td></tr>
+			<tr><td class="nowrap"><a href="notes/10_plan/i261018-01-safe-push.html">safe-push 計画</a></td><td>複数の場所から書き換えられるリポジトリを、commit ・ pull --rebase ・ push の一続きで、壊さずに GitHub と同期する</td></tr>
 		</tbody>
 	</table>
 	</div>

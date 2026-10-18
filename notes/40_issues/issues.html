@@ -1041,7 +1041,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	<p>ai-chat-lite で他のプロジェクトから届いた要求と指摘。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
 
 	<details open>
-		<summary><span class="badge b-none">未</span><span class="no">i261018-01</span>Git の同期を壊さずに行う共有ツールを作る（ai-agent-rules の p261018-01）</summary>
+		<summary><span class="badge b-warn">着手</span><span class="no">i261018-01</span>Git の同期を壊さずに行う共有ツールを作る（ai-agent-rules の p261018-01）</summary>
 		<div class="issue-body">
 			<p>2026-10-18 に <code>ai-agent-rules</code> から依頼（ai-chat-lite #1530）。複数のセッション・PC・クラウドから書き換えられるリポジトリ（Obsidian Vault・共通ルール）を、壊さずに GitHub と同期する。名前・引数・ロックの持ち方・期限・終了コードなどの決め事は、こちらに任せるとのこと。</p>
 			<ul>
@@ -1052,7 +1052,14 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li>reset --hard ・ stash ・ checkout -- は使わない。git の設定は書き換えない</li>
 				<li>テストは、裸のリポジトリと clone 2 つで、先に書く。名前が決まったら依頼元へ教える</li>
 			</ul>
-			<p>決めること: 名前、引数、ロックの持ち方、期限、終了コード。仕様を決めるものなので、計画を出して利用者の判断を待つ。</p>
+			<p>決めること: 名前、引数、ロックの持ち方、期限、終了コード。仕様を決めるものなので、計画を出して利用者の判断を待つ。計画は <a href="../10_plan/i261018-01-safe-push.html">safe-push 計画</a>。<strong>決めたこと（2026-10-18、利用者の判断）。</strong>名前は <code>safe-push</code>。決める点（41 〜 54）は、計画のとおりにすべて決まった。<strong>計画を承認（2026-10-18、利用者の判断）。</strong></p>
+			<ul>
+				<li><span class="badge b-ok">済</span>テストを先に書き（<code>run-safe-push-tests.ts</code>）、落ちるのを見てから実装した（❌Red → ✅Green。85 件。bun ・ node とも）</li>
+				<li><span class="badge b-ok">済</span>実装（<code>src/safe-push/main.ts</code> ・ <code>bin/safe-push</code> ・ <code>bin/safe-push.cmd</code>）。<strong>動かしたのは Windows だけ</strong>。Linux ・ Mac ・ クラウドの sh は未確認</li>
+				<li><span class="badge b-ok">済</span>TOOLS-USAGE（第 14 章）に使い方を書き、README の一覧に足した。計画書に結果と、計画から変えた点を書いた</li>
+				<li><span class="badge b-ok">済</span>依頼元へ、実装した旨と使い方を返信し、確認を依頼した（ai-chat-lite #1535）</li>
+				<li><span class="badge b-warn">着手</span>報告元の確認（確認が取れるまで、課題を「済」にしない）。<strong>共通ルール側は確認済み</strong>（#1537）: <code>safe-push &lt;リポジトリ&gt; common-rules.md rules</code> で、手元の未 push の commit 3 件が送られ、終了コード 0、origin が手元と一致した。<strong>Vault 側は、Stop フックの置き換えが済んでから試す</strong>とのこと（待ち）</li>
+			</ul>
 		</div>
 	</details>
 
