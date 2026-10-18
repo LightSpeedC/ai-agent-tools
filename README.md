@@ -25,6 +25,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま新しい窓で起動する（同じ PC からだけ） |
 | `transcribe` | 音声を whisper.cpp で書き起こす。複数の音声を 1 回の起動でまとめて処理する |
 | `convert-audio` | 音声の形式を ffmpeg で変える（WAV を mp3 にする等） |
+| `history2html` | 会話ログ（etc/history/jsonl）から、伏せ字を掛けた公開用のページを作る |
 | `cloud-session-start` | クラウドのセッションで、共通ルールと共有ツールを隣に置き、PATH と git の author を整える |
 
 `bin/` にはほかに、このリポジトリの持ち主が使う起動用の cmd（`cc` ・ `cx` ・ `w` など）も置いている。
@@ -75,6 +76,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | [transcribe 計画](notes/10_plan/i261012-01-transcribe-whisper-listen.md) | 音声ファイルを whisper.cpp で聞き取り、ファイルごとの書き起こしと JSON を出す |
 | [convert-audio 計画](notes/10_plan/i261012-02-convert-audio-ffmpeg.md) | WAV 等の音声を ffmpeg で mp3 等に変える |
 | [会話履歴ビューア 計画](notes/10_plan/p261014-01-会話履歴ビューア.md) | 会話ログ（JSONL）に伏せ字を掛け、外部のサイトに置ける静的なページにする |
+| [応答の言語の検査 計画](notes/10_plan/p261014-02-応答の言語の検査.md) | AI の応答に英語の文が混ざったら、フックで差し戻す |
 
 ## 3. 課題
 

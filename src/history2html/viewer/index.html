@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="md-skip">
+<title>{{TITLE}} ・ {{LEAD}}</title>
+<style>
+/*{{CSS}}*/
+</style>
+<!--
+	Markdown を描く marked と、描いた結果を消毒する DOMPurify。
+	版を固定し、SRI（integrity）を付ける。読めなかったときは、本文を文字のまま出す
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/18.0.14/lib/marked.umd.min.js" integrity="sha512-trN9mtGYvoySPVI909KTnwbJI9AkKPydRCV/qAsUG1+q39hhpKltEag9b5JpdjeIZn5i8IH62hHRFdbKwMFh9w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha512-flQmhkXNRQ3iUfvtdCobtpMjCb6kE+zLnTiAulAQJ3WykVfy84JvCMOo6vhwWXHTXjR25h9Zj+LyGFRWKjRoag==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+
+<header class="hdr">
+	{{HOME}}
+	<div class="ttl">
+		<h1>{{TITLE}}</h1>
+		<p class="lead">{{LEAD}}</p>
+	</div>
+	<div class="find" role="search">
+		<input type="search" placeholder="検索（2 文字以下は Enter）" aria-label="検索">
+		<span class="cnt" aria-live="polite"></span>
+		<button type="button" data-go="first" title="一番上の当たりへ">⇈</button>
+		<button type="button" data-go="prev" title="上の当たりへ">↑</button>
+		<button type="button" data-go="next" title="下の当たりへ">↓</button>
+		<button type="button" data-go="last" title="一番下の当たりへ">⇊</button>
+	</div>
+	<div class="jump" role="group" aria-label="移動">
+		<!-- 先頭へ: 上の横線 ＋ 上向きの矢印 ／ 最新へ: 下向きの矢印 ＋ 下の横線 -->
+		<button type="button" data-go="top" title="先頭へ（いちばん古い会話）" aria-label="先頭へ"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2.5h12M8 14V5.5M4 9.5l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+		<button type="button" data-go="bottom" title="最新へ（いちばん新しい会話）" aria-label="最新へ"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13.5h12M8 2v8.5M4 6.5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+	</div>
+	<div class="mode" role="group" aria-label="応答の出し方">
+		<button type="button" data-mode="none" aria-pressed="true">応答を閉じる</button>
+		<button type="button" data-mode="all" aria-pressed="false">すべて展開</button>
+	</div>
+</header>
+
+<div class="body">
+	<nav class="rail" aria-label="日付の目盛り">
+		<!-- 左の余白。クリックしても何も起きない -->
+		<div class="gutter"></div>
+		<div class="track">
+			<canvas aria-hidden="true"></canvas>
+			<div class="thumb" title="ドラッグで移動"></div>
+		</div>
+	</nav>
+	<main class="main" tabindex="-1">
+		<div class="list"></div>
+	</main>
+</div>
+<div class="tip" role="tooltip" hidden></div>
+
+<noscript><p class="empty">表示には JavaScript が要ります。</p></noscript>
+
+<script>
+/*{{JS}}*/
+</script>
+</body>
+</html>

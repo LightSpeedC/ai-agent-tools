@@ -1,6 +1,6 @@
 /*
 	このリポジトリの HTML が、共通ルール「HTMLデザインルール」などの機械で確かめられる項目に
-	沿っているかを見る。git の対象の HTML（まだ追跡していない新しいものを含む）のうち、tests/ を除くものが対象。
+	沿っているかを見る。git の対象の HTML（まだ追跡していない新しいものを含む）のうち、tests/ と src/ を除くものが対象。
 
 	    node tools/40_test/check-html-rules.ts
 
@@ -23,8 +23,9 @@ import { execSync } from 'node:child_process';
 // tools/40_test/ に置くため、2 階層上がプロジェクトルート
 const root = path.resolve(import.meta.dirname, '..', '..');
 // 追跡していない新しいファイルも見る（.gitignore で外したものは除く）
+// src/ の下の HTML は、道具が書き出すページのひな形（history2html のビューア等）で、資料ではないので見ない
 const files = execSync('git -c core.quotepath=false ls-files --cached --others --exclude-standard -- "*.html"', { cwd: root, encoding: 'utf8' })
-	.split('\n').filter((f) => f && !f.startsWith('tests/'));
+	.split('\n').filter((f) => f && !f.startsWith('tests/') && !f.startsWith('src/'));
 
 const readme = fs.readFileSync(path.join(root, 'README.html'), 'utf8');
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

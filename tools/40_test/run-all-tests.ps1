@@ -47,6 +47,10 @@ $Suites = @(
 	@{ Name = 'html2md の日付の検査'; Script = 'run-html2md-date-tests.ts' },
 	@{ Name = 'html2md の書き出し'; Script = 'run-html2md-write-tests.ts' },
 	@{ Name = 'transcribe'; Script = 'run-transcribe-tests.ts' },
+	# 会話ログから公開用の HTML を作る。伏せ字は 2 段目の検査まで見る
+	@{ Name = 'history2html'; Script = 'run-history2html-tests.ts' },
+	# ビューアをブラウザ 3 種で確かめる（PlayWright 共有環境）。材料を作って渡すだけなので 1 周でよい
+	@{ Name = 'history2html のビューア'; Script = 'run-history2html-viewer-tests.ts'; Once = $true },
 	@{ Name = 'convert-audio'; Script = 'run-convert-audio-tests.ts' },
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },
 	@{ Name = 'text'; Script = 'run-text-tests.ps1'; NodeTarget = 'runners\text-node.cmd' },
@@ -113,8 +117,10 @@ foreach ($suite in $Suites) {
 			$failed += $suite.Name
 			continue
 		}
-		# 入っている処理系すべてで回す。片方で通っても、もう片方で落ちうる
-		foreach ($runner in $TsRunners) {
+		# 入っている処理系すべてで回す。片方で通っても、もう片方で落ちうる。
+		# Once は、処理系に左右されない外の道具（ブラウザ等）を呼ぶだけのもの。1 周目だけ回す
+		$runners = if ($suite.ContainsKey('Once')) { @($TsRunners[0]) } else { $TsRunners }
+		foreach ($runner in $runners) {
 			Write-Host ('--- ' + $suite.Name + '（' + $runner + '）') -ForegroundColor DarkGray
 			& $runner $path
 			if ($LASTEXITCODE -ne 0) { $failed += ($suite.Name + '（' + $runner + '）') }

@@ -179,7 +179,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-10-14</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-10-18</p>
 	</div>
 </div>
 
@@ -201,16 +201,19 @@
 <section class="ch01" id="ch01">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 21 件。16 件が解消済み、2 件が着手、3 件が未着手。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 21 件。17 件が解消済み、2 件が着手、2 件が未着手。</p>
 
-	<details open>
-		<summary><span class="badge b-none">未</span><span class="no">i261014-01</span>共通ルール「番号付きフォルダ」に notes/91_history を書き足す（history2html ができてから）</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i261014-01</span>共通ルール「番号付きフォルダ」に notes/91_history を書き足す（history2html ができてから）</summary>
 		<div class="issue-body">
 			<p>会話履歴ビューア（<a href="../10_plan/p261014-01-会話履歴ビューア.html">p261014-01</a>）の出し先の既定を <code>notes/91_history/</code> に決めた（2026-10-14、利用者の判断。決めたこと 17）。91 は共通ルールの「10 刻み」から外れるので、共通ルールに書き足す。</p>
 			<ul>
 				<li><strong>引き金</strong>: <code>history2html</code> の実装とテストが済み、<code>bin/</code> に置いたとき。<strong>ルールは、ツールができてから編集する</strong>（2026-10-14、利用者の判断）</li>
 				<li><strong>書き方は未定</strong>: 18-A（<code>91_history</code> だけを名指しで足し、10 刻みの例外とする。推奨）／ 18-B（91〜99 を、一部のプロジェクトだけに置く特殊なものの枠にする）。その時点で文言を出し直して決める</li>
 				<li>共通ルールは、このプロジェクトから直接編集する。反映したら周知する（共通ルール「共通ルールを変えたら周知する」）</li>
+				<li>2026-10-14、<code>history2html</code> の実装とテストが済み、<code>bin/</code> に置いた（commit はまだ）。<strong>引き金を満たしたので、文言の案を出し直して決めてもらう段</strong></li>
+				<li><span class="badge b-ok">済</span>2026-10-17、18-B に決まり（利用者の判断）、共通ルールに反映した。91〜99 をフェーズに属さない特殊なものの枠とし、notes/ の行に <code>91_history</code> を足した</li>
+				<li><span class="badge b-ok">済</span>public ルームへの周知（#1515）</li>
 			</ul>
 		</div>
 	</details>
@@ -1038,7 +1041,23 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	<p>ai-chat-lite で他のプロジェクトから届いた要求と指摘。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
 
 	<details open>
-		<summary><span class="badge b-warn">着手</span><span class="no">i261012-02</span>音声の形式を変換するコマンド convert-audio を足す</summary>
+		<summary><span class="badge b-none">未</span><span class="no">i261018-01</span>Git の同期を壊さずに行う共有ツールを作る（ai-agent-rules の p261018-01）</summary>
+		<div class="issue-body">
+			<p>2026-10-18 に <code>ai-agent-rules</code> から依頼（ai-chat-lite #1530）。複数のセッション・PC・クラウドから書き換えられるリポジトリ（Obsidian Vault・共通ルール）を、壊さずに GitHub と同期する。名前・引数・ロックの持ち方・期限・終了コードなどの決め事は、こちらに任せるとのこと。</p>
+			<ul>
+				<li>同じ clone で同時に呼ばれても、commit → pull --rebase → push の一続きが重ならない（排他のロック）。取れないときは 3 秒おきに 9 秒まで取り直し、だめなら飛ばす。残ったロックで止まり続けない</li>
+				<li>変更をすべて載せる呼び方と、名指しのパスだけを載せる呼び方（名指し以外の commit 前の変更は残したまま同期できる）</li>
+				<li>ほかの clone の push を取り込んでから送る。ぶつかったら止めて報告し、手元の commit と変更を消さない</li>
+				<li>Windows ・ Linux ・ Mac ・ クラウド（sh のみ）で動く。git の呼び出しは timeout 付き。日時は JST。出力は短く</li>
+				<li>reset --hard ・ stash ・ checkout -- は使わない。git の設定は書き換えない</li>
+				<li>テストは、裸のリポジトリと clone 2 つで、先に書く。名前が決まったら依頼元へ教える</li>
+			</ul>
+			<p>決めること: 名前、引数、ロックの持ち方、期限、終了コード。仕様を決めるものなので、計画を出して利用者の判断を待つ。</p>
+		</div>
+	</details>
+
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i261012-02</span>音声の形式を変換するコマンド convert-audio を足す</summary>
 		<div class="issue-body">
 			<p>2026-10-12 に <code>20261004-kamishibai-animation</code> から依頼（ai-chat-lite #1439）。</p>
 			<ul>
@@ -1056,8 +1075,8 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li><span class="badge b-ok">済</span>TOOLS-USAGE に使い方を書いた（入手方法は計画書だけに置く）</li>
 				<li><span class="badge b-ok">済</span>報告元から不具合 1（ai-chat-lite #1445）: 既にあるフォルダを <code>..</code> を含む相対パスで <code>--out</code> に渡すと EEXIST で落ちる。<strong>bun だけの挙動</strong>（node と絶対パスでは起きない）。絶対パスにしてから作るよう直した。transcribe にも同じ書き方があり、一緒に直した。両方にテストを足し、bun で落ちるのを見てから直した</li>
 				<li><span class="badge b-ok">済</span>報告元から不具合 2（#1445）: 絶対パスで 108 本を一度に渡すと <code>The command line is too long.</code> で落ちる。cmd の入口を通るため、cmd の 1 行の上限（8191 文字）に当たったと見られる（未確認）。transcribe も同じ。<strong>決めたこと（2026-10-12、利用者の判断）</strong>: 一覧ファイル（<code>--list</code>）とフォルダ（<code>--dir</code> ＋ <code>--ext</code>）の両方を足す。5-A ・ 6-A ・ 7-A。両方のツールに付け、テストを足した（❌Red → ✅Green）。報告元が <code>--list</code> で 108 本を 1 回で変換できたことを確かめた（#1449）</li>
-				<li><span class="badge b-warn">着手</span>報告元から要望（#1449）: 成功時も ffmpeg の進捗ログが 1 本ごとに標準エラーへ出て、108 本で約 1500 行になる。失敗時だけ出す形にできないか。<strong>決めたこと（2026-10-12、利用者の判断）</strong>: 既定では出さない。エラーは詳しく出す。<code>--verbose</code> を付けると、1 本ずつ出す。2026-10-14 に transcribe も同じ形にそろえると決めた（10-A）。<strong>両方とも実装した</strong>。テストを先に書き ❌Red（convert-audio 4 件 ・ transcribe 3 件）→ ✅Green（41 件 ・ 28 件）。報告元の確認待ち</li>
-				<li><span class="badge b-none">未</span>報告元の確認</li>
+				<li><span class="badge b-ok">済</span>報告元から要望（#1449）: 成功時も ffmpeg の進捗ログが 1 本ごとに標準エラーへ出て、108 本で約 1500 行になる。失敗時だけ出す形にできないか。<strong>決めたこと（2026-10-12、利用者の判断）</strong>: 既定では出さない。エラーは詳しく出す。<code>--verbose</code> を付けると、1 本ずつ出す。2026-10-14 に transcribe も同じ形にそろえると決めた（10-A）。<strong>両方とも実装した</strong>。テストを先に書き ❌Red（convert-audio 4 件 ・ transcribe 3 件）→ ✅Green（41 件 ・ 28 件）</li>
+				<li><span class="badge b-ok">済</span>報告元の確認（#1513）: 108 本を <code>--list</code> で変換し、終了コード 0、標準エラー 0 行、標準出力は出したファイルの一覧 108 行だけだった</li>
 			</ul>
 		</div>
 	</details>

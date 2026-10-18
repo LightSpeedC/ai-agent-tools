@@ -23,12 +23,13 @@
 	計画は notes/10_plan/p260912-01-check-public.html。
 */
 
-import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { parseArgs, type OptionSpec } from '../lib/args.ts';
 import { detect, isValidUtf8 } from '../lib/detector.ts';
 import { decode } from '../lib/codec.ts';
+// 見つけ方は history2html と共有する（2 か所に書くと、片方だけが古くなる）
+import { Rules, git, gitAuthor, loadWords } from '../lib/public-rules.ts';
 
 /** 指摘あり。ほかの検査ツールと同じ契約 */
 const ExitFound = 1;
@@ -83,98 +84,6 @@ function isTextTarget(file: string): boolean {
 
 const SkipDirs = ['.git', 'node_modules', 'tmp', 'etc', 'dist', '_releases'];
 
-type Rule = {
-	/** --skip で名指しする名前 */
-	key: string;
-	label: string;
-	test: (line: string) => boolean;
-};
-
-/*
-	伏せ字と変数参照は当てない。
-	これらを拾うと、正しく伏せた資料ほど指摘が増えて道具が使われなくなる。
-*/
-function isPlaceholder(s: string): boolean {
-	// &lt; は HTML でエスケープされた < 。資料はエスケープした形で保存される
-	return /^[<%$（(〈{~]/.test(s) || s.startsWith('{{') || s.startsWith('&lt;');
-}
-
-/*
-	認証情報らしい値かを見る。**この項目がいちばん誤検出しやすい。**
-
-	`token` `secret` はコードでは普通の語で、変数名にも型注釈にも出る。
-	語だけで拾うと、道具そのもののソースが指摘だらけになって使われなくなる
-	（実際に args.ts の 5 行が当たった）。
-
-	疑うのは「人が読んでも意味の無い並び」だけにする。
-
-	  ・8 文字以上
-	  ・英字と数字の両方を含む
-	  ・コードの識別子・添字・呼び出しの形をしていない
-*/
-function looksLikeSecret(value: string): boolean {
-	const v = value.replace(/^['"`]+/, '').replace(/['"`,;)}\]]+$/, '');
-	if (v.length < 8) { return false; }
-	if (isPlaceholder(v)) { return false; }
-	// argv[i] ・ opts.token ・ getToken() のような書き方は除く
-	if (/^[A-Za-z_$][A-Za-z0-9_$]*(\[[^\]]*\]|\.[A-Za-z0-9_$]+|\(\))*$/.test(v)) { return false; }
-	// 環境変数の参照
-	if (/\$[A-Za-z_{]|%[A-Za-z_]+%/.test(v)) { return false; }
-	return /[A-Za-z]/.test(v) && /[0-9]/.test(v);
-}
-
-/*
-	除くのは RFC 2606 が文書用に予約しているものと noreply だけ。
-	**似ているだけの名前を足さない**（example-corp.jp は予約されていない）。
-	除外を広げるほど、本物を見逃す側に倒れる。
-*/
-const MailAllow = ['example.com', 'example.org', 'example.net', 'noreply@'];
-
-/** 囲まずに伏せ字として書かれる語。C:\Users\username\ の形で資料によく出る */
-const PathPlaceholders = ['username', 'user', 'yourname', 'name', '<name>', 'me'];
-
-const Rules: Rule[] = [
-	{
-		key: 'mail',
-		label: 'メールアドレス',
-		test: (line) => {
-			const m = line.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g);
-			if (m == null) { return false; }
-			return m.some((a) => !MailAllow.some((w) => a.toLowerCase().includes(w)));
-		},
-	},
-	{
-		key: 'path',
-		label: '実体パス',
-		test: (line) => {
-			/*
-				直後が英数字で始まるものだけを見る。
-				`C:\Users\` とだけ書いた説明文（直後が引用符や空白）は当たらない。
-				<username> ・ %USERNAME% ・ &lt;伏せ&gt; も先頭の記号ではじかれる
-			*/
-			const m = line.match(/[Cc]:[\\/]Users[\\/]([A-Za-z0-9][A-Za-z0-9._-]*)/);
-			if (m == null) { return false; }
-			return PathPlaceholders.indexOf(m[1].toLowerCase()) < 0;
-		},
-	},
-	{
-		key: 'secret',
-		label: '認証情報',
-		test: (line) => {
-			// === ・ == は比較であって代入ではない。値の側だけを見る
-			const m = line.match(/(password|passwd|secret|api[_-]?key|token)\s*[:=]=*\s*(\S+)/i);
-			if (m == null) { return false; }
-			return looksLikeSecret(m[2]);
-		},
-	},
-	{
-		key: 'script',
-		label: '異体字',
-		// 日本語・英数字の並びに混ざったキリル・ハングル
-		test: (line) => /[\u0400-\u04FF\uAC00-\uD7AF]/.test(line),
-	},
-];
-
 function usage(toStdout: boolean): void {
 	const write = toStdout ? console.log : console.error;
 	write('公開前に、外に出してはいけないものが混ざっていないかを見ます。');
@@ -192,47 +101,11 @@ function usage(toStdout: boolean): void {
 	write('当たった値そのものは画面に出しません。');
 }
 
-/*
-	git を走らせて標準出力を受け取る。
-
-	**同期版（spawnSync）は使わない。**返るまでこのプロセスの非同期処理が
-	1 つも進まないため。git はすぐ返るが、同期で書くと形が揃わない。
-
-	標準入力はすぐ閉じる。閉じないと、相手が入力を待って止まったままになる
-	（資格情報の入力を求められる場面がある）。
-*/
-function git(dir: string, args: string[]): Promise<{ status: number | null; stdout: string }> {
-	return new Promise((resolve) => {
-		const child = spawn('git', ['-C', dir, ...args]);
-		let stdout = '';
-		child.stdin.end();
-		child.stdout.setEncoding('utf8');
-		child.stdout.on('data', (d: string) => { stdout += d; });
-		// 標準エラーは読み捨てる。git の外で走らせたときの案内が出るだけ
-		child.stderr.on('data', () => { });
-		child.on('error', () => { resolve({ status: null, stdout: '' }); });
-		child.on('close', (code: number | null) => { resolve({ status: code, stdout }); });
-	});
-}
-
 /** git が追跡しているファイルを聞く。git の外なら null */
 async function gitFiles(dir: string): Promise<string[] | null> {
 	const r = await git(dir, ['-c', 'core.quotepath=false', 'ls-files']);
 	if (r.status !== 0) { return null; }
 	return r.stdout.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
-}
-
-/** git の author。設定が無ければ空 */
-async function gitAuthor(dir: string): Promise<string[]> {
-	const out: string[] = [];
-	for (const key of ['user.name', 'user.email']) {
-		const r = await git(dir, ['config', key]);
-		if (r.status === 0) {
-			const v = r.stdout.trim();
-			if (v.length > 0) { out.push(v); }
-		}
-	}
-	return out;
 }
 
 function walkAll(dir: string, out: string[]): void {
@@ -280,15 +153,6 @@ function readLines(file: string): string[] | null {
 	} catch {
 		return null;
 	}
-}
-
-function loadWords(file: string): string[] | null {
-	if (!fs.existsSync(file)) { return null; }
-	const text = fs.readFileSync(file, 'utf8');
-	return text.split(/\r?\n/)
-		.map((s) => s.trim())
-		.filter((s) => s.length > 0 && !s.startsWith('#'))
-		.map((s) => s.toLowerCase());
 }
 
 async function main(): Promise<number> {

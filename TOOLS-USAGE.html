@@ -13,17 +13,18 @@
 	}
 	/* 章のアクセント色（12 章 / 色相 280 → 0 を 25.5 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(254.5,78%,25%); --accent2:hsl(254.5,58%,55%); --soft:hsl(254.5,28%,95%); }
-	.ch03{ --accent:hsl(229.1,78%,25%); --accent2:hsl(229.1,58%,55%); --soft:hsl(229.1,28%,95%); }
-	.ch04{ --accent:hsl(203.6,78%,25%); --accent2:hsl(203.6,58%,55%); --soft:hsl(203.6,28%,95%); }
-	.ch05{ --accent:hsl(178.2,78%,25%); --accent2:hsl(178.2,58%,55%); --soft:hsl(178.2,28%,95%); }
-	.ch06{ --accent:hsl(152.7,78%,25%); --accent2:hsl(152.7,58%,55%); --soft:hsl(152.7,28%,95%); }
-	.ch07{ --accent:hsl(127.3,78%,25%); --accent2:hsl(127.3,58%,55%); --soft:hsl(127.3,28%,95%); }
-	.ch08{ --accent:hsl(101.8,78%,25%); --accent2:hsl(101.8,58%,55%); --soft:hsl(101.8,28%,95%); }
-	.ch09{ --accent:hsl(76.4,78%,25%);  --accent2:hsl(76.4,58%,55%);  --soft:hsl(76.4,28%,95%); }
-	.ch10{ --accent:hsl(50.9,78%,25%);  --accent2:hsl(50.9,58%,55%);  --soft:hsl(50.9,28%,95%); }
-	.ch11{ --accent:hsl(25.5,78%,25%);  --accent2:hsl(25.5,58%,55%);  --soft:hsl(25.5,28%,95%); }
-	.ch12{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(256.7,78%,25%); --accent2:hsl(256.7,58%,55%); --soft:hsl(256.7,28%,95%); }
+	.ch03{ --accent:hsl(233.3,78%,25%); --accent2:hsl(233.3,58%,55%); --soft:hsl(233.3,28%,95%); }
+	.ch04{ --accent:hsl(210,78%,25%);   --accent2:hsl(210,58%,55%);   --soft:hsl(210,28%,95%); }
+	.ch05{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch06{ --accent:hsl(163.3,78%,25%); --accent2:hsl(163.3,58%,55%); --soft:hsl(163.3,28%,95%); }
+	.ch07{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
+	.ch08{ --accent:hsl(116.7,78%,25%); --accent2:hsl(116.7,58%,55%); --soft:hsl(116.7,28%,95%); }
+	.ch09{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch10{ --accent:hsl(70,78%,25%);    --accent2:hsl(70,58%,55%);    --soft:hsl(70,28%,95%); }
+	.ch11{ --accent:hsl(46.7,78%,25%);  --accent2:hsl(46.7,58%,55%);  --soft:hsl(46.7,28%,95%); }
+	.ch12{ --accent:hsl(23.3,78%,25%);  --accent2:hsl(23.3,58%,55%);  --soft:hsl(23.3,28%,95%); }
+	.ch13{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -160,7 +161,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-14</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-10-15</p>
 	</div>
 </div>
 
@@ -183,6 +184,7 @@
 		<li class="ch10"><a href="#ch10">クラウドのセッションを準備する（cloud-session-start）</a></li>
 		<li class="ch11"><a href="#ch11">音声を書き起こす（transcribe）</a></li>
 		<li class="ch12"><a href="#ch12">音声の形式を変える（convert-audio）</a></li>
+		<li class="ch13"><a href="#ch13">会話ログから公開用のページを作る（history2html）</a></li>
 	</ol>
 </div>
 
@@ -206,6 +208,7 @@
 			<tr><td class="nowrap"><code>spawn-server</code></td><td>HTTP で受けたコマンドを、同じユーザーのまま<strong>新しい窓で起動する</strong>（「HTTP で受けたコマンドを新しい窓で起動する（spawn-server）」）</td></tr>
 			<tr><td class="nowrap"><code>transcribe</code></td><td>音声を whisper.cpp で<strong>書き起こす</strong>。複数の音声を 1 回の起動でまとめて処理する（「音声を書き起こす（transcribe）」）</td></tr>
 			<tr><td class="nowrap"><code>convert-audio</code></td><td>音声の形式を ffmpeg で<strong>変える</strong>（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」）</td></tr>
+			<tr><td class="nowrap"><code>history2html</code></td><td>会話ログ（<code>etc/history/jsonl</code>）から、<strong>伏せ字を掛けた公開用のページ</strong>を作る（「会話ログから公開用のページを作る（history2html）」）</td></tr>
 			<tr><td class="nowrap"><code>cloud-session-start</code></td><td>クラウドのセッションで、<strong>共通ルールと共有ツールを隣に置き、PATH と git の author を整える</strong>（「クラウドのセッションを準備する（cloud-session-start）」）</td></tr>
 		</tbody>
 	</table>
@@ -888,6 +891,44 @@ convert-audio --list voice/list.txt --to mp3         # 一覧ファイルに書�
 		<li>終了コード: 0 成功 ／ 1 変換の失敗 ／ 2 引数の誤り、ffmpeg ・ 音声が無い、出力が既にある</li>
 	</ul>
 	<p><strong>ffmpeg は Git に入っていない。</strong>無い PC では、置き場を示して終了コード 2 で止まる。入手は ai-agent-tools 側で行うので、ai-chat-lite で依頼する。</p>
+</section>
+
+<section class="ch13" id="ch13">
+	<h1>会話ログから公開用のページを作る（history2html）</h1>
+
+	<pre><code class="language-powershell">history2html                           # カレントのプロジェクトの etc/history/jsonl を読み、notes/91_history に書く
+history2html --out tmp/history         # 出し先を変える（公開する前に試すとき）
+history2html --in ../logs/jsonl        # 会話ログのフォルダを変える
+history2html --title "紙芝居" --lead "紙芝居アニメを作る"  # 題と 1 行の概要を変える</code></pre>
+
+	<p><strong>自分のプロジェクトの会話ログを読み、自分のプロジェクトの中に書く。</strong>伏せ字を掛けた静的なページで、外部のサイト（GitHub Pages 等）にそのまま置ける。</p>
+	<ul>
+		<li><strong>伏せる語のリストが要る。</strong>check-public と同じ、プロジェクト直下の <code>_public-ng-words.txt</code>（<code>--word-list</code> で差し替えられる）。人の名前 ・ 社名など、式では見つけられない語を 1 行に 1 つ書く。<strong>無ければ止まる</strong>（空のファイルでよい）</li>
+		<li>伏せるもの: ユーザープロファイルのパス（自分のものは <code>~</code>）・ git の author ・ マシン名 ・ メールアドレス ・ 伏せる語 ・ セッションの URL ・ 鍵と <code>password=</code> 等の値 ・ 内部のホスト名とプライベートの IP</li>
+		<li><strong>書き出す前に、出力の全体をもう一度検査する。</strong>1 件でも残れば何も書かずに終了コード 1。どのファイルに何の種類が残ったかだけを出す</li>
+		<li>画面に、伏せた後の語を件数とともに並べる（<code>✅ 〈個人名〉  3 件</code>）。元の値は出さない。<strong>伏せる語のリストが空のとき、git の author が取れないときは ⚠️ を出す</strong>（書き出しは止めない）</li>
+		<li>題はプロジェクトのフォルダ名（<code>--title</code>）と 1 行の概要（<code>--lead</code>）。概要を省くと、README.html のタイトルバーの概要（<code>.lead</code>）を使う</li>
+		<li>載せるのは、人の発言 ・ AI の本文 ・ ツールの名前と 1 行の要約（コマンドの 1 行目 ・ パス ・ 検索語）。<strong>ツールの結果 ・ 思考 ・ system-reminder ・ 通知の中身 ・ サブエージェントは載せない</strong></li>
+		<li>出し先が空でなく、前回 history2html が作った印（<code>data/index.js</code>）も無ければ書かない。印があれば <code>data/</code> を作り直す。<strong>中身が同じファイルは書かない</strong>ので、続けて実行しても、変わるのは新しい日 ・ 最終日 ・ 目次だけ</li>
+		<li>画面には件数だけを出す。会話の本文も、伏せた値も出さない。<strong>Bash から直接呼んでよい</strong>（<code>psh</code> で包まない）</li>
+		<li>終了コード: 0 成功 ／ 1 伏せ漏れがあり、書き出さなかった ／ 2 引数の誤り、会話ログ ・ 伏せる語のリストが無い、出し先が別のもの</li>
+	</ul>
+
+	<h2>ページの見方</h2>
+	<ul>
+		<li><code>index.html</code> を <code>file://</code> のまま開ける（サーバは要らない）。開くといちばん古い履歴（いちばん上）を出す</li>
+		<li><strong>既定では人の発言だけを出す。</strong>応答の位置の記号（上下の外側へ向いた矢印）をクリックすると、その応答を展開する。開いた応答の上下の記号（内側へ向いた矢印）で畳む。ヘッダーの「すべて展開」で全部を出す</li>
+		<li>左の目盛り: 月 ・ 日 ・ 人の発言の線。クリックでそこへ飛ぶ。つまみを上下にドラッグすると右が動く。線に 0.5 秒置くと日時を出し、出たあとは上下に動かすだけで追従する</li>
+		<li>同時に動かしたセッションは、人の発言の時刻順に混ぜて並べる。吹き出しの端の色でセッションを見分ける</li>
+		<li><strong>検索</strong>: 3 文字以上は入力のたびに、1〜2 文字は Enter を押したときに、人の発言と応答の両方を探し、当たったところへ飛ぶ（応答なら展開する）。<code>⇈ ↑ ↓ ⇊</code> で一番上 ・ 上 ・ 下 ・ 一番下の当たりへ。<code>3/27</code> のように件数を出す。Enter で次、Shift+Enter で前。検索欄にカーソルを置くと、裏で全部の日を読み始める</li>
+		<li>ヘッダーの「先頭へ」「最新へ」で、いちばん古い会話 ・ いちばん新しい会話へ飛ぶ</li>
+		<li>「応答を閉じる ／ すべて展開」はタブを閉じるまで覚える（sessionStorage の <code>history2html.mode</code>）</li>
+		<li>Markdown（表を含む）は CDN の marked で描く。読めないときは本文を文字のまま出す</li>
+	</ul>
+	<div class="callout callout-important">
+		<p><strong>機械の伏せ字は、公開してよいことの保証にならない。</strong>リストに無い名前、文脈で人が分かる話は残る。公開する前に、人が目で読む。</p>
+	</div>
+	<p>commit したあとに check-public が書き出したものを <code>[異体字]</code> と指摘することがある。会話にキリル文字 ・ ハングルが入っていたときで、秘密ではない。history2html の検査は、この項目を見ない。</p>
 </section>
 
 </div>

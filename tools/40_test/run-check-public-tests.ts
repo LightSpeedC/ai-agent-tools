@@ -140,6 +140,23 @@ assertTrue(
 	r.out.slice(0, 200),
 );
 
+/*
+	9b. 実体パスは区切りが 2 つ重なっても、Bash の形でも拾う（history2html の計画 p261014-01）
+
+	コードや JSON の中では `\` が 2 つに重なる（`C:\\Users\\…`）。Bash では `/c/Users/…` になる。
+	会話ログにはどちらもよく出る。**区切りが 1 つの形しか見ていないと、黙って漏れる**
+*/
+const pathWork = path.join(work, 'paths');
+fs.mkdirSync(pathWork, { recursive: true });
+// 分けて組み立てる。続けて書くと、このソース自体が公開前の検査に当たる
+fs.writeFileSync(path.join(pathWork, 'escaped.md'), 'const p = "C:' + '\\\\Users\\\\taro\\\\src";\n', 'utf8');
+fs.writeFileSync(path.join(pathWork, 'msys.md'), 'cd /c' + '/Users/taro/src\n', 'utf8');
+fs.writeFileSync(path.join(pathWork, 'placeholder.md'), 'const p = "C:\\\\Users\\\\<username>\\\\src"; cd /c/Users/username/src\n', 'utf8');
+r = run([pathWork, '--all', '--skip', 'words', '--skip', 'author']);
+assertTrue('9b 区切りが 2 つ重なった実体パスを拾う', r.out.includes('escaped.md:1'), r.out.slice(0, 300));
+assertTrue('9b Bash の形（/c/Users/…）の実体パスを拾う', r.out.includes('msys.md:1'), r.out.slice(0, 300));
+assertTrue('9b どちらの形でも伏せ字は拾わない', !r.out.includes('placeholder.md'), r.out.slice(0, 300));
+
 // ---- 10. 引数の誤り ----
 r = run(['--nonsense']);
 assertEqual('10 知らないオプションは 2', 2, r.code);

@@ -13,7 +13,7 @@
 		<text x="34" y="40" font-size="16" fill="#fff">⌂</text>
 		<text x="60" y="40" font-size="15" fill="#fff">プロジェクト名 ・ 会話履歴</text>
 		<rect x="640" y="21" width="110" height="26" rx="5" fill="#ffffff"/>
-		<text x="667" y="39" font-size="13" fill="#12224d">応答なし</text>
+		<text x="655" y="39" font-size="13" fill="#12224d">応答を閉じる</text>
 		<rect x="756" y="21" width="110" height="26" rx="5" fill="none" stroke="#fff"/>
 		<text x="776" y="39" font-size="13" fill="#fff">すべて展開</text>
 		

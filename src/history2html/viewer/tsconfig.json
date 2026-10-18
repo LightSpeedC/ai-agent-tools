@@ -1,0 +1,15 @@
+{
+	// ビューアの JavaScript を、JSDoc の型で検査する（決めたこと 19-A）。
+	// ブラウザで動くので DOM の型を使い、node の型は使わない。root の tsconfig.json とは別に回す
+	"compilerOptions": {
+		"target": "es2022",
+		"lib": ["es2023", "dom", "dom.iterable"],
+		"types": [],
+		"allowJs": true,
+		"checkJs": true,
+		"noEmit": true,
+		"strict": true,
+		"skipLibCheck": true
+	},
+	"include": ["viewer.js"]
+}

@@ -1,0 +1,164 @@
+/*
+	history2html のビューア。書き出すときに index.html の中へ入れる（1 ファイルで見た目が揃う）。
+	色は共通ルール「HTMLデザインルール」に従う。背景は淡く、タイトルバー（ヘッダー）は紺。
+*/
+:root {
+	--navy1: #12224d; --navy2: #2f5fbf;
+	--ink: #1c2330; --ink-soft: #4a5568; --line: #d9dfe8; --code-bg: #f4f6fa; --link: #1a4fa0;
+	/* 時刻 ・ 展開の記号の薄い字 */
+	--faint: #7d8696;
+	--me-bg: #e4f5e6; --ai-bg: #f6f8fc; --rail-bg: #f2f5fb;
+	--rail-w: 150px; --hdr-h: 48px;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+	background: #fff; color: var(--ink, #1c2330);
+	font-family: "Segoe UI", "Yu Gothic UI", Meiryo, sans-serif;
+	font-size: 15px; line-height: 1.7;
+	overflow: hidden;
+}
+
+/* ---- 上: 固定のヘッダー ---- */
+.hdr {
+	position: fixed; top: 0; left: 0; right: 0; height: var(--hdr-h, 48px); z-index: 10;
+	display: flex; align-items: center; gap: 12px; padding: 0 16px;
+	background: linear-gradient(135deg, var(--navy1, #12224d), var(--navy2, #2f5fbf)); color: #fff;
+}
+.hdr .ttl { flex: 1; min-width: 0; line-height: 1.3; background: transparent; color: #fff; }
+.hdr .ttl h1, .hdr .ttl .lead { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: transparent; }
+.hdr .ttl h1 { font-size: 1em; color: #fff; }
+.hdr .ttl .lead { font-size: .76em; color: #dce6fb; }
+.hdr .ttl .lead:empty { display: none; }
+/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+.hdr a.home {
+	display: inline-block; line-height: 1; padding: 4px 9px; border-radius: 6px; text-decoration: none;
+	background: linear-gradient(100deg, var(--navy1, #12224d), var(--navy2, #2f5fbf)); color: #fff;
+	border: 1px solid rgba(255, 255, 255, .7);
+}
+.hdr a.home svg { display: block; }
+.mode, .jump, .find { display: flex; align-items: center; gap: 4px; flex: none; }
+.find input {
+	width: 13em; font: inherit; font-size: .86em; padding: 2px 8px; border-radius: 6px;
+	border: 1px solid rgba(255, 255, 255, .85); background: #fff; color: var(--ink, #1c2330);
+}
+.find .cnt { min-width: 3.5em; font-size: .8em; text-align: center; background: transparent; color: #fff; }
+.mode button, .jump button, .find button {
+	font: inherit; font-size: .86em; padding: 3px 12px; border-radius: 6px; cursor: pointer;
+	border: 1px solid rgba(255, 255, 255, .85); background: transparent; color: #fff;
+}
+.mode button[aria-pressed="true"] { background: #fff; color: var(--navy1, #12224d); }
+.find button { padding: 1px 7px; }
+.jump button { display: inline-flex; align-items: center; padding: 3px 6px; }
+.jump button svg { display: block; }
+/* 検索で当たった語。いま見ている当たりは濃くする */
+mark { padding: 0 1px; border-radius: 3px; background: #ffe58a; color: var(--ink, #1c2330); }
+mark.cur { background: #ffb547; color: var(--ink, #1c2330); outline: 2px solid #b8620a; }
+
+.body { position: fixed; top: var(--hdr-h, 48px); left: 0; right: 0; bottom: 0; display: flex; }
+
+/* ---- 左: 目盛り ---- */
+.rail {
+	position: relative; flex: none; display: flex; width: var(--rail-w, 150px);
+	background: var(--rail-bg, #f2f5fb); color: var(--ink, #1c2330);
+	border-right: 1px solid var(--line, #d9dfe8);
+	user-select: none; touch-action: none;
+}
+/* 左の余白。クリックしても何も起きない */
+.rail .gutter { flex: none; width: 14px; cursor: default; }
+.rail .track { position: relative; flex: 1; cursor: pointer; }
+.rail canvas { position: absolute; inset: 0; display: block; }
+.thumb {
+	position: absolute; left: 3px; right: 3px; min-height: 12px; cursor: grab;
+	background: rgba(47, 95, 191, .14); border: 2px solid var(--navy2, #2f5fbf); border-radius: 4px;
+}
+.thumb.drag { cursor: grabbing; }
+.tip {
+	position: fixed; z-index: 20; max-width: 340px; padding: 4px 9px; border-radius: 6px;
+	font-size: 12px; line-height: 1.5; white-space: pre-wrap; pointer-events: none;
+	background: var(--navy1, #12224d); color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+}
+
+/* ---- 右: 会話 ---- */
+.main { position: relative; flex: 1; overflow-y: auto; overflow-anchor: none; outline: none; background: #fff; color: var(--ink, #1c2330); }
+.list { max-width: 1100px; margin: 0 auto; padding: 0 16px 48px; }
+.empty { padding: 40px 16px; text-align: center; background: #fff; color: var(--ink-soft, #4a5568); }
+/*
+	日の中身。flow-root で、最初の子の上の余白を中に閉じ込める。
+	閉じ込めないと、描いたときに余白が外へはみ出して箱そのものが下へ動き、
+	見ている位置を保つ目印（この箱）がずれる（目盛りから飛んだ先が 14px ずれた）
+*/
+.turns { display: flow-root; }
+
+/* 日付は、変わるまで 1 つだけ。上に貼り付く */
+.dh { position: sticky; top: 0; z-index: 2; margin: 0; padding: 6px 0; text-align: center; font-size: .92em; background: rgba(255, 255, 255, .94); color: var(--ink, #1c2330); }
+.dh span { display: inline-block; padding: 1px 14px; border-radius: 999px; border: 1px solid var(--line, #d9dfe8); background: var(--code-bg, #f4f6fa); color: var(--ink, #1c2330); }
+
+.sess { display: flex; align-items: center; gap: 6px; margin: 14px 0 2px; font-size: .8em; background: transparent; color: var(--ink-soft, #4a5568); }
+.sess .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+
+.row { display: flex; align-items: flex-end; gap: 8px; margin: 6px 0; }
+.row.me { justify-content: flex-end; }
+.row.sys { justify-content: center; }
+/* 時刻は秒まで。小さく薄い灰色 */
+.tm { flex: none; font-size: 11px; white-space: nowrap; background: transparent; color: var(--faint, #7d8696); }
+
+.bubble { max-width: min(78%, 760px); padding: 7px 13px; border-radius: 14px; overflow-wrap: anywhere; }
+.bubble.me { white-space: pre-wrap; background: var(--me-bg, #e4f5e6); color: var(--ink, #1c2330); border-right: 4px solid var(--sc, #45b56c); }
+.bubble.ai { background: var(--ai-bg, #f6f8fc); color: var(--ink, #1c2330); border: 1px solid var(--line, #d9dfe8); border-left: 4px solid var(--sc, #2f5fbf); }
+.plain { white-space: pre-wrap; }
+
+.toolline {
+	max-width: min(78%, 760px); padding: 1px 8px; border-radius: 6px; overflow-wrap: anywhere;
+	font-family: Consolas, "Courier New", monospace; font-size: .8em;
+	background: var(--code-bg, #f4f6fa); color: var(--ink-soft, #4a5568);
+	border: 1px solid var(--line, #d9dfe8); border-left: 4px solid var(--sc, #97a1ae);
+}
+.toolline .tn { font-weight: 700; background: transparent; color: var(--ink, #1c2330); }
+.toolline .ng { margin-left: 4px; }
+
+.pill { display: inline-block; padding: 0 10px; border-radius: 999px; font-size: .8em; border: 1px solid var(--line, #d9dfe8); background: #fff; color: var(--ink-soft, #4a5568); }
+.compact { margin: 10px 0; text-align: center; font-size: .78em; background: transparent; color: var(--faint, #7d8696); }
+
+/* 隠した応答の位置に置く、展開の記号（↕）。薄く */
+.expw { position: relative; margin: 2px 0; text-align: center; }
+.expw::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed #e3e7ee; }
+.exp {
+	position: relative; width: 24px; height: 24px; padding: 0; border-radius: 50%; cursor: pointer;
+	font-size: 13px; line-height: 22px;
+	border: 1px solid #c3cad5; background: #fff; color: #9aa3b0;
+}
+.exp svg { display: block; margin: auto; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.exp .i-close { display: none; }
+.exp[aria-expanded="true"] .i-open { display: none; }
+.exp[aria-expanded="true"] .i-close { display: block; }
+.exp:hover, .exp:focus-visible { border-color: var(--faint, #7d8696); background: #fff; color: var(--ink-soft, #4a5568); }
+.turn.open > .expw .exp { border-color: var(--faint, #7d8696); background: #fff; color: var(--ink-soft, #4a5568); }
+
+/* ---- AI の本文の Markdown ---- */
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p, .md ul, .md ol { margin: 6px 0; }
+.md ul, .md ol { padding-left: 1.5em; }
+.md h1, .md h2, .md h3, .md h4 { margin: 10px 0 4px; font-size: 1em; background: transparent; color: var(--ink, #1c2330); }
+.md a { background: transparent; color: var(--link, #1a4fa0); }
+.md code { padding: 0 4px; border-radius: 4px; font-family: Consolas, "Courier New", monospace; font-size: .9em; background: var(--code-bg, #f4f6fa); color: #17335f; }
+.md pre { margin: 6px 0; padding: 8px 10px; overflow-x: auto; border-radius: 6px; font-size: .88em; border: 1px solid var(--line, #d9dfe8); background: var(--code-bg, #f4f6fa); color: var(--ink, #1c2330); }
+.md pre code { padding: 0; background: transparent; color: inherit; }
+.md .tw { overflow-x: auto; }
+.md table { border-collapse: collapse; margin: 6px 0; font-size: .92em; }
+.md th, .md td { padding: 3px 9px; border: 1px solid var(--line, #d9dfe8); vertical-align: top; }
+.md th { background: #eaf0fa; color: var(--ink, #1c2330); }
+.md td { background: #fff; color: var(--ink, #1c2330); }
+.md blockquote { margin: 6px 0; padding: 2px 10px; border-left: 3px solid var(--line, #d9dfe8); background: transparent; color: var(--ink-soft, #4a5568); }
+
+@media (max-width: 640px) {
+	:root { --rail-w: 60px; }
+	.find input { width: 7em; }
+	.jump { display: none; }
+	.hdr { gap: 8px; padding: 0 8px; }
+	.hdr .ttl { font-size: .9em; }
+	.list { padding: 0 8px 48px; }
+	.bubble, .toolline { max-width: 88%; }
+}

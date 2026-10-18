@@ -146,7 +146,7 @@
 	<div class="inner">
 		<h1>会話履歴ビューア 計画（JSONL から公開用の HTML を作る）</h1>
 		<p class="lead">自分のプロジェクトの <code>etc/history/jsonl/</code> に溜まる会話ログを読み、伏せ字を掛けた静的なページを同じプロジェクトの中に作る。外部のサイトでそのまま公開できる形にする。</p>
-		<p class="date">📅 作成: 2026-10-14 / 更新: 2026-10-14</p>
+		<p class="date">📅 作成: 2026-10-14 / 更新: 2026-10-15</p>
 	</div>
 </div>
 
@@ -182,10 +182,11 @@
 		<thead><tr><th>もの</th><th>置き場</th><th>Git</th></tr></thead>
 		<tbody>
 			<tr><td>本体</td><td class="nowrap"><code>src/history2html/</code></td><td>管理</td></tr>
-			<tr><td>ビューア（HTML ・ CSS ・ JS）</td><td class="nowrap"><code>src/history2html/viewer/</code></td><td>管理。書き出すときに出し先へ写す</td></tr>
+			<tr><td>ビューア（HTML ・ CSS ・ JS）</td><td class="nowrap"><code>src/history2html/viewer/</code></td><td>管理。書き出すときに、CSS と JS を <code>index.html</code> の中へ入れる</td></tr>
 			<tr><td>伏せ字 ・ 伏せ漏れ検査</td><td class="nowrap"><code>src/lib/</code></td><td>管理。check-public から切り出して共有する（第 3 章）</td></tr>
 			<tr><td>入口</td><td class="nowrap"><code>bin/history2html</code> ・ <code>bin/history2html.cmd</code></td><td>管理</td></tr>
 			<tr><td>テスト</td><td class="nowrap"><code>tools/40_test/run-history2html-tests.ts</code></td><td>管理</td></tr>
+			<tr><td>ビューアのテスト（ブラウザ）</td><td class="nowrap"><code>tools/40_test/run-history2html-viewer-tests.ts</code> ・ <code>tests/history2html-viewer/</code></td><td>管理</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -267,6 +268,13 @@
 		<li><strong>リストが無ければ止める</strong>。check-public はその項目だけを飛ばして続けるが、こちらは公開する物を作るので、黙って通さない</li>
 		<li>見つけ方は check-public と同じものを使う。<strong><code>src/lib/</code> に切り出して両方から呼ぶ</strong>。2 か所に書くと、片方だけが古くなる</li>
 	</ul>
+	<h3>実装で変えた点</h3>
+	<ul>
+		<li><strong>ユーザー名は、パスの中だけで伏せる。</strong>Windows のユーザー名は <code>work</code> のような普通の語のことが多く、本文の全体から消すと会話が壊れる（<code>network</code> も消える）。名前が人を指すのはパスの中に置かれたとき。人の名前は git の author と伏せる語のリストで拾う</li>
+		<li><strong>実体パスは、区切りが重なった形（<code>C:\\Users\\…</code>）と Bash の形（<code>/c/Users/…</code>）も見る。</strong>会話ログにはどちらもよく出る。<code>src/lib/public-rules.ts</code> を直したので、check-public も同じものを拾うようになった</li>
+		<li><strong><code>password=</code> 等の値が英数字だけのときは伏せない。</strong>コードの識別子と区別できないため（check-public と同じ判定）。記号を含む値と、よく知られた鍵の接頭辞は伏せる</li>
+		<li>2 段目の検査は、ファイルの字面ではなく中の文字列を行ごとに見る。JSON は 1 行につながり、行の境目が消えるため。check-public の「異体字」は秘密ではないので見ない</li>
+	</ul>
 	<ul>
 		<li><strong>書き出したものは、そのプロジェクトの Git の管理下に入る</strong>。<code>git add</code> したあとは check-public の検査の対象にも入るので、push の前にもう一度、同じ見つけ方で見られる</li>
 	</ul>
@@ -278,16 +286,17 @@
 <section class="ch04" id="ch04">
 	<h1>出力とビューア</h1>
 	<pre><code class="language-text">notes/91_history/                    --out を省いたときの出し先
-  index.html                         ビューア（ヘッダー ・ 左の目盛り ・ 右の会話）
-  viewer.js ・ viewer.css
-  data/index.js                      目次。月 ・ 日 ・ 発言の一覧と、日ごとの量
+  index.html                         ビューア（ヘッダー ・ 左の目盛り ・ 右の会話）。CSS と JS も中に入れる
+  data/index.js                     目次。月 ・ 日 ・ 発言の一覧と、日ごとの量
   data/2026-10/2026-10-14.js         その日の人の発言と、応答のある位置
   data/2026-10/2026-10-14-res.js     その日の応答（AI の本文とツールの要約）。展開したときに読む</code></pre>
 	<ul>
 		<li><strong>出し先が空でなく、前回この道具が作った印（<code>data/index.js</code>）も無ければ、書かない</strong>。別のものを上書きしない</li>
 		<li>印があれば <code>data/</code> を作り直す。消えた日のファイルを残さない</li>
+		<li><strong>中身が同じファイルは書かない</strong>（2026-10-15、38-A）。会話が増えても、変わるのは新しい日 ・ 最終日 ・ 目次だけになり、更新日時も変わらない。画面に「書いた ・ 同じなので書かなかった ・ 消した」の数を出す</li>
 		<li><strong>発言と応答を別のファイルに分ける</strong>。既定では応答を出さないので、開いたときに読むのは人の発言だけで済む。量は 5.3 万字と 174 万字で、30 倍ほど違う（決めること 14 の実測）</li>
 		<li><strong><code>notes/</code> の下なので html2md の対象に入る</strong>。<code>index.html</code> は html2md が既定で除外するが、<code>&lt;meta name="md-skip"&gt;</code> も入れておく</li>
+		<li><strong>CSS と JS は <code>index.html</code> の中へ入れる</strong>（実装で変えた点）。共通ルール「CSS と JS の持ち方は docs/ かどうかで決める」で、<code>docs/</code> 以外は単独の HTML にするため。元は <code>src/history2html/viewer/</code> に分けて置き、書き出すときに入れる</li>
 	</ul>
 
 	<figure>
@@ -305,7 +314,7 @@
 		<text x="34" y="40" font-size="16" fill="#fff">⌂</text>
 		<text x="60" y="40" font-size="15" fill="#fff">プロジェクト名 ・ 会話履歴</text>
 		<rect x="640" y="21" width="110" height="26" rx="5" fill="#ffffff"/>
-		<text x="667" y="39" font-size="13" fill="#12224d">応答なし</text>
+		<text x="655" y="39" font-size="13" fill="#12224d">応答を閉じる</text>
 		<rect x="756" y="21" width="110" height="26" rx="5" fill="none" stroke="#fff"/>
 		<text x="776" y="39" font-size="13" fill="#fff">すべて展開</text>
 		<!-- 左: 目盛り -->
@@ -394,9 +403,9 @@
 	<h2>上: 固定のヘッダー</h2>
 	<ul>
 		<li>スクロールしても動かない。左に ⌂（README へ戻る）と題、右に応答の出し方の切り替え</li>
-		<li><strong>切り替えは「応答なし」と「すべて展開」の 2 つ。既定は「応答なし」</strong>。「すべて展開」にすると、決めたこと 14-A の形（AI の本文とツールの要約）で、すべての応答を出す</li>
+		<li><strong>切り替えは「応答を閉じる」と「すべて展開」の 2 つ。既定は「応答を閉じる」</strong>（初めの名前は「応答なし」）。「すべて展開」にすると、決めたこと 14-A の形（AI の本文とツールの要約）で、すべての応答を出す</li>
 		<li>切り替えると、1 つずつ展開 ・ 畳んだ状態は捨てて、全部がそちらにそろう</li>
-		<li><strong>選んだ状態は覚えない</strong>。開くたびに「応答なし」から始まる（共通ルール「Web で設定を残すときは、保存先とキーを聞いてから決める」の手前で止める）</li>
+		<li><strong>選んだ状態は、タブを閉じるまで覚える</strong>（2026-10-15 に変更。33-A。キーは「実装のあとに足したこと」の表）。初めは覚えず、開くたびに「応答なし」から始めていた</li>
 	</ul>
 
 	<h2>右: 会話</h2>
@@ -416,11 +425,11 @@
 
 	<h2>長い履歴を軽く開く</h2>
 	<ul>
-		<li><strong>開いたときは最新を出す</strong>。並びは古い順（上が古く、下が新しい）のまま、いちばん下に位置を合わせる。最後の日から読んで描き、上へ戻るにつれて古い日を読む。つまみも目盛りの下端から始まる</li>
+		<li><strong>開いたときは、いちばん古い履歴を出す</strong>（2026-10-15 に変更。初めは最新を出していた）。並びは古い順（上が古く、下が新しい）。最新へはヘッダーの「最新へ」ですぐ行けるので、上から読み始める方が自然</li>
 		<li><strong>最初は目次（<code>data/index.js</code>）だけを読む</strong>。日ごとに、目次の量（発言数 ・ 文字数）から高さを見積もった空の箱を並べる。これで目盛りが描ける</li>
 		<li><strong>画面と前後 1 画面ぶりに入った日だけを読み、描く</strong>（IntersectionObserver）</li>
 		<li><strong>応答のファイル（<code>-res.js</code>）は、展開したときに初めて読む</strong>。「すべて展開」のときも、画面の近くの日の分だけを読む</li>
-		<li>描いた日には <code>content-visibility: auto</code> を付け、画面の外の描画を省く</li>
+		<li><strong><code>content-visibility</code> は使わない</strong>（実装で変えた点）。実データ（44 日 ・ 依頼 1,109）で、開くのに 0.5〜0.9 秒、すべて展開に 0.9〜1.2 秒で足りた。付けると、画面の外の要素の位置（目盛りの線）が取りにくくなる</li>
 		<li>上の日が描かれて高さが変わっても、見ている位置がずれないように直す。目盛りも引き直す</li>
 		<li>目盛りから遠くへ飛ぶときは、飛び先の日を先に読み、描いてから位置を合わせる</li>
 		<li>1 日分が大きいとき（数百の発言）は、少しずつ分けて描き、画面を止めない</li>
@@ -436,6 +445,31 @@
 <section class="ch05" id="ch05">
 	<h1>決めること</h1>
 	<p><strong>決めたこと（2026-10-14、利用者の判断）。</strong>12-A ・ 13-A ・ 14-A ・ 15-A ・ 16-A。14-A は、まずこれで進めて様子を見る。あわせて、<strong>既定では応答を出さず、ヘッダーで「すべて展開」に切り替えられる</strong>形にする（第 4 章）。17 は <code>notes/91_history/</code>（案の外から選んだ）。19-A ・ 20-A。<strong>この計画を承認（2026-10-14）</strong>。</p>
+
+	<h2>実装のあとに足したこと（2026-10-14、利用者の判断）</h2>
+	<ul>
+		<li><strong><code>--in</code></strong>: 会話ログのフォルダを指定できる。相対はカレントから</li>
+		<li><strong>表題</strong>: プロジェクトのフォルダ名と 1 行の概要（31-A）。概要は <code>--lead</code> で渡す。省くと、そのプロジェクトの README.html のタイトルバーの <code>.lead</code> を使う。どちらも伏せ字を掛ける</li>
+		<li><strong>データの名前</strong>: 人の発言は <code>&lt;日&gt;-req.js</code>、応答は <code>&lt;日&gt;-res.js</code>（依頼と応答の対）</li>
+		<li><strong>検索</strong>（32-A）: 人の発言と応答の両方を探す。3 文字以上は入力のたびに、1〜2 文字は Enter を押したときに探し（36-A）、最初に当たったところへ飛ぶ。大小を問わない。当たった語に印を付け、応答で当たったらその応答を展開する。「一番上へ ・ 上へ ・ 下へ ・ 一番下へ」と、<code>3/27</code> のような件数を出す。<strong>検索欄にカーソルが来たら、裏で全部の日（応答も）を読み始める</strong></li>
+		<li><strong>先頭へ ・ 最新へ</strong>: ヘッダーのボタンで、いちばん古い会話といちばん新しい会話へ飛ぶ。アイコンは「上の横線 ＋ 上向きの矢印」と「下向きの矢印 ＋ 下の横線」</li>
+		<li><strong>切り替えの名前</strong>: 「応答なし」は「応答を閉じる」にした</li>
+		<li><strong>展開の記号</strong>: 閉じているときは「展開する」（上下の外側へ向いた矢印）、開いているときは「畳む」（上下の内側へ向いた矢印）</li>
+		<li><strong>目盛りの月のラベル</strong>: その月の初日まで書く（<code>2026/10/4</code>。37-B）。初日は月の線と重なり、日の数字が出ていなかったため。日 ・ 月のラベルは、間隔が狭いと書かない（日は 14 px、月は 16 px 未満）。線はすべて引く</li>
+		<li><strong>「すべて展開」のあとのドラッグ</strong>: つまみがポインタから離れて上端へ飛ぶ不具合を直した。ドラッグ中は、つまみの位置の割合で右の位置を決め、見ている位置を保つ処理を止める。目次に日ごとの応答の量（<code>rn</code> ・ <code>rc</code>）を入れ、すべて展開のときの高さの見積もりに使う</li>
+		<li><strong>目盛りの左の余白</strong>: 左に少し余白を取る。そこはクリックしても何も起きない（飛ばない ・ ドラッグも始まらない）</li>
+		<li><strong>覚える状態</strong>（33-A）: ヘッダーの「応答なし ／ すべて展開」だけを sessionStorage に覚える。1 つずつの展開は覚えない</li>
+		<li><strong>警告</strong>（34-A）: 伏せる語のリストが空のとき、git の author が取れなかったときに ⚠️ を出す。書き出しは止めない。あわせて、<strong>伏せた後の語と件数を ✅ 付きで並べる</strong>（元の値は出さない）</li>
+	</ul>
+	<h3>ブラウザに残すもの（共通ルール「Web で設定を残すときは、保存先とキーを聞いてから決める」）</h3>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>キー</th><th>保存先</th><th>値</th><th>消えるとき</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>history2html.mode</code></td><td>sessionStorage</td><td><code>none</code> ・ <code>all</code></td><td>タブを閉じたとき</td></tr>
+		</tbody>
+	</table>
+	</div>
 
 	<h3>12. 道具の名前</h3>
 	<ul>
@@ -537,14 +571,35 @@
 	<h1>進め方とテスト</h1>
 	<ol>
 		<li>決めることの承認を得る（2026-10-14 済）</li>
-		<li>check-public の見つけ方（メールアドレス ・ パス ・ 認証情報 ・ 伏せる語 ・ author）を <code>src/lib/</code> に切り出す。check-public のテストが変わらず通ることを確かめる</li>
-		<li>テストを先に書く。落ちるのを見てから実装する</li>
-		<li>実装する。読む → 拾う → 伏せる → 日ごとに分ける → 検査する → 書く</li>
-		<li>ビューアを作り、PlayWright 共有環境で動きを確かめる。check-contrast も通す</li>
-		<li>このプロジェクトの履歴を <code>--out</code> で <code>tmp/</code> の下に書き出し、件数と所要時間を報告する（本文は報告に出さない）</li>
-		<li>TOOLS-USAGE に使い方を書く。README の一覧に足す</li>
+		<li>check-public の見つけ方（メールアドレス ・ パス ・ 認証情報 ・ 伏せる語 ・ author）を <code>src/lib/</code> に切り出す。check-public のテストが変わらず通ることを確かめる（2026-10-14 済）</li>
+		<li>テストを先に書く。落ちるのを見てから実装する（2026-10-14 済）</li>
+		<li>実装する。読む → 拾う → 伏せる → 日ごとに分ける → 検査する → 書く（2026-10-14 済）</li>
+		<li>ビューアを作り、PlayWright 共有環境で動きを確かめる。check-contrast も通す（2026-10-14 済）</li>
+		<li>このプロジェクトの履歴を <code>--out</code> で <code>tmp/</code> の下に書き出し、件数と所要時間を報告する（本文は報告に出さない）（2026-10-14 済）</li>
+		<li>TOOLS-USAGE に使い方を書く。README の一覧に足す（2026-10-14 済）</li>
 		<li>共通ルール「番号付きフォルダ」に <code>91_history</code> を書き足す案を出し、反映したら周知する（課題 i261014-01）</li>
 	</ol>
+
+	<h2>結果（2026-10-14）</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>確かめたこと</th><th>結果</th></tr></thead>
+		<tbody>
+			<tr><td>check-public の切り出し（<code>src/lib/public-rules.ts</code>）</td><td>✅ 22 件そのまま通った。実体パスの 2 つの形を足して ❌Red（2 件）→ ✅Green（25 件）</td></tr>
+			<tr><td>history2html（<code>run-history2html-tests.ts</code>）</td><td>❌Red（44 件）→ ✅Green（73 件）。bun ・ node とも</td></tr>
+			<tr><td>ビューア（<code>run-history2html-viewer-tests.ts</code>。PlayWright 共有環境）</td><td>✅ 10 件 × 3 ブラウザ（Chromium ・ Firefox ・ WebKit）= 30 件</td></tr>
+			<tr><td>型チェック（ビューアは <code>tsc --checkJs</code>）</td><td>✅ 誤りなし</td></tr>
+			<tr><td>このプロジェクトの会話ログ（<code>tmp/</code> に書き出し）</td><td>✅ 3 セッション ・ 44 日 ・ 依頼 1,109 ・ 人の発言なしの応答 638 ・ AI の本文 4,378 ・ ツール 9,574。伏せたパス 557。3.6 秒。伏せ漏れの検査を通った</td></tr>
+			<tr><td>そのページをブラウザで（3 ブラウザ）</td><td>✅ 開く 0.5〜0.9 秒 ・ すべて展開 0.9〜1.2 秒 ・ いちばん古い日へ 0.6〜1.0 秒。JavaScript の誤り 0</td></tr>
+			<tr><td>書き出したものを check-public で</td><td>⚠️ 1 件（異体字）。会話にキリル文字かハングルが入っていた。秘密ではない</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li>目盛りから日へ飛ぶと 14px ずれる不具合を、テストで見つけて直した。描いた日の最初の子の上の余白が箱の外へはみ出し、位置を保つ目印の箱が動いていた（<code>display: flow-root</code> で閉じ込めた）</li>
+		<li>PlayWright 共有環境から <code>@playwright/test</code> を読めなかった。このリポジトリは <code>"type": "module"</code> で、テストが ESM として読まれ、共有環境が渡す <code>NODE_PATH</code> が効かない。テストを <code>.cts</code>（CommonJS）にして回した</li>
+		<li>ビューアのひな形（<code>src/history2html/viewer/index.html</code>）は資料ではないので、HTML の規則の検査（<code>check-html-rules.ts</code>）から <code>src/</code> を外した</li>
+	</ul>
 	<h2>テスト</h2>
 	<p>JSONL はテストの中で合成する。人を表す値は <code>user1</code>、アドレスは <code>example.com</code> にする（共通ルール「テストのルール」）。</p>
 	<ul>

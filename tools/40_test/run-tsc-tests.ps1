@@ -8,6 +8,7 @@
 	ここで別に検査する。
 
 	設定は root の tsconfig.json。対象は src/ 配下と tools/40_test/ の ts。
+	history2html のビューア（JavaScript）は src/history2html/viewer/tsconfig.json で別に見る。
 
 	tsc は root の node_modules に入れる（typescript と @types/node の 2 つ）。
 	無ければ npm install を促して 2 で止まる。**黙って成功しない。**
@@ -85,6 +86,10 @@ if ($null -eq $Tsc) {
 # （ファイルを渡すと tsconfig.json が読まれなくなる）
 & $Tsc --noEmit --pretty false
 $code = $LASTEXITCODE
+
+# history2html のビューアは JavaScript（ブラウザで動く）。JSDoc の型を DOM の型で別に見る
+& $Tsc -p (Join-Path $Root 'src/history2html/viewer/tsconfig.json') --pretty false
+if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
 
 Write-Host ''
 if ($code -eq 0) {
