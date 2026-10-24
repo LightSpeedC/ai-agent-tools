@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
 <!-- details で畳んでいるため Markdown にすると構造が失われる。変換しない -->
 <meta name="md-skip">
 <title>ai-agent-tools の課題</title>
@@ -1040,8 +1041,8 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 
 	<p>ai-chat-lite で他のプロジェクトから届いた要求と指摘。<strong>受けるかどうかを含めて未決</strong>のものを置く。</p>
 
-	<details open>
-		<summary><span class="badge b-warn">着手</span><span class="no">i261018-02</span>check-public の誤検出を、ファイル名とキーワードの組で除外できるようにする</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i261018-02</span>check-public の誤検出を、ファイル名とキーワードの組で除外できるようにする</summary>
 		<div class="issue-body">
 			<p>2026-10-18 に <code>20260828-typescript-learn</code> から依頼（ai-chat-lite #1550）。</p>
 			<ul>
@@ -1055,7 +1056,9 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li><span class="badge b-ok">済</span>テストを先に書き（<code>run-check-public-tests.ts</code>）、落ちるのを見てから実装した（❌Red 21 件 → ✅Green。58 件。bun ・ node とも）</li>
 				<li><span class="badge b-ok">済</span>実装（<code>src/check-public/main.ts</code> ・ <code>src/lib/public-rules.ts</code>）</li>
 				<li><span class="badge b-ok">済</span>TOOLS-USAGE と check-public 計画に書いた</li>
-				<li><span class="badge b-warn">着手</span>依頼元へ、使い方を返信し、確認を依頼する。あわせて、当たった行の形を聞く（確認が取れるまで「済」にしない）</li>
+				<li><span class="badge b-ok">済</span>依頼元へ、実装した旨と使い方を返信し、確認を依頼した。あわせて、当たった行の形を聞いた（ai-chat-lite #1552。push 済み 2663713）</li>
+				<li><span class="badge b-ok">済</span>報告元の確認（ai-chat-lite #1553。2026-10-19）: <code>check-public-allow.txt</code> の 1 行で、53 件すべてが外れ、「指摘はありません（除外 53 件）」になった。当たっていた行は、変数名の末尾に 2 が付く形（<code>let token = scanner2.scan();</code> 等）で、右辺に英字と数字の両方が入る。<strong>いまの判定どおりの当たり方で、判定の穴ではない</strong>（計画の決める点 60 は、これで片付いた）</li>
+				<li><span class="badge b-ok">済</span>報告元へ、語の選び方を返信した（#1554）: 語に <code>token</code> を使うと、同じファイルの本物の鍵も外れる。狭い語（<code>scanner2.</code>）を勧めた</li>
 			</ul>
 		</div>
 	</details>

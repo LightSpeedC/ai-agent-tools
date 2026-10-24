@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
 <title>check-public の除外指定 計画（ファイル名とキーワードの組で誤検出を外す）</title>
 <style>
 	:root{
@@ -305,13 +306,13 @@ docs/js/lib/typescript.js   secret   scanner.</code></pre>
 	</ul>
 	<h3>まだ分かっていないこと</h3>
 	<ul>
-		<li>依頼の事例（<code>token = scanner.scan()</code> の 53 件）が、なぜ当たるのかは、まだ分からない（決める点 60）。依頼元に、当たった行の形を聞く</li>
+		<li>依頼の事例（<code>token = scanner.scan()</code> の 53 件）が、なぜ当たるのかは、依頼元に聞いて分かった（ai-chat-lite #1553。2026-10-19）。変数名の末尾に 2 が付く形（<code>let token = scanner2.scan();</code> 等）で、右辺に英字と数字の両方が入るため。<strong>いまの判定どおりの当たり方で、判定の穴ではない</strong>。除外の指定 1 行で、53 件がすべて外れることも、依頼元が確かめた。決める点 60 は、これで片付いた</li>
 	</ul>
 
 	<h2>進め方</h2>
 	<ol>
 		<li>この計画の承認を得る（決める点 55 〜 59 は、すべて決まった。<strong>承認済み</strong>）</li>
-		<li>依頼元に、当たった行の形を聞く（決める点 60）。返事は、承認を待たずに進めてよい</li>
+		<li>依頼元に、当たった行の形を聞く（決める点 60）。<strong>聞いて、判定の穴ではないと分かった</strong></li>
 		<li>テストを先に書き、落ちるのを見てから実装する</li>
 		<li>実装する。TOOLS-USAGE と、check-public 計画に書く</li>
 		<li>依頼元へ使い方を返信し、確認を依頼する。<strong>依頼元から OK が出るまで、課題を「済」にしない</strong>（共通ルール「課題の管理」）</li>
