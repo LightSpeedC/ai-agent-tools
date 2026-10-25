@@ -81,10 +81,10 @@ docs/js/lib/typescript.js   secret   scanner.
 
 ```text
   除外した指摘: 55 件
-    docs/js/lib/typescript.js  [認証情報]  「scanner.」  53 件（token 50 ・ secret 3）
+    docs/js/lib/typescript.js  [認証情報]  「scanner.」  53 件 (token 50 ・ secret 3)
     docs/js/lib/typescript.js  [メールアドレス]  「@example.」  2 件
   ⚠️ 使われていない除外の指定: docs/old.js  [メールアドレス]  「foo」
-=== 指摘はありません（除外 55 件）===
+=== 指摘はありません (除外 55 件) ===
 ```
 
 - **内訳に出すキーワードは、規則に決まっている固定の語**（`password` ・ `passwd` ・ `secret` ・ `api_key` ・ `token`）。大小は小文字に寄せ、`api-key` ・ `apikey` も `api_key` にまとめる。**検査したファイルの中身（当たった値）ではない**ので、「当たった値は出さない」を破らない

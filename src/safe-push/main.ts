@@ -87,7 +87,7 @@ function usage(): void {
 	console.log('  -h, --help   この使い方を出す');
 	console.log('');
 	console.log('終了コード: 0 同期した ・ 飛ばした ／ 1 そのほかの失敗 ／ 3 取り込みでぶつかった ／ 4 push に失敗 ／ 5 引数や置き場の誤り');
-	console.log('2 は使いません（Stop フックが「続ける」と読むため）。');
+	console.log('2 は使いません (Stop フックが「続ける」と読むため)。');
 }
 
 // ---- 引数 ----
@@ -233,11 +233,11 @@ function staleNotice(lock: string, raw: string): string | null {
 		// 作っている途中かもしれない。古くなるまでは待つ
 		let mtime = now;
 		try { mtime = fs.statSync(lock).mtimeMs; } catch { /* 消えた */ }
-		return now - mtime > StaleMs ? '古いロックを取り除きました（中身を読めませんでした）' : null;
+		return now - mtime > StaleMs ? '古いロックを取り除きました (中身を読めませんでした)' : null;
 	}
 	const same = body.host === hostName();
 	if ((same && !alive(body.pid)) || now - body.startedMs > StaleMs) {
-		return '古いロックを取り除きました（pid ' + body.pid + ' ・ 開始 ' + jst(body.startedMs) + ' ・ ' + (same ? '同じホスト' : '別のホスト') + '）';
+		return '古いロックを取り除きました (pid ' + body.pid + ' ・ 開始 ' + jst(body.startedMs) + ' ・ ' + (same ? '同じホスト' : '別のホスト') + ')';
 	}
 	return null;
 }
@@ -293,8 +293,8 @@ async function must(cwd: string, args: string[], deadline: number | null, failur
 
 function timeoutFail(sub: string, reason: 'call' | 'run'): Fail {
 	return reason === 'run'
-		? new Fail(ExitFailed, '一続きの上限を超えたため、止めました（git ' + sub + '）。commit は手元に残してあります')
-		: new Fail(ExitFailed, 'git が時間切れになりました（git ' + sub + '）。commit は手元に残してあります');
+		? new Fail(ExitFailed, '一続きの上限を超えたため、止めました (git ' + sub + ')。commit は手元に残してあります')
+		: new Fail(ExitFailed, 'git が時間切れになりました (git ' + sub + ')。commit は手元に残してあります');
 }
 
 type Context = { top: string; gitDir: string; remote: string; merge: string; all: boolean; paths: string[]; deadline: number };
@@ -308,12 +308,12 @@ async function conflictOut(c: Context): Promise<Fail> {
 	const r = await git(c.top, ['diff', '--name-only', '--diff-filter=U'], c.deadline);
 	const files = r.out.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
 	await git(c.top, ['rebase', '--abort'], c.deadline);
-	return new Fail(ExitConflict, '取り込みでぶつかりました: ' + (files.length > 0 ? files.join(' ・ ') : '（ファイル名は取れませんでした）') + '（手元の commit と変更は残してあります）');
+	return new Fail(ExitConflict, '取り込みでぶつかりました: ' + (files.length > 0 ? files.join(' ・ ') : '(ファイル名は取れませんでした)') + ' (手元の commit と変更は残してあります)');
 }
 
 /** 取り込む。浅い clone で失敗したら、unshallow して、この回の中で 1 回だけやり直す */
 async function pull(c: Context): Promise<void> {
-	const pullFailure = new Fail(ExitFailed, '取り込みに失敗しました（commit は手元に残してあります）');
+	const pullFailure = new Fail(ExitFailed, '取り込みに失敗しました (commit は手元に残してあります)');
 	let r = await git(c.top, ['pull', '--rebase'], c.deadline);
 	if (r.timedOut != null) { throw timeoutFail('pull', r.timedOut); }
 	if (r.code === 0) { return; }
@@ -331,7 +331,7 @@ async function pull(c: Context): Promise<void> {
 
 /** 一続きの本体。ロックを持った状態で呼ぶ。成功したときの文を返す */
 async function sync(c: Context): Promise<string> {
-	const commitFailure = new Fail(ExitFailed, 'commit に失敗しました（変更は手元に残してあります）');
+	const commitFailure = new Fail(ExitFailed, 'commit に失敗しました (変更は手元に残してあります)');
 
 	// 載せる
 	const pathspec = c.all ? [] : ['--', ...c.paths];
@@ -366,7 +366,7 @@ async function sync(c: Context): Promise<string> {
 		if (r.timedOut != null) { throw timeoutFail('push', r.timedOut); }
 		if (r.code !== 0) {
 			const rejected = /rejected|non-fast-forward|fetch first/.test(r.err);
-			throw new Fail(ExitPushFailed, 'push に失敗しました: ' + (rejected ? '取り込み側が先に進んでいます' : '認証 ・ 回線などで送れませんでした') + '（commit は手元に残してあります）');
+			throw new Fail(ExitPushFailed, 'push に失敗しました: ' + (rejected ? '取り込み側が先に進んでいます' : '認証 ・ 回線などで送れませんでした') + ' (commit は手元に残してあります)');
 		}
 	}
 
@@ -376,7 +376,7 @@ async function sync(c: Context): Promise<string> {
 	if (ahead > 0) { parts.push('push 済'); }
 	let text = parts.length > 0 ? parts.join(' ・ ') : '変更なし';
 	if (dirty) { text += '。書きかけが残っているため、取り込みは行いませんでした'; }
-	return '同期しました（' + text + '）';
+	return '同期しました (' + text + ')';
 }
 
 async function main(): Promise<void> {
@@ -404,7 +404,7 @@ async function main(): Promise<void> {
 	if (!samePath(top, repo)) { bad('リポジトリの最上位のフォルダを渡してください。'); return; }
 
 	const branch = await git(top, ['symbolic-ref', '--short', '-q', 'HEAD']);
-	if (branch.code !== 0 || branch.out === '') { bad('ブランチの先頭を指していません（detached HEAD）。'); return; }
+	if (branch.code !== 0 || branch.out === '') { bad('ブランチの先頭を指していません (detached HEAD)。'); return; }
 	const remote = await git(top, ['config', '--get', 'branch.' + branch.out + '.remote']);
 	const merge = await git(top, ['config', '--get', 'branch.' + branch.out + '.merge']);
 	if (remote.code !== 0 || merge.code !== 0 || remote.out === '' || merge.out === '') { bad('ブランチに上流がありません。'); return; }
@@ -427,7 +427,7 @@ async function main(): Promise<void> {
 	const locked = await acquire(path.join(gitDir, 'safe-push.lock'));
 	if (locked == null) {
 		const waited = Math.round(((LockAttempts - 1) * LockIntervalMs) / 1000);
-		emit(ExitOk, '⬜', '別の同期が動いているため、飛ばしました（約 ' + waited + ' 秒待ちました）');
+		emit(ExitOk, '⬜', '別の同期が動いているため、飛ばしました (約 ' + waited + ' 秒待ちました)');
 		return;
 	}
 	const onSignal = (): void => { locked.release(); process.exit(ExitFailed); };

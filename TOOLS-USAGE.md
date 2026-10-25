@@ -256,10 +256,10 @@ docs/js/lib/                mail     @example.
 
 ```text
   除外した指摘: 55 件
-    docs/js/lib/typescript.js  [認証情報]  「scanner.」  53 件（token 50 ・ secret 3）
+    docs/js/lib/typescript.js  [認証情報]  「scanner.」  53 件 (token 50 ・ secret 3)
     docs/js/lib/typescript.js  [メールアドレス]  「@example.」  2 件
   ⚠️ 使われていない除外の指定: docs/old.js  [メールアドレス]  「foo」
-=== 指摘はありません（除外 55 件）===
+=== 指摘はありません (除外 55 件) ===
 ```
 
 - <strong>外した件数を、合計と指定ごとに出す。</strong>1 つの指定で外れた件数が多すぎないか、想定外のキーワード（`secret` 等）が混ざっていないかを見る。`[認証情報]` には、当たったキーワードの内訳（件数の多い順）が付く

@@ -229,7 +229,7 @@ assertTrue('12-5 別の項目（メール）は、同じ語を含む行でも外
 assertTrue('12-8 外した合計が出る', r.out.includes('除外した指摘: 3 件'), r.out.slice(0, 600));
 const entry = r.out.split('\n').find((l) => l.includes('lib/vendor.js') && l.includes('「scanner2.」')) ?? '';
 assertTrue('12-8 指定ごとに、ファイル ・ 項目 ・ 語 ・ 件数が出る', entry.includes('[認証情報]') && entry.includes('3 件'), entry);
-assertTrue('12-8b [認証情報] には、当たったキーワードの内訳が出る（件数の多い順）', entry.includes('（token 2 ・ secret 1）'), entry);
+assertTrue('12-8b [認証情報] には、当たったキーワードの内訳が出る（件数の多い順）', entry.includes(' (token 2 ・ secret 1)'), entry);
 assertTrue('12-8 外した分は指摘に数えない（9 件のうち 3 件を外して 6 件）', r.out.includes('6 件の指摘') && r.out.includes('除外 3 件'), r.out.slice(-200));
 
 // 12-11. 検査したファイルの中身（当たった値）を出さない
@@ -244,7 +244,7 @@ const l3 = list('l3.txt', ['lib/vendor.js  mail  scanner2.']);
 r = run([proj, ...Quiet, '--allow-list', l3]);
 const mailEntry = r.out.split('\n').find((l) => l.includes('「scanner2.」')) ?? '';
 assertTrue('12-5 メールの指定は、メールだけを外す（認証情報の行は残る）', !hitOf(r.out, 'lib/vendor.js', 4) && hitOf(r.out, 'lib/vendor.js', 1), r.out.slice(0, 500));
-assertTrue('12-8b メールの指定には、キーワードの内訳が出ない', mailEntry.includes('[メールアドレス]') && !mailEntry.includes('（'), mailEntry);
+assertTrue('12-8b メールの指定には、キーワードの内訳が出ない', mailEntry.includes('[メールアドレス]') && !mailEntry.includes('('), mailEntry);
 
 // 12-6. フォルダ指定（末尾が /）と、完全一致
 const l2 = list('l2.txt', ['vendor/  secret  scanner2.']);
@@ -275,7 +275,7 @@ const lAll = list('lall.txt', [
 ]);
 r = run([proj, ...Quiet, '--allow-list', lAll]);
 assertEqual('12-8 すべて外れれば、終了コード 0', 0, r.code);
-assertTrue('12-8 「指摘はありません（除外 9 件）」', r.out.includes('指摘はありません（除外 9 件）'), r.out.slice(-200));
+assertTrue('12-8 「指摘はありません (除外 9 件)」', r.out.includes('指摘はありません (除外 9 件)'), r.out.slice(-200));
 
 // 12-10. 書式の誤り（終了コード 2。何行目かを出す）
 const bad1 = list('bad1.txt', ['# コメント', '', 'lib/vendor.js  secret']);

@@ -221,10 +221,10 @@ docs/js/lib/typescript.js   secret   scanner.</code></pre>
 	<h3>59. 出力（外した件数）</h3>
 	<p><strong>決めたこと（2026-10-18、利用者の判断）。</strong>59-A'。外した合計 ・ 指定ごとの件数 ・ <code>[認証情報]</code> では、当たったキーワードの内訳 ・ 使われていない指定の警告を出す。</p>
 	<pre><code class="language-text">  除外した指摘: 55 件
-    docs/js/lib/typescript.js  [認証情報]  「scanner.」  53 件（token 50 ・ secret 3）
+    docs/js/lib/typescript.js  [認証情報]  「scanner.」  53 件 (token 50 ・ secret 3)
     docs/js/lib/typescript.js  [メールアドレス]  「@example.」  2 件
   ⚠️ 使われていない除外の指定: docs/old.js  [メールアドレス]  「foo」
-=== 指摘はありません（除外 55 件）===</code></pre>
+=== 指摘はありません (除外 55 件) ===</code></pre>
 	<ul>
 		<li><strong>内訳に出すキーワードは、規則に決まっている固定の語</strong>（<code>password</code> ・ <code>passwd</code> ・ <code>secret</code> ・ <code>api_key</code> ・ <code>token</code>）。大小は小文字に寄せ、<code>api-key</code> ・ <code>apikey</code> も <code>api_key</code> にまとめる。<strong>検査したファイルの中身（当たった値）ではない</strong>ので、「当たった値は出さない」を破らない</li>
 		<li>内訳は <code>[認証情報]</code> のときだけ出す。<code>mail</code> ・ <code>path</code> 等には、キーワードの概念が無い</li>

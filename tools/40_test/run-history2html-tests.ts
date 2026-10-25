@@ -226,7 +226,7 @@ const read = items13.find((x) => x.k === 'u' && x.n === 'Read');
 check('Bash はコマンドの 1 行目と「…」', bash?.x === 'git status …', JSON.stringify(bash));
 check('失敗した呼び出しに印が付く', bash?.e === 1 && edit?.e === undefined, JSON.stringify([bash, edit]));
 check('Edit はパスだけ', edit?.x === 'src/a.ts', JSON.stringify(edit));
-check('Read はパスと行の範囲。パスも伏せる', read?.x === '~\\proj\\read-me.ts（10〜29 行）', JSON.stringify(read));
+check('Read はパスと行の範囲。パスも伏せる', read?.x === '~\\proj\\read-me.ts (10〜29 行)', JSON.stringify(read));
 
 // ---- 5. 伏せる ----
 for (const [label, value] of [

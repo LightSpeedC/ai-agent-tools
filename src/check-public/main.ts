@@ -91,10 +91,10 @@ function loadAllow(file: string): AllowEntry[] | string {
 		if (t.length === 0 || t.startsWith('#')) { continue; }
 		const where = name + ':' + (i + 1) + ': ';
 		const m = /^(\S+)\s+(\S+)(?:\s+(.+))?$/.exec(t);
-		if (m == null) { return where + '書式は「パス 項目 語」です（空白で区切る）。'; }
+		if (m == null) { return where + '書式は「パス 項目 語」です (空白で区切る)。'; }
 		const key = m[2];
 		if (!Object.prototype.hasOwnProperty.call(ItemLabels, key)) {
-			return where + '知らない項目名です: ' + key + '（' + Object.keys(ItemLabels).join(' ・ ') + '）';
+			return where + '知らない項目名です: ' + key + ' (' + Object.keys(ItemLabels).join(' ・ ') + ')';
 		}
 		const word = (m[3] ?? '').trim();
 		if (word.length === 0) {
@@ -161,7 +161,7 @@ function usage(toStdout: boolean): void {
 	write('                          1 行に「パス 項目 語」。その行に語を含むものだけを外す');
 	write('  -h, --help              この使い方を出す');
 	write('');
-	write('終了コードは 0（指摘なし）・ 1（指摘あり）・ 2（引数や対象の誤り）。');
+	write('終了コードは 0 (指摘なし)・ 1 (指摘あり)・ 2 (引数や対象の誤り)。');
 	write('当たった値そのものは画面に出しません。');
 }
 
@@ -306,7 +306,7 @@ async function main(): Promise<number> {
 
 	console.log('  対象: ' + files.length + ' ファイル');
 	if (allow.length > 0) {
-		console.log('  除外の指定: ' + allow.length + ' 件（' + path.basename(allowPath) + '）');
+		console.log('  除外の指定: ' + allow.length + ' 件 (' + path.basename(allowPath) + ')');
 	}
 	console.log('');
 
@@ -374,7 +374,7 @@ async function main(): Promise<number> {
 			let breakdown = '';
 			if (e.details.size > 0) {
 				const sorted = [...e.details.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
-				breakdown = '（' + sorted.map(([k, n]) => k + ' ' + n).join(' ・ ') + '）';
+				breakdown = ' (' + sorted.map(([k, n]) => k + ' ' + n).join(' ・ ') + ')';
 			}
 			console.log('    ' + e.path + '  [' + ItemLabels[e.key] + ']  「' + e.word + '」  ' + e.count + ' 件' + breakdown);
 		}
@@ -386,7 +386,7 @@ async function main(): Promise<number> {
 		}
 	}
 	// 外した件数は、見出しにも添える（指摘が 0 でも、外したものがあったことが分かる）
-	const tail = excluded > 0 ? '（除外 ' + excluded + ' 件）===' : ' ===';
+	const tail = excluded > 0 ? ' (除外 ' + excluded + ' 件) ===' : ' ===';
 
 	if (hits === 0) {
 		console.log('');

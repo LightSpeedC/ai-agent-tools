@@ -232,7 +232,7 @@
 		if (day.loading != null) { return day.loading; }
 		day.loading = (async () => {
 			if (!(await loadReq(day))) {
-				day.body.textContent = 'この日のデータを読めませんでした（' + dataPath(day.info.d, false) + '）';
+				day.body.textContent = 'この日のデータを読めませんでした (' + dataPath(day.info.d, false) + ')';
 				return;
 			}
 			if (mode === 'all' && hasRes(day)) { await ensureRes(day); }
@@ -275,7 +275,7 @@
 	function makeTurn(day, e, i) {
 		if (e.k === 'c') {
 			const c = el('div', 'compact turn');
-			c.appendChild(el('span', 'pill', '要約（compact）'));
+			c.appendChild(el('span', 'pill', '要約 (compact)'));
 			c.appendChild(document.createTextNode(' '));
 			c.appendChild(el('span', 'tm', e.t));
 			return c;
@@ -858,7 +858,7 @@
 		try {
 			await loadScript('data/index.js');
 		} catch {
-			list.appendChild(el('p', 'empty', '目次（data/index.js）を読めませんでした。'));
+			list.appendChild(el('p', 'empty', '目次 (data/index.js) を読めませんでした。'));
 			return;
 		}
 		const idx = store.index ?? { sessions: [], days: [] };

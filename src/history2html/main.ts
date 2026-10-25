@@ -61,7 +61,7 @@ const DefaultOut = 'notes/91_history';
 
 function usage(toStdout: boolean): void {
 	const write = toStdout ? console.log : console.error;
-	write('会話ログ（etc/history/jsonl）から、伏せ字を掛けた公開用のページを作ります。');
+	write('会話ログ (etc/history/jsonl) から、伏せ字を掛けた公開用のページを作ります。');
 	write('');
 	write('  history2html [プロジェクト] [オプション]');
 	write('');
@@ -73,7 +73,7 @@ function usage(toStdout: boolean): void {
 	write('  -l, --lead <概要>         題に添える 1 行の概要。既定は README.html のタイトルバーの概要');
 	write('  -h, --help                この使い方を出す');
 	write('');
-	write('終了コードは 0（成功）・ 1（伏せ漏れがあり、書き出さなかった）・ 2（引数や入力の誤り）。');
+	write('終了コードは 0 (成功)・ 1 (伏せ漏れがあり、書き出さなかった)・ 2 (引数や入力の誤り)。');
 	write('画面には件数だけを出します。会話の本文も、伏せた値も出しません。');
 }
 
@@ -116,7 +116,7 @@ async function main(): Promise<number> {
 	if (words == null) {
 		// check-public は飛ばして続けるが、こちらは公開する物を作るので止める（計画の第 3 章）
 		return fail('伏せる語のリストがありません: ' + shown(project, listPath)
-			+ '\n     人の名前 ・ 社名など、式では見つけられない語を 1 行に 1 つ書きます（空でもよい）。'
+			+ '\n     人の名前 ・ 社名など、式では見つけられない語を 1 行に 1 つ書きます (空でもよい)。'
 			+ '\n     Git の管理外にするため、名前の先頭を _ にします。');
 	}
 	// 出し先が空でなく、前回の印も無ければ書かない。別のものを上書きしない
@@ -147,7 +147,7 @@ async function main(): Promise<number> {
 	const built = build(collected, masker.mask, title, lead, homeHref);
 
 	console.log('=== history2html ===');
-	console.log('  読んだもの: ' + shown(project, input) + ' の ' + collected.files + ' ファイル（' + collected.sessions.length + ' セッション。読めなかった行 ' + collected.badLines + '）');
+	console.log('  読んだもの: ' + shown(project, input) + ' の ' + collected.files + ' ファイル (' + collected.sessions.length + ' セッション。読めなかった行 ' + collected.badLines + ')');
 	console.log('  日 ' + built.stats.days + ' ・ 依頼 ' + built.stats.prompts + ' ・ 人の発言なしの応答 ' + built.stats.triggers
 		+ ' ・ AI の本文 ' + built.stats.answers + ' ・ ツール ' + built.stats.tools);
 	const masked = Object.entries(masker.counts).map(([k, n]) => (MaskLabels[k] ?? k) + ' ' + n);
@@ -161,7 +161,7 @@ async function main(): Promise<number> {
 		console.log('  ⚠️ 伏せる語のリストが空です。人の名前 ・ 社名は伏せていません: ' + shown(project, listPath));
 	}
 	if (ctx.authors.length === 0) {
-		console.log('  ⚠️ git の author が取れませんでした（git の外など）。author は伏せていません');
+		console.log('  ⚠️ git の author が取れませんでした (git の外など)。author は伏せていません');
 	}
 
 	const leaks = inspect(built, ctx);
@@ -176,7 +176,7 @@ async function main(): Promise<number> {
 	}
 
 	const w = write(out, built);
-	console.log('  書き出し先: ' + shown(project, out) + '（' + built.files.size + ' ファイル。書いた ' + w.written + ' ・ 同じなので書かなかった ' + w.same + ' ・ 消した ' + w.removed + '）');
+	console.log('  書き出し先: ' + shown(project, out) + ' (' + built.files.size + ' ファイル。書いた ' + w.written + ' ・ 同じなので書かなかった ' + w.same + ' ・ 消した ' + w.removed + ')');
 	console.log('=== 書き出しました。公開する前に、人が目で読んでください ===');
 	return 0;
 }

@@ -95,9 +95,9 @@ export function summarize(name: string, input: any): string {
 			let s = str(i.file_path);
 			const off = typeof i.offset === 'number' ? i.offset : null;
 			const lim = typeof i.limit === 'number' ? i.limit : null;
-			if (off != null && lim != null) { s += '（' + off + '〜' + (off + lim - 1) + ' 行）'; }
-			else if (off != null) { s += '（' + off + ' 行目から）'; }
-			else if (lim != null) { s += '（' + lim + ' 行まで）'; }
+			if (off != null && lim != null) { s += ' (' + off + '〜' + (off + lim - 1) + ' 行)'; }
+			else if (off != null) { s += ' (' + off + ' 行目から)'; }
+			else if (lim != null) { s += ' (' + lim + ' 行まで)'; }
 			return s;
 		}
 		case 'Edit':
@@ -108,7 +108,7 @@ export function summarize(name: string, input: any): string {
 			return str(i.notebook_path);
 		case 'Grep':
 		case 'Glob':
-			return firstLine(str(i.pattern)) + (str(i.path) ? '（' + str(i.path) + '）' : '');
+			return firstLine(str(i.pattern)) + (str(i.path) ? ' (' + str(i.path) + ')' : '');
 		case 'WebFetch':
 			return str(i.url);
 		case 'WebSearch':
