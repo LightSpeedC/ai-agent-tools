@@ -140,13 +140,17 @@
 	<div class="inner">
 		<h1>応答の言語の検査 計画（英語の文をフックで止める）</h1>
 		<p class="lead">AI エージェントの応答に、日本語の無い英語の文が混ざったら、Claude Code のフックで差し戻す共有コマンド <code>check-reply-language</code> を足す。</p>
-		<p class="date">📅 作成: 2026-10-14 / 更新: 2026-10-17</p>
+		<p class="date">📅 作成: 2026-10-14 / 更新: 2026-10-25</p>
 	</div>
 </div>
 
 <div class="wrap">
 
 <p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<div class="callout callout-important">
+	<p><strong>取り下げ (2026-10-25、利用者の判断)。</strong>共通ルールの Stop フック (<code>require-japanese</code>) が、そのターンの英語だけの文を検出して、日本語で書き直させることが、10/25 の会話の記録で分かった (08:18 ・ 08:31 の 2 回とも、正しい検出)。この計画の実装は、いったん取り下げる。<strong>英語の混入が再発 ・ 多発するようなら、再検討する</strong>。引き金は、失敗の振り返り (<a href="../01_research/r261025-01-失敗の振り返り.html">r261025-01</a>) の次の回で、英語の混入のあるターンが、仮に 3 回以上あったとき (数は仮)。</p>
+</div>
 
 <div class="toc">
 	<h2>目次</h2>
