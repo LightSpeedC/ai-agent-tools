@@ -356,6 +356,7 @@ safe-push "&lt;リポジトリ&gt;" &lt;パス&gt; [&lt;パス&gt; …]    # 名
 		<tbody>
 			<tr><td>テスト（<code>run-safe-push-tests.ts</code>。計画の 19 項目）</td><td>✅ 85 件すべて成功（bun ・ node の両方）</td></tr>
 			<tr><td>型チェック</td><td>✅ 食い違いなし</td></tr>
+			<tr><td>報告元の確認 (2026-10-25)</td><td>✅ ai-agent-rules (共通ルールで、未 push の 3 件が送られた) ・ ✅ ai-obsidian-vault (Stop フックから 10/20 〜 10/25 に 45 回、手で実行も終了コード 0)。課題は「済」</td></tr>
 			<tr><td>動かしたことのある環境</td><td>Windows だけ。<strong>Linux ・ Mac ・ クラウドの sh は、まだ実機で動かしていない</strong>（入口の <code>bin/safe-push</code> は書いたが、未確認）</td></tr>
 		</tbody>
 	</table>
