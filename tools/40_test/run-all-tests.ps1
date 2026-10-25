@@ -46,14 +46,16 @@ $Suites = @(
 	# html2md の作成日 ・ 更新日の検査。警告（▲）は golden の期待値に入らないため別に見る
 	@{ Name = 'html2md の日付の検査'; Script = 'run-html2md-date-tests.ts' },
 	@{ Name = 'html2md の書き出し'; Script = 'run-html2md-write-tests.ts' },
-	@{ Name = 'transcribe'; Script = 'run-transcribe-tests.ts' },
+	@{ Name = 'transcribe'; Script = 'run-transcribe-tests.ts'; TimeoutSec = 300 },
 	# 会話ログから公開用の HTML を作る。伏せ字は 2 段目の検査まで見る
 	@{ Name = 'history2html'; Script = 'run-history2html-tests.ts' },
 	# ビューアをブラウザ 3 種で確かめる（PlayWright 共有環境）。材料を作って渡すだけなので 1 周でよい
-	@{ Name = 'history2html のビューア'; Script = 'run-history2html-viewer-tests.ts'; Once = $true },
+	@{ Name = 'history2html のビューア'; Script = 'run-history2html-viewer-tests.ts'; Once = $true; TimeoutSec = 600 },
 	@{ Name = 'convert-audio'; Script = 'run-convert-audio-tests.ts' },
 	# 複数の場所から書き換えられるリポジトリの同期。裸のリポジトリと clone 2 つで、ロック ・ 衝突 ・ 時間切れまで見る
-	@{ Name = 'safe-push'; Script = 'run-safe-push-tests.ts' },
+	@{ Name = 'safe-push'; Script = 'run-safe-push-tests.ts'; TimeoutSec = 300 },
+	# 一括実行の時間の上限そのもの。止める相手は、このテストが起動する眠るだけの node
+	@{ Name = '試験の時間の上限'; Script = 'run-timeout-tests.ts' },
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },
 	@{ Name = 'text'; Script = 'run-text-tests.ps1'; NodeTarget = 'runners\text-node.cmd' },
 	# psh のテストだけ ts で書いてある。道具自体が PowerShell を呼ぶため、
@@ -105,6 +107,34 @@ $FirstRunner = if ($HasBun) { 'bun' } else { 'node' }
 
 $failed = @()
 
+<#
+	1 本ごとの時間の上限（秒）。共通ルール「試験には時間の上限を付ける」。
+	超えたら、子孫ごと止めて ⏱️ 時間切れとして次へ進む（invoke-with-timeout.ps1）。
+	上限は、ふつうにかかる時間の数倍にする。重い試験は、Suites の TimeoutSec で個別に決める。
+
+	実測 (2026-10-25。1 本の最長): ビューア 90 秒 ・ transcribe 80 秒 ・ safe-push 58 秒 ・ そのほか 25 秒以下。
+	既定 120 秒 (最長の約 5 倍)。ビューア 600 秒 ・ transcribe 300 秒 ・ safe-push 300 秒 (どれも 4 〜 7 倍)
+#>
+$DefaultTimeoutSec = 120
+$Invoke = Join-Path $PSScriptRoot 'invoke-with-timeout.ps1'
+# 今動いている PowerShell で、ps1 の試験も動かす（上限を付けるには、別のプロセスにする必要がある）
+$PsExe = (Get-Process -Id $PID).Path
+
+# 空白を含む値は " で囲む（Start-Process は引数を囲まずにつなぐため）
+function Quote([string]$s) {
+	if ($s -match '\s') { return '"' + $s + '"' }
+	return $s
+}
+
+# 1 本を上限付きで走らせ、失敗なら一覧に足す。時間切れ（124）は ⏱️ を付ける
+function Invoke-Suite($suite, [string]$file, [string]$argLine, [string]$label) {
+	$limit = if ($suite.ContainsKey('TimeoutSec')) { $suite.TimeoutSec } else { $DefaultTimeoutSec }
+	& $Invoke -FilePath $file -ArgumentLine $argLine -TimeoutSec $limit -Name $label
+	$code = $LASTEXITCODE
+	if ($code -eq 124) { $script:failed += ('⏱️ ' + $label) }
+	elseif ($code -ne 0) { $script:failed += $label }
+}
+
 foreach ($suite in $Suites) {
 	$path = Join-Path $PSScriptRoot $suite.Script
 	if (-not (Test-Path -LiteralPath $path)) {
@@ -124,8 +154,7 @@ foreach ($suite in $Suites) {
 		$runners = if ($suite.ContainsKey('Once')) { @($TsRunners[0]) } else { $TsRunners }
 		foreach ($runner in $runners) {
 			Write-Host ('--- ' + $suite.Name + '（' + $runner + '）') -ForegroundColor DarkGray
-			& $runner $path
-			if ($LASTEXITCODE -ne 0) { $failed += ($suite.Name + '（' + $runner + '）') }
+			Invoke-Suite $suite $runner (Quote $path) ($suite.Name + '（' + $runner + '）')
 		}
 
 		# exe 版（Rust）も同じテストで回す。呼び出し元が bun のときと node のときで
@@ -137,10 +166,8 @@ foreach ($suite in $Suites) {
 				foreach ($runner in $TsRunners) {
 					Write-Host ('--- ' + $suite.Name + '（exe・呼び出し元 ' + $runner + '）') -ForegroundColor DarkGray
 					Set-Item -Path ('env:' + $suite.ExeEnv) -Value $exePath
-					& $runner $path
-					$code = $LASTEXITCODE
+					Invoke-Suite $suite $runner (Quote $path) ($suite.Name + '（exe・' + $runner + '）')
 					Remove-Item -Path ('env:' + $suite.ExeEnv)
-					if ($code -ne 0) { $failed += ($suite.Name + '（exe・' + $runner + '）') }
 				}
 			} else {
 				Write-Host ('--- ' + $suite.Name + '（exe）: ビルドしていないので飛ばしました（' + $suite.ExeTarget + '）') -ForegroundColor Yellow
@@ -151,16 +178,14 @@ foreach ($suite in $Suites) {
 
 	# 既定で回す。ランチャーが bun を優先するので、bun があれば bun
 	Write-Host ('--- ' + $suite.Name + '（' + $FirstRunner + '）') -ForegroundColor DarkGray
-	& $path
-	if ($LASTEXITCODE -ne 0) { $failed += ($suite.Name + '（' + $FirstRunner + '）') }
+	Invoke-Suite $suite $PsExe ('-NoProfile -ExecutionPolicy Bypass -File ' + (Quote $path)) ($suite.Name + '（' + $FirstRunner + '）')
 
 	# node でも回す。bun が無ければ上が既に node なので、そのときは回さない
 	if ($HasBun -and $suite.ContainsKey('NodeTarget')) {
 		$target = Join-Path $PSScriptRoot $suite.NodeTarget
 		if (Test-Path -LiteralPath $target) {
 			Write-Host ('--- ' + $suite.Name + '（node）') -ForegroundColor DarkGray
-			& $path -Target $target
-			if ($LASTEXITCODE -ne 0) { $failed += ($suite.Name + '（node）') }
+			Invoke-Suite $suite $PsExe ('-NoProfile -ExecutionPolicy Bypass -File ' + (Quote $path) + ' -Target ' + (Quote $target)) ($suite.Name + '（node）')
 		}
 		else {
 			Write-Host ('node 用の当て木がありません: ' + $target) -ForegroundColor Red
