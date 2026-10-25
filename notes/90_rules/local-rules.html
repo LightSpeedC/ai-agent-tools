@@ -12,12 +12,13 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
+	/* 章のアクセント色（6 章 / 色相 280 → 0 を 56 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(210,78%,25%);   --accent2:hsl(210,58%,55%);   --soft:hsl(210,28%,95%); }
-	.ch03{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
-	.ch04{ --accent:hsl(70,78%,25%);    --accent2:hsl(70,58%,55%);    --soft:hsl(70,28%,95%); }
-	.ch05{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(224,78%,25%);   --accent2:hsl(224,58%,55%);   --soft:hsl(224,28%,95%); }
+	.ch03{ --accent:hsl(168,78%,25%);   --accent2:hsl(168,58%,55%);   --soft:hsl(168,28%,95%); }
+	.ch04{ --accent:hsl(112,78%,25%);   --accent2:hsl(112,58%,55%);   --soft:hsl(112,28%,95%); }
+	.ch05{ --accent:hsl(56,78%,25%);    --accent2:hsl(56,58%,55%);    --soft:hsl(56,28%,95%); }
+	.ch06{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -142,7 +143,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools のローカルルール</h1>
 		<p class="lead">このプロジェクトでだけ通る決めごと。全プロジェクトに通ることは共通ルールにあり、ここには書かない。</p>
-		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-10-15</p>
+		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-10-25</p>
 	</div>
 </div>
 
@@ -158,6 +159,7 @@
 		<li class="ch03"><a href="#ch03">消化するときに踏んだ落とし穴</a></li>
 		<li class="ch04"><a href="#ch04">chat の待受けは、無ければ自分で張る</a></li>
 		<li class="ch05"><a href="#ch05">書き出す道具は、中身が同じなら書かない</a></li>
+		<li class="ch06"><a href="#ch06">作業の区切りで commit と push をする</a></li>
 	</ol>
 </div>
 
@@ -181,6 +183,11 @@
 				<td class="nowrap">ai-chat-lite（AI 間チャット）の利用</td>
 				<td>待受けの参加を、利用者の指示を待たず<strong>自分の判断で張る</strong>（第 4 章）</td>
 				<td>共通ツールのメンテをしており、各プロジェクトから不具合報告・フィードバックを受けることが多い。窓口として常時聞いておく必要がある</td>
+			</tr>
+			<tr>
+				<td class="nowrap">修正は1点ずつ、確認を重視（commit は指示を待つ） ・ 重大な操作の確認方法（push は指示を待つ）</td>
+				<td>作業の区切りで、適切な単位に分けて、<strong>指示を待たずに commit し、push する</strong>（第 6 章）</td>
+				<td>小さな区切りごとに記録を残して公開し、変更が溜まって別のセッションの変更と混ざるのを防ぐ</td>
 			</tr>
 		</tbody>
 	</table>
@@ -356,6 +363,24 @@
 
 	<div class="callout">
 		<p><strong>なぜ。</strong>同じ中身でも書き直すと、更新日時が変わり、Git に「M」と出る（共通ルール「中身の差が無いのに M と出たら」）。変わったファイルが、変わっていないものに埋もれる。</p>
+	</div>
+</section>
+
+<section class="ch06" id="ch06">
+	<h1>作業の区切りで commit と push をする</h1>
+
+	<p>適用条件: このプロジェクトで、1 つの作業（課題 1 件、計画 1 本、記録の反映等）を終えたとき。</p>
+
+	<ul>
+		<li><strong>載せるのは、その作業で自分が変えたファイルだけ。</strong>名指しで <code>git add</code> し、<code>git diff --cached --name-only</code> で一覧を見る（共通ルール「修正は1点ずつ、確認を重視」のとおり）</li>
+		<li><strong>1 つの作業を 1 commit にする。</strong>1 つのファイルに複数の作業が混ざったときは、分けずに 1 commit にまとめる（第 3 章「部分的なステージでコミットを分けない」）</li>
+		<li><strong>commit のあとに push する。</strong>作業が複数あれば、commit を重ねてから、まとめて 1 回 push する</li>
+		<li><strong>push が拒否されたときは、やり直さず、状態を報告して指示を待つ</strong></li>
+		<li>公開してはいけないものが載っていないかの点検（共通ルール「コミット前の確認」）は、省略しない</li>
+	</ul>
+
+	<div class="callout callout-warning">
+		<p><strong>push は公開に相当する。</strong>自動にすると、点検の漏れがそのまま外へ出る。点検は、新しく追跡対象に入るファイルだけを見れば足りる。</p>
 	</div>
 </section>
 
