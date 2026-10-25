@@ -169,7 +169,7 @@
 	<p>Rust にすると、次が見込める（<strong>全部を狙う。とくにコードページ・パイプとプロセスツリーの深さ</strong>。第 6 章）。</p>
 	<ul>
 		<li><strong>bun がコードページを 65001 にする件を避けられる</strong>。bun は動いている間、窓の入力・出力のコードページを 65001 にする（共通ルール「Bun 同士のパイプは文字化けすることがある」）。bun から起動した PowerShell はその状態で起動するため、ps1 の中で SJIS を出す cmd や .NET Framework の exe の出力を受け取ると、psh に届く前に化けるおそれがある（未検証）。Rust の exe はコードページに触らない</li>
-		<li><strong>bun 同士のパイプを避けられる</strong>。<code>psh … | text …</code> のように相手が bun のとき、oven-sh/bun#43660 に当たる（課題 i260927-01）</li>
+		<li><strong>bun 同士のパイプを避けられる</strong>。<code>psh … | text …</code> のように相手が bun のとき、<a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a> に当たる（課題 i260927-01）</li>
 		<li><strong>処理系が要らない</strong>。bun も node も無い環境で動く</li>
 		<li><strong>プロセスとメモリが軽くなる</strong>。処理系が 1 段減る見込み（前後で実測する。第 5 章）</li>
 		<li><strong>起動が速い</strong>（ランタイムの起動が要らない。どれだけ速くなるかは実測する）</li>

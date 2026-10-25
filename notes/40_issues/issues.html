@@ -324,7 +324,7 @@ $sub = Convert-Blocks ...</code></pre>
 		</div>
 	</details>
 
-	<details open>
+	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260912-02</span>参照実装 html2md-ps.ps1 を削除し、二重メンテをやめる</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>2026-09-12 に実施した。<strong>ゴールデンファイルの仕組みを先に入れてから消した。</strong>手順は下の「やること」のとおり。</p>
@@ -410,7 +410,7 @@ $sub = Convert-Blocks ...</code></pre>
 		</div>
 	</details>
 
-	<details open>
+	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260912-03</span>文字コードと改行の違反を、人が気づく前に落とす</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>2026-09-12 に実施した。<code>convert-encoding</code> に <strong><code>--check</code></strong> を足し、<code>--info</code> がフォルダを受けるようにした。</p>
@@ -492,7 +492,7 @@ $sub = Convert-Blocks ...</code></pre>
 		</div>
 	</details>
 
-	<details>
+	<details open>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260912-04</span>convert-encoding のテストが、ごくまれに書き込み失敗（exit 5）で落ちる</summary>
 		<div class="issue-body">
 			<p><code>run-convert-encoding-tests.ps1</code> のケースが<strong>再現しない形で 1 件だけ落ちる</strong>ことがある。2026-09-12 に 4 回観測（ケース 8 ・ 5g ・ 40 ・ 9）。<strong>毎回ちがうケースで、直後の再実行では通る</strong>（同日に 4 回連続で全件成功も確認）。</p>
@@ -704,7 +704,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	</details>
 
 	<details open>
-		<summary><span class="badge b-none">未</span><span class="no">i260927-01</span>bun 同士のパイプで文字化けする件（oven-sh/bun#43660）の追跡</summary>
+		<summary><span class="badge b-none">未</span><span class="no">i260927-01</span>bun 同士のパイプで文字化けする件（<a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a>）の追跡</summary>
 		<div class="issue-body">
 			<p>共通ルール「Bun 同士のパイプは文字化けすることがある（未解決）」で報告済みの <a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a> を追跡する。2026-09-27 時点で issue は open。原因は bot（<code>robobun</code>）により特定済みで、修正 PR <a href="https://github.com/oven-sh/bun/pull/43662">#43662</a>（Windows コンソールへ UTF-16 で書き込み、bun 自身が変更したコードページだけを復元する）が紐づいているが、こちらも open（未マージ）。</p>
 			<p>マージ・リリースされたら、共通ルールの「Bun 同士のパイプは文字化けすることがある（未解決）」を実機で再検証し、解消していれば「未解決」の記述を外す。</p>
@@ -798,7 +798,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 
 	<p>2026-09-08 に ai-chat-lite-reviewer が html2md 全体を 11 観点でレビュー（読み取りのみ）。確定 46 件・要検証 47 件・棄却 9 件。「静かに間違った結果を返す」類が、新しい <code>text</code>・<code>convert-encoding</code> のデコード側に集中、との総評。</p>
 
-	<details open>
+	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i260908-01</span>high 4 件（重大）を修正</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>2026-09-08 に 4 件とも修正し、回帰テストを追加（text 47 件・convert-encoding 96 件・html2md 10 件、すべて成功）。</p>
@@ -834,7 +834,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		</div>
 	</details>
 
-	<details>
+	<details open>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260908-03</span>low（約 25 件・軽微）</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>個別に挙がっていた 4 件は解消済みと確認した（i260910-03 の5）。README のツール表・text 一式・ビルド節の記載漏れと、閉じた課題 i260907-01 の <code>.exe</code> 表記が 3 本の cmd に残る件は、62ab2e4 で直っていたことを現物確認。<code>check-contrast -Recurse</code> が自リポジトリで常に 4 件 exit 1 になる件は、自己診断用フィクスチャ <code>contrast/selftest.html</code>（意図してコントラスト不良を作ってある）を <code>-Recurse</code> の巻き込みだったため、既定の除外パターンに <code>contrast</code> を追加して直した（直接指定すれば従来どおり検出する）。強調内の空白が Trim で落ちて語が繋がる件は、<code>Emphasis.Resolve</code>（exe）・<code>Resolve-Emphasis</code>（ps1）で <code>&lt;strong&gt;a &lt;/strong&gt;b</code> のような内側末尾の空白が捨てられ <code>**a**b</code> になっていたのを確認し、前後の空白を記法の外側へ出すよう直した（回帰テスト追加）。</p>
@@ -843,7 +843,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		</div>
 	</details>
 
-	<details>
+	<details open>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260908-04</span>未検証 47 件（要検証）</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>2026-09-08 に一部を検証・修正: <code>text read --no-number</code> の ◆ ヘッダー抑止／<code>convert-encoding --dump --bytes</code> の int オーバーフロー／<code>text find</code> の位置引数パス／<code>text edit</code>/<code>write</code> の原子的書き込み。<code>--lines</code> 範囲外は仕様上エラーで据え置き、<code>--force</code> のメッセージ文言は要精査（低）。</p>
@@ -936,7 +936,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		</div>
 	</details>
 
-	<details>
+	<details open>
 		<summary><span class="badge b-warn">着手</span><span class="no">i260910-03</span>low 9 件</summary>
 		<div class="issue-body">
 			<p><span class="badge b-ok">済</span>2026-09-10 に 1 件目（details/summary の ps1 未反映）を直した。<code>Get-NormalizedText</code> の除去一覧に <code>details</code>・<code>summary</code> を追加し、<code>tests/cases/tags</code>・<code>untagged</code> の <code>details</code> を含むケースで exe/ps1 の検査結果が一致することを確認（i260910-02 のテスト強化で検出された）。</p>
