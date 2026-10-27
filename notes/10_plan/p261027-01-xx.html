@@ -147,6 +147,14 @@
 
 <p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools。入力はコマンドラインの引数 (実行するコマンドと、その引数)。出力は、そのコマンドの標準出力 ・ 標準エラーを UTF-8 にしたものと、終了コード。</p>
 
+<div class="callout callout-important">
+	<p><strong>実装済み (2026-10-27、cf127cf)。</strong>単体 17 件 (<code>cargo test</code>) と動作 17 〜 18 件 (<code>tools/40_test/run-xx-tests.ts</code>) が通り、一括実行 (21 本) も通った。標準入力を引き継ぐ形に変えるとテストが落ちる (❌Red) ことも確かめた。<strong>窓に直接出すときの確かめは未</strong> (この環境が端末ではないため)。利用者が窓から <code>xx psls a.exe</code> を動かして見る。</p>
+	<ul>
+		<li><code>.cmd</code> ・ <code>.bat</code> は、<code>cmd /c</code> を挟まず直接渡す。Rust の標準ライブラリが cmd.exe 経由で起動し、引数の引用も直すため (第 2 章の 2 を読み替える)</li>
+		<li>終了コードは 32 ビットのまま返す。受け取る側の bun は 256 で割った余りにする (xx を通さない <code>cmd /c "exit 300"</code> でも 44。実測)</li>
+	</ul>
+</div>
+
 <div class="toc">
 	<h2>目次</h2>
 	<ol>
