@@ -1,0 +1,269 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>xx コマンド 計画（引数を別プロセスで実行する）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>xx コマンド 計画（引数を別プロセスで実行する）</h1>
+		<p class="lead">引数のコマンドを別プロセスで実行し、出力の文字コードを判定して UTF-8 で返す内部ツール <code>xx</code> を、Rust で作る。</p>
+		<p class="date">📅 作成: 2026-10-27 / 更新: 2026-10-27</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools。入力はコマンドラインの引数 (実行するコマンドと、その引数)。出力は、そのコマンドの標準出力 ・ 標準エラーを UTF-8 にしたものと、終了コード。</p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">目的と決めたこと</a></li>
+		<li class="ch02"><a href="#ch02">動き</a></li>
+		<li class="ch03"><a href="#ch03">出力の文字コードの判定</a></li>
+		<li class="ch04"><a href="#ch04">置き場 ・ ビルド ・ 入口</a></li>
+		<li class="ch05"><a href="#ch05">進め方</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>目的と決めたこと</h1>
+	<p><code>xx &lt;コマンド&gt; [引数...]</code> で、そのコマンドを別プロセスで実行する。例は <code>xx psls a.exe</code>。<strong>内部ツール</strong>として、利用方法の資料 (TOOLS-USAGE) にも、共通ルールにも書かない。</p>
+	<p>決めたこと (2026-10-27、利用者の判断。73 〜 77 は、この計画のための通し番号)。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>決めたこと</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">73-A</td><td>子プロセスとして起動し、終わるまで待つ。終了コードをそのまま返す</td></tr>
+			<tr><td class="nowrap">74-A</td><td>ソースは <code>src/</code> の下、入口は <code>bin/</code>。資料には書かない (実行ファイルの置き方は第 4 章)</td></tr>
+			<tr><td class="nowrap">75-A</td><td><code>.exe</code> ・ <code>.cmd</code> ・ <code>.bat</code> ・ <code>.ps1</code> を PATH から探して実行する</td></tr>
+			<tr><td class="nowrap">76-A (置き換え)</td><td>コードページは変えない。子の出力は、判定して読み替える</td></tr>
+			<tr><td class="nowrap">追加</td><td>子の標準入力は EOF にする</td></tr>
+			<tr><td class="nowrap">77-A</td><td>子の出力の文字コード (SJIS ・ UTF-8 ・ UTF-16) を判定し、常に UTF-8 で出す。判定が付かなければそのまま流す</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>動き</h1>
+	<pre><code class="language-text">xx psls a.exe
+xx git status</code></pre>
+	<ol>
+		<li><strong>探す</strong>: 最初の引数を、PATH から探す。拡張子が無ければ <code>.exe</code> → <code>.cmd</code> → <code>.bat</code> → <code>.ps1</code> の順に試す</li>
+		<li><strong>起動役を挟む</strong>: <code>.exe</code> は直接。<code>.cmd</code> ・ <code>.bat</code> は <code>cmd /c</code>。<code>.ps1</code> は <code>powershell -NoProfile -ExecutionPolicy Bypass -File</code></li>
+		<li><strong>入力</strong>: 子の標準入力は、空のもの (EOF) にする。待たされて固まらない</li>
+		<li><strong>出力</strong>: 子の標準出力 ・ 標準エラーを、それぞれ別に受ける。終わるまで待ち、第 3 章で UTF-8 にして、同じ側 (標準出力は標準出力、標準エラーは標準エラー) へ書く</li>
+		<li><strong>終了コード</strong>: 子の終了コードをそのまま返す。起動できなかった (見つからない ・ 起動に失敗) ときは、理由を標準エラーに 1 行書き、127 を返す</li>
+	</ol>
+	<div class="callout">
+		<p><strong>コードページは変えない</strong> (共通ルール「コンソールのコードページを変更しない」)。自分の出力は、リダイレクトされていれば UTF-8 のバイト列で書く。窓に出すときは、窓のコードページに依らず UTF-8 の書き込みで出る形を、実機で確かめてから決める (第 5 章の 3)。</p>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>出力の文字コードの判定</h1>
+	<p>受けたバイト列の全体を見て、1 回で判定する。<strong>ストリームの途中では切り替えない</strong> (終わるまで待つ 73-A のため、全体を見られる)。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>順</th><th>見るもの</th><th>判定</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">1</td><td>先頭が BOM (<code>EF BB BF</code>)</td><td>UTF-8。BOM を除いて出す</td></tr>
+			<tr><td class="nowrap">2</td><td>先頭が BOM (<code>FF FE</code> ・ <code>FE FF</code>)</td><td>UTF-16 (LE ・ BE)。UTF-8 にして出す</td></tr>
+			<tr><td class="nowrap">3</td><td>全体が正しい UTF-8 として読める</td><td>UTF-8 (ASCII だけの場合も含む)。そのまま出す</td></tr>
+			<tr><td class="nowrap">4</td><td>正しい UTF-8 ではなく、CP932 として読める</td><td>SJIS (CP932)。UTF-8 にして出す</td></tr>
+			<tr><td class="nowrap">5</td><td>どれでもない</td><td>判定が付かない。そのまま流す</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li>BOM の無い UTF-16 は判定しない (3 〜 5 に落ちる)。<code>00</code> の混ざり方で見分ける案は、必要が出たら足す</li>
+		<li>既存の判定 (<code>src/lib/detector.ts</code>) と同じ結果になることを、テストで突き合わせる (共通ルール「答え合わせの相手があれば突き合わせる」)。Rust では <code>encoding_rs</code> を使うか、自前で書くかを、実装の前に比べる (判断が要れば、案を出す)</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>置き場 ・ ビルド ・ 入口</h1>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>もの</th><th>置き場</th></tr></thead>
+		<tbody>
+			<tr><td>ソース (Rust)</td><td class="nowrap"><code>src/xx/</code> (Cargo のプロジェクト)</td></tr>
+			<tr><td>ビルドの出力</td><td class="nowrap"><code>src/xx/target/</code> (git に含めない)</td></tr>
+			<tr><td>ビルド</td><td class="nowrap"><code>tools/20_build/build-xx.cmd</code> (<code>cargo build --release</code>)</td></tr>
+			<tr><td>入口</td><td class="nowrap"><code>bin/xx.cmd</code></td></tr>
+			<tr><td>テスト</td><td class="nowrap"><code>tests/</code> と <code>tools/40_test/</code> の既存の形に合わせる</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>exe を <code>bin/</code> に直接置かない</strong>。<code>bin/</code> は git で管理し、exe は git に含めない。入口 <code>bin/xx.cmd</code> が、<code>src/xx/target/release/xx.exe</code> を呼ぶ (psh の Rust 版と同じ形)</li>
+		<li><strong>決めたこと 74-A の「実行ファイルを <code>bin/</code> に出す」は、この形に読み替える。</strong>exe そのものを <code>bin/</code> に置くと、git の管理と食い違うため。名前 <code>xx</code> だけで呼べることは変わらない</li>
+		<li><strong>資料に書かない</strong>: TOOLS-USAGE ・ 共通ルールには載せない。道具の一覧にも載せない。この計画書 (README からリンクする) と、ソース先頭のコメントだけが説明になる</li>
+		<li><code>.gitignore</code> に <code>target/</code> が無ければ足す (すでに psh の Rust 版のために足してあれば不要)</li>
+	</ul>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>進め方</h1>
+	<ol>
+		<li>この計画の承認を得る</li>
+		<li>status に着手を反映する</li>
+		<li><strong>窓に出すときの書き方を、実機で確かめる</strong>。窓のコードページが 932 のままで、UTF-8 の文字が化けずに出るかを、リダイレクトの有無で見る。コードページを変えずに済む書き方を選ぶ (化けるなら、案を出して決める)</li>
+		<li>テストを先に書く。次を期待値に持ち、落ちる (❌Red) のを見てから実装する
+			<ul>
+				<li>終了コードがそのまま返る (0 ・ 1 ・ 大きい値)</li>
+				<li>見つからないとき 127 で、標準エラーに理由が出る</li>
+				<li>標準入力が EOF (入力を待つコマンドが固まらない)</li>
+				<li>標準出力と標準エラーが、別の側に出る</li>
+				<li>出力が SJIS ・ UTF-8 ・ UTF-16 (BOM あり) ・ ASCII のみ ・ 判定不能 のとき、それぞれ期待どおりの UTF-8 になる</li>
+				<li><code>.cmd</code> ・ <code>.bat</code> ・ <code>.ps1</code> が、拡張子なしの名前で見つかって動く</li>
+				<li>空白を含む引数 ・ 日本語の引数が、そのまま子へ渡る</li>
+			</ul>
+		</li>
+		<li>実装する。ビルドして、テストを全件通す (✅Green)</li>
+		<li>入口 <code>bin/xx.cmd</code> を作る (cmd は SJIS ＋ CRLF)。実機で <code>xx psls a.exe</code> を動かす</li>
+		<li>status と計画に結果を反映する。資料には載せない</li>
+	</ol>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>
