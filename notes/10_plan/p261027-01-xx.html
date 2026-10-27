@@ -167,7 +167,7 @@
 		<thead><tr><th>番号</th><th>決めたこと</th></tr></thead>
 		<tbody>
 			<tr><td class="nowrap">73-A</td><td>子プロセスとして起動し、終わるまで待つ。終了コードをそのまま返す</td></tr>
-			<tr><td class="nowrap">74-A</td><td>ソースは <code>src/</code> の下、入口は <code>bin/</code>。資料には書かない (実行ファイルの置き方は第 4 章)</td></tr>
+			<tr><td class="nowrap">74-A</td><td>ソースは <code>src/</code> の下、実行ファイルは <code>bin/</code> に直接置く (git には含めない)。資料には書かない</td></tr>
 			<tr><td class="nowrap">75-A</td><td><code>.exe</code> ・ <code>.cmd</code> ・ <code>.bat</code> ・ <code>.ps1</code> を PATH から探して実行する</td></tr>
 			<tr><td class="nowrap">76-A (置き換え)</td><td>コードページは変えない。子の出力は、判定して読み替える</td></tr>
 			<tr><td class="nowrap">追加</td><td>子の標準入力は EOF にする</td></tr>
@@ -222,15 +222,16 @@ xx git status</code></pre>
 		<tbody>
 			<tr><td>ソース (Rust)</td><td class="nowrap"><code>src/xx/</code> (Cargo のプロジェクト)</td></tr>
 			<tr><td>ビルドの出力</td><td class="nowrap"><code>src/xx/target/</code> (git に含めない)</td></tr>
-			<tr><td>ビルド</td><td class="nowrap"><code>tools/20_build/build-xx.cmd</code> (<code>cargo build --release</code>)</td></tr>
-			<tr><td>入口</td><td class="nowrap"><code>bin/xx.cmd</code></td></tr>
+			<tr><td>ビルド</td><td class="nowrap"><code>tools/20_build/build-xx.cmd</code> (<code>cargo build --release</code> のあと、<code>bin/xx.exe</code> へ写す)</td></tr>
+			<tr><td>実行ファイル</td><td class="nowrap"><code>bin/xx.exe</code> (git に含めない)</td></tr>
 			<tr><td>テスト</td><td class="nowrap"><code>tests/</code> と <code>tools/40_test/</code> の既存の形に合わせる</td></tr>
 		</tbody>
 	</table>
 	</div>
 	<ul>
-		<li><strong>exe を <code>bin/</code> に直接置かない</strong>。<code>bin/</code> は git で管理し、exe は git に含めない。入口 <code>bin/xx.cmd</code> が、<code>src/xx/target/release/xx.exe</code> を呼ぶ (psh の Rust 版と同じ形)</li>
-		<li><strong>決めたこと 74-A の「実行ファイルを <code>bin/</code> に出す」は、この形に読み替える。</strong>exe そのものを <code>bin/</code> に置くと、git の管理と食い違うため。名前 <code>xx</code> だけで呼べることは変わらない</li>
+		<li><strong>exe を <code>bin/</code> に直接置く</strong> (ai-chat-lite の <code>aichat.exe</code> と同じ形。2026-10-27 に確かめた)。exe は <code>.gitignore</code> の <code>*.exe</code> で git の管理外。ビルドのたびに、<code>target/</code> から <code>bin/</code> へ写す</li>
+		<li>入口の <code>.cmd</code> は作らない。psh の Rust 版が入口を挟むのは、同名の TypeScript 版が <code>bin/</code> にあり、<code>.exe</code> が先に見つかると切り替えが効かなくなるため。xx は同名の入口が無いので当たらない</li>
+		<li>exe は git に無いので、新しい環境では、ビルドして写すまで <code>xx</code> が使えない</li>
 		<li><strong>資料に書かない</strong>: TOOLS-USAGE ・ 共通ルールには載せない。道具の一覧にも載せない。この計画書 (README からリンクする) と、ソース先頭のコメントだけが説明になる</li>
 		<li><code>.gitignore</code> に <code>target/</code> が無ければ足す (すでに psh の Rust 版のために足してあれば不要)</li>
 	</ul>
@@ -254,7 +255,7 @@ xx git status</code></pre>
 			</ul>
 		</li>
 		<li>実装する。ビルドして、テストを全件通す (✅Green)</li>
-		<li>入口 <code>bin/xx.cmd</code> を作る (cmd は SJIS ＋ CRLF)。実機で <code>xx psls a.exe</code> を動かす</li>
+		<li><code>tools/20_build/build-xx.cmd</code> を作る (cmd は SJIS ＋ CRLF)。ビルドして <code>bin/xx.exe</code> へ写し、実機で <code>xx psls a.exe</code> を動かす</li>
 		<li>status と計画に結果を反映する。資料には載せない</li>
 	</ol>
 </section>
