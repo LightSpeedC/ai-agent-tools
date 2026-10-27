@@ -1,0 +1,22 @@
+[package]
+name = "xx"
+version = "0.1.0"
+edition = "2021"
+description = "引数のコマンドを別プロセスで実行し、出力の文字コードを判定して UTF-8 で返す（内部ツール。計画 p261027-01）"
+publish = false
+
+# 本体のファイル名を xx-main.rs にしている（既定の src/main.rs ではない）
+[[bin]]
+name = "xx"
+path = "src/xx-main.rs"
+
+[dependencies]
+# CP932 と UTF-16 の読み。psh の Rust 版と同じ表
+encoding_rs = "0.8"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

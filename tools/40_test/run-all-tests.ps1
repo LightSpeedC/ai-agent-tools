@@ -62,6 +62,9 @@ $Suites = @(
 	# テストまで ps1 にすると道具が壊れたときにテストも動かせない。
 	# ExeTarget は Rust 版（計画 p260929-01）。同じテストを PSH_TARGET で当てる
 	@{ Name = 'psh'; Script = 'run-psh-tests.ts'; ExeTarget = 'src\psh-rs\target\release\psh.exe'; ExeEnv = 'PSH_TARGET' },
+	# xx（内部ツール。計画 p261027-01）。子プロセスを起こして、終了コード ・ 標準入力 ・ 文字コードを見る。
+	# 判定と名前の解決の単体の確かめは src\xx の cargo test
+	@{ Name = 'xx'; Script = 'run-xx-tests.ts'; ExeTarget = 'src\xx\target\release\xx.exe'; ExeEnv = 'XX_TARGET' },
 	# node でも動くかの確認。ランチャーは bun が無ければ node に落ちるため、
 	# bun でしか試していないと bun の無い環境で初めて落ちる
 	@{ Name = 'node で動くか'; Script = 'run-node-tests.ts' },
