@@ -144,6 +144,20 @@ export function resolveAsTags(text: string): string {
 	return resolveInner(text, true);
 }
 
+/**
+ * prefix の中で、閉じていない同じ種類の開きの数。
+ * 内側から順に確定させるので、残っている生のセンチネルは未解決のペアのもの。
+ * 開きが閉じより多ければ、そのぶん外側に囲まれている
+ */
+function countOpenInPrefix(prefix: string, kind: number): number {
+	let open = 0;
+	for (const c of prefix) {
+		if (kindOfBegin(c) === kind) { open++; }
+		else if (kindOfEnd(c) === kind) { open--; }
+	}
+	return open;
+}
+
 function resolveInner(text: string, forceTags: boolean): string {
 	let t = text;
 	for (;;) {
@@ -179,6 +193,11 @@ function resolveInner(text: string, forceTags: boolean): string {
 			(idx > 0 && kindOfBegin(t[idx - 1]) === openKind) ||
 			(idx + len < t.length && kindOfEnd(t[idx + len]) === closeKind);
 
+		// 隣接していなくても、外側に同じ種類の未解決のペアがあれば入れ子になっている
+		// （strong の末尾・中間にバッジが来るとき。i260910-01）。
+		// ここで ** にすると、外側の ** と衝突して崩れる
+		const nestedInSameKind = openKind === KindStrong && countOpenInPrefix(prefix, KindStrong) > 0;
+
 		let rep: string;
 		if (openKind !== closeKind) {
 			// 開きと閉じの種類が食い違うときは、記法にせずタグで出す
@@ -186,6 +205,16 @@ function resolveInner(text: string, forceTags: boolean): string {
 			rep = '<' + tag + '>' + inner + '</' + tag + '>';
 		} else if (touchesOuterSameKind) {
 			rep = inner;
+		} else if (nestedInSameKind) {
+			// 入れ子の内側だけ __ にする。CommonMark は ** と __ を別種の区切りとして扱うので、
+			// 外側の ** と組を取り違えない（65-A）。前後の判定は * と同じ規則で足りる
+			// （内側の前後は空白か、外側の記号か、バッジの記号）
+			if (!forceTags &&
+				canEmphasize(prefix + leadWs + inner + trailWs + suffix, prefix.length + leadWs.length, inner.length)) {
+				rep = '__' + inner + '__';
+			} else {
+				rep = '<strong>' + inner + '</strong>';
+			}
 		} else if (!forceTags &&
 			canEmphasize(prefix + leadWs + inner + trailWs + suffix, prefix.length + leadWs.length, inner.length)) {
 			const mark = markOf(openKind);
