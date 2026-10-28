@@ -65,6 +65,10 @@ $Suites = @(
 	# xx（内部ツール。計画 p261027-01）。子プロセスを起こして、終了コード ・ 標準入力 ・ 文字コードを見る。
 	# 判定と名前の解決の単体の確かめは src\xx の cargo test
 	@{ Name = 'xx'; Script = 'run-xx-tests.ts'; ExeTarget = 'src\xx\target\release\xx.exe'; ExeEnv = 'XX_TARGET' },
+	# cc.cmd が起動の前に呼ぶ、~/.claude.json への登録。本物の ~/.claude.json は触らない
+	@{ Name = 'cc-register'; Script = 'run-cc-register-tests.ts' },
+	# cc.cmd。claude を代役（rustc で作る）に差し替え、環境変数の削除・登録・起動を見る。窓が一瞬開いて閉じる
+	@{ Name = 'cc'; Script = 'run-cc-tests.ts' },
 	# node でも動くかの確認。ランチャーは bun が無ければ node に落ちるため、
 	# bun でしか試していないと bun の無い環境で初めて落ちる
 	@{ Name = 'node で動くか'; Script = 'run-node-tests.ts' },
