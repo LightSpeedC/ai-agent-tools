@@ -1,0 +1,3 @@
+exit=1
+★HTML 側: リンク切れ: nothing.md
+★Markdown 側: リンク切れ: nothing.md

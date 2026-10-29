@@ -124,6 +124,13 @@ export function testHtmlLinks(htmlPath: string): string[] {
 		const href = m[1];
 		if (/^(https?:|mailto:|tel:|#)/.test(href)) { continue; }
 		if (/\.md($|[#?])/.test(href)) {
+			// 対応する .html が無い .md は、手書きの Markdown なので .md と書くのが正しい（i261029-01）。
+			// 実在しなければ、リンク切れとして指摘する
+			const mdFull = resolveLink(dir, href);
+			if (mdFull != null && !existsAny(mdFull.replace(/\.md$/i, '.html'))) {
+				if (!existsAny(mdFull)) { bad.push('リンク切れ: ' + href); }
+				continue;
+			}
 			bad.push('.md を参照: ' + href + '（HTML には常に .html と書く）');
 			continue;
 		}

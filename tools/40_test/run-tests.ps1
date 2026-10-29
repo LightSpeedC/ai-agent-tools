@@ -274,6 +274,8 @@ $ExtraFiles = @{
 $ExpectedExitCode = @{
 	'cross-anchor-bad' = 1   # 存在しない他ファイルのアンカーを検出できるかの確認用
 	'icon-link' = 1          # 手がかりの無いアイコンリンクを指摘できるかの確認用（i260912-05）
+	'md-link-paired' = 1     # .html が実在する .md への HTML リンクを指摘できるかの確認用（i261029-01）
+	'md-link-missing' = 1    # 実在しない .md への HTML リンクを、リンク切れとして指摘できるかの確認用（i261029-01）
 }
 
 function Write-Result([string]$Mark, [string]$Text) {
