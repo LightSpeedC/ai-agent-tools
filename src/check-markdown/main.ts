@@ -87,6 +87,9 @@ async function main(): Promise<number> {
 		console.log('パスが見つかりません: ' + target);
 		return ExitBadArgs;
 	}
+	if (found.excluded > 0) {
+		console.log('  除外 ' + found.excluded + ' 件');
+	}
 	if (found.files.length === 0) {
 		console.log('対象の .md がありません');
 		return 0;

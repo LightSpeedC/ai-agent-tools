@@ -14,6 +14,8 @@ export type CollectResult = {
 	root: string;
 	/** 対象が見つからない */
 	missing: boolean;
+	/** exclude で落とした件数 */
+	excluded: number;
 };
 
 function walk(dir: string, ext: string, recurse: boolean, out: string[]): void {
@@ -39,13 +41,13 @@ function walk(dir: string, ext: string, recurse: boolean, out: string[]): void {
  */
 export function collect(target: string, ext: string, recurse: boolean, exclude: string): CollectResult {
 	if (!fs.existsSync(target)) {
-		return { files: [], root: '', missing: true };
+		return { files: [], root: '', missing: true, excluded: 0 };
 	}
 
 	const abs = path.resolve(target);
 	const st = fs.statSync(abs);
 	if (!st.isDirectory()) {
-		return { files: [abs], root: path.dirname(abs), missing: false };
+		return { files: [abs], root: path.dirname(abs), missing: false, excluded: 0 };
 	}
 
 	const found: string[] = [];
@@ -54,7 +56,7 @@ export function collect(target: string, ext: string, recurse: boolean, exclude: 
 	const re = exclude.length > 0 ? new RegExp(exclude) : null;
 	const kept = found.filter((f) => re == null || !re.test(f.split('/').join('\\')));
 	kept.sort();
-	return { files: kept, root: abs, missing: false };
+	return { files: kept, root: abs, missing: false, excluded: found.length - kept.length };
 }
 
 /** 表示用に root からの相対にする */

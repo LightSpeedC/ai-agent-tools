@@ -113,6 +113,24 @@ for (const tool of ['check-markdown']) {
 	assertEqual(tool + ' 値の無い --path は 2', 2, r.code);
 
 	/*
+		8b. 除外で落とした件数を 1 行出す（i260911-01 の 9b、67-A）
+
+		出さないと、除外の正規表現が広すぎて全件落ちても「対象なし」としか見えない。
+		除外される .md だけを置く（残りが無ければ API を叩かずに終わる）
+	*/
+	const skipDir = path.join(work, 'skipme');
+	fs.mkdirSync(skipDir, { recursive: true });
+	fs.writeFileSync(path.join(skipDir, 'b.md'), '# b\n');
+	fs.writeFileSync(path.join(skipDir, 'c.md'), '# c\n');
+	r = runTs(tool, ['-p', work, '-r', '-e', '\\\\skipme\\\\']);
+	assertIncludes(tool + ' 除外で落とした件数を出す', '除外 2 件', r.out);
+	assertIncludes(tool + ' 除外で全件落ちたら対象なし', empty, r.out);
+
+	fs.rmSync(skipDir, { recursive: true, force: true });
+	r = runTs(tool, ['-p', work, '-r', '-e', 'no-such-name']);
+	assertEqual(tool + ' 除外が 0 件なら件数の行は出ない', false, r.out.includes('除外 '));
+
+	/*
 		9. ps1 版と同じ結果か
 
 		移植で落ちるのは処理の本体ではなく、比較や既定値の食い違い。
