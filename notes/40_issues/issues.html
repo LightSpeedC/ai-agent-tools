@@ -703,11 +703,12 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 		</div>
 	</details>
 
-	<details open>
-		<summary><span class="badge b-none">未</span><span class="no">i260927-01</span>bun 同士のパイプで文字化けする件（<a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a>）の追跡</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i260927-01</span>bun 同士のパイプで文字化けする件（<a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a>）の追跡</summary>
 		<div class="issue-body">
 			<p>共通ルール「Bun 同士のパイプは文字化けすることがある（未解決）」で報告済みの <a href="https://github.com/oven-sh/bun/issues/43660">oven-sh/bun#43660</a> を追跡する。2026-09-27 時点で issue は open。原因は bot（<code>robobun</code>）により特定済みで、修正 PR <a href="https://github.com/oven-sh/bun/pull/43662">#43662</a>（Windows コンソールへ UTF-16 で書き込み、bun 自身が変更したコードページだけを復元する）が紐づいているが、こちらも open（未マージ）。</p>
 			<p>マージ・リリースされたら、共通ルールの「Bun 同士のパイプは文字化けすることがある（未解決）」を実機で再検証し、解消していれば「未解決」の記述を外す。</p>
+			<p><span class="badge b-ok">済</span><strong>2026-10-31、追跡をやめて閉じた（72-B。利用者の判断）。</strong>bun 側の issue と PR の状態は確かめていない。共通ルールの「未解決」の記述は、そのまま残す。</p>
 		</div>
 	</details>
 
