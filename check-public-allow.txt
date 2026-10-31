@@ -1,7 +1,7 @@
 # check-public の誤検出を外す指定 (使い方は TOOLS-USAGE の「誤検出を外す」)
 # パス                          項目     語
 
-# 課題と品質レビューの本文に書いた、変数名の例 (let token = scanner2.scan(); 右辺に英字と数字が入る形)
+# 課題と品質レビューの本文に書いた、変数名の例 (右辺に英字と数字が入る形)
 notes/40_issues/issues.html     secret   scanner2.
 notes/80_quality_review/        secret   scanner2.
 
