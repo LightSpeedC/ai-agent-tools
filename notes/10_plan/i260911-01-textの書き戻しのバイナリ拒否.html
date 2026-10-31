@@ -145,7 +145,7 @@
 	<div class="inner">
 		<h1>text の書き戻しのバイナリ拒否 計画（i260911-01 の項目 10）</h1>
 		<p class="lead"><code>text edit</code> と <code>text write --keep</code> が、バイナリのファイルを書き換えないようにする。</p>
-		<p class="date">📅 作成: 2026-10-31 / 更新: 2026-10-31</p>
+		<p class="date">📅 作成: 2026-10-31 / 更新: 2026-11-01</p>
 	</div>
 </div>
 
@@ -156,7 +156,7 @@
 <p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools の <code>src/text/</code> (<code>edit.ts</code> ・ <code>write.ts</code>)。入力は、書き換える対象のファイルのバイト列。出力は、バイナリと判定したときの拒否 (終了コードとメッセージ) と、そのテスト。</p>
 
 <div class="callout callout-important">
-	<p><strong>承認待ち (2026-10-31)。</strong>66-A は選ばれた。この計画の承認 (「実装して」) はまだ。</p>
+	<p><strong>実装済み (2026-11-01)。</strong>66-A の承認 (「実装して」) を受けて実装した。計画から変えた点は無い。テストは <code>run-text-tests.ps1</code> に 10 件を足し、先に書いて ❌Red 8 件 (残り 2 件は元から通る対象外の確認) → ✅Green を確かめた。<code>edit</code> ・ <code>write</code> とも、組の決定の直後 (曖昧の判定より前) に判定する。</p>
 </div>
 
 <div class="toc">

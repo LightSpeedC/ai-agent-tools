@@ -4,7 +4,7 @@
 
 import type { EolKind } from './engine.ts';
 import {
-	ToolError, comboName, decode, detectCombo, findUnmappable, splitLines,
+	ToolError, comboName, decode, detectCombo, findUnmappable, looksBinary, splitLines,
 } from './engine.ts';
 import {
 	Args, computeDigest, mtime, out, readBytes, resolve, show, splice, writeAtomic,
@@ -24,6 +24,10 @@ export function run(a: string[]): number {
 
 	const bytes = readBytes(p);
 	const combo = resolve(bytes, args.get('--from'));
+	// デコードと再エンコードを通すため、バイナリは中身が壊れる（find が飛ばすのと同じ判定）
+	if (looksBinary(bytes, combo.enc)) {
+		throw new ToolError(2, 'バイナリ (NUL を含む) と判定したため書き換えません: ' + show(p));
+	}
 	if (combo.ambiguous) {
 		throw new ToolError(3,
 			'UTF-8 と SJIS の両方で妥当で組を決められません。--from で明示してください: ' + show(p));

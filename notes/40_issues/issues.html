@@ -192,7 +192,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools の課題</h1>
 		<p class="lead">これから解決することを 1 ファイルに集める。いまどうなっているかは計画と仕様の文書を見る。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-10-31</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-11-01</p>
 	</div>
 </div>
 
@@ -1095,12 +1095,12 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 			</table>
 			</div>
 
-			<p><span class="badge b-none">未</span>残り3件（9b は 2026-10-31 に済）。いずれも判断か追加調査が要る:</p>
+			<p><span class="badge b-none">未</span>残り2件（9b は 2026-10-31、10 は 2026-11-01 に済）。いずれも判断か追加調査が要る:</p>
 			<ul>
 				<li>2. text の <code>--from</code>/<code>--to</code> が「convert-encoding と同じ語彙」と資料に書くが、実装は文字コード名5語だけで用途名（<code>cmd</code> 等）を受けない。<code>--to utf8</code> の改行挙動も convert-encoding と違う。<strong>text 側に用途名を足すか、資料の説明を弱めるかの選択</strong></li>
 				<li>5. <span class="no">i260910-03</span> の内訳に #732 の low 2 件（<code>run-all-tests.ps1</code> が check-contrast/check-markdown を含まない／issues.html の3行が共通ルールと食い違う）が入っていない。<span class="badge b-ok">済</span>前者は元々 <span class="no">i260910-03</span> に記録済みだったと確認した（#732 由来である旨をここに追記して紐付けた）。<strong>後者は元の指摘が手元に無く、何が食い違うのか特定できていない</strong></li>
 				<li>9b. check-contrast/check-markdown が<strong>除外で落ちた件数を画面に出さない</strong>。出すかどうかと、どう出すかの判断。<span class="badge b-ok">済</span><strong>2026-10-31、67-A（利用者の判断）。</strong>check-markdown は、除外で落とした件数が 1 件以上のとき「除外 N 件」を 1 行出す（判定は変わらない。<code>src/lib/walk.ts</code> の <code>collect</code> が件数を返す）。テストを先に書いて ❌Red を確かめた（<code>tools/40_test/run-check-tools-tests.ts</code>）。check-contrast は PlayWright 共有環境の側の実装で、このプロジェクトでは直せない</li>
-				<li>10. text のバイナリ判定（<code>LooksBinary</code>）が <code>find</code> にしか繋がっておらず、<code>edit</code>/<code>write</code> はバイナリでも Ambiguous（終了3）しか見ない。書き戻し経路にバイナリ拒否を足すかどうかの判断</li>
+				<li>10. text のバイナリ判定（<code>LooksBinary</code>）が <code>find</code> にしか繋がっておらず、<code>edit</code>/<code>write</code> はバイナリでも Ambiguous（終了3）しか見ない。書き戻し経路にバイナリ拒否を足すかどうかの判断。<span class="badge b-ok">済</span><strong>2026-11-01、66-A（利用者の判断）。</strong><code>text edit</code> と <code>text write --keep</code> が、NUL を含むファイルを終了コード 2 で拒否する（<code>looksBinary</code> をそのまま使う。<code>--from</code> 明示でも効く。UTF-16 と <code>write --to</code> は対象外）。テストを先に書いて ❌Red 8 件を確かめた（<code>tools/40_test/run-text-tests.ps1</code>）</li>
 			</ul>
 		</div>
 	</details>

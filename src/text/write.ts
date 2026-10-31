@@ -5,7 +5,7 @@
 import * as fs from 'node:fs';
 import type { EncKind, EolKind } from './engine.ts';
 import {
-	ToolError, decode, detectCombo, encodeFull, findUnmappable, parseTo,
+	ToolError, decode, detectCombo, encodeFull, findUnmappable, looksBinary, parseTo,
 } from './engine.ts';
 import { Args, exists, out, readBytes, resolve, show, writeAtomic } from './files.ts';
 import { sameBytes } from '../lib/codec.ts';
@@ -30,6 +30,10 @@ export function run(a: string[]): number {
 		if (!exists(p)) { throw new ToolError(2, '--keep は既存ファイルが必要です: ' + show(p)); }
 		const cur = readBytes(p);
 		const c = resolve(cur, args.get('--from'));
+		// 組を引き継ぐ元がバイナリなら、書き戻すと中身が壊れる
+		if (looksBinary(cur, c.enc)) {
+			throw new ToolError(2, 'バイナリ (NUL を含む) と判定したため書き換えません: ' + show(p));
+		}
 		if (c.ambiguous) {
 			throw new ToolError(3, '既存ファイルの組を決められません。--from で明示してください: ' + show(p));
 		}

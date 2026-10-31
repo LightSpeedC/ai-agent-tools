@@ -306,6 +306,23 @@ Assert-Equal 'edit: --old 複数一致でエラー 終了 2' 2 $r.Code
 $r = Run-Text @('edit', $fMulti, '--lines', '1-1', '--old', 'foo', '--new', 'bar')
 Assert-Equal 'edit: --lines で範囲を絞れば一意 終了 0' 0 $r.Code
 
+# バイナリ（UTF-16 でなく NUL を含む）は edit で書き戻さない（i260911-01 の項目 10、66-A）。
+# find が飛ばすのと同じ判定
+$fBinE = Join-Path $Work 'bin-edit.dat'
+New-RawFile $fBinE @(0x41, 0x00, 0x42, 0x0A, 0x43, 0x0A)
+$before = Get-Bytes $fBinE
+$r = Run-Text @('edit', $fBinE, '--lines', '2-2', '--new', 'X')
+Assert-Equal 'edit: バイナリなら拒否 終了 2' 2 $r.Code
+Assert-Match 'edit: バイナリ拒否のメッセージ' $r.Out 'バイナリ'
+Assert-True 'edit: バイナリ拒否時は元ファイルが不変' ((Get-Bytes $fBinE) -join ',' -eq ($before -join ',')) '書き換わった'
+$r = Run-Text @('edit', $fBinE, '--from', 'utf8', '--lines', '2-2', '--new', 'X')
+Assert-Equal 'edit: --from を明示してもバイナリなら拒否 終了 2' 2 $r.Code
+# UTF-16 は NUL を含むが、バイナリではない
+$fU16 = Join-Path $Work 'u16-edit.txt'
+New-TextFile $fU16 "abc`r`ndef`r`n" $EncUtf16Le
+$r = Run-Text @('edit', $fU16, '--lines', '2-2', '--new', 'XYZ')
+Assert-Equal 'edit: UTF-16 はバイナリとみなさず書き換わる 終了 0' 0 $r.Code
+
 Write-Host ''
 Write-Host '=== text write ===' -ForegroundColor Cyan
 
@@ -332,6 +349,20 @@ Assert-True 'write: reg は UTF-16LE BOM(FF FE)' (($b[0] -eq 0xFF) -and ($b[1] -
 
 $r = Run-Text @('write', $fW, '--keep', '--in', $fBody)
 Assert-Match 'write: --keep 2 回目は変更なし' $r.Out '変更なし'
+
+# バイナリ（NUL を含む）は --keep で書き戻さない（i260911-01 の項目 10、66-A）。
+# デコードと再エンコードを通すため、バイナリの中身が壊れる
+$fBinW = Join-Path $Work 'bin-keep.dat'
+New-RawFile $fBinW @(0x41, 0x00, 0x42, 0x0A, 0x43, 0x0A)
+$before = Get-Bytes $fBinW
+$r = Run-Text @('write', $fBinW, '--keep', 'X')
+Assert-Equal 'write: --keep がバイナリなら拒否 終了 2' 2 $r.Code
+Assert-Match 'write: バイナリ拒否のメッセージ' $r.Out 'バイナリ'
+Assert-True 'write: バイナリ拒否時は元ファイルが不変' ((Get-Bytes $fBinW) -join ',' -eq ($before -join ',')) '書き換わった'
+$r = Run-Text @('write', $fBinW, '--keep', '--from', 'utf8', 'X')
+Assert-Equal 'write: --from を明示してもバイナリなら拒否 終了 2' 2 $r.Code
+$r = Run-Text @('write', $fBinW, '--to', 'utf8', 'X')
+Assert-Equal 'write: --to はバイナリの上へも指示どおり上書きする 終了 0' 0 $r.Code
 
 Write-Host ''
 Write-Host '=== レビュー #649 の回帰 ===' -ForegroundColor Cyan
