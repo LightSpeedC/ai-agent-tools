@@ -153,7 +153,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools のローカルルール</h1>
 		<p class="lead">このプロジェクトでだけ通る決めごと。全プロジェクトに通ることは共通ルールにあり、ここには書かない。</p>
-		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-10-25</p>
+		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-11-01</p>
 	</div>
 </div>
 
@@ -198,6 +198,11 @@
 				<td class="nowrap">修正は1点ずつ、確認を重視（commit は指示を待つ） ・ 重大な操作の確認方法（push は指示を待つ）</td>
 				<td>作業の区切りで、適切な単位に分けて、<strong>指示を待たずに commit し、push する</strong>（第 6 章）</td>
 				<td>小さな区切りごとに記録を残して公開し、変更が溜まって別のセッションの変更と混ざるのを防ぐ</td>
+			</tr>
+			<tr>
+				<td class="nowrap">プロジェクトフォルダ外へのアクセス（確認なしで参照してよいのは <code>~/.claude</code> 配下のみ）</td>
+				<td><code>~/.gemini</code> と <code>~/.codex</code> 配下も、<strong>読み取りに限り</strong>確認なしで参照してよい。書き込みは確認を取る。<strong>認証情報のファイル（トークン等）と、会話の中身は読まない</strong></td>
+				<td><code>cc</code> ・ <code>cx</code> ・ <code>ag</code> が起こすエージェントの履歴と設定の置き場を調べる必要があるため（<code>i261101-02</code>）。履歴の有無の判定は、置き場の構造だけで足りる</td>
 			</tr>
 		</tbody>
 	</table>
