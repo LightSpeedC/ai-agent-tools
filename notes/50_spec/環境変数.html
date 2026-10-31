@@ -1,0 +1,251 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>環境変数の仕様 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch03{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>環境変数の仕様 (ai-agent-tools)</h1>
+		<p class="lead">このプロジェクトの道具が、読む ・ 設定する ・ 消す環境変数の一覧。試験用は後半の章に分けてある。</p>
+		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-01</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p>道具が環境変数をどう扱うかの、いまの姿。<strong>範囲はこのプロジェクトの全道具</strong> (<code>src/</code> ・ <code>bin/</code> ・ <code>tools/</code> ・ <code>tests/</code>)。値は書かない (名前と役目だけ)。</p>
+
+<div class="callout">
+	<p><strong>変数を足す・消す・改名するときは、この表を同じ回のうちに直す。</strong>探すときの語は <code>process.env</code> ・ <code>$env:</code> ・ <code>env::var</code> ・ <code>set </code> (cmd) ・ <code>GetEnvironmentVariable</code>。</p>
+</div>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">ふだんの運用で読む変数</a></li>
+		<li class="ch02"><a href="#ch02">道具が設定する・消す・引き継ぐ変数</a></li>
+		<li class="ch03"><a href="#ch03">試験 ・ 計測のための変数</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>ふだんの運用で読む変数</h1>
+	<p>利用者が道具を使うときに、道具が読む変数。<strong>OS の変数と、cloud の準備で読む変数</strong>だけ。このプロジェクトの道具が独自に決めた名前のものは、ふだんは使わないので第 3 章に置く。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>変数</th><th>読む道具</th><th>役目</th><th>未設定のとき</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>PATH</code></td><td><code>xx</code> (<code>src/xx</code>)</td><td>コマンド名を探すフォルダの並び</td><td>空の並びとして扱う (見つからない)</td></tr>
+			<tr><td class="nowrap"><code>USERPROFILE</code></td><td><code>bin/codex-trusted.ps1</code></td><td>設定フォルダ (<code>.codex</code>) の親</td><td>確かめていない</td></tr>
+			<tr><td class="nowrap"><code>GIT_AUTHOR_NAME</code> ・ <code>GIT_AUTHOR_EMAIL</code></td><td><code>bin/cloud-session-start</code></td><td><strong>両方が設定されていれば</strong>、プロジェクトの git の author を書き換えない (git が環境変数を使うため)</td><td>片方でも空なら、共通ルールの最新の commit と同じ author を、プロジェクトの <code>.git/config</code> に書く</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><code>cc-register</code> と <code>history2html</code> は、ホームのフォルダを Node の <code>os.homedir()</code> で取る。<code>USERPROFILE</code> 等の OS の変数は、直接は読まない (<code>history2html</code> は、先に第 3 章の <code>HISTORY2HTML_HOME</code> を見る)</li>
+		<li>cloud の準備では、呼び手が <code>CLAUDE_PROJECT_DIR</code> と <code>CLAUDE_ENV_FILE</code> の値を、環境変数ではなく<strong>引数</strong> (<code>--project</code> ・ <code>--env-file</code>) で渡す。道具は環境変数としては読まない</li>
+	</ul>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>道具が設定する・消す・引き継ぐ変数</h1>
+	<p>道具が環境を変える場合。<strong>変わるのが「起こした相手だけ」か、「呼んだ窓にも残る」か</strong>が、取り違えやすい点。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>道具</th><th>どうする</th><th>変数</th><th>効く範囲</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>bin/cc.cmd</code></td><td>消す</td><td><code>CLAUDE</code> で始まる変数すべて (<code>CLAUDE_CODE_USE_POWERSHELL_TOOL</code> を除く)</td><td>起こす <code>claude</code> だけ (<code>setlocal</code> の中)。呼んだ窓は変わらない。Claude Code の中から <code>cc</code> を呼んでも、親のセッションの値を子に渡さないため</td></tr>
+			<tr><td class="nowrap"><code>bin/cc.cmd</code></td><td>設定して残す</td><td><code>CC_ROOT</code> (未設定のとき <code>W:\</code>) ・ 作業用の <code>YMD</code> ・ <code>Y</code> ・ <code>XMD</code> ・ <code>HMSC</code> ・ <code>XHM</code></td><td><strong>呼んだ窓に残る</strong> (実測。<code>CC_ROOT</code> が未設定の窓で呼ぶと、呼んだあとに <code>W:\</code> が入っていた)</td></tr>
+			<tr><td class="nowrap"><code>bin/cx.cmd</code></td><td>設定する</td><td><code>Y</code> ・ <code>YMD</code></td><td>呼んだ窓に残るかは、実測していない</td></tr>
+			<tr><td class="nowrap"><code>bin/use-lms.cmd</code></td><td>設定する</td><td><code>ANTHROPIC_BASE_URL</code> ・ <code>ANTHROPIC_AUTH_TOKEN</code> ・ <code>ANTHROPIC_API_KEY</code> (空にする) ・ <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code></td><td>呼んだ窓に残る (読んだ限り。<code>setlocal</code> が無い。実測していない)</td></tr>
+			<tr><td class="nowrap">コマンド起動サーバ (<code>src/spawn-server-ts</code>)</td><td>引き継ぐ</td><td>サーバーの環境変数すべて</td><td>起動した新しい窓へ。作業用の値は持ち込まない (第 3 章の <code>SPAWN_LINE</code> ・ <code>SPAWN_CWD</code>)</td></tr>
+			<tr><td class="nowrap"><code>bin/cloud-session-start</code></td><td>設定する</td><td><code>GIT_LFS_SKIP_SMUDGE=1</code></td><td><code>git clone</code> の 1 回だけ (そのコマンドの行の中)</td></tr>
+			<tr><td class="nowrap"><code>bin/cloud-session-start</code></td><td>書き出す</td><td><code>PATH</code> を通す行</td><td><code>--env-file</code> で渡されたファイルへ。ファイルが無ければ通さず、そう報告する</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<div class="callout">
+		<p><strong>読んだ限りの組み合わせ (実測していない)。</strong><code>use-lms.cmd</code> で <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code> を設定した窓から <code>cc</code> を使うと、<code>cc</code> が <code>CLAUDE</code> で始まる変数を消すので、<strong>その 1 つは起こした <code>claude</code> に渡らない</strong>。<code>ANTHROPIC_*</code> は消されず、渡る。</p>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>試験 ・ 計測のための変数</h1>
+	<p>試験や計測が、道具の動きを差し替えるための変数。<strong>「本番の道具が読む」と書いたものは、ふだんの運用で設定しても効く</strong> (試験のための入口だが、道具の中に入っている)。「試験の側だけ」と書いたものは、試験のスクリプトだけが読む。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>変数</th><th>読む場所</th><th>役目</th><th>未設定のとき</th><th>読む側</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>CC_ROOT</code></td><td><code>bin/cc.cmd</code></td><td>プロジェクトを作る置き場。試験は <code>tmp/</code> の下へ差し替える</td><td><code>W:\</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>CC_CLAUDE_JSON</code></td><td><code>src/cc-register</code></td><td>フォルダを登録する先の <code>.claude.json</code></td><td>ホームの <code>.claude.json</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>CC_STUB_OUT</code></td><td><code>tools/40_test/run-cc-tests.ts</code> が作る代役の <code>claude</code></td><td>受けた引数と <code>CLAUDE</code> で始まる変数の書き出し先</td><td>何も書かない</td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_HOME</code></td><td><code>src/history2html</code></td><td>伏せる対象のホームのフォルダ</td><td><code>os.homedir()</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_USERNAME</code></td><td><code>src/history2html</code></td><td>伏せる対象のユーザー名</td><td>ホームの末尾のフォルダ名</td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_HOSTNAME</code></td><td><code>src/history2html</code></td><td>伏せる対象のホスト名</td><td><code>os.hostname()</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_TEST_NO_MASK</code></td><td><code>src/history2html</code></td><td>1 段目の置き換えを、カンマ区切りの名前で外す。2 段目の検査が止めることを確かめる</td><td>外さない</td><td>本番の道具が読む (試験の入口)</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_VIEWER_DIR</code></td><td><code>tests/history2html-viewer/viewer.spec.ts</code></td><td>書き出したビューアのフォルダ</td><td>空 (試験が「渡っていない」で失敗する)</td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>TRANSCRIBE_VENDOR</code></td><td><code>src/transcribe</code></td><td>whisper の置き場。試験が本物の <code>_vendor</code> を触らないため</td><td><code>_vendor/whisper</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>CONVERT_AUDIO_VENDOR</code></td><td><code>src/convert-audio</code></td><td>ffmpeg の置き場。同上</td><td><code>_vendor/ffmpeg</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>SAFE_PUSH_TEST_HOSTNAME</code></td><td><code>src/safe-push</code></td><td>ロックに書くホスト名。別のホストのロックを試す</td><td><code>os.hostname()</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>SPAWN_SERVER_NO_FFI</code></td><td><code>src/spawn-server-ts</code></td><td><code>1</code> で、最初から <code>Start-Process</code> で起動する (代わりの道を通す)</td><td>FFI で起動し、読めなければ以後 <code>Start-Process</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>SPAWN_TEST_MARK</code></td><td><code>tools/40_test/run-spawn-server-tests.ts</code></td><td>サーバーの環境変数が、起動した窓へ引き継がれることを確かめる目印</td><td>—</td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>PSH_TARGET</code></td><td><code>tools/40_test/run-psh-tests.ts</code></td><td>試す <code>psh</code> の exe (Rust 版)</td><td><code>psh-main.ts</code> を、走っている処理系で呼ぶ</td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>XX_TARGET</code></td><td><code>tools/40_test/run-xx-tests.ts</code></td><td>試す <code>xx</code> の exe</td><td><code>src/xx/target/release/xx.exe</code></td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>BENCH_D</code></td><td><code>tools/50_run/bench-spawn/launcher.ts</code></td><td>計測 D の起動のしかた</td><td><code>detached</code></td><td>計測の側だけ</td></tr>
+			<tr><td class="nowrap"><code>SPAWN_COMMAND</code> ・ <code>SPAWN_TITLE</code> ・ <code>SPAWN_CWD</code></td><td><code>tools/50_run/bench-spawn/launcher.ts</code></td><td>計測 A ・ C で、起動するコマンド ・ 窓の題 ・ フォルダを渡す</td><td>—</td><td>計測の側だけ</td></tr>
+			<tr><td class="nowrap"><code>SPAWN_LINE</code> ・ <code>SPAWN_CWD</code></td><td><code>src/spawn-server-ts/create-process.ts</code></td><td><code>Start-Process</code> の道で、起動する行とフォルダを PowerShell に渡す。<strong>読んだらすぐ消す</strong></td><td>—</td><td>本番の道具の内部の受け渡し</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h2>試験が子に渡す環境</h2>
+	<ul>
+		<li><code>run-cc-tests.ts</code> と <code>run-xx-tests.ts</code> は、子の <code>PATH</code> の先頭に代役の置き場を足す。<code>run-cc-tests.ts</code> は、<code>cc</code> が <code>CLAUDE</code> で始まる変数を消すことを確かめるため、<code>CLAUDECODE</code> ・ <code>CLAUDE_CODE_SESSION_ID</code> 等を子に渡す</li>
+		<li><code>run-history2html-tests.ts</code> と <code>run-history2html-viewer-tests.ts</code> は、<code>HISTORY2HTML_HOME</code> ・ <code>HISTORY2HTML_USERNAME</code> ・ <code>HISTORY2HTML_HOSTNAME</code> に作り物の値を入れて、実在の値が出力に混ざらないことを確かめる</li>
+		<li><code>run-spawn-server-tests.ts</code> は、<code>SPAWN_SERVER_NO_FFI=1</code> を付けて自分をもう一度走らせ、<code>Start-Process</code> の道も通す</li>
+	</ul>
+	<h2>経緯</h2>
+	<ul>
+		<li>コマンド起動サーバが環境変数を引き継ぎ、作業用の値を持ち込まない決め: <a href="../10_plan/p260930-01-コマンド起動サーバ.html">コマンド起動サーバ 計画</a></li>
+		<li><code>PSH_TARGET</code> で Rust 版を試す決め: <a href="../10_plan/p260929-01-psh-rust.html">psh の Rust 版 計画</a></li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

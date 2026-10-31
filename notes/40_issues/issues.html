@@ -214,7 +214,7 @@
 <section class="ch01" id="ch01">
 	<h1>運用・方針の決定事項</h1>
 
-	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 26 件。23 件が解消済み、2 件が着手、1 件が未着手。</p>
+	<p>ツールの採否・置き場・ルールへの反映など、判断が要った 27 件。23 件が解消済み、2 件が着手、2 件が未着手。</p>
 
 	<details>
 		<summary><span class="badge b-ok">済</span><span class="no">i261014-01</span>共通ルール「番号付きフォルダ」に notes/91_history を書き足す（history2html ができてから）</summary>
@@ -871,6 +871,21 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 				<li><span class="badge b-ok">済</span>全件テスト (26 本) と <code>check-contrast</code> (読めない配色 0 件) が通った。<code>html2md</code> も指摘 0 件。置き場は、計画の <code>tools/90_misc/</code> から <code>tools/40_test/</code> に変えた (<code>tools/90_misc/</code> が CommonJS の指定のため。計画書に書いた)</li>
 				<li><span class="badge b-ok">済</span><strong>利用者の手元での Alt+P のプレビューの確認。</strong>2026-11-01、利用者が確認した (README のプレビューで、タイトルバーと本文が読めている画面を受け取った)</li>
 			</ul>
+		</div>
+	</details>
+
+	<details open>
+		<summary><span class="badge b-none">未</span><span class="no">i261101-01</span>環境変数の名前の揺れ ・ 重複 ・ 漏れを整理する</summary>
+		<div class="issue-body">
+			<p>2026-11-01、環境変数の仕様 (<a href="../50_spec/環境変数.html">環境変数の仕様</a>) を全道具の分まとめて作ったときに分かった。<strong>各道具で都度作ってきたため、一覧が無く、名前の食い違いを指摘できなかった。</strong>仕様は作った (76-A)。ここは、名前や挙動を<strong>変えるかどうか</strong>の判断。</p>
+			<ul>
+				<li><span class="badge b-none">未</span><strong>試験用の入口の名前が揃っていない。</strong>差し替えの入口が、<code>*_TARGET</code> (<code>PSH_TARGET</code> ・ <code>XX_TARGET</code>) ・ <code>*_VENDOR</code> (<code>TRANSCRIBE_VENDOR</code> ・ <code>CONVERT_AUDIO_VENDOR</code>) ・ <code>*_TEST_*</code> (<code>HISTORY2HTML_TEST_NO_MASK</code> ・ <code>SAFE_PUSH_TEST_HOSTNAME</code>) ・ その他 (<code>CC_ROOT</code> ・ <code>CC_CLAUDE_JSON</code> ・ <code>CC_STUB_OUT</code> ・ <code>BENCH_D</code> ・ <code>HISTORY2HTML_VIEWER_DIR</code>) の 4 つの形で付いている</li>
+				<li><span class="badge b-none">未</span><strong>同じ役目で、名前の形が違う。</strong>ホスト名の差し替えが <code>HISTORY2HTML_HOSTNAME</code> と <code>SAFE_PUSH_TEST_HOSTNAME</code> (後者だけ <code>TEST</code> が入る)。<code>HISTORY2HTML_HOME</code> ・ <code>HISTORY2HTML_USERNAME</code> ・ <code>HISTORY2HTML_HOSTNAME</code> は試験の入口なのに <code>TEST</code> が無く、同じ道具の <code>HISTORY2HTML_TEST_NO_MASK</code> だけ付く</li>
+				<li><span class="badge b-none">未</span><strong>同名で別の用途。</strong><code>SPAWN_CWD</code> が、本番の道具 (<code>create-process.ts</code> の内部の受け渡し) と計測 (<code>bench-spawn</code>) で使われている。<code>SPAWN_COMMAND</code> ・ <code>SPAWN_TITLE</code> ・ <code>SPAWN_LINE</code> も同じ系列で、どれが本番か名前では分からない</li>
+				<li><span class="badge b-none">未</span><strong><code>cc.cmd</code> が、呼んだ窓に作業用の変数を残す</strong> (実測)。<code>CC_ROOT</code> ・ <code>YMD</code> ・ <code>Y</code> ・ <code>XMD</code> ・ <code>HMSC</code> ・ <code>XHM</code>。<code>cx.cmd</code> も <code>Y</code> ・ <code>YMD</code> を使う (同じ名前を 2 本が使う)。<code>CLAUDE</code> で始まる変数を消す処理だけが <code>setlocal</code> の中にある</li>
+				<li><span class="badge b-none">未</span><strong><code>use-lms.cmd</code> と <code>cc.cmd</code> の組み合わせ</strong> (読んだ限り。実測していない)。<code>cc</code> が <code>CLAUDE</code> で始まる変数を消すので、<code>use-lms.cmd</code> が設定する <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code> は、<code>cc</code> で起こした <code>claude</code> に渡らない</li>
+			</ul>
+			<p>名前を変えるときは、共通ルール「名前を変えたら全体を検査する」に従う。<strong>どの揃え方にするか、どれを直すかは、選択肢を出して利用者が決める</strong>。</p>
 		</div>
 	</details>
 </section>
