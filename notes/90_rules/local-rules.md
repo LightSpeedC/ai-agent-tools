@@ -4,7 +4,7 @@
 
 > 📅 作成: 2026-09-12 / 更新: 2026-10-25
 
-[^^](../../README.md) ／ [クラス名の取り決め](html-class-rules.md) ／ [課題](../40_issues/issues.html)
+[^^](../../README.md) ／ [クラス名の取り決め](html-class-rules.md) ／ [開発の手順](development.md) ／ [課題](../40_issues/issues.html)
 
 ## 目次
 

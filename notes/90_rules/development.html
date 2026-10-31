@@ -141,7 +141,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools の開発の手順</h1>
 		<p class="lead">ツールを直すときに回すテスト、期待値の作り直し、ビルド。使い方は <a href="../../TOOLS-USAGE.html">TOOLS-USAGE</a> を見る。</p>
-		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-09-30</p>
+		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-10-31</p>
 	</div>
 </div>
 
@@ -166,6 +166,10 @@
 <pre><code class="language-shell">psh tools/40_test/run-all-tests.ps1</code></pre>
 
 	<p>ダブルクリックなら <code>tools/40_test/run-all-tests.cmd</code>。1 本でも落ちれば終了コード 1 を返す。最後に <code>convert-encoding --check</code> でリポジトリ全体の文字コードと改行も見る。</p>
+
+	<p><code>-Online</code> を付けると、このリポジトリに対する <code>check-markdown</code> ・ <code>check-contrast</code> も回す。<code>check-markdown</code> は GitHub の API (認証なしは 60 回/時) を、<code>check-contrast</code> はブラウザを使うため、既定では回さない。<code>-List</code> は走らせる試験の名前を出すだけで、実行しない。</p>
+
+<pre><code class="language-shell">psh tools/40_test/run-all-tests.ps1 -Online</code></pre>
 
 	<h2>何をどの処理系で回すか</h2>
 
@@ -192,6 +196,10 @@
 
 <pre><code class="language-shell"># psh の Rust 版に当てる
 PSH_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts</code></pre>
+
+	<h2>オプションの書式</h2>
+
+	<p><strong>道具の言語で決める。</strong>TypeScript ・ Rust の道具は Unix 形式（<code>--path</code> ・ <code>-r</code>）で、古い <code>-Path</code> 形式も受ける。<strong>ps1 のスクリプトは PowerShell 形式</strong>（<code>run-all-tests.ps1 -Online</code>）で、Unix 形式には寄せない。<code>--online</code> は PowerShell では位置引数として読まれるため、寄せるには引数を自前で読み替える必要があり、<code>CmdletBinding</code> の検査も効かなくなる。</p>
 </section>
 
 <section class="ch02" id="ch02">

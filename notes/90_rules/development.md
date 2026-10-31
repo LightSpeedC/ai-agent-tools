@@ -2,7 +2,7 @@
 
 ツールを直すときに回すテスト、期待値の作り直し、ビルド。使い方は [TOOLS-USAGE](../../TOOLS-USAGE.md) を見る。
 
-> 📅 作成: 2026-09-29 / 更新: 2026-09-30
+> 📅 作成: 2026-09-29 / 更新: 2026-10-31
 
 [^^](../../README.md) ／ [ローカルルール](local-rules.md)
 
@@ -21,6 +21,12 @@ psh tools/40_test/run-all-tests.ps1
 ```
 
 ダブルクリックなら `tools/40_test/run-all-tests.cmd`。1 本でも落ちれば終了コード 1 を返す。最後に `convert-encoding --check` でリポジトリ全体の文字コードと改行も見る。
+
+`-Online` を付けると、このリポジトリに対する `check-markdown` ・ `check-contrast` も回す。`check-markdown` は GitHub の API (認証なしは 60 回/時) を、`check-contrast` はブラウザを使うため、既定では回さない。`-List` は走らせる試験の名前を出すだけで、実行しない。
+
+```shell
+psh tools/40_test/run-all-tests.ps1 -Online
+```
 
 ### 何をどの処理系で回すか
 
@@ -43,6 +49,10 @@ psh tools/40_test/run-all-tests.ps1
 # psh の Rust 版に当てる
 PSH_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts
 ```
+
+### オプションの書式
+
+<strong>道具の言語で決める。</strong>TypeScript ・ Rust の道具は Unix 形式（`--path` ・ `-r`）で、古い `-Path` 形式も受ける。**ps1 のスクリプトは PowerShell 形式**（`run-all-tests.ps1 -Online`）で、Unix 形式には寄せない。`--online` は PowerShell では位置引数として読まれるため、寄せるには引数を自前で読み替える必要があり、`CmdletBinding` の検査も効かなくなる。
 
 ## 2. 期待値（golden）の作り直し
 

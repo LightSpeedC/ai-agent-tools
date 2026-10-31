@@ -11,9 +11,19 @@
 
 	最後に convert-encoding --check でリポジトリ全体の文字コードと改行を見る。
 	ここが落ちたら、テストが通っていても 1 を返す。
+
+	-Online を付けると、このリポジトリの .md と .html に対する
+	check-markdown ・ check-contrast も、最後に回す。
+	check-markdown は GitHub の API を使い (認証なしは 60 回/時)、
+	check-contrast はブラウザを起動するため、既定では回さない。
+
+	-List は、走らせる試験の名前を出して終わる (中身は実行しない)。
 #>
 [CmdletBinding()]
-param()
+param(
+	[switch]$Online,
+	[switch]$List
+)
 
 # コンソールのコードページは変えない（窓に残り、隣のプロセスを化けさせる）。
 # リダイレクトされている分だけ、UTF-8 で読み書きするよう個別に差し替える
@@ -87,8 +97,25 @@ $Suites = @(
 	# このリポジトリの HTML が共通ルール（戻るリンク ・ 目次 ・ 日付 ・ README からのリンク等）に沿っているか
 	@{ Name = 'HTML のルール'; Script = 'check-html-rules.ts' },
 	# 型チェック。bun も node も型を見ないため、ここでしか食い違いが出ない
-	@{ Name = '型チェック'; Script = 'run-tsc-tests.ps1' }
+	@{ Name = '型チェック'; Script = 'run-tsc-tests.ps1' },
+	# run-all-tests.ps1 自身の -Online (一覧を出すだけで、API もブラウザも使わない)
+	@{ Name = 'run-all-tests の -Online'; Script = 'run-all-tests-online-tests.ts' }
 )
+
+# -Online のときだけ回す、外の道具を使う検査 (i260910-03、68-A)。
+# 引数の {root} はこのリポジトリの root に置き換える
+$OnlineSuites = @(
+	@{ Name = 'check-markdown'; Command = 'check-markdown'; ArgLine = '"{root}" -r'; TimeoutSec = 300 },
+	@{ Name = 'check-contrast'; Command = 'check-contrast'; ArgLine = '-Path "{root}" -Recurse'; TimeoutSec = 600 }
+)
+
+if ($List) {
+	foreach ($suite in $Suites) { Write-Host $suite.Name }
+	if ($Online) {
+		foreach ($suite in $OnlineSuites) { Write-Host ($suite.Name + ' (-Online)') }
+	}
+	exit 0
+}
 
 <#
 	ts のテストを走らせる処理系。
@@ -198,6 +225,21 @@ foreach ($suite in $Suites) {
 			Write-Host ('node 用の当て木がありません: ' + $target) -ForegroundColor Red
 			$failed += ($suite.Name + '（node）')
 		}
+	}
+}
+
+# -Online: 外の道具 (GitHub の API ・ ブラウザ) を使う検査。root は空白を含まない前提で " で囲む
+if ($Online) {
+	$onlineRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+	foreach ($suite in $OnlineSuites) {
+		$cmd = Get-Command $suite.Command -ErrorAction SilentlyContinue
+		if ($null -eq $cmd) {
+			Write-Host ('見つかりません: ' + $suite.Command) -ForegroundColor Red
+			$failed += $suite.Name
+			continue
+		}
+		Write-Host ('--- ' + $suite.Name + ' (-Online)') -ForegroundColor DarkGray
+		Invoke-Suite $suite $cmd.Source ($suite.ArgLine.Replace('{root}', $onlineRoot)) ($suite.Name + ' (-Online)')
 	}
 }
 
