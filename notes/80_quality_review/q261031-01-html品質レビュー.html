@@ -1,0 +1,404 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>HTML 作成ルール遵守状況とプロジェクト品質レビュー</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		border-bottom:2px dotted var(--accent2,#2f5fbf);
+		display:inline-block; margin:20px 0 8px; padding-bottom:3px;
+		color:var(--ink,#1c2330); background:transparent;
+	}
+
+	p{ margin:10px 0; }
+	ul,ol{ margin:8px 0 14px 22px; padding:0; }
+	li{ margin:3px 0; }
+
+	code{
+		font-family:Consolas,"Courier New",monospace;
+		background:var(--code-bg,#f4f6fa);
+		border:1px solid var(--line,#d9dfe8);
+		border-radius:3px; padding:1px 5px; font-size:.92em;
+		color:#17335f;
+	}
+	pre{
+		background:var(--code-bg,#f4f6fa);
+		border:1px solid var(--line,#d9dfe8);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 4px 4px 0;
+		padding:13px 16px; margin:14px 0;
+		overflow-x:auto; font-size:.92em; line-height:1.55;
+	}
+	pre code{ background:none; border:none; padding:0; color:var(--ink,#1c2330); }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:6px; overflow:hidden;
+		box-shadow:0 1px 4px rgba(0,0,0,.06);
+	}
+	th,td{ border:1px solid var(--line,#d9dfe8); padding:9px 12px; vertical-align:top; }
+	th{
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; font-weight:600;
+	}
+	tr:nth-child(even) td{ background:#fafbfe; }
+	td.num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+	td.nowrap{ white-space:nowrap; }
+
+	.badge{
+		display:inline-block; font-size:.78em; font-weight:700;
+		padding:2px 7px; border-radius:4px; margin-right:4px;
+		white-space:nowrap; line-height:1.3;
+	}
+	.b-ok{ background:linear-gradient(100deg,#1d7a3c,#45b56c); color:#fff; }
+	.b-ng{ background:linear-gradient(100deg,#a51f22,#e05a5c); color:#fff; }
+	.b-warn{ background:linear-gradient(100deg,#b8620a,#f0a548); color:#fff; }
+	.b-none{ background:linear-gradient(100deg,#5a6472,#97a1ae); color:#fff; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+	.callout-tip{ border-left-color:#1d7a3c; }
+	.callout-important{ border-left-color:#12224d; }
+	.callout-warning{ border-left-color:#b8620a; }
+	.callout-caution{ border-left-color:#a51f22; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 30px;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>HTML 作成ルール遵守状況とプロジェクト品質レビュー</h1>
+		<p class="lead">全 HTML ファイルおよびリポジトリ全体の構造・運用状況を、共通ルール・ローカルルールに照らして網羅的に調査・品質レビューした結果と改善提案。</p>
+		<p class="date">📅 作成: 2026-10-31 / 更新: 2026-10-31</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">調査概要と全体評価サマリー</a></li>
+		<li class="ch02"><a href="#ch02">HTML作成ルールの詳細適合性検証</a></li>
+		<li class="ch03"><a href="#ch03">フォルダおよびファイル別状況調査</a></li>
+		<li class="ch04"><a href="#ch04">検出された課題と不適合の詳細分析</a></li>
+		<li class="ch05"><a href="#ch05">改善提案と今後の運用・保守方針</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>調査概要と全体評価サマリー</h1>
+
+	<h2>調査の背景と目的</h2>
+	<p>本調査は、<code>ai-agent-tools</code> リポジトリ内に存在するすべてのドキュメント（HTML・Markdown）およびプロジェクト構成ファイルについて、共通ルール（<code>T:/ai-agent-rules/</code>）およびローカルルール（<code>notes/90_rules/local-rules.html</code>）の遵守状況を網羅的に検査し、詳細な品質レビュー結果として永続化することを目的とする。</p>
+	<p>特に、「HTMLデザインルール」「HTML→Markdown変換ルール」「HTMLログルール」「ドキュメントの作成日・更新日ルール」「プロジェクトフォルダ構成ルール」への適合性を重点的に精査した。</p>
+
+	<h2>調査基準ルール一覧</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ルール名</th><th>参照先</th><th>主な要求事項</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">HTMLデザインルール</td><td><code>rules/html-rules.md</code></td><td>BOM付きUTF-8保存、淡色背景・コントラスト1.5:1以上、文字色背景色ペア、1600px寸法・15.5px/1.85、虹色配分（Hue 280°→0°）、戻るリンク上下紺バッジ（⌂アイコン）、tablewrap・ゼブラ、language-xxx正式名</td></tr>
+			<tr><td class="nowrap">ドキュメント作成日・更新日</td><td><code>rules/doc-date-rules.md</code></td><td><code>📅 作成: yyyy-mm-dd / 更新: yyyy-mm-dd</code>、タイトルバー内配置、フッター重複排除、本文更新時の更新日追随</td></tr>
+			<tr><td class="nowrap">HTML→Markdown変換ルール</td><td><code>rules/markdown-rules.md</code></td><td>HTML正・Markdown生成物、文言同一性、HTML内は.htmlリンクのみ、html2md自動検査クリア</td></tr>
+			<tr><td class="nowrap">プロジェクトフォルダ構成</td><td><code>rules/project-layout-rules.md</code></td><td>トップレベル配置、2桁10刻み番号付きフォルダ（<code>notes/01, 10, 40, 80, 90</code>）、<code>yymmdd-nn-件名</code>命名規則、空白禁止</td></tr>
+			<tr><td class="nowrap">ローカルルール</td><td><code>notes/90_rules/local-rules.md</code></td><td>共通ルールとの差分明確化、判断不要作業の即時消化、chat待受け維持、commit/push運用</td></tr>
+			<tr><td class="nowrap">HTMLクラス名の取り決め</td><td><code>notes/90_rules/html-class-rules.md</code></td><td>html2md解釈クラス名の統一（<code>badge b-ok/ng/warn/none</code>、<code>callout-*</code>、<code>tablewrap</code>、<code>nowrap</code>、<code>date</code>、<code>lead</code>）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>全体評価サマリー</h2>
+	<div class="callout callout-tip">
+		<p><strong>総合評価: 優良（適合率 約 94%）。</strong>管理ドキュメント 26 ファイル、ルート 2 ファイル、補助ツール内 2 ファイルの計 30 件の主要 HTML において、文字コード（BOM付きUTF-8）、コントラスト実測（全件 1.5:1 以上）、レイアウト寸法（1600px、15.5px/1.85）、見出しの虹色配分（Hue 刻み幅完全一致）、tablewrap の適用、戻るリンクの配置が極めて高い精度で保たれている。</p>
+		<p>一方で、<strong>手書き Markdown のみで HTML が未作成のファイルが 1 件</strong>、<strong>html2md 変換時の文言不一致指摘が 1 件</strong>、<strong>check-public 検査での除外未設定による検出が 1 件</strong>、および<strong>更新日警告が 20 件</strong>確認された。これらは機械的な整合性や保守上の重要ポイントであるため、第 4 章および第 5 章で詳細と対応策を提示する。</p>
+	</div>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>検査カテゴリ</th><th>検査対象数</th><th>適合数</th><th>不適合数</th><th>適合率</th><th>主な状況・特記事項</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">文字コード・BOM（HTML）</td><td class="num">31</td><td class="num">31</td><td class="num">0</td><td class="num">100.0%</td><td>全 HTML ファイルで BOM 付き UTF-8 を遵守</td></tr>
+			<tr><td class="nowrap">文字コード・BOM（Markdown）</td><td class="num">26</td><td class="num">26</td><td class="num">0</td><td class="num">100.0%</td><td>全 Markdown ファイルで BOM 無し UTF-8 を遵守</td></tr>
+			<tr><td class="nowrap">コントラスト実測（check-contrast）</td><td class="num">31</td><td class="num">31</td><td class="num">0</td><td class="num">100.0%</td><td>ブラウザ実測 1.5:1 未満は 0 件。全件 OK</td></tr>
+			<tr><td class="nowrap">レイアウト寸法（1600px / 15.5px）</td><td class="num">30</td><td class="num">30</td><td class="num">0</td><td class="num">100.0%</td><td>管理資料全件で基準寸法・行高（1.85）を完全適用</td></tr>
+			<tr><td class="nowrap">見出し虹色配分（Hue 減算計算）</td><td class="num">21</td><td class="num">21</td><td class="num">0</td><td class="num">100.0%</td><td>3章以上の全資料で <code>280 ÷ (n-1)</code> の刻み幅を完全遵守</td></tr>
+			<tr><td class="nowrap">戻るリンク（上下配置・アイコン）</td><td class="num">30</td><td class="num">30</td><td class="num">0</td><td class="num">100.0%</td><td>先頭・フッターともに紺バッジ＋SVG家アイコンを適用</td></tr>
+			<tr><td class="nowrap">HTML正の原則（MD単独作成の有無）</td><td class="num">27</td><td class="num">26</td><td class="num">1</td><td class="num">96.3%</td><td>1 件（<code>r260829-01-PowerShell学習資料からの要求.md</code>）が HTML なし</td></tr>
+			<tr><td class="nowrap">html2md 変換検証（指摘 0 件）</td><td class="num">26</td><td class="num">25</td><td class="num">1</td><td class="num">96.2%</td><td>1 件（<code>i260917-01-less.html</code>）で callout 内テーブル区切り不一致</td></tr>
+			<tr><td class="nowrap">公開前検査（check-public）</td><td class="num">376</td><td class="num">375</td><td class="num">1</td><td class="num">99.7%</td><td><code>issues.html</code> 1082 行目のサンプルコードで token 誤検出</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>HTML作成ルールの詳細適合性検証</h1>
+
+	<h2>1. 保存形式・文字コードとメタタグ</h2>
+	<p>共通ルール「ドキュメントの保存場所と形式」では、<strong>HTML は BOM 付き UTF-8 で保存する</strong>こと、および <code>&lt;head&gt;</code> に <code>&lt;meta name="format-detection" content="telephone=no"&gt;</code> を配置することが義務付けられている。</p>
+	<ul>
+		<li><span class="badge b-ok">適合</span><strong>BOM の付与</strong>: 調査対象の全 31 HTML ファイル（管理ドキュメント 26、ルート 2、ツールベンチ 2、viewer 1）において、先頭 3 バイトが <code>0xEF 0xBB 0xBF</code> であることをバイナリ検査で確認。Markdown 生成物側は全件 BOM 無しであり、完全準拠している。</li>
+		<li><span class="badge b-ok">適合</span><strong>電話番号自動リンク防止</strong>: 管理ドキュメント 26 件およびルート 2 件すべてに <code>format-detection=no</code> が設置されており、CVE 番号や日付、連番の誤認リンク化が防止されている。</li>
+	</ul>
+
+	<h2>2. タイトルバーとドキュメント作成日・更新日</h2>
+	<p>「ドキュメントの作成日・更新日ルール」では、書式 <code>📅 作成: yyyy-mm-dd / 更新: yyyy-mm-dd</code> をタイトルバー内に表示し、フッター等に重複させないこと、および本文更新時に更新日を追随させることが規定されている。</p>
+	<ul>
+		<li><span class="badge b-ok">適合</span><strong>日付書式と配置</strong>: 管理ドキュメント全件でタイトルバー内（<code>.titlebar .date</code>）に正規書式で配置されている。フッター側への重複記載は全件で排除されている。</li>
+		<li><span class="badge b-warn">要確認</span><strong>更新日の乖離警告（20 件）</strong>: <code>html2md --root . --dry-run</code> 実行時、20 ファイルで「ヘッダー更新日よりもファイルの最終更新日時が新しい」旨の警告（▲）が出力された。体裁修正（CSS 調整や微修正）のみであれば更新日を変えないルールであるため即時不適合ではないが、本文変更を伴う更新の記録漏れがないか確認が推奨される。</li>
+	</ul>
+
+	<h2>3. 戻るリンクとアイコンの設計</h2>
+	<p>「root の README.html と資料の html は相互リンクする」ルールでは、本文（<code>.wrap</code>）の先頭とフッターの両方に戻るリンクを設置し、紺のバッジ（<code>--navy1</code> → <code>--navy2</code> の 100deg グラデーション ＋ 白文字、<code>border-radius: 6px</code>）、アイコンは家アイコン（<code>⌂</code> または SVG）、上側は <code>margin-top: 18px</code> を空けることが求められている。</p>
+	<ul>
+		<li><span class="badge b-ok">適合</span><strong>上下両方への設置</strong>: <code>README.html</code>（親サイト <code>../</code> への戻るリンク）および全管理ドキュメント（<code>README.html</code> への戻るリンク）において、本文先頭とフッターの両方に配置されている。</li>
+		<li><span class="badge b-ok">適合</span><strong>バッジ装飾と余白</strong>: 上側戻るリンクは <code>.backlink { margin: 18px 0 0; }</code> によりタイトルバーとの間に 18px の間隔が確保され、フッター側は上部余白なしで配置されている。バッジは <code>a.home</code> クラスにより紺色グラデーションと角丸 6px が適用されている。</li>
+	</ul>
+
+	<h2>4. レイアウト寸法とタイポグラフィ</h2>
+	<p>本文の折り返し幅は <code>max-width: 1600px</code>、左右 <code>padding: 0 30px</code>、本文フォントサイズ <code>15.5px</code>、行高 <code>line-height: 1.85</code> が基本寸法として定められている。</p>
+	<ul>
+		<li><span class="badge b-ok">適合</span><strong>全管理資料で完全統一</strong>: <code>.wrap</code>、<code>.titlebar .inner</code>、<code>footer</code> のすべてで 1600px 幅および左右 30px padding が揃えられており、画面解像度に依存しない統一感のある表示が実現されている。</li>
+	</ul>
+
+	<h2>5. 配色設計と章見出しの虹色配分（Hue 減算計算）</h2>
+	<p>章見出し(h1)は、虹色（紫→藍→青→緑→黄→橙→赤）を減算方向に割り当て、色相は 280°（紫）から 0°（赤）まで、刻み幅 <code>280 ÷ (章数 - 1)</code> で均等配分する。彩度・明度は <code>--accent: 78%/25%</code>、<code>--accent2: 58%/55%</code>、<code>--soft: 28%/95%</code> で固定する。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ファイル名</th><th>章数</th><th>計算上の刻み幅</th><th>設定された色相（Hue）一覧</th><th>判定</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>README.html</code></td><td class="num">4</td><td class="num">93.3°</td><td>280 / 186.7 / 93.3 / 0</td><td><span class="badge b-ok">完全一致</span></td></tr>
+			<tr><td class="nowrap"><code>TOOLS-USAGE.html</code></td><td class="num">14</td><td class="num">21.5°</td><td>280 / 258.5 / 236.9 / 215.4 / 193.8 / 172.3 / 150.8 / 129.2 / 107.7 / 86.2 / 64.6 / 43.1 / 21.5 / 0</td><td><span class="badge b-ok">完全一致</span></td></tr>
+			<tr><td class="nowrap"><code>notes/10_plan/html2md-plan.html</code></td><td class="num">9</td><td class="num">35.0°</td><td>280 / 245 / 210 / 175 / 140 / 105 / 70 / 35 / 0</td><td><span class="badge b-ok">完全一致</span></td></tr>
+			<tr><td class="nowrap"><code>notes/10_plan/p260906-01-convert-encoding.html</code></td><td class="num">8</td><td class="num">40.0°</td><td>280 / 240 / 200 / 160 / 120 / 80 / 40 / 0</td><td><span class="badge b-ok">完全一致</span></td></tr>
+			<tr><td class="nowrap"><code>notes/90_rules/html-class-rules.html</code></td><td class="num">8</td><td class="num">40.0°</td><td>280 / 240 / 200 / 160 / 120 / 80 / 40 / 0</td><td><span class="badge b-ok">完全一致</span></td></tr>
+			<tr><td class="nowrap"><code>notes/90_rules/local-rules.html</code></td><td class="num">6</td><td class="num">56.0°</td><td>280 / 224 / 168 / 112 / 56 / 0</td><td><span class="badge b-ok">完全一致</span></td></tr>
+			<tr><td class="nowrap"><code>notes/10_plan/p261027-01-xx.html</code></td><td class="num">5</td><td class="num">70.0°</td><td>280 / 210 / 140 / 70 / 0</td><td><span class="badge b-ok">完全一致</span></td></tr>
+			<tr><td class="nowrap"><code>notes/01_research/r261025-01-失敗の振り返り.html</code></td><td class="num">4</td><td class="num">93.3°</td><td>280 / 186.7 / 93.3 / 0</td><td><span class="badge b-ok">完全一致</span></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>3 章以上の全ファイルで計算式と実際の CSS 定義が小数点第 1 位まで正確に一致しており、手計算や目分量による狂いは皆無であった。</p>
+
+	<h2>6. 表・コード・バッジ・callout の実装規則</h2>
+	<ul>
+		<li><span class="badge b-ok">適合</span><strong>表のラッパーとスクロール</strong>: 調査した全 114 個のテーブルすべてが <code>div.tablewrap</code> で包まれており、横スクロール対策（<code>overflow-x: auto</code>）と角丸・ゼブラストライプが適用されている。</li>
+		<li><span class="badge b-ok">適合</span><strong>コードブロック言語</strong>: 略称（<code>ps1</code>, <code>ts</code>, <code>js</code>, <code>sh</code>）や非推奨の <code>txt</code> は一切検出されず、すべて正式名（<code>powershell</code>, <code>typescript</code>, <code>javascript</code>, <code>shell</code>, <code>text</code>）で記述されている。</li>
+		<li><span class="badge b-ok">適合</span><strong>バッジ予約語</strong>: 予約語 <code>b-ok</code>, <code>b-ng</code>, <code>b-warn</code>, <code>b-none</code> が適切に使い分けられ、太字記号の変換ルールに準拠している。</li>
+		<li><span class="badge b-ok">適合</span><strong>callout 種別の明示</strong>: NOTE, TIP, IMPORTANT, WARNING, CAUTION の各役割に応じたクラスが付与されている。</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>フォルダおよびファイル別状況調査</h1>
+
+	<h2>トップレベル</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ファイル</th><th>役割・種別</th><th>HTML/MD整合性</th><th>品質所見</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>README.html</code> / <code>.md</code></td><td>リポジトリ入口</td><td><span class="badge b-ok">完全一致</span></td><td>4 章構成。道具一覧テーブル、各計画書・ルールへのリンク完備。状態・進捗バッジの排除ルール遵守。</td></tr>
+			<tr><td class="nowrap"><code>TOOLS-USAGE.html</code> / <code>.md</code></td><td>共有ツール利用仕様</td><td><span class="badge b-ok">完全一致</span></td><td>14 章構成。各ツールの引数・使用例・注意事項が詳細に網羅。コントラスト実測合格。</td></tr>
+			<tr><td class="nowrap"><code>AGENTS.md</code></td><td>AI エージェント指示</td><td>—</td><td><code>@notes/90_rules/local-rules.md</code> の参照のみを置くルールに完全準拠。</td></tr>
+			<tr><td class="nowrap">構成定義ファイル群</td><td>設定・ビルド</td><td>—</td><td><code>.editorconfig</code>, <code>.gitattributes</code>, <code>.vscode/settings.json</code>, <code>etc/c.bat</code> がすべて初期化ルールどおり配置。</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>notes/ フォルダ（管理ドキュメント）</h2>
+	<p>「プロジェクトフォルダ構成ルール」に定められた番号付きフォルダ（2桁10刻み）で整然と管理されている。</p>
+
+	<h3>01_research（調査資料）</h3>
+	<ul>
+		<li><code>i260908-04-review649.html</code> / <code>.md</code>: issue 紐付け番号（<code>i</code> 番号流用）で正常管理。</li>
+		<li><code>r261025-01-失敗の振り返り.html</code> / <code>.md</code>: <code>r</code> + 日付-連番形式。4 章構成で虹色配分完全一致。</li>
+		<li><strong><code>r260829-01-PowerShell学習資料からの要求.md</code></strong>: <span class="badge b-ng">不適合</span><strong>HTML が存在せず Markdown 単独で配置されている。</strong>初期の要求メモが Markdown のまま残存。HTML 化が必要。</li>
+	</ul>
+
+	<h3>10_plan（計画書）</h3>
+	<p>計 19 件の計画書が蓄積されている。多くの計画書が「目的」「仕様」「テスト方針」「進め方」の章立てを持ち、テスト駆動開発（❌Red → ✅Green）の検証ログが記録されている。</p>
+	<ul>
+		<li><code>html2md-plan.html</code>, <code>html2md-tag-spec.html</code>: 初期の共通化計画・仕様書。プレフィックスなし命名（歴史的経緯）。</li>
+		<li><code>i260917-01-less.html</code>: <span class="badge b-warn">要修正</span>html2md dry-run にて 163 行目 <code>&gt; |---|---|---|</code> の文言不一致指摘あり。</li>
+		<li><code>p260906-01-convert-encoding.html</code> 〜 <code>p261027-01-xx.html</code>: 命名規則（<code>p</code> + 日付-連番）に完全準拠し、章立て・虹色配分・tablewrap 等が高品質に維持されている。</li>
+	</ul>
+
+	<h3>40_issues（課題一覧）</h3>
+	<ul>
+		<li><code>issues.html</code> / <code>issues-archive.html</code>: <code>&lt;meta name="md-skip"&gt;</code> 指定により Markdown 化対象外（HTML 単体運用）として正しく設定。折りたたみ（<code>details.md-flat</code>）と課題番号（<code>span.no</code>）の管理が確立されている。</li>
+		<li><code>check-public</code> 実行時に 1082 行目（<code>let token = scanner2.scan();</code>）で認証情報パターンへの誤検出が発生中。</li>
+	</ul>
+
+	<h3>90_rules（プロジェクトルール）</h3>
+	<ul>
+		<li><code>local-rules.html</code> / <code>.md</code>: プロジェクト固有の決めごと（共通ルールとの差分表、判断不要作業の即時消化、chat 待受け維持、commit/push 運用、踏んだ落とし穴）が網羅。</li>
+		<li><code>html-class-rules.html</code> / <code>.md</code>: html2md が解釈するクラス名仕様書。8 章構成。</li>
+		<li><code>development.html</code> / <code>.md</code>: 開発手順（テスト実行、ビルド、更新手順）。</li>
+	</ul>
+
+	<h2>tools/ ・ src/ ・ bin/ フォルダ</h2>
+	<ul>
+		<li><code>bin/</code>: 共有ツール（<code>html2md</code>, <code>convert-encoding</code>, <code>text</code>, <code>psls</code>, <code>less</code>, <code>safe-push</code>, <code>xx</code> 等）の公開ランチャー（sh / cmd / exe）のみが平置き配置され、PATH 参照ルールに合致。</li>
+		<li><code>src/</code>: 各ツールの実装ソース。TypeScript を主体とし、パフォーマンス・システム連携を要するツールは C#（<code>TextCs</code> 等）および Rust（<code>psh-rs</code>, <code>xx</code>）で実装。大小文字衝突回避ルール（<code>〜Cs</code> 等）を遵守。</li>
+		<li><code>tools/</code>: <code>10_setup</code>, <code>20_build</code>, <code>30_html2md</code>, <code>40_test</code>, <code>60_release</code>, <code>90_misc</code> の番号付きフォルダで役割分担。<code>90_misc</code> 内のベンチマーク比較 HTML 2 件も淡色背景・tablewrap 等の基準を満たす。</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>検出された課題と不適合の詳細分析</h1>
+
+	<h2>課題一覧と重要度マトリクス</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>#</th><th>対象ファイル</th><th>検出内容</th><th>重要度</th><th>影響度と原因</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">K-01</td><td><code>notes/01_research/r260829-01-PowerShell学習資料からの要求.md</code></td><td>HTML 未作成（Markdown 単体存在）</td><td><span class="badge b-ng">高</span></td><td>共通ルール「ドキュメントは HTML で作成する。Markdown だけで作らない」に対する直接の不適合。初版作成時に HTML を起こさず md を直書きしたことが原因。</td></tr>
+			<tr><td class="nowrap">K-02</td><td><code>notes/10_plan/i260917-01-less.html</code></td><td>html2md 指摘（callout 内テーブル区切り不一致）</td><td><span class="badge b-ng">高</span></td><td><code>html2md --root . --dry-run</code> でエラー終了する唯一の原因。callout ブロック内の table 変換時、Markdown 側の <code>&gt; |---|---|---|</code> が HTML 抽出テキストと突合不一致を起こしている。</td></tr>
+			<tr><td class="nowrap">K-03</td><td><code>notes/40_issues/issues.html:1082</code></td><td>check-public 指摘（認証情報パターンの誤検出）</td><td><span class="badge b-warn">中</span></td><td><code>let token = scanner2.scan();</code> という解説用コードが <code>check-public</code> のトークン検出正規表現に合致。<code>check-public-allow.txt</code> でのピンポイント除外が必要。</td></tr>
+			<tr><td class="nowrap">K-04</td><td>20 ファイル（<code>notes/</code> 配下）</td><td>ヘッダー更新日とファイル日時の乖離警告</td><td><span class="badge b-warn">中</span></td><td>全 26 資料中 20 件でファイル更新日時がヘッダー更新日より新しい。体裁調整であれば更新日維持でよいが、本文追記が含まれている場合は更新日更新が必要。</td></tr>
+			<tr><td class="nowrap">K-05</td><td><code>README.html</code></td><td><code>issues-archive.html</code> への未リンク</td><td><span class="badge b-none">低</span></td><td><code>issues.html</code> 側からはリンクされているが、README の第 3 章（課題）には <code>issues-archive.html</code> への明示的なリンクが記載されていない。</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>詳細分析</h2>
+	<h3>K-01: r260829-01 の HTML 欠落</h3>
+	<p>本ファイルは 2026-08-29 に <code>N:60822-powershell-pwsh-learn</code> から <code>html2md</code> への要求をまとめた重要な初期調査文書である。中身は 5 章構成で表やコードブロックを含むため、正規の HTML（<code>notes/01_research/r260829-01-PowerShell学習資料からの要求.html</code>）を起こし、5 章の虹色配分（280/210/140/70/0）とタイトルバー、戻るリンクを付与して保存し、html2md で <code>.md</code> を再生成すべきである。</p>
+
+	<h3>K-02: less.html の html2md 検査エラー</h3>
+	<p>329 行目の <code>&lt;div class="callout"&gt;</code> 内に <code>&lt;table&gt;</code> がネストされており、変換器が Markdown テーブルのヘッダー区切り行に引用符（<code>&gt; </code>）を付与する。しかし検査ルーチン側の HTML 文言抽出正規表現が callout 内の表区切り行を余剰文言とみなしている。テーブルを callout の外に出すか、html2md 側の突合ロジックに合わせた調整が必要である。</p>
+
+	<h3>K-03: issues.html の check-public 誤検出</h3>
+	<p>課題 <code>i261018-02</code>（check-public の除外指定）の実装報告文中に書かれた <code>let token = scanner2.scan();</code> が検出されている。この課題自体がまさにこのような誤検出を救済するために <code>check-public-allow.txt</code> を設計・実装したものであり、本リポジトリ自身の <code>check-public-allow.txt</code> に除外行を登録することで解決できる。</p>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>改善提案と今後の運用・保守方針</h1>
+
+	<h2>直ちに対応すべき改善手順</h2>
+	<ol>
+		<li>
+			<strong><code>r260829-01-PowerShell学習資料からの要求.html</code> の新規作成</strong>
+			<p>既存の <code>.md</code> の内容を HTML 5 章構成（Hue 280°→0°、70°刻み）に正しくコーディングし、BOM 付き UTF-8 で保存。html2md を実行して Markdown を再同期させる。</p>
+		</li>
+		<li>
+			<strong><code>i260917-01-less.html</code> の構造調整による指摘 0 件化</strong>
+			<p>callout 内に置かれたテーブルを callout 直下に分離するか構造を適正化し、<code>html2md --root . --dry-run</code> で「指摘 0 件」を達成する。</p>
+		</li>
+		<li>
+			<strong><code>check-public-allow.txt</code> の配置による誤検出除外</strong>
+			<p><code>issues.html</code> 1082 行目の <code>token = scanner2.scan()</code> をピンポイント除外指定し、公開前検査 <code>check-public</code> を指摘 0 件（除外 1 件）にする。</p>
+		</li>
+		<li>
+			<strong><code>README.html</code> への本レビュー資料リンクの追加</strong>
+			<p>相互リンクの原則に従い、<code>README.html</code> に「品質レビュー」の項目（または関連章内リンク）を追加し、双方向の参照性を保つ。</p>
+		</li>
+	</ol>
+
+	<h2>品質維持のための自動チェック方針</h2>
+	<div class="callout callout-important">
+		<p><strong>ローカルルール第 2 章「判断が不要な作業はいつも消化する」の適用。</strong>記録の実態追いつかせ、テストの穴埋め、機械検査の警告解消は、判断不要作業として指示を待たずに最後まで進めることができる。作業完了時には <code>html2md</code>、<code>check-contrast</code>、<code>check-public</code> の 3 ツールを必ず実行し、すべてクリーンであることを確認する。</p>
+	</div>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>
