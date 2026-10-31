@@ -224,8 +224,8 @@ export function testExtraText(result: ConvertResult): string[] {
 		}
 		if (inFence) { continue; }
 		if (line.trim().length === 0) { continue; }
-		// 表の区切り行は記法そのもの
-		if (/^\s*\|?[\s:|-]+\|?\s*$/.test(line)) { continue; }
+		// 表の区切り行は記法そのもの。callout の中の表は「> |---|---|」の形で出るので、引用記号を外してから見る
+		if (/^\s*\|?[\s:|-]+\|?\s*$/.test(line.replace(/^\s*(>\s?)+/, ''))) { continue; }
 
 		let c = compareText(line);
 		// 章見出しに付けた連番は HTML に無いので落とす

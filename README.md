@@ -53,6 +53,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 
 | 資料 | 内容 |
 |---|---|
+| [PowerShell 学習資料からの要求 (2026-08-29)](notes/01_research/r260829-01-PowerShell学習資料からの要求.md) | PowerShell 学習資料の変換器を html2md に置き換えるために、足りなかった機能と、図の扱いの論点 |
 | [レビュー #649 全文](notes/01_research/i260908-04-review649.md) | html2md 全体のレビュー（2026-09-08）の原資料 |
 | [失敗の振り返り (2026-10-14 〜 10-25)](notes/01_research/r261025-01-失敗の振り返り.md) | 会話の記録から AI の作業の失敗を拾い、共通ルールとフックに突き合わせて、ルール化の候補を挙げる |
 | [html2md の処理系比較](tools/90_misc/bench-html2md/処理系比較-html2md.html) | 実際の HTML → Markdown 変換で、C# の exe と TypeScript 版の時間とメモリを測った |
@@ -83,6 +84,8 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | [check-public の除外指定 計画](notes/10_plan/i261018-02-check-public-allow.md) | 公開前の検査の誤検出を、「このファイルの、この語に当たった、この項目だけ」の指定で外し、外した件数を出す |
 | [safe-push 計画](notes/10_plan/i261018-01-safe-push.md) | 複数の場所から書き換えられるリポジトリを、commit ・ pull --rebase ・ push の一続きで、壊さずに GitHub と同期する |
 | [xx コマンド 計画](notes/10_plan/p261027-01-xx.md) | 引数のコマンドを別プロセスで実行し、出力の文字コードを判定して UTF-8 で返す内部ツール |
+| [text の書き戻しのバイナリ拒否 計画](notes/10_plan/i260911-01-textの書き戻しのバイナリ拒否.md) | text edit ・ text write --keep が、NUL を含むバイナリのファイルを書き換えないようにする |
+| [HTML 新規則への対応 計画](notes/10_plan/p261031-01-html新規則への対応.md) | グラデーション ・ var() で塗る地の前に、色だけの地を直書きする。検査を足し、直す道具で既存の HTML を直す |
 
 ## 3. 課題
 

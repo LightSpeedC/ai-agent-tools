@@ -56,6 +56,8 @@ $Suites = @(
 	# html2md の作成日 ・ 更新日の検査。警告（▲）は golden の期待値に入らないため別に見る
 	@{ Name = 'html2md の日付の検査'; Script = 'run-html2md-date-tests.ts' },
 	@{ Name = 'html2md の書き出し'; Script = 'run-html2md-write-tests.ts' },
+	# 「HTML に無い文言」の検査。callout の中の表の区切り行 (> |---|---|) を付け足しとみなさない
+	@{ Name = 'html2md の文言の検査'; Script = 'run-html2md-extra-tests.ts' },
 	@{ Name = 'transcribe'; Script = 'run-transcribe-tests.ts'; TimeoutSec = 300 },
 	# 会話ログから公開用の HTML を作る。伏せ字は 2 段目の検査まで見る
 	@{ Name = 'history2html'; Script = 'run-history2html-tests.ts' },
@@ -96,6 +98,8 @@ $Suites = @(
 	@{ Name = 'spawn-server'; Script = 'run-spawn-server-tests.ts' },
 	# このリポジトリの HTML が共通ルール（戻るリンク ・ 目次 ・ 日付 ・ README からのリンク等）に沿っているか
 	@{ Name = 'HTML のルール'; Script = 'check-html-rules.ts' },
+	# 地の直書き (グラデーション ・ var() の前に色だけの地) の検査と、直す道具 (fix-html-bg.ts) の判定
+	@{ Name = 'HTML の地の直書き'; Script = 'run-html-bg-tests.ts' },
 	# 型チェック。bun も node も型を見ないため、ここでしか食い違いが出ない
 	@{ Name = '型チェック'; Script = 'run-tsc-tests.ps1' },
 	# run-all-tests.ps1 自身の -Online (一覧を出すだけで、API もブラウザも使わない)

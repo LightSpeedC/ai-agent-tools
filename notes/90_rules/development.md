@@ -35,7 +35,7 @@ psh tools/40_test/run-all-tests.ps1 -Online
 | ps1 で書いたもの（html2md ・ convert-encoding ・ text） | 入口（`bin/`）を通して 1 回。bun があれば、`tools/40_test/runners/` の node 用の当て木を `-Target` に渡してもう 1 回 |
 | ts で書いたもの | 入っている処理系（bun ・ node）すべてで回す |
 | psh の Rust 版 | ビルドしてあれば、`PSH_TARGET` に exe を渡して、bun と node の両方から呼ぶ。ビルドしていなければ「飛ばした」と表示する |
-| HTML のルール | `check-html-rules.ts`。このリポジトリの HTML が共通ルール（戻るリンク ・ 目次 ・ 日付 ・ README からのリンク等）に沿っているか |
+| HTML のルール | `check-html-rules.ts`。このリポジトリの HTML が共通ルール（戻るリンク ・ 目次 ・ 日付 ・ README からのリンク ・ グラデーションや `var()` の地の前の、色だけの地の直書き等）に沿っているか。地の直書きが足りないときは、`node tools/40_test/fix-html-bg.ts --all` で足す（冪等。`--dry-run` で件数だけ見られる） |
 | 型チェック | `tsc --noEmit`。bun も node も型を見ないため、ここでしか食い違いが出ない |
 
 > [!IMPORTANT]

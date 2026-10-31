@@ -11,6 +11,7 @@
 	  ・目次のバッジ（角丸 6px ・ 幅 310px ＋ max-width 100%）、章の見出し（角丸 8px）、h3 の定義
 	  ・タイトルバーの「📅 作成: … / 更新: …」
 	  ・表を tablewrap で包んでいるか（数だけ比べる）、var() のフォールバック
+  ・グラデーション・var() の地の前に、色だけの地を直書きしているか（直すのは fix-html-bg.ts）
 	  ・README からリンクされているか（issues-archive は README からリンクしない）、issues と
 	    issues-archive の相互リンク、issues ・ status のタイトルにプロジェクト名があるか
 
@@ -19,6 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { findBgIssues } from './html-bg-lib.ts';
 
 // tools/40_test/ に置くため、2 階層上がプロジェクトルート
 const root = path.resolve(import.meta.dirname, '..', '..');
@@ -79,6 +81,10 @@ for (const f of files) {
 	if (tables > wraps) { ng.push('tablewrap で包んでいない表がある（表 ' + tables + ' ／ 包み ' + wraps + '）'); }
 	const noFallback = [...css.matchAll(/var\(--[\w-]+\)/g)].map((m) => m[0]);
 	if (noFallback.length > 0) { ng.push('フォールバックの無い var(): ' + [...new Set(noFallback)].slice(0, 4).join(' ')); }
+
+	// グラデーション・var() の地の前に、色だけの地を直書きする（Windows のプレビューは、その宣言を捨てる）
+	const bgNg = [...s.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].flatMap((m) => findBgIssues(m[1]));
+	if (bgNg.length > 0) { ng.push('色だけの地が前に無い地が ' + bgNg.length + ' 個 (例: ' + bgNg[0] + ')。fix-html-bg で直す'); }
 
 	const isArchive = f.endsWith('issues-archive.html');
 	if (!isReadme && !isArchive && !readme.includes('href="' + f + '"')) { ng.push('README からリンクされていない'); }

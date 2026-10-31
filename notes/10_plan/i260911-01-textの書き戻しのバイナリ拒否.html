@@ -1,0 +1,239 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>text の書き戻しのバイナリ拒否 計画（i260911-01 の項目 10）</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch03{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>text の書き戻しのバイナリ拒否 計画（i260911-01 の項目 10）</h1>
+		<p class="lead"><code>text edit</code> と <code>text write --keep</code> が、バイナリのファイルを書き換えないようにする。</p>
+		<p class="date">📅 作成: 2026-10-31 / 更新: 2026-10-31</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools の <code>src/text/</code> (<code>edit.ts</code> ・ <code>write.ts</code>)。入力は、書き換える対象のファイルのバイト列。出力は、バイナリと判定したときの拒否 (終了コードとメッセージ) と、そのテスト。</p>
+
+<div class="callout callout-important">
+	<p><strong>承認待ち (2026-10-31)。</strong>66-A は選ばれた。この計画の承認 (「実装して」) はまだ。</p>
+</div>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">いまの動きと決めたこと</a></li>
+		<li class="ch02"><a href="#ch02">変える動き</a></li>
+		<li class="ch03"><a href="#ch03">進め方</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>いまの動きと決めたこと</h1>
+	<p>バイナリの判定 <code>looksBinary</code> (<code>src/text/engine.ts</code>) は、UTF-16 でないのに NUL (<code>00</code>) を含めばバイナリとみなす。いま使っているのは <code>text find</code> だけで、バイナリを黙って飛ばす。</p>
+	<p><code>text edit</code> と <code>text write --keep</code> は判定を見ない。NUL を含むファイルでも、組を決めて書き戻す。デコードと再エンコードを通すため、バイナリの中身が壊れうる。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>決めたこと</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">66-A</td><td><code>text edit</code> ・ <code>text write</code> の書き戻しの経路に、バイナリ拒否を足す</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>変える動き</h1>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>コマンド</th><th>見るファイル</th><th>動き</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>text edit</code></td><td>編集する対象</td><td>組を決めたあと、バイナリなら書き換えずに拒否する</td></tr>
+			<tr><td class="nowrap"><code>text write --keep</code></td><td>既存のファイル (組を引き継ぐ元)</td><td>バイナリなら書き換えずに拒否する</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>終了コードは 2</strong> (指定の誤り ・ 書き換え位置がずれるおそれ、と同じ扱い)。新しい終了コードは増やさない。メッセージは「バイナリ (NUL を含む) と判定したため書き換えません」を、ファイル名つきで出す</li>
+		<li><strong>判定は <code>looksBinary</code> をそのまま使う</strong>。判定の中身は変えない (<code>find</code> と同じ結果になる)</li>
+		<li><strong>拒否は、<code>--from</code> で組を明示しても効く</strong>。明示した組が UTF-16 でなければ、NUL を含めば拒否する</li>
+	</ul>
+	<h2>この計画で変えないもの</h2>
+	<ul>
+		<li><code>text write --to</code> は、既存のファイルを読まず、全文を書く指示のため、対象にしない。バイナリの上へ書く場合は、指示どおり上書きする</li>
+		<li>NUL を含まないバイナリは、判定できない。<code>looksBinary</code> が NUL だけを見ているため。判定を強める案は、必要が出たら別に立てる</li>
+		<li><code>--new-file</code> ・ <code>--in</code> ・ 標準入力から読む中身は、対象にしない。書き込む側の中身で、書き換わる対象ではないため</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>進め方</h1>
+	<ol>
+		<li>この計画の承認を得る</li>
+		<li>status に着手を反映する (課題 i260911-01 の項目 10 を「着手」にする)</li>
+		<li>テストのケースの形を、<code>tools/40_test/run-text-tests.ps1</code> で読む。<strong>既定は移植版 (<code>bin/text.cmd</code>)</strong>。C# 版は <code>-Target</code> で名指しする</li>
+		<li>テストを先に書き、❌Red を確かめる
+			<ul>
+				<li>NUL を含むファイルへの <code>text edit</code> が、終了コード 2 で拒否され、ファイルのバイト列が変わらない</li>
+				<li>NUL を含むファイルへの <code>text write --keep</code> が、同じく拒否され、バイト列が変わらない</li>
+				<li><code>--from</code> を明示しても、同じく拒否される</li>
+				<li>UTF-16 のファイル (NUL を含む) は、バイナリとみなさず、これまでどおり書き換わる</li>
+				<li>NUL を含まないテキストは、これまでどおり書き換わる</li>
+			</ul>
+		</li>
+		<li><code>edit.ts</code> と <code>write.ts</code> に拒否を足す。bun と node の両方で、全件を通す (✅Green)</li>
+		<li>一括実行 (<code>run-all-tests</code>) を通す</li>
+		<li>利用方法の資料 (TOOLS-USAGE) の <code>text edit</code> ・ <code>text write</code> の終了コードの項に、バイナリの拒否を足す。<code>html2md</code> を流し直す</li>
+		<li>課題 i260911-01 の項目 10 を「済」にする。計画に結果を反映する</li>
+		<li>commit と push (ローカルルール第 6 章)</li>
+	</ol>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>
