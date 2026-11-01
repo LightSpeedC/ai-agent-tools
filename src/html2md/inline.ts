@@ -167,6 +167,10 @@ export class InlineConverter {
 		// <br> はタグ除去で消えないよう退避する
 		s = s.replace(/<br\s*\/?>/g, Emphasis.Break);
 
+		// 表のセルの境目は空白にする。li の中の表は 1 行に潰れ、境目が無いと
+		// 太字どうしがつながって ** が連続して残る (ai-chat-lite 依頼 #1737)
+		s = s.replace(/<\/(?:td|th)>/gi, ' ');
+
 		// 残ったタグを落とす
 		s = s.replace(/<[^>]+>/g, '');
 		s = decodeEntities(s);
