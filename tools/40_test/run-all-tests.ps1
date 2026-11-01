@@ -93,6 +93,7 @@ $Suites = @(
 	@{ Name = 'less'; Script = 'run-less-tests.ts' },
 	@{ Name = 'cc ・ cx ・ ag の共通部'; Script = 'run-agent-launch-tests.ts' },
 	@{ Name = 'ag-trusted'; Script = 'run-ag-trusted-tests.ts' },
+	@{ Name = 'cc ・ cx ・ ag の入口と番人'; Script = 'run-agent-entry-tests.ts' },
 	# プロセス一覧（ツリー表示）。bun:ffi 必須で node には代わりが無いため、
 	# node で走らせたときは「bun が必要です」で終わることだけ確かめる
 	@{ Name = 'psls'; Script = 'run-psls-tests.ts' },

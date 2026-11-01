@@ -22,6 +22,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { encodeClaudeDir, hasHistory, pathForms } from '../../src/agent-launch/history.ts';
 import { datePart, pickFolder } from '../../src/agent-launch/pick.ts';
+import { agentEnv, keeperEnv, launchSpec, startArgs, windowTitle } from '../../src/agent-launch/launch.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
@@ -201,6 +202,42 @@ console.log('--- codex の履歴 ---');
 	db2.exec('create table other (x text)');
 	db2.close();
 	assertEqual('codex: threads 表が無くても落ちず、履歴なし', false, hasHistory('cx', 'W:\\2026\\foo', nothreads));
+}
+
+// ---- 起こす処理 (窓のタイトル ・ 引数 ・ 環境 ・ start の行) ----
+// 期待値は、いまの cc.cmd ・ cx.cmd と、計画書の決め (87-B ・ 90-A) から手で書いた:
+//   ・窓のタイトルは「<入口のコマンド名> <フォルダ名>」
+//   ・cc: claude.exe [-c] -n "<フォルダ名> <月/日> <時:分>"。cx: codex-trusted [resume]
+//   ・ag: ag-trusted --dangerously-skip-permissions --mode auto [-c]
+//   ・cc は CLAUDE で始まる変数を、CLAUDE_CODE_USE_POWERSHELL_TOOL 以外、子に渡さない
+//   ・番人への入力 (KEEPER_*) は、エージェントに渡さない
+console.log('--- 起こす処理 ---');
+{
+	const dir = 'W:\\2026\\20261101-foo';
+	assertEqual('タイトル: <入口のコマンド名> <フォルダ名> (cc)', 'cc 20261101-foo', windowTitle('cc', dir));
+	assertEqual('タイトル: cx', 'cx 20261101-foo', windowTitle('cx', dir));
+	assertEqual('タイトル: ag', 'ag 20261101-foo', windowTitle('ag', dir));
+	assertEqual('タイトル: 日本語のフォルダ名はそのまま', 'cc 20261101-テスト', windowTitle('cc', 'W:\\2026\\20261101-テスト'));
+	assertEqual('タイトル: 引用符は取り除く (start の引数を壊さない)', 'cc ab', windowTitle('cc', 'W:\\2026\\a"b'));
+
+	const name = '20261101-foo 11/01 09:05';
+	assertEqual('cc 履歴なし: -c を付けない。再起動は -c', { exe: 'claude.exe', first: '-n "' + name + '"', again: '-c -n "' + name + '"' }, launchSpec('cc', dir, false, now));
+	assertEqual('cc 履歴あり: 最初から -c', '-c -n "' + name + '"', launchSpec('cc', dir, true, now).first);
+	assertEqual('cx 履歴なし: resume を付けない。再起動は resume', { exe: 'codex-trusted', first: '', again: 'resume' }, launchSpec('cx', dir, false, now));
+	assertEqual('cx 履歴あり: 最初から resume', 'resume', launchSpec('cx', dir, true, now).first);
+	assertEqual('ag 履歴なし: -c を付けない。再起動は -c', { exe: 'ag-trusted', first: '--dangerously-skip-permissions --mode auto', again: '--dangerously-skip-permissions --mode auto -c' }, launchSpec('ag', dir, false, now));
+	assertEqual('ag 履歴あり: 最初から -c', '--dangerously-skip-permissions --mode auto -c', launchSpec('ag', dir, true, now).first);
+
+	const env = { PATH: 'p', CLAUDECODE: '1', claude_code_x: 'y', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', KEEPER_EXE: 'z', OTHER: 'o' };
+	assertEqual('環境 cc: CLAUDE で始まる変数を外す (USE_POWERSHELL_TOOL は残す。大小を区別しない。KEEPER_ も外す)', { PATH: 'p', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', OTHER: 'o' }, agentEnv('cc', env));
+	assertEqual('環境 cx: CLAUDE の変数はそのまま。KEEPER_ だけ外す', { PATH: 'p', CLAUDECODE: '1', claude_code_x: 'y', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', OTHER: 'o' }, agentEnv('cx', env));
+	assertEqual('環境 ag: 同上', { PATH: 'p', CLAUDECODE: '1', claude_code_x: 'y', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', OTHER: 'o' }, agentEnv('ag', env));
+	assertEqual('環境: 元の環境のオブジェクトは変えない', 'z', env.KEEPER_EXE);
+	const kenv = keeperEnv('ag', { PATH: 'p' }, { exe: 'ag-trusted', first: 'A', again: 'B' });
+	assertEqual('番人への入力: KEEPER_EXE ・ KEEPER_FIRST ・ KEEPER_AGAIN を足す', { PATH: 'p', KEEPER_EXE: 'ag-trusted', KEEPER_FIRST: 'A', KEEPER_AGAIN: 'B' }, kenv);
+
+	assertEqual('start の行: タイトルは引用符で囲み、番人を cmd で動かす (全体は /s のためもう一組の引用符で囲む)', '/d /s /c "start "cc 20261101-foo" cmd /d /c "W:\\src\\keeper.cmd""', startArgs('cc 20261101-foo', 'W:\\src\\keeper.cmd'));
+	assertEqual('start の行: 空白や日本語を含むタイトルも、引用符で囲まれる', '/d /s /c "start "ag 日本語 x" cmd /d /c "K""', startArgs('ag 日本語 x', 'K'));
 }
 
 fs.rmSync(work, { recursive: true, force: true });

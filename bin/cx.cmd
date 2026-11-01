@@ -1,24 +1,5 @@
-@set Y=%date:~0,4%
-@set YMD=%date:/=%
-@if not exist W:\ (
-	echo [NG] W: ドライブが見つかりません
-	exit /b 1
-)
-cd /d W:\
-@if not exist "%Y%" md "%Y%"
-@if exist %Y% cd "%Y%"
-@if "%~1" == "" exit /b
-@if exist "..\*%~1*" (
-	cls
-	cd "..\*%~1*"
-	start "codex" codex-trusted resume
-) else if exist "*%~1*" (
-	cls
-	cd "*%~1*"
-	start "codex" codex-trusted resume
-) else (
-	cls
-	md "%YMD%-%~1"
-	cd "%YMD%-%~1"
-	start "codex" codex-trusted
-)
+@echo off
+rem cx の入口。フォルダを決め、そのフォルダに codex の履歴があれば resume で、無ければ resume なしで、新しい窓で起動する。
+rem 窓の環境変数とカレントは変えない (起動と環境の整理は、共通部が子プロセスで行う)。計画: i261101-02
+cls
+node "%~dp0..\src\agent-launch\main.ts" cx %*

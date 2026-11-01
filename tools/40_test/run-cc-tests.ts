@@ -27,6 +27,8 @@ const work = path.join(root, 'tmp', 'cc-test');
 const projectsRoot = path.join(work, 'root') + path.sep;
 const stubDir = path.join(work, 'stub');
 const jsonPath = path.join(work, 'claude.json');
+// 履歴の置き場 (ホーム) の差し替え。履歴があるときだけ -c で続きから開く (i261101-02)
+const homePath = path.join(work, 'home');
 const outPath = path.join(work, 'stub-out.txt');
 
 let pass = 0;
@@ -92,6 +94,8 @@ function runCc(args: string[], after = ''): { code: number | null; out: string; 
 		CC_ROOT: projectsRoot,
 		CC_CLAUDE_JSON: jsonPath,
 		CC_STUB_OUT: outPath,
+		AGENT_LAUNCH_TEST_HOME: homePath,
+		AGENT_LAUNCH_TEST_HIDE: '1',
 		PATH: stubDir + path.delimiter + (process.env.PATH ?? ''),
 		CLAUDECODE: '1',
 		CLAUDE_CODE_SESSION_ID: 'session-x',
@@ -128,7 +132,7 @@ function keyOf(dir: string): string {
 
 function main(): void {
 	// 置き場を差し替えられない cc.cmd は、本物の W:\ にフォルダを作ってしまうので、試験を回さない
-	if (!fs.readFileSync(cc, 'latin1').includes('CC_ROOT')) {
+	if (!fs.readFileSync(cc, 'latin1').includes('agent-launch') || !fs.readFileSync(path.join(root, 'src', 'agent-launch', 'main.ts'), 'utf8').includes('CC_ROOT')) {
 		console.log('[NG] cc.cmd が CC_ROOT に対応していません。本物の W:\\ に作らないよう、試験を回しません');
 		process.exit(1);
 	}
@@ -141,6 +145,10 @@ function main(): void {
 		// 既存のプロジェクト（置き場の直下）
 		const existing = path.join(projectsRoot, 'existing-proj');
 		fs.mkdirSync(existing);
+		// 履歴 (claude の ~/.claude/projects/<符号化したパス>/*.jsonl) を、一時のホームに作る
+		const hist = path.join(homePath, '.claude', 'projects', existing.replace(/[^A-Za-z0-9]/g, '-'));
+		fs.mkdirSync(hist, { recursive: true });
+		fs.writeFileSync(path.join(hist, 'a.jsonl'), '{}\n');
 		const e1 = runCc(['existing'], 'set CLAUDECODE');
 		if (e1.stub === null) {
 			ng('既存: claude が起動された', '代役の記録が出ません');
@@ -151,6 +159,15 @@ function main(): void {
 			assertEqual('既存: ほかの CLAUDE で始まる環境変数は消える', ['CLAUDE_CODE_USE_POWERSHELL_TOOL'], Object.keys(e1.stub.env));
 			assertEqual('既存: 呼び元の窓の環境変数は変わらない（cc のあとでも CLAUDECODE が残る）', true, e1.out.includes('CLAUDECODE=1'));
 			assertEqual('既存: ~/.claude.json に登録される', true, keyOf(existing) in JSON.parse(fs.readFileSync(jsonPath, 'utf8')).projects);
+		}
+
+		// 既存のフォルダでも、claude の履歴が無ければ -c を付けない (別のエージェントが先にフォルダを作ったとき)
+		fs.mkdirSync(path.join(projectsRoot, 'nohist-proj'));
+		const n0 = runCc(['nohist']);
+		if (n0.stub === null) {
+			ng('履歴なし: claude が起動された', '代役の記録が出ません');
+		} else {
+			assertEqual('履歴なし: 既存のフォルダでも -c を付けずに開く', '-n', n0.stub.args[0]);
 		}
 
 		// 新しいプロジェクト（年のフォルダの下に作る）

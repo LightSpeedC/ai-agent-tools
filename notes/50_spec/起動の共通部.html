@@ -1,0 +1,256 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>cc ・ cx ・ ag の起動の仕様 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>cc ・ cx ・ ag の起動の仕様 (ai-agent-tools)</h1>
+		<p class="lead"><code>cc</code> (claude) ・ <code>cx</code> (codex) ・ <code>ag</code> (agy) が、フォルダを決め、履歴があれば続きで、新しい窓で起動し、終了のあとで再起動できるまで。</p>
+		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-01</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p>詳細仕様 (いまの姿)。実装は <code>src/agent-launch/</code> (<code>main.ts</code> ・ <code>pick.ts</code> ・ <code>history.ts</code> ・ <code>launch.ts</code> ・ <code>keeper.cmd</code>) と <code>src/ag-trusted/</code>。入口は <code>bin/cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> ・ <code>ag-trusted.cmd</code>。環境変数は <a href="環境変数.html">環境変数の仕様</a> を見る。</p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">起動の流れ</a></li>
+		<li class="ch02"><a href="#ch02">履歴の判定</a></li>
+		<li class="ch03"><a href="#ch03">窓の番人 (再起動)</a></li>
+		<li class="ch04"><a href="#ch04">ag-trusted</a></li>
+		<li class="ch05"><a href="#ch05">限界と、確かめていないこと</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>起動の流れ</h1>
+	<p>入口の cmd は、<code>node src/agent-launch/main.ts &lt;cc | cx | ag&gt; &lt;名前&gt;</code> を呼ぶだけ。変数を設定せず、カレントも動かさないので、<strong>呼んだ窓の環境変数とカレントは変わらない</strong>。常駐するプロセスは無い (起動する短命の node が、すぐ終わる)。</p>
+	<ol>
+		<li><strong>名前が無い</strong>: <code>[NG]</code> を出して終了コード 2。何も起こさない</li>
+		<li><strong>置き場</strong> (<code>CC_ROOT</code>。未設定のとき <code>W:\</code>) が無い: <code>[NG]</code> で終了コード 1</li>
+		<li><strong>フォルダを決める</strong>: 年のフォルダ (<code>&lt;置き場&gt;\&lt;yyyy&gt;</code>) を、無ければ作る。置き場の直下 → 年のフォルダの中の順に、名前の一部 (大小を区別しない) が当たるフォルダを探す。複数に当たれば、名前順で最初の 1 つ。どちらにも無ければ、年のフォルダの中に <code>&lt;yyyymmdd&gt;-&lt;名前&gt;</code> を作る。<strong>フォルダだけを探す</strong> (名前が当たるファイルがあっても、新しく作る)</li>
+		<li><strong>続きか新規か</strong>: 既存のフォルダで、<strong>そのエージェントの履歴</strong>があれば続き、無ければ新規。新しく作ったフォルダは、必ず新規。別のエージェントが先に作ったフォルダでも、そのエージェントの履歴が無ければ新規になる</li>
+		<li><strong>起動</strong>: 新しい窓で、番人 (<code>keeper.cmd</code>) を動かす。窓のタイトルは <code>&lt;入口のコマンド名&gt; &lt;フォルダ名&gt;</code> (例: <code>cc 20261101-foo</code>)。起動したフォルダがカレント</li>
+	</ol>
+	<h2>起こすもの</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>入口</th><th>起こすコマンド</th><th>最初の引数 (続き / 新規)</th><th>再起動の引数</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>cc</code></td><td><code>claude.exe</code></td><td><code>-c -n "&lt;フォルダ名&gt; &lt;月/日&gt; &lt;時:分&gt;"</code> / <code>-n "…"</code></td><td><code>-c -n "…"</code> (同じセッション名)</td></tr>
+			<tr><td class="nowrap"><code>cx</code></td><td><code>codex-trusted</code></td><td><code>resume</code> / (なし)</td><td><code>resume</code></td></tr>
+			<tr><td class="nowrap"><code>ag</code></td><td><code>ag-trusted</code></td><td><code>--dangerously-skip-permissions --mode auto -c</code> / <code>--dangerously-skip-permissions --mode auto</code></td><td><code>--dangerously-skip-permissions --mode auto -c</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><code>cc</code> は、起こす前に、フォルダを <code>~/.claude.json</code> に登録する (初回の信頼の確認を出さないため。失敗しても起動する)。<code>CLAUDE</code> で始まる環境変数は、<code>CLAUDE_CODE_USE_POWERSHELL_TOOL</code> 以外、起こす <code>claude</code> に渡さない</li>
+		<li><code>--project</code> ・ <code>--new-project</code> (agy) は使わない</li>
+	</ul>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>履歴の判定</h1>
+	<p>置き場の構造だけで判定する (読み取りのみ。会話の中身は読まない)。W: は <code>C:\work</code> と同じ場所なので、エージェントがどちらの形でパスを残していても当たるよう、<strong>W: の形と <code>C:\work</code> の形の両方</strong>を見る。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>エージェント</th><th>見る場所</th><th>履歴ありの条件</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>cc</code> (claude)</td><td><code>~/.claude/projects/&lt;符号化したパス&gt;/</code></td><td><code>*.jsonl</code> が 1 つ以上。符号化は、英数字以外を 1 文字ずつ <code>-</code> にする (<code>W:\2026\foo</code> → <code>W--2026-foo</code>)。<strong>フォルダだけあって <code>*.jsonl</code> が 0 個</strong>のものは、履歴なし</td></tr>
+			<tr><td class="nowrap"><code>ag</code> (agy)</td><td><code>~/.gemini/antigravity-cli/cache/last_conversations.json</code></td><td>そのフォルダのパスがキーにあり (大小を区別しない)、会話の <code>.db</code> (<code>conversations/&lt;ID&gt;.db</code>) も在る。キーだけで <code>.db</code> が無ければ履歴なし</td></tr>
+			<tr><td class="nowrap"><code>cx</code> (codex)</td><td><code>~/.codex/state_5.sqlite</code> の <code>threads</code> 表</td><td><code>cwd</code> がそのフォルダ (<code>\\?\C:\work\…</code> の形で残る。接頭辞と大小は無視) で、<code>archived = 0</code> の行が 1 件以上。<code>has_user_event</code> は全件 0 で、判定に使えない (実データ)。<code>sqlite</code> は読み取り専用で開く</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>読めない・壊れている・表が無いときは、落とさず、履歴なしとして扱う。</p>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>窓の番人 (再起動)</h1>
+	<p>新しい窓の中で動くのは、エージェントそのものではなく、<strong>cmd の番人</strong> (<code>keeper.cmd</code>)。node ・ bun を、エージェントの数だけ常駐させないため (cmd の待機は約 8 MB、node は約 18〜49 MB。実測)。</p>
+	<ol>
+		<li>エージェントを起動する (最初の引数)</li>
+		<li>終わったら (ctrl-c を 2 回押した終了も、ふつうの終了も、終了コードによらず)、<code>choice</code> で <strong><code>R</code> (再起動) か <code>Q</code> (終了)</strong> を尋ねる。小文字も受ける</li>
+		<li><code>R</code> なら、<strong>続きの引数</strong>で起動し直す (<code>claude</code> は PATH から探すので、入れ直した新しい版が使われる)。履歴の判定は繰り返さない</li>
+		<li><code>Q</code> なら、番人が終わり、窓が閉じる。尋ねている画面で ctrl-c を押したときも、窓が閉じる。答えが読めないとき (<code>choice</code> が 255) は、再起動せずに終わる</li>
+	</ol>
+	<ul>
+		<li>番人への入力は、環境変数 <code>KEEPER_EXE</code> ・ <code>KEEPER_FIRST</code> ・ <code>KEEPER_AGAIN</code>。番人は、起こす行の中で消し、<strong>エージェントに渡さない</strong> (作業用の <code>KP_*</code> も)。再起動の 2 回目以降にも値が残るよう、<code>setlocal</code> と <code>endlocal</code> で戻す</li>
+		<li>エージェントは <code>call</code> で呼ぶ。<code>codex-trusted</code> ・ <code>ag-trusted</code> は cmd なので、<code>call</code> が無いと、終わっても番人に戻ってこない</li>
+		<li><strong>試験の非表示のときだけ</strong>、尋ねずに終わる (<code>KEEPER_NOASK</code>)。非表示の窓では、<code>choice</code> が答えを待ち続けて、プロセスが残るため (実測)</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>ag-trusted</h1>
+	<p><code>codex-trusted</code> と同じ形。現在のフォルダを、<code>~/.gemini/antigravity-cli/settings.json</code> の <code>trustedWorkspaces</code> に書き足してから、受けた引数のまま <code>agy</code> を起動する。</p>
+	<ul>
+		<li><strong>書き方は、文字列としての挿入</strong>。配列に 1 行だけ足し、許可リスト (<code>permissions.allow</code>) などは 1 バイトも変えない。<code>agy</code> 自身が承認のたびにこのファイルを書き換えるため、JSON を作り直して書き戻さない</li>
+		<li>登録済み (パスの完全一致。大小も区別) なら書かない。書く前に、控え (<code>settings.json.backup-&lt;日時&gt;</code>) を取る</li>
+		<li>読んだあとに中身が変わっていたら、読み直す。3 回で諦め、書かずに止まる</li>
+		<li>設定ファイルが無い・壊れている・更新され続けているときは、<strong>書かずに終了コード 3</strong> で止まり、<code>agy</code> は起動しない (無いときは、先に <code>agy</code> を 1 度起動するよう案内する)。<code>agy</code> が見つからないときは終了コード 1。それ以外の終了コードは、<code>agy</code> のものをそのまま返す</li>
+	</ul>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>限界と、確かめていないこと</h1>
+	<ul>
+		<li><strong><code>claude</code> の符号化で、<code>_</code> ・ <code>.</code> ・ 日本語がどうなるか</strong>は、実データに該当が無く、確かめていない (「英数字以外はすべて <code>-</code>」と仮定している)</li>
+		<li><strong>agy の信頼が、パスの完全一致 (大小を含む) か</strong>は、第三者の資料にあるだけで、確かめていない</li>
+		<li>agy が、会話を消したときに <code>last_conversations.json</code> のキーを消すか。<code>.db</code> の有無でも見ているので、消えなくても、履歴なしと判定できる</li>
+		<li><strong>窓を見せる形 (<code>start</code> の引数) は、代役 1 回で確かめた</strong> (窓が開き、タイトルが <code>cx &lt;フォルダ名&gt;</code> になった)。試験は、窓を非表示にして回すため、<code>start</code> の引数そのものは、<code>startArgs</code> の組み立ての試験だけ。実際の <code>claude</code> ・ <code>codex</code> ・ <code>agy</code> を起こしての確認は、していない</li>
+		<li>起こしたエージェントが、起動のあとで、自分で窓のタイトルを書き換えるか。ctrl-c を 2 回押して終了したとき、<code>claude</code> が返す終了コード (番人は、終了コードによらず尋ねる)</li>
+		<li><code>codex-trusted.cmd</code> は、終わりに <code>pause</code> を持つため、<code>cx</code> では、<code>codex</code> を終えたあと、キーを 1 回押してから、番人の質問が出る</li>
+		<li>複数に当たるときの選び方 (名前順で最初の 1 つ) は、いまの <code>cc.cmd</code> ・ <code>cx.cmd</code> の動きを写したもので、<code>cx</code> は元から <code>cd</code> のワイルドカードに任せていた。名前順と同じかは、実測していない</li>
+	</ul>
+	<h2>経緯</h2>
+	<ul>
+		<li>設計と決め (80-A ・ 82-B ・ 83-B ・ 84-A ・ 85-A ・ 86-A ・ 87-B ・ 88 ・ 89 ・ 90-A): <a href="../10_plan/i261101-02-ag-cmdと起動の共通部.html">ag.cmd と起動の共通部 計画</a></li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>
