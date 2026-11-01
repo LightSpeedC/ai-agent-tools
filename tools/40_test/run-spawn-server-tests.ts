@@ -39,8 +39,8 @@ function kill(pid: number, tree = true): void {
 	try { execFileSync('taskkill', ['/PID', String(pid), ...(tree ? ['/T'] : []), '/F'], { stdio: 'ignore', timeout: 10000 }); } catch { /* 既に無い */ }
 }
 
-// SPAWN_SERVER_NO_FFI=1 なら、FFI を使わず Start-Process で起動する道を試す（サーバーに引き継がれる）
-const noFfi = process.env.SPAWN_SERVER_NO_FFI === '1';
+// SPAWN_SERVER_TEST_NO_FFI=1 なら、FFI を使わず Start-Process で起動する道を試す（サーバーに引き継がれる）
+const noFfi = process.env.SPAWN_SERVER_TEST_NO_FFI === '1';
 // サーバーの窓に出るログ。どの手段で起動したかを見る
 let serverLog = '';
 
@@ -82,7 +82,7 @@ function inspectWindows(rootPid: number): { foreground: number; visible: number[
 // フォーカスを奪わないため。共通ルール「窓が要る試験は、非表示で裏に回す」)。窓そのもの (conhost) は作られる
 function startServer(): Promise<ChildProcess> {
 	return new Promise((resolve, reject) => {
-		const p = spawn(process.argv[0], [tool, '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, SPAWN_TEST_MARK: 'mark-' + port, SPAWN_SERVER_TEST_HIDE: '1' } });
+		const p = spawn(process.argv[0], [tool, '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, SPAWN_SERVER_TEST_MARK: 'mark-' + port, SPAWN_SERVER_TEST_HIDE: '1' } });
 		let out = '';
 		const timer = setTimeout(() => reject(new Error('サーバーが立ちません: ' + out)), 15000);
 		p.stdout!.on('data', (d) => { out += d; serverLog += d; if (out.includes('待ち受け')) { clearTimeout(timer); resolve(p); } });
@@ -124,6 +124,8 @@ fs.rmSync(work, { recursive: true, force: true });
 fs.mkdirSync(work, { recursive: true });
 
 const spawned: number[] = [];
+// 8 で起動する待ちの目印 (コマンド行に入れる。後始末で、木の外に残ったものを見つけて止める)
+const sleeperMark = 'spawn-server-test-sleeper-' + process.pid;
 let server: ChildProcess | null = null;
 try {
 	// 1. ポートが無ければ使い方を出して 2
@@ -211,7 +213,7 @@ try {
 	// 7. 環境変数はサーバーのものを引き継ぐ（サーバーを立てるときに足した値が見える）
 	{
 		const mark = path.join(work, 'env.txt');
-		const r = await post({ command: 'cmd /c "echo %SPAWN_TEST_MARK%> env.txt"', cwd: work });
+		const r = await post({ command: 'cmd /c "echo %SPAWN_SERVER_TEST_MARK%> env.txt"', cwd: work });
 		assertEqual('7 起動できれば 200', 200, r.status);
 		await waitFor(() => fs.existsSync(mark), 10000);
 		await sleep(300);
@@ -221,16 +223,16 @@ try {
 		// サーバーが起動のために足した値を持ち込まない（以前は SPAWN_COMMAND 等で渡していて漏れた）。
 		// cmd は無い変数を %…% のまま残す
 		const leak = path.join(work, 'leak.txt');
-		await post({ command: 'cmd /c "echo %SPAWN_COMMAND%%SPAWN_TITLE%%SPAWN_CWD%> leak.txt"', cwd: work });
+		await post({ command: 'cmd /c "echo %SPAWN_SERVER_LINE%%SPAWN_SERVER_CWD%> leak.txt"', cwd: work });
 		await waitFor(() => fs.existsSync(leak), 10000);
 		await sleep(300);
 		const leaked = fs.existsSync(leak) ? fs.readFileSync(leak, 'utf8').trim() : '';
-		assertEqual('7 作業用の環境変数を持ち込まない', '%SPAWN_COMMAND%%SPAWN_TITLE%%SPAWN_CWD%', leaked);
+		assertEqual('7 作業用の環境変数を持ち込まない', '%SPAWN_SERVER_LINE%%SPAWN_SERVER_CWD%', leaked);
 	}
 
 	// 8. サーバーを止めても、起動したものは残る
 	{
-		const r = await post({ command: 'powershell -NoProfile -Command "Start-Sleep 30"', cwd: work });
+		const r = await post({ command: 'powershell -NoProfile -Command "Start-Sleep 30; # ' + sleeperMark + '"', cwd: work });
 		const pid = r.json.pid as number;
 		spawned.push(pid);
 		assertTrue('8 起動したものが生きている', alive(pid), 'pid=' + pid);
@@ -261,7 +263,20 @@ try {
 } finally {
 	if (server?.pid != null) { kill(server.pid); }
 	for (const pid of spawned) { kill(pid); }
-	fs.rmSync(work, { recursive: true, force: true });
+	// 8 で起動した待ち (Start-Sleep 30) は、返った pid の木の外に残ることがある (Start-Process の周)。
+	// 作業フォルダをカレントにして 30 秒生きるので、目印でさがして止める。止めないと、後始末が EBUSY になる
+	try {
+		execFileSync('powershell', ['-NoProfile', '-Command',
+			'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*' + sleeperMark + '*" -and $_.ProcessId -ne $PID } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }'],
+			{ stdio: 'ignore', timeout: 20000 });
+	} catch { /* 無ければよい */ }
+	// 止めた直後は、起動した窓の持ち主がフォルダを離しきっておらず EPERM になることがある。
+	// 後始末の失敗で、集計の表示と終了コードが失われないよう、待ち直し、それでも消せなければ失敗として報告する
+	try {
+		fs.rmSync(work, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
+	} catch (e) {
+		ng('後始末 (作業フォルダを消せない)', e instanceof Error ? e.message : String(e));
+	}
 }
 
 console.log('');
@@ -270,7 +285,7 @@ console.log(fail === 0 ? '=== ' + pass + ' 件すべて成功 ===' : '=== ' + fa
 // FFI が使えないときの道（Start-Process）も、同じテストで通す。2 周目は自分を起動し直して回す
 let code = fail === 0 ? 0 : 1;
 if (!noFfi) {
-	const r = spawnSync(process.argv[0], [fileURLToPath(import.meta.url)], { stdio: 'inherit', env: { ...process.env, SPAWN_SERVER_NO_FFI: '1' } });
+	const r = spawnSync(process.argv[0], [fileURLToPath(import.meta.url)], { stdio: 'inherit', env: { ...process.env, SPAWN_SERVER_TEST_NO_FFI: '1' } });
 	if (r.status !== 0) { code = 1; }
 }
 process.exit(code);

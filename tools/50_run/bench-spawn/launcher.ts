@@ -13,12 +13,12 @@ const title = 'bench-' + method;
 
 function launchA(): Promise<number> {
 	// PowerShell の Start-Process。渡すための環境変数は、起動する前に消す
-	const script = '$c = $env:SPAWN_COMMAND; $t = $env:SPAWN_TITLE; $w = $env:SPAWN_CWD; '
-		+ 'Remove-Item Env:SPAWN_COMMAND, Env:SPAWN_TITLE, Env:SPAWN_CWD; '
+	const script = '$c = $env:BENCH_SPAWN_COMMAND; $t = $env:BENCH_SPAWN_TITLE; $w = $env:BENCH_SPAWN_CWD; '
+		+ 'Remove-Item Env:BENCH_SPAWN_COMMAND, Env:BENCH_SPAWN_TITLE, Env:BENCH_SPAWN_CWD; '
 		+ '(Start-Process -FilePath cmd.exe -ArgumentList (\'/d /s /c "title \' + $t + \' & \' + $c + \'"\') -WorkingDirectory $w -PassThru).Id';
 	return new Promise((resolve, reject) => {
 		execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', script],
-			{ encoding: 'utf8', windowsHide: true, env: { ...process.env, SPAWN_COMMAND: command, SPAWN_TITLE: title, SPAWN_CWD: cwd } },
+			{ encoding: 'utf8', windowsHide: true, env: { ...process.env, BENCH_SPAWN_COMMAND: command, BENCH_SPAWN_TITLE: title, BENCH_SPAWN_CWD: cwd } },
 			(err, out) => { if (err) { reject(err); } else { resolve(parseInt(out.trim(), 10)); } });
 	});
 }
@@ -32,17 +32,17 @@ function launchB(): Promise<number> {
 
 function launchC(): Promise<number> {
 	// 窓なしの cmd から start /wait。コマンドは遅延展開で窓の中の cmd に展開させ、3 段目の cmd に解釈させる
-	const line = '"start "' + title + '" /wait cmd /d /v:on /s /c "cmd /d /s /c "!SPAWN_COMMAND!"""';
-	const p = spawn('cmd.exe', ['/d', '/s', '/c', line], { cwd, detached: true, stdio: 'ignore', windowsVerbatimArguments: true, windowsHide: false, env: { ...process.env, SPAWN_COMMAND: command } });
+	const line = '"start "' + title + '" /wait cmd /d /v:on /s /c "cmd /d /s /c "!BENCH_SPAWN_COMMAND!"""';
+	const p = spawn('cmd.exe', ['/d', '/s', '/c', line], { cwd, detached: true, stdio: 'ignore', windowsVerbatimArguments: true, windowsHide: false, env: { ...process.env, BENCH_SPAWN_COMMAND: command } });
 	p.unref();
 	return new Promise((resolve, reject) => { p.once('spawn', () => resolve(p.pid!)); p.once('error', reject); });
 }
 
 function launchD(): Promise<number> {
-	// conhost.exe に cmd.exe を渡し、新しい窓を conhost に作らせる。BENCH_D で起動のしかたを変えて試す。
+	// conhost.exe に cmd.exe を渡し、新しい窓を conhost に作らせる。BENCH_SPAWN_D で起動のしかたを変えて試す。
 	// node ・ bun からは窓が開かない。node は標準入出力のハンドルを必ず渡すため、conhost は窓を作らず
 	// そのハンドルへ VT シーケンスを流す側（疑似コンソール）で動き、stdio が ignore ならすぐ終わる（実測）
-	const v = process.env.BENCH_D ?? 'detached';
+	const v = process.env.BENCH_SPAWN_D ?? 'detached';
 	const p = spawn('conhost.exe', ['cmd.exe /d /s /c "title ' + title + ' & ' + command + '"'], {
 		cwd, windowsVerbatimArguments: true, windowsHide: false,
 		detached: v.includes('detached'), stdio: v.includes('inherit') ? 'inherit' : 'ignore',

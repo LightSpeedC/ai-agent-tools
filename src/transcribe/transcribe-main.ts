@@ -21,7 +21,7 @@ function fail(message: string, code: number): never {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // テストが置き場を差し替えられるようにする（本物の _vendor を触らない）
-const vendor = process.env.TRANSCRIBE_VENDOR || path.resolve(here, '..', '..', '_vendor', 'whisper');
+const vendor = process.env.TRANSCRIBE_TEST_VENDOR || path.resolve(here, '..', '..', '_vendor', 'whisper');
 
 const parsed = parseArgs(process.argv.slice(2));
 if ('error' in parsed) { fail(parsed.error + '\n使い方: ' + Usage, 2); }

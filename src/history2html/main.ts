@@ -127,10 +127,10 @@ async function main(): Promise<number> {
 		}
 	}
 
-	const home = process.env.HISTORY2HTML_HOME || os.homedir();
+	const home = process.env.HISTORY2HTML_TEST_HOME || os.homedir();
 	const ctx: MaskContext = {
-		user: process.env.HISTORY2HTML_USERNAME || path.basename(home) || null,
-		host: process.env.HISTORY2HTML_HOSTNAME || os.hostname() || null,
+		user: process.env.HISTORY2HTML_TEST_USERNAME || path.basename(home) || null,
+		host: process.env.HISTORY2HTML_TEST_HOSTNAME || os.hostname() || null,
 		authors: await gitAuthor(project),
 		words,
 		// テストだけが使う。置き換えを外して、2 段目の検査が止めることを確かめる

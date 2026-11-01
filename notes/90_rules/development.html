@@ -189,7 +189,7 @@
 		<tbody>
 			<tr><td class="nowrap">ps1 で書いたもの（html2md ・ convert-encoding ・ text）</td><td>入口（<code>bin/</code>）を通して 1 回。bun があれば、<code>tools/40_test/runners/</code> の node 用の当て木を <code>-Target</code> に渡してもう 1 回</td></tr>
 			<tr><td class="nowrap">ts で書いたもの</td><td>入っている処理系（bun ・ node）すべてで回す</td></tr>
-			<tr><td class="nowrap">psh の Rust 版</td><td>ビルドしてあれば、<code>PSH_TARGET</code> に exe を渡して、bun と node の両方から呼ぶ。ビルドしていなければ「飛ばした」と表示する</td></tr>
+			<tr><td class="nowrap">psh の Rust 版</td><td>ビルドしてあれば、<code>PSH_TEST_TARGET</code> に exe を渡して、bun と node の両方から呼ぶ。ビルドしていなければ「飛ばした」と表示する</td></tr>
 			<tr><td class="nowrap">HTML のルール</td><td><code>check-html-rules.ts</code>。このリポジトリの HTML が共通ルール（戻るリンク ・ 目次 ・ 日付 ・ README からのリンク ・ グラデーションや <code>var()</code> の地の前の、色だけの地の直書き等）に沿っているか。地の直書きが足りないときは、<code>node tools/40_test/fix-html-bg.ts --all</code> で足す（冪等。<code>--dry-run</code> で件数だけ見られる）</td></tr>
 			<tr><td class="nowrap">型チェック</td><td><code>tsc --noEmit</code>。bun も node も型を見ないため、ここでしか食い違いが出ない</td></tr>
 		</tbody>
@@ -205,7 +205,7 @@
 	<p>テストは既定で入口（<code>bin/</code>）を試す。別の実装を試すときは名指しする。</p>
 
 <pre><code class="language-shell"># psh の Rust 版に当てる
-PSH_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts</code></pre>
+PSH_TEST_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts</code></pre>
 
 	<h2>オプションの書式</h2>
 

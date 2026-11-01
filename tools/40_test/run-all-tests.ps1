@@ -72,11 +72,11 @@ $Suites = @(
 	@{ Name = 'text'; Script = 'run-text-tests.ps1'; NodeTarget = 'runners\text-node.cmd' },
 	# psh のテストだけ ts で書いてある。道具自体が PowerShell を呼ぶため、
 	# テストまで ps1 にすると道具が壊れたときにテストも動かせない。
-	# ExeTarget は Rust 版（計画 p260929-01）。同じテストを PSH_TARGET で当てる
-	@{ Name = 'psh'; Script = 'run-psh-tests.ts'; ExeTarget = 'src\psh-rs\target\release\psh.exe'; ExeEnv = 'PSH_TARGET' },
+	# ExeTarget は Rust 版（計画 p260929-01）。同じテストを PSH_TEST_TARGET で当てる
+	@{ Name = 'psh'; Script = 'run-psh-tests.ts'; ExeTarget = 'src\psh-rs\target\release\psh.exe'; ExeEnv = 'PSH_TEST_TARGET' },
 	# xx（内部ツール。計画 p261027-01）。子プロセスを起こして、終了コード ・ 標準入力 ・ 文字コードを見る。
 	# 判定と名前の解決の単体の確かめは src\xx の cargo test
-	@{ Name = 'xx'; Script = 'run-xx-tests.ts'; ExeTarget = 'src\xx\target\release\xx.exe'; ExeEnv = 'XX_TARGET' },
+	@{ Name = 'xx'; Script = 'run-xx-tests.ts'; ExeTarget = 'src\xx\target\release\xx.exe'; ExeEnv = 'XX_TEST_TARGET' },
 	# cc.cmd が起動の前に呼ぶ、~/.claude.json への登録。本物の ~/.claude.json は触らない
 	@{ Name = 'cc-register'; Script = 'run-cc-register-tests.ts' },
 	# cc.cmd。claude を代役（rustc で作る）に差し替え、環境変数の削除・登録・起動を見る。窓が一瞬開いて閉じる

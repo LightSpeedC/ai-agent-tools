@@ -127,7 +127,7 @@ check('知らないオプションは誤り', 'error' in parseArgs([a, '--xyz'])
 	check('--dir のフォルダが無ければ終了コード 2', r.code === 2, 'code=' + r.code);
 }
 {
-	const r = run([a], { TRANSCRIBE_VENDOR: path.join(work, 'empty') });
+	const r = run([a], { TRANSCRIBE_TEST_VENDOR: path.join(work, 'empty') });
 	check('whisper-cli が無ければ終了コード 2 で、置き場を案内する', r.code === 2 && r.err.includes('_vendor/whisper'), 'code=' + r.code + ' err=' + r.err.trim());
 }
 {

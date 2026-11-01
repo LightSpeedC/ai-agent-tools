@@ -149,12 +149,12 @@ check('--ext だけで --dir が無ければ誤り', 'error' in parseArgs([a, '-
 check('引数なしは終了コード 2', run([]).code === 2);
 check('音声が無ければ終了コード 2', run([path.join(work, 'none.wav'), '--to', 'mp3']).code === 2);
 {
-	const r = run([a, '--to', 'mp3'], { CONVERT_AUDIO_VENDOR: path.join(work, 'empty') });
+	const r = run([a, '--to', 'mp3'], { CONVERT_AUDIO_TEST_VENDOR: path.join(work, 'empty') });
 	check('ffmpeg が無ければ終了コード 2 で、置き場を案内する', r.code === 2 && r.err.includes('_vendor/ffmpeg'), 'code=' + r.code + ' err=' + r.err.trim());
 }
 {
 	fs.writeFileSync(path.join(work, 'sub', 'b.mp3'), 'existing');
-	const r = run([b, '--to', 'mp3'], { CONVERT_AUDIO_VENDOR: path.join(work, 'vendor') });
+	const r = run([b, '--to', 'mp3'], { CONVERT_AUDIO_TEST_VENDOR: path.join(work, 'vendor') });
 	check('出力が既にあれば上書きせず終了コード 2（決めたこと 3-A）', r.code === 2 && fs.readFileSync(path.join(work, 'sub', 'b.mp3'), 'utf8') === 'existing', 'code=' + r.code);
 	fs.rmSync(path.join(work, 'sub', 'b.mp3'));
 }

@@ -101,12 +101,12 @@ async function viaKoffi(line: string, cwd: string): Promise<number> {
 	クォートの入れ子で壊れる）、起動する前に消す（起動したものへ持ち込まない）。
 */
 function viaStartProcess(line: string, cwd: string): Promise<number> {
-	const script = '$c = $env:SPAWN_LINE; $w = $env:SPAWN_CWD; Remove-Item Env:SPAWN_LINE, Env:SPAWN_CWD; '
+	const script = '$c = $env:SPAWN_SERVER_LINE; $w = $env:SPAWN_SERVER_CWD; Remove-Item Env:SPAWN_SERVER_LINE, Env:SPAWN_SERVER_CWD;'
 		+ '$a = $c.Substring($c.IndexOf(" ") + 1); '
 		+ '(Start-Process -FilePath cmd.exe -ArgumentList $a -WorkingDirectory $w -PassThru' + (hideWindow() ? ' -WindowStyle Hidden' : '') + ').Id';
 	return new Promise((resolve, reject) => {
 		execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', script],
-			{ encoding: 'utf8', timeout: 15000, windowsHide: true, env: { ...process.env, SPAWN_LINE: line, SPAWN_CWD: cwd } },
+			{ encoding: 'utf8', timeout: 15000, windowsHide: true, env: { ...process.env, SPAWN_SERVER_LINE: line, SPAWN_SERVER_CWD: cwd } },
 			(err, out, errOut) => {
 				if (err) { reject(new Error('起動できません: ' + (errOut.trim() || err.message))); return; }
 				const pid = parseInt(out.trim(), 10);
@@ -117,8 +117,8 @@ function viaStartProcess(line: string, cwd: string): Promise<number> {
 }
 
 // 起動に使う手段。FFI が読めなければ以後ずっと Start-Process。
-// SPAWN_SERVER_NO_FFI=1 で最初から Start-Process にする（代わりの道をテストで通すため）
-let useFallback = process.env.SPAWN_SERVER_NO_FFI === '1';
+// SPAWN_SERVER_TEST_NO_FFI=1 で最初から Start-Process にする（代わりの道をテストで通すため）
+let useFallback = process.env.SPAWN_SERVER_TEST_NO_FFI === '1';
 
 export function launchMethod(): string {
 	return useFallback ? 'Start-Process' : process.versions.bun != null ? 'bun:ffi' : 'koffi';

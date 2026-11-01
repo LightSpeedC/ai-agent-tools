@@ -2,7 +2,7 @@
 	cc-register のテスト。cc.cmd が起動の前に、プロジェクトのフォルダを ~/.claude.json の
 	projects に足すための道具（src/cc-register/main.ts）。
 
-	本物の ~/.claude.json は触らない。環境変数 CC_CLAUDE_JSON で、tmp/ の複製に向ける。
+	本物の ~/.claude.json は触らない。環境変数 CC_REGISTER_TEST_CLAUDE_JSON で、tmp/ の複製に向ける。
 	bun でも node でも走る。
 
 	決め（利用者の判断。2026-10-28）:
@@ -42,7 +42,7 @@ function assertEqual(name: string, expected: unknown, actual: unknown): void {
 }
 
 function run(args: string[]): { code: number | null; out: string; err: string } {
-	const env = { ...process.env, CC_CLAUDE_JSON: jsonPath };
+	const env = { ...process.env, CC_REGISTER_TEST_CLAUDE_JSON: jsonPath };
 	const r = spawnSync(process.execPath, [tool, ...args], { encoding: 'utf8', timeout: 30000, env });
 	return { code: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
 }

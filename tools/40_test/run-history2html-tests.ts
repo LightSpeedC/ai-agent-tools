@@ -38,7 +38,7 @@ const Home = 'C:\\Users\\' + User;
 const Host = 'HOST-TEST-01';
 const AuthorName = 'Author One';
 const AuthorMail = 'author1@example.com';
-const Env = { HISTORY2HTML_USERNAME: User, HISTORY2HTML_HOME: Home, HISTORY2HTML_HOSTNAME: Host };
+const Env = { HISTORY2HTML_TEST_USERNAME: User, HISTORY2HTML_TEST_HOME: Home, HISTORY2HTML_TEST_HOSTNAME: Host };
 
 let uuid = 0;
 function line(o: Record<string, unknown>): string {

@@ -5,7 +5,7 @@
 	ここは、実際に子プロセスを起こして、終了コード・標準入力・出力の振り分け・文字コードを見る。
 	bun でも node でも走る。
 
-	環境変数 XX_TARGET に exe のパスがあればそれを試す。無ければ src/xx/target/release/xx.exe。
+	環境変数 XX_TEST_TARGET に exe のパスがあればそれを試す。無ければ src/xx/target/release/xx.exe。
 */
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
-const target = process.env.XX_TARGET ?? path.join(root, 'src', 'xx', 'target', 'release', 'xx.exe');
+const target = process.env.XX_TEST_TARGET ?? path.join(root, 'src', 'xx', 'target', 'release', 'xx.exe');
 const work = path.join(root, 'tmp', 'xx-test');
 
 let pass = 0;

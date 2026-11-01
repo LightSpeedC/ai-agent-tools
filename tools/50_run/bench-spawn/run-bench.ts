@@ -67,7 +67,7 @@ for (const method of methods) {
 	const out = path.join(work, 'out-' + method + '.txt');
 	// spawn-server は受けたものを cmd /c に渡すので、ここも cmd の書き方で書く（外側の cmd /c は付けない）
 	const f = 'out-' + method + '.txt';
-	const command = 'echo 日本語 %BENCH_MARK%>' + f + ' & echo [%SPAWN_COMMAND%]>>' + f
+	const command = 'echo 日本語 %BENCH_MARK%>' + f + ' & echo [%BENCH_SPAWN_COMMAND%]>>' + f
 		+ ' & powershell -NoProfile -ExecutionPolicy Bypass -File ' + path.join(here, 'check-console.ps1') + ' ' + f
 		+ ' & ping -n 10 127.0.0.1 >nul';
 	const r = await start(method, command);
@@ -81,7 +81,7 @@ for (const method of methods) {
 	console.log('書いたファイル: ' + JSON.stringify(lines));
 	console.log('  > と & が窓の中で効く: ' + (lines.length >= 2 ? 'はい' : 'いいえ'));
 	console.log('  日本語と環境変数を引き継ぐ: ' + (lines[0] === '日本語 mark-ok' ? 'はい' : 'いいえ'));
-	console.log('  SPAWN_COMMAND を持ち込まない: ' + (lines[1] === '[%SPAWN_COMMAND%]' ? 'はい' : 'いいえ（' + lines[1] + '）'));
+	console.log('  BENCH_SPAWN_COMMAND を持ち込まない: ' + (lines[1] === '[%BENCH_SPAWN_COMMAND%]' ? 'はい' : 'いいえ（' + lines[1] + '）'));
 	console.log('  出力が窓に出る（リダイレクトされていない）: ' + (lines[2] === 'False' ? 'はい' : lines[2] === 'True' ? 'いいえ' : '不明'));
 
 	// 3. サーバー役を taskkill /T で止めても残るか

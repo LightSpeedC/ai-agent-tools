@@ -64,7 +64,7 @@ fs.writeFileSync(path.join(proj, 'README.html'), '<!DOCTYPE html><title>README</
 
 // ---- 2. 書き出す ----
 // 環境から取る値は差し替える。パスは分けて組み立てる（続けて書くと、このソース自体が公開前の検査に当たる）
-const env = { ...process.env, HISTORY2HTML_USERNAME: 'tester1', HISTORY2HTML_HOME: 'C:' + '\\Users\\tester1', HISTORY2HTML_HOSTNAME: 'HOST-TEST-01' };
+const env = { ...process.env, HISTORY2HTML_TEST_USERNAME: 'tester1', HISTORY2HTML_TEST_HOME: 'C:' + '\\Users\\tester1', HISTORY2HTML_TEST_HOSTNAME: 'HOST-TEST-01' };
 const g = spawnSync(process.execPath, [main, '--path', proj], { encoding: 'utf8', env });
 if (g.status !== 0) {
 	console.log('  ❌ [NG] 材料を書き出せませんでした  ' + (g.stdout ?? '') + (g.stderr ?? ''));
@@ -82,7 +82,7 @@ if (probe.status !== 0) {
 const r = spawnSync('playwright-test', ['--test-dir', path.join(root, 'tests', 'history2html-viewer'), '--out-dir', path.join(work, 'pw')], {
 	encoding: 'utf8',
 	shell,
-	env: { ...env, HISTORY2HTML_VIEWER_DIR: out },
+	env: { ...env, HISTORY2HTML_TEST_VIEWER_DIR: out },
 	timeout: 600000,
 });
 const text = (r.stdout ?? '') + (r.stderr ?? '');

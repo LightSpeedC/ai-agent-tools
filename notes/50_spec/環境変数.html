@@ -173,7 +173,7 @@
 	</table>
 	</div>
 	<ul>
-		<li><code>cc-register</code> と <code>history2html</code> は、ホームのフォルダを Node の <code>os.homedir()</code> で取る。<code>USERPROFILE</code> 等の OS の変数は、直接は読まない (<code>history2html</code> は、先に第 3 章の <code>HISTORY2HTML_HOME</code> を見る)</li>
+		<li><code>cc-register</code> と <code>history2html</code> は、ホームのフォルダを Node の <code>os.homedir()</code> で取る。<code>USERPROFILE</code> 等の OS の変数は、直接は読まない (<code>history2html</code> は、先に第 3 章の <code>HISTORY2HTML_TEST_HOME</code> を見る)</li>
 		<li>cloud の準備では、呼び手が <code>CLAUDE_PROJECT_DIR</code> と <code>CLAUDE_ENV_FILE</code> の値を、環境変数ではなく<strong>引数</strong> (<code>--project</code> ・ <code>--env-file</code>) で渡す。道具は環境変数としては読まない</li>
 	</ul>
 </section>
@@ -185,18 +185,18 @@
 	<table>
 		<thead><tr><th>道具</th><th>どうする</th><th>変数</th><th>効く範囲</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>bin/cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code></td><td>消す</td><td><code>cc</code> は <code>CLAUDE</code> で始まる変数すべて (<code>CLAUDE_CODE_USE_POWERSHELL_TOOL</code> を除く)。3 本とも、<code>KEEPER_*</code> を、起こすエージェントに渡さない</td><td>共通部 (<code>src/agent-launch</code>) が、番人の窓を起こす環境から外す。呼んだ窓は変わらない。Claude Code の中から <code>cc</code> を呼んでも、親のセッションの値を子に渡さないため</td></tr>
+			<tr><td class="nowrap"><code>bin/cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code></td><td>消す</td><td><code>cc</code> は <code>CLAUDE</code> で始まる変数すべて (<code>CLAUDE_CODE_USE_POWERSHELL_TOOL</code> と <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code> を除く。後者は <code>use-lms.cmd</code> が設定する)。3 本とも、<code>KEEPER_*</code> を、起こすエージェントに渡さない</td><td>共通部 (<code>src/agent-launch</code>) が、番人の窓を起こす環境から外す。呼んだ窓は変わらない。Claude Code の中から <code>cc</code> を呼んでも、親のセッションの値を子に渡さないため</td></tr>
 			<tr><td class="nowrap">共通部 → 番人 (<code>src/agent-launch</code>)</td><td>渡す</td><td><code>KEEPER_EXE</code> ・ <code>KEEPER_FIRST</code> ・ <code>KEEPER_AGAIN</code> (起こすコマンドと、最初と再起動の引数)。試験の非表示のときだけ <code>KEEPER_NOASK</code></td><td>番人の窓だけ。番人 (<code>keeper.cmd</code>) が、起こす行の中で消し、エージェントには渡さない。作業用の <code>KP_*</code> も同じ</td></tr>
 			<tr><td class="nowrap"><code>bin/cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code></td><td>設定しない</td><td>なし</td><td>呼んだ窓の環境変数もカレントも変えない (入口の cmd は、変数を何も設定せず、カレントも動かさない)。試験は、呼んだあとの窓に、作業用の変数が足されないことを確かめる</td></tr>
 			<tr><td class="nowrap"><code>bin/use-lms.cmd</code></td><td>設定する</td><td><code>ANTHROPIC_BASE_URL</code> ・ <code>ANTHROPIC_AUTH_TOKEN</code> ・ <code>ANTHROPIC_API_KEY</code> (空にする) ・ <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code></td><td>呼んだ窓に残る (読んだ限り。<code>setlocal</code> が無い。実測していない)</td></tr>
-			<tr><td class="nowrap">コマンド起動サーバ (<code>src/spawn-server-ts</code>)</td><td>引き継ぐ</td><td>サーバーの環境変数すべて</td><td>起動した新しい窓へ。作業用の値は持ち込まない (第 3 章の <code>SPAWN_LINE</code> ・ <code>SPAWN_CWD</code>)</td></tr>
+			<tr><td class="nowrap">コマンド起動サーバ (<code>src/spawn-server-ts</code>)</td><td>引き継ぐ</td><td>サーバーの環境変数すべて</td><td>起動した新しい窓へ。作業用の値は持ち込まない (第 3 章の <code>SPAWN_SERVER_LINE</code> ・ <code>SPAWN_SERVER_CWD</code>)</td></tr>
 			<tr><td class="nowrap"><code>bin/cloud-session-start</code></td><td>設定する</td><td><code>GIT_LFS_SKIP_SMUDGE=1</code></td><td><code>git clone</code> の 1 回だけ (そのコマンドの行の中)</td></tr>
 			<tr><td class="nowrap"><code>bin/cloud-session-start</code></td><td>書き出す</td><td><code>PATH</code> を通す行</td><td><code>--env-file</code> で渡されたファイルへ。ファイルが無ければ通さず、そう報告する</td></tr>
 		</tbody>
 	</table>
 	</div>
 	<div class="callout">
-		<p><strong>読んだ限りの組み合わせ (実測していない)。</strong><code>use-lms.cmd</code> で <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code> を設定した窓から <code>cc</code> を使うと、<code>cc</code> が <code>CLAUDE</code> で始まる変数を消すので、<strong>その 1 つは起こした <code>claude</code> に渡らない</strong>。<code>ANTHROPIC_*</code> は消されず、渡る。</p>
+		<p><strong><code>use-lms.cmd</code> と <code>cc</code> の組み合わせ。</strong><code>use-lms.cmd</code> が設定する 4 つの変数は、<code>cc</code> で起こした <code>claude</code> に、すべて渡る (<code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code> は、<code>cc</code> が消さない例外にしてある。試験は <code>agentEnv</code> の単体試験)。<code>claude</code> が、実際にこの値を受けて動くかは、実機で確かめていない。</p>
 	</div>
 </section>
 
@@ -207,18 +207,18 @@
 	<table>
 		<thead><tr><th>変数</th><th>読む場所</th><th>役目</th><th>未設定のとき</th><th>読む側</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>CC_ROOT</code></td><td><code>src/agent-launch/main.ts</code> (<code>cc</code> ・ <code>cx</code> ・ <code>ag</code> 共通)</td><td>プロジェクトを作る置き場。試験は <code>tmp/</code> の下へ差し替える</td><td><code>W:\</code></td><td>本番の道具が読む</td></tr>
-			<tr><td class="nowrap"><code>CC_CLAUDE_JSON</code></td><td><code>src/cc-register</code></td><td>フォルダを登録する先の <code>.claude.json</code></td><td>ホームの <code>.claude.json</code></td><td>本番の道具が読む</td></tr>
-			<tr><td class="nowrap"><code>CC_STUB_OUT</code></td><td><code>tools/40_test/run-cc-tests.ts</code> が作る代役の <code>claude</code></td><td>受けた引数と <code>CLAUDE</code> で始まる変数の書き出し先</td><td>何も書かない</td><td>試験の側だけ</td></tr>
-			<tr><td class="nowrap"><code>HISTORY2HTML_HOME</code></td><td><code>src/history2html</code></td><td>伏せる対象のホームのフォルダ</td><td><code>os.homedir()</code></td><td>本番の道具が読む</td></tr>
-			<tr><td class="nowrap"><code>HISTORY2HTML_USERNAME</code></td><td><code>src/history2html</code></td><td>伏せる対象のユーザー名</td><td>ホームの末尾のフォルダ名</td><td>本番の道具が読む</td></tr>
-			<tr><td class="nowrap"><code>HISTORY2HTML_HOSTNAME</code></td><td><code>src/history2html</code></td><td>伏せる対象のホスト名</td><td><code>os.hostname()</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>AGENT_LAUNCH_TEST_ROOT</code></td><td><code>src/agent-launch/main.ts</code> (<code>cc</code> ・ <code>cx</code> ・ <code>ag</code> 共通)</td><td>プロジェクトを作る置き場。試験は <code>tmp/</code> の下へ差し替える</td><td><code>W:\</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>CC_REGISTER_TEST_CLAUDE_JSON</code></td><td><code>src/cc-register</code></td><td>フォルダを登録する先の <code>.claude.json</code></td><td>ホームの <code>.claude.json</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>CC_TEST_STUB_OUT</code></td><td><code>tools/40_test/run-cc-tests.ts</code> が作る代役の <code>claude</code></td><td>受けた引数と <code>CLAUDE</code> で始まる変数の書き出し先</td><td>何も書かない</td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_TEST_HOME</code></td><td><code>src/history2html</code></td><td>伏せる対象のホームのフォルダ</td><td><code>os.homedir()</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_TEST_USERNAME</code></td><td><code>src/history2html</code></td><td>伏せる対象のユーザー名</td><td>ホームの末尾のフォルダ名</td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_TEST_HOSTNAME</code></td><td><code>src/history2html</code></td><td>伏せる対象のホスト名</td><td><code>os.hostname()</code></td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>HISTORY2HTML_TEST_NO_MASK</code></td><td><code>src/history2html</code></td><td>1 段目の置き換えを、カンマ区切りの名前で外す。2 段目の検査が止めることを確かめる</td><td>外さない</td><td>本番の道具が読む (試験の入口)</td></tr>
-			<tr><td class="nowrap"><code>HISTORY2HTML_VIEWER_DIR</code></td><td><code>tests/history2html-viewer/viewer.spec.ts</code></td><td>書き出したビューアのフォルダ</td><td>空 (試験が「渡っていない」で失敗する)</td><td>試験の側だけ</td></tr>
-			<tr><td class="nowrap"><code>TRANSCRIBE_VENDOR</code></td><td><code>src/transcribe</code></td><td>whisper の置き場。試験が本物の <code>_vendor</code> を触らないため</td><td><code>_vendor/whisper</code></td><td>本番の道具が読む</td></tr>
-			<tr><td class="nowrap"><code>CONVERT_AUDIO_VENDOR</code></td><td><code>src/convert-audio</code></td><td>ffmpeg の置き場。同上</td><td><code>_vendor/ffmpeg</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>HISTORY2HTML_TEST_VIEWER_DIR</code></td><td><code>tests/history2html-viewer/viewer.spec.ts</code></td><td>書き出したビューアのフォルダ</td><td>空 (試験が「渡っていない」で失敗する)</td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>TRANSCRIBE_TEST_VENDOR</code></td><td><code>src/transcribe</code></td><td>whisper の置き場。試験が本物の <code>_vendor</code> を触らないため</td><td><code>_vendor/whisper</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>CONVERT_AUDIO_TEST_VENDOR</code></td><td><code>src/convert-audio</code></td><td>ffmpeg の置き場。同上</td><td><code>_vendor/ffmpeg</code></td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>SAFE_PUSH_TEST_HOSTNAME</code></td><td><code>src/safe-push</code></td><td>ロックに書くホスト名。別のホストのロックを試す</td><td><code>os.hostname()</code></td><td>本番の道具が読む</td></tr>
-			<tr><td class="nowrap"><code>SPAWN_SERVER_NO_FFI</code></td><td><code>src/spawn-server-ts</code></td><td><code>1</code> で、最初から <code>Start-Process</code> で起動する (代わりの道を通す)</td><td>FFI で起動し、読めなければ以後 <code>Start-Process</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>SPAWN_SERVER_TEST_NO_FFI</code></td><td><code>src/spawn-server-ts</code></td><td><code>1</code> で、最初から <code>Start-Process</code> で起動する (代わりの道を通す)</td><td>FFI で起動し、読めなければ以後 <code>Start-Process</code></td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>AGENT_LAUNCH_TEST_HOME</code></td><td><code>src/agent-launch/main.ts</code></td><td>履歴の置き場 (ホームのフォルダ)</td><td>本物のホーム</td><td>本番の道具が読む (試験の入口)</td></tr>
 			<tr><td class="nowrap"><code>AGENT_LAUNCH_TEST_HIDE</code></td><td><code>src/agent-launch/main.ts</code></td><td><code>1</code> で、窓を作らず非表示のまま番人を動かし、番人に「尋ねずに終わる」と渡す</td><td>見える窓で、尋ねる (本番)</td><td>本番の道具が読む (試験の入口)</td></tr>
 			<tr><td class="nowrap"><code>AGENT_LAUNCH_TEST_OUT</code></td><td><code>tools/40_test/run-agent-entry-tests.ts</code> の代役</td><td>代役のエージェントが、起動の記録を書く先</td><td>—</td><td>試験の側だけ</td></tr>
@@ -226,25 +226,25 @@
 			<tr><td class="nowrap"><code>AG_TRUSTED_TEST_FILE</code></td><td><code>src/ag-trusted/main.ts</code></td><td>信頼を書き足す設定ファイル</td><td><code>~/.gemini/antigravity-cli/settings.json</code></td><td>本番の道具が読む (試験の入口)</td></tr>
 			<tr><td class="nowrap"><code>AG_TEST_STUB_OUT</code> ・ <code>AG_TEST_STUB_EXIT</code></td><td><code>tools/40_test/run-ag-trusted-tests.ts</code> の代役の <code>agy</code></td><td>起動の記録を書く先 ・ 代役が返す終了コード</td><td>—</td><td>試験の側だけ</td></tr>
 			<tr><td class="nowrap"><code>SPAWN_SERVER_TEST_HIDE</code></td><td><code>src/spawn-server-ts/create-process.ts</code></td><td><code>1</code> で、起動する窓を<strong>非表示</strong>にする (3 つの起動の道とも。窓そのもの = <code>conhost</code> は作られる)。試験が、作業中の画面とフォーカスを奪わないため</td><td>見える窓で起動する (本番)</td><td>本番の道具が読む (試験の入口)</td></tr>
-			<tr><td class="nowrap"><code>SPAWN_TEST_MARK</code></td><td><code>tools/40_test/run-spawn-server-tests.ts</code></td><td>サーバーの環境変数が、起動した窓へ引き継がれることを確かめる目印</td><td>—</td><td>試験の側だけ</td></tr>
-			<tr><td class="nowrap"><code>PSH_TARGET</code></td><td><code>tools/40_test/run-psh-tests.ts</code></td><td>試す <code>psh</code> の exe (Rust 版)</td><td><code>psh-main.ts</code> を、走っている処理系で呼ぶ</td><td>試験の側だけ</td></tr>
-			<tr><td class="nowrap"><code>XX_TARGET</code></td><td><code>tools/40_test/run-xx-tests.ts</code></td><td>試す <code>xx</code> の exe</td><td><code>src/xx/target/release/xx.exe</code></td><td>試験の側だけ</td></tr>
-			<tr><td class="nowrap"><code>BENCH_D</code></td><td><code>tools/50_run/bench-spawn/launcher.ts</code></td><td>計測 D の起動のしかた</td><td><code>detached</code></td><td>計測の側だけ</td></tr>
-			<tr><td class="nowrap"><code>SPAWN_COMMAND</code> ・ <code>SPAWN_TITLE</code> ・ <code>SPAWN_CWD</code></td><td><code>tools/50_run/bench-spawn/launcher.ts</code></td><td>計測 A ・ C で、起動するコマンド ・ 窓の題 ・ フォルダを渡す</td><td>—</td><td>計測の側だけ</td></tr>
-			<tr><td class="nowrap"><code>SPAWN_LINE</code> ・ <code>SPAWN_CWD</code></td><td><code>src/spawn-server-ts/create-process.ts</code></td><td><code>Start-Process</code> の道で、起動する行とフォルダを PowerShell に渡す。<strong>読んだらすぐ消す</strong></td><td>—</td><td>本番の道具の内部の受け渡し</td></tr>
+			<tr><td class="nowrap"><code>SPAWN_SERVER_TEST_MARK</code></td><td><code>tools/40_test/run-spawn-server-tests.ts</code></td><td>サーバーの環境変数が、起動した窓へ引き継がれることを確かめる目印</td><td>—</td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>PSH_TEST_TARGET</code></td><td><code>tools/40_test/run-psh-tests.ts</code></td><td>試す <code>psh</code> の exe (Rust 版)</td><td><code>psh-main.ts</code> を、走っている処理系で呼ぶ</td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>XX_TEST_TARGET</code></td><td><code>tools/40_test/run-xx-tests.ts</code></td><td>試す <code>xx</code> の exe</td><td><code>src/xx/target/release/xx.exe</code></td><td>試験の側だけ</td></tr>
+			<tr><td class="nowrap"><code>BENCH_SPAWN_D</code></td><td><code>tools/50_run/bench-spawn/launcher.ts</code></td><td>計測 D の起動のしかた</td><td><code>detached</code></td><td>計測の側だけ</td></tr>
+			<tr><td class="nowrap"><code>BENCH_SPAWN_COMMAND</code> ・ <code>BENCH_SPAWN_TITLE</code> ・ <code>BENCH_SPAWN_CWD</code></td><td><code>tools/50_run/bench-spawn/launcher.ts</code></td><td>計測 A ・ C で、起動するコマンド ・ 窓の題 ・ フォルダを渡す</td><td>—</td><td>計測の側だけ</td></tr>
+			<tr><td class="nowrap"><code>SPAWN_SERVER_LINE</code> ・ <code>SPAWN_SERVER_CWD</code></td><td><code>src/spawn-server-ts/create-process.ts</code></td><td><code>Start-Process</code> の道で、起動する行とフォルダを PowerShell に渡す。<strong>読んだらすぐ消す</strong></td><td>—</td><td>本番の道具の内部の受け渡し</td></tr>
 		</tbody>
 	</table>
 	</div>
 	<h2>試験が子に渡す環境</h2>
 	<ul>
 		<li><code>run-cc-tests.ts</code> と <code>run-xx-tests.ts</code> は、子の <code>PATH</code> の先頭に代役の置き場を足す。<code>run-cc-tests.ts</code> は、<code>cc</code> が <code>CLAUDE</code> で始まる変数を消すことを確かめるため、<code>CLAUDECODE</code> ・ <code>CLAUDE_CODE_SESSION_ID</code> 等を子に渡す</li>
-		<li><code>run-history2html-tests.ts</code> と <code>run-history2html-viewer-tests.ts</code> は、<code>HISTORY2HTML_HOME</code> ・ <code>HISTORY2HTML_USERNAME</code> ・ <code>HISTORY2HTML_HOSTNAME</code> に作り物の値を入れて、実在の値が出力に混ざらないことを確かめる</li>
-		<li><code>run-spawn-server-tests.ts</code> は、<code>SPAWN_SERVER_NO_FFI=1</code> を付けて自分をもう一度走らせ、<code>Start-Process</code> の道も通す</li>
+		<li><code>run-history2html-tests.ts</code> と <code>run-history2html-viewer-tests.ts</code> は、<code>HISTORY2HTML_TEST_HOME</code> ・ <code>HISTORY2HTML_TEST_USERNAME</code> ・ <code>HISTORY2HTML_TEST_HOSTNAME</code> に作り物の値を入れて、実在の値が出力に混ざらないことを確かめる</li>
+		<li><code>run-spawn-server-tests.ts</code> は、<code>SPAWN_SERVER_TEST_NO_FFI=1</code> を付けて自分をもう一度走らせ、<code>Start-Process</code> の道も通す</li>
 	</ul>
 	<h2>経緯</h2>
 	<ul>
 		<li>コマンド起動サーバが環境変数を引き継ぎ、作業用の値を持ち込まない決め: <a href="../10_plan/p260930-01-コマンド起動サーバ.html">コマンド起動サーバ 計画</a></li>
-		<li><code>PSH_TARGET</code> で Rust 版を試す決め: <a href="../10_plan/p260929-01-psh-rust.html">psh の Rust 版 計画</a></li>
+		<li><code>PSH_TEST_TARGET</code> で Rust 版を試す決め: <a href="../10_plan/p260929-01-psh-rust.html">psh の Rust 版 計画</a></li>
 	</ul>
 </section>
 

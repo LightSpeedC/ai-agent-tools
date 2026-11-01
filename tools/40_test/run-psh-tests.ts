@@ -8,7 +8,7 @@
 	「PowerShell を呼ぶ道具」なので、テストまで ps1 にすると
 	道具が壊れたときにテストも動かせなくなる。
 
-	環境変数 PSH_TARGET に exe のパスがあれば、psh-main.ts の代わりにそれを試す
+	環境変数 PSH_TEST_TARGET に exe のパスがあれば、psh-main.ts の代わりにそれを試す
 	（Rust 版。計画 p260929-01）。同じケースを両方に当てて、動きが同じことを見る。
 */
 
@@ -22,7 +22,7 @@ const root = path.resolve(here, '..', '..');
 const tool = path.join(root, 'src', 'psh', 'psh-main.ts');
 const cases = path.join(root, 'tests', 'psh');
 /** 試す exe（Rust 版）。無ければ psh-main.ts を、いま走っている処理系で呼ぶ */
-const target = process.env.PSH_TARGET ?? '';
+const target = process.env.PSH_TEST_TARGET ?? '';
 
 let pass = 0;
 let fail = 0;
@@ -52,7 +52,7 @@ function hasPwsh(): boolean {
 	return r.error == null && r.status === 0;
 }
 
-/** psh を呼ぶ。PSH_TARGET があればその exe、無ければ psh-main.ts をいま走っている処理系で */
+/** psh を呼ぶ。PSH_TEST_TARGET があればその exe、無ければ psh-main.ts をいま走っている処理系で */
 function run(args: string[], input?: string): { code: number; out: string; err: string } {
 	// input を渡すと標準入力はパイプになる。渡さなくても spawnSync は空のパイプを渡す（端末ではない）
 	const opt = { encoding: 'utf8' as const, input, timeout: 60000 };

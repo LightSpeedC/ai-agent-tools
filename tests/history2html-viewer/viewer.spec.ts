@@ -1,6 +1,6 @@
 /*
 	history2html のビューアをブラウザで確かめる。材料は tools/40_test/run-history2html-viewer-tests.ts が作り、
-	書き出したフォルダを HISTORY2HTML_VIEWER_DIR で渡す。file:// のまま開く（決めたこと 13-A）。
+	書き出したフォルダを HISTORY2HTML_TEST_VIEWER_DIR で渡す。file:// のまま開く（決めたこと 13-A）。
 
 	材料は 2026-09-01 〜 2026-10-10 の 40 日。1 日 5 件の依頼に、応答とツールが 1 つずつ付く。
 	各日の 1 件目の応答には Markdown の表、最後の依頼と応答にはスクリプトを仕込んである。
@@ -9,7 +9,7 @@ import { test, expect, type Page } from '@playwright/test';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const dir = process.env.HISTORY2HTML_VIEWER_DIR ?? '';
+const dir = process.env.HISTORY2HTML_TEST_VIEWER_DIR ?? '';
 const url = pathToFileURL(path.join(dir, 'index.html')).href;
 
 /** 右の会話の、下までの残り */
@@ -54,7 +54,7 @@ async function loadedRes(page: Page): Promise<string[]> {
 }
 
 test.beforeAll(() => {
-	expect(dir, 'HISTORY2HTML_VIEWER_DIR が渡っていない（run-history2html-viewer-tests.ts から回す）').not.toBe('');
+	expect(dir, 'HISTORY2HTML_TEST_VIEWER_DIR が渡っていない（run-history2html-viewer-tests.ts から回す）').not.toBe('');
 });
 
 test('開いたときはいちばん古い履歴（いちばん上）を出し、応答は出さず、応答のファイルも読まない', async ({ page }) => {

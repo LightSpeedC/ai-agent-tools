@@ -15,7 +15,7 @@
 	    cc は起動できなくなるより、確認が出るほうが軽い。飛ばしたことを 1 行だけ出す
 	  ・書くときは同じフォルダに一時ファイルを書いて、名前を変える（途中で止まっても壊れない）
 
-	環境変数 CC_CLAUDE_JSON があれば、~/.claude.json の代わりにそのファイルを使う（テスト用）。
+	環境変数 CC_REGISTER_TEST_CLAUDE_JSON があれば、~/.claude.json の代わりにそのファイルを使う（テスト用）。
 */
 
 import * as fs from 'node:fs';
@@ -63,7 +63,7 @@ function main(): void {
 		process.exit(2);
 	}
 	const key = toKey(dir);
-	const file = process.env.CC_CLAUDE_JSON ?? path.join(os.homedir(), '.claude.json');
+	const file = process.env.CC_REGISTER_TEST_CLAUDE_JSON ?? path.join(os.homedir(), '.claude.json');
 	const shown = show(file.split('\\').join('/'));
 
 	let text: string;

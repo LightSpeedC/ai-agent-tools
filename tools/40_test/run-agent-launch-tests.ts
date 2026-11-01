@@ -230,6 +230,11 @@ console.log('--- 起こす処理 ---');
 
 	const env = { PATH: 'p', CLAUDECODE: '1', claude_code_x: 'y', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', KEEPER_EXE: 'z', OTHER: 'o' };
 	assertEqual('環境 cc: CLAUDE で始まる変数を外す (USE_POWERSHELL_TOOL は残す。大小を区別しない。KEEPER_ も外す)', { PATH: 'p', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', OTHER: 'o' }, agentEnv('cc', env));
+	// 81-B: use-lms.cmd が窓に設定する CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS は、cc で起こした claude に渡す。
+	//   cc が CLAUDE で始まる変数を全部外すと、この 1 つも渡らず、LM Studio への接続の設定が欠ける
+	assertEqual('環境 cc (81-B): CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS は渡す。ほかの CLAUDE は外す',
+		{ PATH: 'p', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1' },
+		agentEnv('cc', { PATH: 'p', CLAUDECODE: '1', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1' }));
 	assertEqual('環境 cx: CLAUDE の変数はそのまま。KEEPER_ だけ外す', { PATH: 'p', CLAUDECODE: '1', claude_code_x: 'y', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', OTHER: 'o' }, agentEnv('cx', env));
 	assertEqual('環境 ag: 同上', { PATH: 'p', CLAUDECODE: '1', claude_code_x: 'y', CLAUDE_CODE_USE_POWERSHELL_TOOL: '1', OTHER: 'o' }, agentEnv('ag', env));
 	assertEqual('環境: 元の環境のオブジェクトは変えない', 'z', env.KEEPER_EXE);

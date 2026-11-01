@@ -7,7 +7,7 @@
 	  ・番人: エージェントが終わるたびに R (再起動) か Q (終了) を尋ね、R なら続きの引数で起動し直す (88 ・ 89 ・ 90-A)
 	  ・cc は CLAUDE で始まる環境変数を子に渡さない。番人への入力 (KEEPER_*) はエージェントに渡さない
 
-	試験では、置き場を CC_ROOT で、履歴の置き場 (ホーム) を AGENT_LAUNCH_TEST_HOME で tmp/ の下へ差し替え、
+	試験では、置き場を AGENT_LAUNCH_TEST_ROOT で、履歴の置き場 (ホーム) を AGENT_LAUNCH_TEST_HOME で tmp/ の下へ差し替え、
 	起こす相手 (claude.exe ・ codex-trusted ・ ag-trusted) を、記録するだけの代役に差し替える (PATH の先頭に置く)。
 	窓は、AGENT_LAUNCH_TEST_HIDE=1 で非表示にする (共通ルール「窓が要る試験は、非表示で裏に回す」)。
 	本物の W:\ ・ 本物の履歴 ・ 本物のエージェントは触らない。
@@ -131,11 +131,11 @@ function runMain(agent: string, name: string | null, extraEnv: Record<string, st
 	fs.rmSync(outPath, { force: true });
 	const env: Record<string, string | undefined> = {
 		...process.env,
-		CC_ROOT: projectsRoot,
+		AGENT_LAUNCH_TEST_ROOT: projectsRoot,
 		AGENT_LAUNCH_TEST_HOME: home,
 		AGENT_LAUNCH_TEST_HIDE: '1',
 		AGENT_LAUNCH_TEST_OUT: outPath,
-		CC_CLAUDE_JSON: path.join(work, 'claude.json'),
+		CC_REGISTER_TEST_CLAUDE_JSON: path.join(work, 'claude.json'),
 		PATH: stubDir + path.delimiter + (process.env.PATH ?? ''),
 		CLAUDECODE: '1',
 		CLAUDE_CODE_SESSION_ID: 'session-x',
@@ -266,11 +266,11 @@ try {
 		fs.rmSync(outPath, { force: true });
 		const env: Record<string, string | undefined> = {
 			...process.env,
-			CC_ROOT: projectsRoot,
+			AGENT_LAUNCH_TEST_ROOT: projectsRoot,
 			AGENT_LAUNCH_TEST_HOME: home,
 			AGENT_LAUNCH_TEST_HIDE: '1',
 			AGENT_LAUNCH_TEST_OUT: outPath,
-			CC_CLAUDE_JSON: path.join(work, 'claude.json'),
+			CC_REGISTER_TEST_CLAUDE_JSON: path.join(work, 'claude.json'),
 			PATH: stubDir + path.delimiter + (process.env.PATH ?? ''),
 		};
 		// この試験を動かす窓に、古い cc.cmd が残した値 (YMD ・ Y 等) が、最初からあることがある。

@@ -8,7 +8,7 @@
 	  ・ag: ag-trusted --dangerously-skip-permissions --mode auto [-c]
 	  ・続きの引数 (-c ・ resume) は、履歴があるときだけ最初から付ける。番人 (keeper.cmd) が
 	    再起動するときは、いつも付ける (起動した時点で、履歴ができているため)
-	  ・cc は CLAUDE で始まる環境変数を、CLAUDE_CODE_USE_POWERSHELL_TOOL 以外、起こすものに渡さない
+	  ・cc は CLAUDE で始まる環境変数を、CC_KEEP の 2 つ以外、起こすものに渡さない (81-B)
 	  ・番人への入力 (KEEPER_*) は、エージェントに渡さない (番人が、起こす前に消す)
 
 	計画: notes/10_plan/i261101-02-ag-cmdと起動の共通部.html
@@ -49,13 +49,17 @@ export function launchSpec(agent: Agent, dir: string, history: boolean, now: Dat
 	}
 }
 
+/** cc が、CLAUDE で始まる変数のうち、起こす claude に渡すもの (大文字で書く)。
+    CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS は use-lms.cmd が設定する (81-B) */
+const CC_KEEP = ['CLAUDE_CODE_USE_POWERSHELL_TOOL', 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS'];
+
 /** 起こすものに渡す環境。元のオブジェクトは変えない */
 export function agentEnv(agent: Agent, env: Env): Env {
 	const out: Env = {};
 	for (const [key, value] of Object.entries(env)) {
 		const upper = key.toUpperCase();
 		if (upper.startsWith('KEEPER_')) { continue; }
-		if (agent === 'cc' && upper.startsWith('CLAUDE') && upper !== 'CLAUDE_CODE_USE_POWERSHELL_TOOL') { continue; }
+		if (agent === 'cc' && upper.startsWith('CLAUDE') && !CC_KEEP.includes(upper)) { continue; }
 		out[key] = value;
 	}
 	return out;

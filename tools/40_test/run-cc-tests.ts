@@ -2,8 +2,8 @@
 	cc.cmd のテスト。
 
 	cc.cmd は W:\ の下にプロジェクトを作って claude.exe を起こす。試験では、
-	  ・置き場を環境変数 CC_ROOT で tmp/ の下へ差し替える
-	  ・~/.claude.json を環境変数 CC_CLAUDE_JSON で tmp/ の複製に向ける
+	  ・置き場を環境変数 AGENT_LAUNCH_TEST_ROOT で tmp/ の下へ差し替える
+	  ・~/.claude.json を環境変数 CC_REGISTER_TEST_CLAUDE_JSON で tmp/ の複製に向ける
 	  ・claude.exe を、引数・カレント・CLAUDE で始まる環境変数を記録するだけの代役に差し替える
 	  （PATH の先頭に置く。rustc で作る）
 	本物の W:\ ・ 本物の ~/.claude.json ・ 本物の claude は触らない。
@@ -53,7 +53,7 @@ function assertEqual(name: string, expected: unknown, actual: unknown): void {
 const stubSource = `
 use std::io::Write;
 fn main() {
-	let out = std::env::var("CC_STUB_OUT").unwrap_or_default();
+	let out = std::env::var("CC_TEST_STUB_OUT").unwrap_or_default();
 	if out.is_empty() { return; }
 	let mut s = String::new();
 	s.push_str(&format!("cwd={}\\n", std::env::current_dir().unwrap().display()));
@@ -91,9 +91,9 @@ function runCc(args: string[], after = ''): { code: number | null; out: string; 
 	fs.rmSync(outPath, { force: true });
 	const env: Record<string, string | undefined> = {
 		...process.env,
-		CC_ROOT: projectsRoot,
-		CC_CLAUDE_JSON: jsonPath,
-		CC_STUB_OUT: outPath,
+		AGENT_LAUNCH_TEST_ROOT: projectsRoot,
+		CC_REGISTER_TEST_CLAUDE_JSON: jsonPath,
+		CC_TEST_STUB_OUT: outPath,
 		AGENT_LAUNCH_TEST_HOME: homePath,
 		AGENT_LAUNCH_TEST_HIDE: '1',
 		PATH: stubDir + path.delimiter + (process.env.PATH ?? ''),
@@ -132,8 +132,8 @@ function keyOf(dir: string): string {
 
 function main(): void {
 	// 置き場を差し替えられない cc.cmd は、本物の W:\ にフォルダを作ってしまうので、試験を回さない
-	if (!fs.readFileSync(cc, 'latin1').includes('agent-launch') || !fs.readFileSync(path.join(root, 'src', 'agent-launch', 'main.ts'), 'utf8').includes('CC_ROOT')) {
-		console.log('[NG] cc.cmd が CC_ROOT に対応していません。本物の W:\\ に作らないよう、試験を回しません');
+	if (!fs.readFileSync(cc, 'latin1').includes('agent-launch') || !fs.readFileSync(path.join(root, 'src', 'agent-launch', 'main.ts'), 'utf8').includes('AGENT_LAUNCH_TEST_ROOT')) {
+		console.log('[NG] cc.cmd が AGENT_LAUNCH_TEST_ROOT に対応していません。本物の W:\\ に作らないよう、試験を回しません');
 		process.exit(1);
 	}
 	setup();
