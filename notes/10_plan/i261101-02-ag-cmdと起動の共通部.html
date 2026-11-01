@@ -184,6 +184,8 @@
 			<tr><td class="nowrap">85-A</td><td>共通部が、決めて、<strong>起こすところまで</strong>行う。環境の整理も、子プロセスの設定で行う。cmd は 1 行。結果の文字を cmd に返さないので、日本語のフォルダ名が化けない (2026-11-01、第 5 章)</td></tr>
 			<tr><td class="nowrap">86-A</td><td>名前を渡さずに呼んだときは、3 本とも <code>[NG]</code> のメッセージを出して終了する (<code>cc</code> の動きに揃える)。<code>cx</code> は、無言で終わらなくなる (仕様の変更。2026-11-01、第 5 章)</td></tr>
 			<tr><td class="nowrap">タイトル</td><td>新しい窓のタイトルを、3 本とも <code>&lt;エージェント名&gt; &lt;フォルダ名&gt;</code> の形に揃える (形は 2026-11-01、利用者の判断。<strong>エージェント名は <code>cc</code> ・ <code>cx</code> ・ <code>ag</code></strong> (87-B。2026-11-01、第 5 章))</td></tr>
+			<tr><td class="nowrap">88 ・ 89</td><td><strong>終了のあとで、再起動できる。</strong><code>claude</code> がバージョンアップしたとき、ctrl-c を 2 回押して終了させたあと、もう一度起動したいことがある (終了させることもある)。窓の中で「再起動 / 終了」を尋ね、再起動なら続きから起動し直す。<code>cc</code> だけでなく、<code>cx</code> ・ <code>ag</code> にも入れる (利用者の指定、2026-11-01)</td></tr>
+			<tr><td class="nowrap">90-A</td><td><strong>常駐は作らない。</strong>起動は短命の node (約 50 ms で終わる) に任せ、窓の番人は cmd のループにする。長く生きる node ・ bun は 0 本。エージェントの数だけ node ・ bun を起動すると、メモリと不要なプロセスが無駄になるため (実測: node の待機は約 18〜49 MB、bun は約 16〜55 MB、cmd は約 8 MB)。<strong>88-A (窓ごとに node の番人) は、この理由で改めた</strong> (2026-11-01、利用者の判断)</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -237,6 +239,17 @@
 	<p>起こすときのフォルダ (カレント) は、<strong>共通部が子プロセスの設定で渡す</strong>。呼んだ窓のカレントは動かさない。</p>
 	<p><strong>窓のタイトル</strong>は、3 本とも <code>start "&lt;エージェント名&gt; &lt;フォルダ名&gt;" …</code> の形にする。<code>start</code> は最初の引用符つきの引数をタイトルとして扱うので、<strong>タイトルは必ず引用符で囲む</strong> (空白や日本語を含んでも、コマンドと取り違えない)。エージェント名は <code>cc</code> ・ <code>cx</code> ・ <code>ag</code> (87-B)。例: <code>start "cc 20261101-foo" …</code></p>
 
+	<h2>窓の番人 (終了のあとの再起動)</h2>
+	<p>3 本とも、新しい窓の中で動くのは、エージェントそのものではなく、<strong>cmd の番人</strong> (<code>src/agent-launch/keeper.cmd</code>。SJIS ＋ CRLF)。90-A に従い、常駐も node ・ bun の番人も作らない。</p>
+	<ol>
+		<li>共通部 (短命の node) が、フォルダ ・ 履歴 ・ 引数 ・ 環境を決め、<code>start "&lt;タイトル&gt;" cmd /d /c keeper.cmd …</code> で番人の窓を開けて、<strong>すぐ終わる</strong></li>
+		<li>番人が、エージェントを起動する (最初の引数は、共通部が決めたもの)</li>
+		<li>エージェントが終わったら (ctrl-c を 2 回押した終了も、ふつうの終了も、終了コードによらず)、<code>choice</code> で <strong><code>R</code> (再起動) か <code>Q</code> (終了)</strong> を尋ねる</li>
+		<li><code>R</code> なら、<strong>続きの引数を付けて</strong>起動し直す (<code>cc</code> は <code>-c</code>、<code>cx</code> は <code>resume</code>、<code>ag</code> は <code>-c</code>)。履歴の判定は繰り返さない (起動した時点で、履歴ができているため)。起動のたびに PATH から探すので、新しく入れたエージェントが使われる</li>
+		<li><code>Q</code> なら、番人が終わり、窓が閉じる。尋ねている画面で ctrl-c を押したときも、窓が閉じる</li>
+	</ol>
+	<p>エージェントの環境 (<code>cc</code> は <code>CLAUDE</code> で始まる変数を外す等) は、共通部が番人の窓を開けるときの環境で決める。番人は、受けた環境のまま起動し直す。</p>
+
 	<h2>入口の cmd</h2>
 	<ul>
 		<li><code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> は、<code>node "%~dp0..\src\agent-launch\main.ts" &lt;エージェント&gt; %*</code> の 1 行 (<code>cx.cmd</code> の画面消去 <code>cls</code> は cmd 側に残す)</li>
@@ -274,6 +287,7 @@
 	</div>
 	<ul>
 		<li><code>run-all-tests.ps1</code> に、新しい試験を足す</li>
+		<li><strong>番人 (<code>keeper.cmd</code>) の試験。</strong>代役のエージェントが、起動のたびに引数を記録する。<code>R</code> で再起動すると、<strong>2 回目の引数に続きの引数が付く</strong>こと、<code>Q</code> で終わること、終了コードがどれでも尋ねること。答えは、標準入力から渡す (<code>choice</code> が標準入力から読めるかは、実装の最初に確かめる。読めなければ、試験用の入口を足す)</li>
 		<li>既存の <code>run-cc-tests.ts</code> は、いまの動きを守る回帰として残す。先に「履歴が無ければ <code>-c</code> なし」と「窓の環境が変わらない」を足して、❌Red を確かめる</li>
 		<li><strong>bun と node の両方</strong>で通す。入口の cmd は <code>node</code> を使う (いまの <code>cc.cmd</code> と同じ)</li>
 	</ul>
@@ -288,6 +302,7 @@
 		<li>いまの <code>cc.cmd</code> ・ <code>cx.cmd</code> の動き (複数に当たったとき ・ 引数なし) を、試験で固定する</li>
 		<li>共通部の試験を先に書く。❌Red (モジュールが無い) を確かめる</li>
 		<li>共通部を実装する。bun と node で ✅Green</li>
+		<li>番人 (<code>keeper.cmd</code>) の試験を先に書き、❌Red を確かめてから実装する (✅Green)。<code>choice</code> が標準入力から読めること、窓のタイトルが番人の中でも変わらないことを、最初に確かめる</li>
 		<li><code>ag-trusted</code> の試験 → 実装 (❌Red → ✅Green)</li>
 		<li>入口の cmd の試験 (<code>cc</code> ・ <code>cx</code> ・ <code>ag</code>) を足し、❌Red を確かめる</li>
 		<li><strong>試験が全部通ってから</strong>、<code>bin/</code> の <code>cc.cmd</code> ・ <code>cx.cmd</code> を新しい入口に置き換える。<code>ag.cmd</code> ・ <code>ag-trusted.cmd</code> を置く。<strong>PATH に置いた瞬間、ほかのプロジェクトも使う</strong>ので、置いてからテストしない。古い処理は cmd から削除する (SJIS ＋ CRLF。<code>convert-encoding --to cmd</code>)</li>
@@ -357,6 +372,8 @@
 		<li><code>start</code> の引数 (窓の題 ・ セッション名に空白や <code>/</code> を含む) を、node の子プロセスでいまの cmd と同じに渡せるか (代役を使った試験で確かめる)</li>
 		<li><code>cx.cmd</code> の動き (窓への漏れ ・ カレント) は、いまの試験が無いので、実測していない</li>
 		<li>起こした <code>claude</code> ・ <code>codex</code> ・ <code>agy</code> が、起動したあとで、自分で窓のタイトルを書き換えるか。書き換えるなら、<code>start</code> で付けたタイトルは、起動直後だけになる</li>
+		<li>ctrl-c を 2 回押して終了したとき、<code>claude</code> が返す終了コード (番人は、終了コードによらず尋ねる作りにする)</li>
+		<li><code>choice</code> が、標準入力から答えを読めるか (試験の作りに関わる)。cmd の番人 (<code>cmd.exe</code>) が窓ごとに 1 つ増えるメモリは、待機のものを 1 回測っただけで、実際に 5 本開いたときの合計は測っていない</li>
 	</ul>
 </section>
 
