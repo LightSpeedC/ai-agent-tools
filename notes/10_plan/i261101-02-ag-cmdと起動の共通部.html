@@ -1,0 +1,352 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>ag.cmd と起動の共通部 計画 (i261101-02)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		border-bottom:2px dotted var(--accent2,#2f5fbf); display:inline-block;
+		color:var(--ink,#1c2330); background:transparent;
+		margin:20px 0 8px; padding-bottom:3px; font-size:1.05em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>ag.cmd と起動の共通部 計画 (i261101-02)</h1>
+		<p class="lead"><code>agy</code> を起こす <code>ag.cmd</code> を足し、<code>cc</code> ・ <code>cx</code> ・ <code>ag</code> の「フォルダを決めて、履歴があれば続きで起動する」処理を、1 本の共通部にまとめる。</p>
+		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-01</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools の <code>bin/</code> (<code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> ・ <code>ag-trusted.cmd</code>) と、<code>src/</code> の起動の共通部 ・ <code>ag-trusted</code>。入力は、プロジェクト名の一部 (省略可) と、各エージェントの履歴の置き場 (読み取りのみ)。出力は、決めたフォルダで新しい窓に起動したエージェントと、<code>agy</code> の <code>settings.json</code> への信頼の書き足し (<code>ag-trusted</code> だけ)。</p>
+
+<div class="callout callout-important">
+	<p><strong>承認待ち (2026-11-01)。</strong>決めたことは第 1 章。<strong>この計画の中で決める点が 2 つ</strong> (85 ・ 86) ある。承認 (「実装して」) の前に、第 5 章で選ぶ。</p>
+</div>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">決めたこと</a></li>
+		<li class="ch02"><a href="#ch02">変える動き</a></li>
+		<li class="ch03"><a href="#ch03">試験</a></li>
+		<li class="ch04"><a href="#ch04">進め方</a></li>
+		<li class="ch05"><a href="#ch05">決める点と、確かめること</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>決めたこと</h1>
+	<p>課題 <code>i261101-02</code> と <code>i261101-01</code> で、2026-11-01 に利用者が決めた。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>決めたこと</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">80-A</td><td><code>cc.cmd</code> と <code>cx.cmd</code> が、呼んだ窓の環境変数とカレントを変えない。起こした <code>claude</code> ・ <code>codex</code> に、作業用の変数を渡さない。窓のカレントが変わらなくてよいことは、利用者が確認した</td></tr>
+			<tr><td class="nowrap">82-B</td><td>フォルダを決める処理を、<code>cc</code> ・ <code>cx</code> ・ <code>ag</code> で共通の 1 本にまとめる</td></tr>
+			<tr><td class="nowrap">83-B</td><td><code>ag-trusted</code> を作り、<code>agy</code> の <code>settings.json</code> の <code>trustedWorkspaces</code> にフォルダを書き足してから起動する (<code>codex-trusted</code> と同じ形)</td></tr>
+			<tr><td class="nowrap">84-A</td><td>共通部は TypeScript の 1 本。<code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> は薄い入口。判定は <code>node:test</code> の単体試験にする</td></tr>
+			<tr><td class="nowrap">利用者の指定</td><td><strong>起動の引数。</strong>続き: <code>agy --dangerously-skip-permissions --mode auto -c</code>。新規は <code>-c</code> を付けない。<code>--project</code> ・ <code>--new-project</code> は使わない</td></tr>
+			<tr><td class="nowrap">利用者の指定</td><td><strong>続きにする条件。</strong>既存のフォルダでも、<strong>そのエージェントの履歴が無ければ続きにしない</strong> (<code>agy</code> は <code>-c</code> なし、<code>cx</code> は <code>resume</code> なし、<code>cc</code> は <code>-c</code> なし)。別のエージェントが先にフォルダを作ることがあるため</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h2>この計画で変えないもの</h2>
+	<ul>
+		<li><strong>環境変数の名前</strong> (<code>CC_ROOT</code> ・ <code>CC_CLAUDE_JSON</code> 等) は変えない。77-A+B ・ 78-A ・ 79-A の改名は、別の計画で行う。共通部は、いまの名前 (<code>CC_ROOT</code>) をそのまま読む</li>
+		<li><code>cc-register</code> (<code>~/.claude.json</code> へのフォルダ登録) の中身。共通部から、いまと同じ呼び方で呼ぶ</li>
+		<li><code>codex-trusted</code> の中身</li>
+	</ul>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>変える動き</h1>
+
+	<h2>共通部 (<code>src/agent-launch/main.ts</code>)</h2>
+	<p>呼び方は <code>main.ts &lt;エージェント&gt; [&lt;名前&gt;]</code>。エージェントは <code>cc</code> ・ <code>cx</code> ・ <code>ag</code>。いまの <code>cc.cmd</code> ・ <code>cx.cmd</code> の動きを、そのまま 1 本に寄せる。</p>
+	<ol>
+		<li><strong>置き場</strong> (<code>CC_ROOT</code>。未設定のとき <code>W:\</code>) があるか確かめる。無ければ <code>[NG]</code> を出して終了コード 1</li>
+		<li><strong>年のフォルダ</strong> (<code>W:\&lt;yyyy&gt;</code>) を、無ければ作る</li>
+		<li><strong>名前が無いとき</strong>は、第 5 章の 86 に従う</li>
+		<li><strong>探す。</strong>置き場の直下で <code>*&lt;名前&gt;*</code> に当たるフォルダ → 年のフォルダの中で当たるフォルダ → どちらも無ければ、年のフォルダの中に <code>&lt;yyyymmdd&gt;-&lt;名前&gt;</code> を作る。複数に当たったときの選び方は、いまの動きを試験で固定してから、そのまま揃える</li>
+		<li><strong>そのエージェントの履歴を見る</strong> (下の表)。あれば続き、無ければ新規</li>
+		<li><strong>起こす</strong> (下の表)</li>
+	</ol>
+	<h3>履歴の判定</h3>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>エージェント</th><th>見る場所</th><th>履歴ありの条件</th><th>状態</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>cc</code> (<code>claude</code>)</td><td><code>~/.claude/projects/&lt;符号化したパス&gt;/</code></td><td><code>*.jsonl</code> が 1 つ以上。符号化は <code>W:\2026\&lt;名前&gt;</code> → <code>W--2026-&lt;名前&gt;</code> (<code>:</code> と <code>\</code> が <code>-</code> になる)。<strong>フォルダだけあって <code>*.jsonl</code> が 0 個のものがある</strong>ので、ファイルを数える</td><td>実測済み</td></tr>
+			<tr><td class="nowrap"><code>ag</code> (<code>agy</code>)</td><td><code>~/.gemini/antigravity-cli/cache/last_conversations.json</code></td><td>そのフォルダのパスがキーにある。会話の <code>.db</code> (<code>conversations/&lt;ID&gt;.db</code>) も在れば確実</td><td>構造は実測済み。会話を消したときにキーが消えるかは未確認</td></tr>
+			<tr><td class="nowrap"><code>cx</code> (<code>codex</code>)</td><td><code>~/.codex/state_5.sqlite</code> の <code>threads</code> 表</td><td><code>cwd</code> がそのフォルダで、<code>archived = 0</code> の行が 1 件以上</td><td>表の定義は実測済み。<strong><code>cwd</code> の書式と <code>has_user_event</code> の意味は未確認</strong> (実装の最初に、件数と形だけ確かめる)</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li>3 つとも<strong>読み取りのみ</strong>。<code>sqlite</code> は <code>node:sqlite</code> の読み取り専用で開く。会話の中身は読まない</li>
+		<li>判定の関数は、ホームのフォルダを<strong>引数で受ける</strong> (試験が一時のフォルダを渡せる)</li>
+	</ul>
+	<h3>起こし方</h3>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>エージェント</th><th>起こすコマンド (新しい窓)</th><th>環境</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>cc</code></td><td>先に <code>cc-register</code> でフォルダを登録 (失敗しても起動する)。<code>start &lt;フォルダ名&gt; claude.exe [-c] -n "&lt;フォルダ名&gt; &lt;月/日&gt; &lt;時:分&gt;"</code></td><td><code>CLAUDE</code> で始まる変数を、<code>CLAUDE_CODE_USE_POWERSHELL_TOOL</code> 以外すべて外して渡す (いまの動き)</td></tr>
+			<tr><td class="nowrap"><code>cx</code></td><td><code>start "codex" codex-trusted [resume]</code> (続きなら <code>resume</code>)</td><td>呼んだ窓の環境のまま</td></tr>
+			<tr><td class="nowrap"><code>ag</code></td><td><code>start "agy" ag-trusted --dangerously-skip-permissions --mode auto [-c]</code> (続きなら <code>-c</code>)</td><td>呼んだ窓の環境のまま</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>起こすときのフォルダ (カレント) は、<strong>共通部が子プロセスの設定で渡す</strong>。呼んだ窓のカレントは動かさない。</p>
+
+	<h2>入口の cmd</h2>
+	<ul>
+		<li><code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> は、<code>node "%~dp0..\src\agent-launch\main.ts" &lt;エージェント&gt; %*</code> の 1 行 (<code>cx.cmd</code> の画面消去 <code>cls</code> は cmd 側に残す)</li>
+		<li>作業用の変数 (<code>YMD</code> ・ <code>Y</code> ・ <code>XMD</code> ・ <code>HMSC</code> ・ <code>XHM</code>) と、<code>CC_ROOT</code> の設定を、cmd からなくす。<strong>窓の環境変数とカレントは、前後で変わらない</strong> (80-A。85-A の構成なら、作りとして満たされる)</li>
+		<li>置き換えるときに、古い処理を cmd から<strong>削除する</strong> (置き換えの手順に入れる)</li>
+	</ul>
+
+	<h2><code>ag-trusted</code> (<code>bin/ag-trusted.cmd</code> と <code>src/ag-trusted/main.ts</code>)</h2>
+	<p><code>codex-trusted</code> と同じ形。<code>ag-trusted [&lt;agy の引数&gt;…]</code> で、現在のフォルダを信頼として書き足し、<code>agy</code> を引数つきで起動する。</p>
+	<ul>
+		<li><strong>書く先</strong>は <code>~/.gemini/antigravity-cli/settings.json</code>。BOM なし ・ LF ・ インデント 2 つの空白 (実測)</li>
+		<li><strong>書き方は、文字列としての挿入。</strong><code>trustedWorkspaces</code> の配列に 1 行だけ足す。<strong>許可リスト (<code>permissions.allow</code>) などの、ほかの部分は 1 バイトも変えない</strong> (試験で、挿入の前後を比べる)。<code>agy</code> 自身がこのファイルを書き換えるため、JSON を作り直して書き戻す形にはしない</li>
+		<li><strong>書く前に控えを取る</strong> (<code>settings.json.backup-&lt;日時&gt;</code>)。書くのは、フォルダが未登録のときだけ。判定は、パスの完全一致 (大小を区別する。<code>agy</code> が完全一致で見るとされているため。未確認)</li>
+		<li><strong>起動中の書き込みとの衝突を避ける。</strong>読んだときの更新日時とサイズを覚え、書く直前に見直す。変わっていれば読み直して、最大 3 回までやり直す。それでも変わるなら、書かずに止める</li>
+		<li><code>trustedWorkspaces</code> が無ければ、末尾の <code>}</code> の前にキーごと足す。空の配列 (<code>[]</code>) も扱う</li>
+		<li><code>settings.json</code> が無い、または JSON として読めないときは、<strong>書かずに</strong>そう表示して止める (終了コード 3)。<code>agy</code> の初回の設定を邪魔しない</li>
+		<li>引数の誤りは終了コード 2。それ以外の終了コードは <code>agy</code> のものをそのまま返す</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>試験</h1>
+	<p><strong>先に書き、落ちるのを見てから実装する</strong> (❌Red → ✅Green)。起こす相手 (<code>claude</code> ・ <code>codex-trusted</code> ・ <code>ag-trusted</code>) は、<code>PATH</code> の先頭に置く代役に差し替える (<code>run-cc-tests.ts</code> の作りを広げる)。本物は起こさない。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>層</th><th>確かめること</th><th>やり方</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">共通部: フォルダの決定</td><td>年のフォルダの作成 ・ 置き場の直下を先に探す ・ 年のフォルダの中を探す ・ 無ければ <code>&lt;日付&gt;-&lt;名前&gt;</code> を作る ・ 複数に当たったときの選び方 (いまの動きの固定) ・ 置き場が無いとき終了コード 1</td><td><code>node:test</code> ・ <code>bun test</code>。一時の置き場を作る</td></tr>
+			<tr><td class="nowrap">共通部: 履歴の判定</td><td>3 つのエージェントで、履歴あり ・ 無し ・ <strong>フォルダだけあって履歴が 0 個</strong> (<code>claude</code>)・ 削除済みの会話のみ (<code>codex</code>)。符号化 (<code>:</code> と <code>\</code> が <code>-</code>) の総当たり</td><td>一時のホームに、履歴の形を作る。<code>codex</code> は一時の <code>sqlite</code> を作る</td></tr>
+			<tr><td class="nowrap">共通部: 引数の決定</td><td>履歴ありで続きの引数 (<code>-c</code> ・ <code>resume</code>)、無しで付けない。3 つのエージェントすべて</td><td>関数の戻り値を確かめる</td></tr>
+			<tr><td class="nowrap"><code>ag-trusted</code></td><td>追加できる ・ 登録済みなら書かない (控えも作らない) ・ キーが無い ・ 空の配列 ・ <strong>許可リストの部分がバイトで同一</strong> ・ 控えができる ・ JSON が壊れていれば書かず終了コード 3 ・ 読んだあとに更新されたら読み直す</td><td>一時の <code>settings.json</code>。実物と同じ形 (2 つの空白 ・ LF ・ Go 風のエスケープ) の材料を使う</td></tr>
+			<tr><td class="nowrap">入口の cmd (<code>cc</code> ・ <code>cx</code> ・ <code>ag</code>)</td><td>履歴の有無で、代役が受けた引数が変わる ・ <code>CLAUDE</code> で始まる変数が <code>claude</code> に渡らない ・ <strong>呼んだ窓の環境変数とカレントが前後で変わらない</strong> ・ 作業用の変数が渡らない</td><td><code>run-cc-tests.ts</code> を広げ、<code>cx</code> ・ <code>ag</code> を新しく足す (いま <code>cx</code> の試験は無い)</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><code>run-all-tests.ps1</code> に、新しい試験を足す</li>
+		<li>既存の <code>run-cc-tests.ts</code> は、いまの動きを守る回帰として残す。先に「履歴が無ければ <code>-c</code> なし」と「窓の環境が変わらない」を足して、❌Red を確かめる</li>
+		<li><strong>bun と node の両方</strong>で通す。入口の cmd は <code>node</code> を使う (いまの <code>cc.cmd</code> と同じ)</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>進め方</h1>
+	<ol>
+		<li>この計画の承認を得る (第 5 章の 85 ・ 86 を選ぶ)</li>
+		<li>課題 <code>i261101-02</code> ・ <code>i261101-01</code> の 80-A を「着手」にする</li>
+		<li><strong>実データの形を確かめる</strong> (読み取りのみ。値は出さず、件数と形だけ): <code>codex</code> の <code>threads.cwd</code> の書式と、<code>archived</code> ・ <code>has_user_event</code> の分布</li>
+		<li>いまの <code>cc.cmd</code> ・ <code>cx.cmd</code> の動き (複数に当たったとき ・ 引数なし) を、試験で固定する</li>
+		<li>共通部の試験を先に書く。❌Red (モジュールが無い) を確かめる</li>
+		<li>共通部を実装する。bun と node で ✅Green</li>
+		<li><code>ag-trusted</code> の試験 → 実装 (❌Red → ✅Green)</li>
+		<li>入口の cmd の試験 (<code>cc</code> ・ <code>cx</code> ・ <code>ag</code>) を足し、❌Red を確かめる</li>
+		<li><strong>試験が全部通ってから</strong>、<code>bin/</code> の <code>cc.cmd</code> ・ <code>cx.cmd</code> を新しい入口に置き換える。<code>ag.cmd</code> ・ <code>ag-trusted.cmd</code> を置く。<strong>PATH に置いた瞬間、ほかのプロジェクトも使う</strong>ので、置いてからテストしない。古い処理は cmd から削除する (SJIS ＋ CRLF。<code>convert-encoding --to cmd</code>)</li>
+		<li>一括実行 (<code>run-all-tests</code>) を通す</li>
+		<li>利用者の手元での確認を依頼する (第 5 章)</li>
+		<li>資料を直す: <code>TOOLS-USAGE</code> に <code>ag</code> ・ <code>ag-trusted</code> の概要、<code>notes/50_spec/</code> に起動の共通部の詳細仕様 (履歴の判定の置き場と条件)。環境変数の仕様 (<code>notes/50_spec/環境変数.html</code>) は、作業用の変数が消えた点を反映する。README に載せる。<code>html2md</code> を流す</li>
+		<li>課題 <code>i261101-02</code> を「済」にし、<code>i261101-01</code> の 80-A を済にする。この計画に結果を反映する</li>
+		<li>commit と push (ローカルルール第 6 章)</li>
+	</ol>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>決める点と、確かめること</h1>
+
+	<h2>85: 共通部が、どこまでを受け持つか</h2>
+	<p>履歴の判定は、JSON や <code>sqlite</code> を読む。結果 (フォルダ ・ 続きか新規か) を cmd に返す形にすると、<strong>日本語のフォルダ名が文字化けする</strong>おそれがある。共通部が出す文字は UTF-8 で、cmd の <code>for /f</code> は窓のコードページで読むため。コードページは変えない決まり (共通ルール「コンソールのコードページを変更しない」)。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>案</th><th>内容</th><th>恒久 / 暫定</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><strong>85-A (推奨)</strong></td><td>共通部が、決めて、<strong>起こすところまで</strong>行う。環境の整理 (<code>CLAUDE</code> で始まる変数を外す等) も、子プロセスの設定で行う。cmd は 1 行。文字を cmd に返さないので、化けない。窓の環境変数とカレントは、作りとして変わらない (80-A)</td><td>恒久</td></tr>
+			<tr><td class="nowrap">85-B</td><td>共通部は<strong>決めるだけ</strong>。結果を cmd に返し、cmd が <code>setlocal</code> の中で起こす。80-A は <code>setlocal</code> と後始末で満たす。日本語のフォルダ名を cmd に渡す道 (一時ファイル経由等) を別に作る必要がある</td><td>恒久</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p><strong>推す理由</strong>: 化ける道を作らず、80-A を作りとして満たせる。cmd が薄くなる。<strong>弱点</strong>は、新しい窓の起こし方 (<code>start</code> の引数の引用) を、node から再現する作業が増えること。代役で試験する。</p>
+
+	<h2>86: 名前を渡さずに呼んだとき</h2>
+	<p>いまは、<code>cc</code> が <code>[NG] プロジェクトはありません。</code> を出して終わる。<code>cx</code> は何も言わず終わる (年のフォルダへ移るだけ)。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>案</th><th>内容</th><th>恒久 / 暫定</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><strong>86-A (推奨)</strong></td><td>3 本とも、<code>[NG]</code> のメッセージを出して終了する (<code>cc</code> の動きに揃える)。<code>cx</code> は、無言で終わらなくなる (仕様の変更)</td><td>恒久</td></tr>
+			<tr><td class="nowrap">86-B</td><td><code>cc</code> は <code>[NG]</code>、<code>cx</code> ・ <code>ag</code> は無言で終わる (いまの動きを共通部に持ち込む)。共通部に、エージェントごとの分岐が 1 つ残る</td><td>恒久</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p><strong>推す理由</strong>: 無言で終わると、打ち間違いに気づけない。3 本で動きが揃う。</p>
+
+	<h2>利用者の手元で確かめること (実装の後)</h2>
+	<ul>
+		<li><code>ag</code> で、新しいフォルダが<strong>信頼の確認を出さずに</strong>起動する。<code>trustedWorkspaces</code> の完全一致 (大小 ・ 区切り) が合っている証拠になる</li>
+		<li><code>ag</code> で、既存のフォルダが <code>-c</code> で<strong>そのフォルダの直前の会話</strong>を続ける (全体の直前ではない)</li>
+		<li>別のエージェントが先に作ったフォルダで、<code>cc</code> ・ <code>cx</code> ・ <code>ag</code> を使い、履歴が無いほうが<strong>新規</strong>で起動する</li>
+		<li>窓から <code>cc</code> ・ <code>cx</code> ・ <code>ag</code> を使ったあと、<strong>窓のカレントと環境変数が変わらない</strong></li>
+	</ul>
+
+	<h2>まだ確かめていないこと</h2>
+	<ul>
+		<li><code>agy</code> の信頼が、パスの完全一致 (大小を含む) か。第三者の資料にあるだけ</li>
+		<li><code>codex</code> の <code>threads.cwd</code> の書式と、<code>has_user_event</code> の意味 (進め方の 3 で確かめる)</li>
+		<li><code>agy</code> が、会話を消したときに <code>last_conversations.json</code> のキーを消すか</li>
+		<li><code>start</code> の引数 (窓の題 ・ セッション名に空白や <code>/</code> を含む) を、node の子プロセスでいまの cmd と同じに渡せるか (代役を使った試験で確かめる)</li>
+		<li><code>cx.cmd</code> の動き (窓への漏れ ・ カレント) は、いまの試験が無いので、実測していない</li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

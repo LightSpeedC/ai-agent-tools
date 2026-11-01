@@ -892,7 +892,7 @@ tools/50_run/psh --command "&lt;式&gt;"</code></pre>
 	<details open>
 		<summary><span class="badge b-none">未</span><span class="no">i261101-02</span>ag.cmd (agy を起こす) を足し、フォルダを決める処理を共通化する</summary>
 		<div class="issue-body">
-			<p>2026-11-01、利用者の希望。<code>cx.cmd</code> (<code>codex</code> を起こす) とほぼ同じ形で、<code>agy</code> を起こす <code>bin/ag.cmd</code> を作る。<strong>機能の追加なので、計画 → 承認 → 実装の順で進める。</strong></p>
+			<p>2026-11-01、利用者の希望。<code>cx.cmd</code> (<code>codex</code> を起こす) とほぼ同じ形で、<code>agy</code> を起こす <code>bin/ag.cmd</code> を作る。<strong>機能の追加なので、計画 → 承認 → 実装の順で進める。</strong>計画は <a href="../10_plan/i261101-02-ag-cmdと起動の共通部.html">ag.cmd と起動の共通部 計画</a> (承認待ち。80-A の実装も含む)。</p>
 			<p><strong>決めたこと (同日、利用者の判断)。</strong></p>
 			<ul>
 				<li><span class="badge b-ok">済</span><strong>82-B。</strong>フォルダを決める処理 (<code>W:\</code> 以下の年のフォルダで、名前の一部が一致するものを探し、無ければ <code>&lt;日付&gt;-&lt;名前&gt;</code> を作る) を、1 本の共通部 (84-A で TypeScript に改めた) に切り出し、<code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> が呼ぶ。動いている <code>cc.cmd</code> と <code>cx.cmd</code> を書き換える。80-A (<code>setlocal</code> と後始末) の実装と重なるので、同じ計画にまとめる</li>
