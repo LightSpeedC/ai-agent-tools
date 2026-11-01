@@ -183,6 +183,7 @@
 			<tr><td class="nowrap">利用者の指定</td><td><strong>続きにする条件。</strong>既存のフォルダでも、<strong>そのエージェントの履歴が無ければ続きにしない</strong> (<code>agy</code> は <code>-c</code> なし、<code>cx</code> は <code>resume</code> なし、<code>cc</code> は <code>-c</code> なし)。別のエージェントが先にフォルダを作ることがあるため</td></tr>
 			<tr><td class="nowrap">85-A</td><td>共通部が、決めて、<strong>起こすところまで</strong>行う。環境の整理も、子プロセスの設定で行う。cmd は 1 行。結果の文字を cmd に返さないので、日本語のフォルダ名が化けない (2026-11-01、第 5 章)</td></tr>
 			<tr><td class="nowrap">86-A</td><td>名前を渡さずに呼んだときは、3 本とも <code>[NG]</code> のメッセージを出して終了する (<code>cc</code> の動きに揃える)。<code>cx</code> は、無言で終わらなくなる (仕様の変更。2026-11-01、第 5 章)</td></tr>
+			<tr><td class="nowrap">タイトル</td><td>新しい窓のタイトルを、3 本とも <code>&lt;エージェント名&gt; &lt;フォルダ名&gt;</code> の形に揃える (形は 2026-11-01、利用者の判断。<strong>エージェント名の表記は、第 5 章の 87 で決める</strong>)</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -234,6 +235,7 @@
 	</table>
 	</div>
 	<p>起こすときのフォルダ (カレント) は、<strong>共通部が子プロセスの設定で渡す</strong>。呼んだ窓のカレントは動かさない。</p>
+	<p><strong>窓のタイトル</strong>は、3 本とも <code>start "&lt;エージェント名&gt; &lt;フォルダ名&gt;" …</code> の形にする。<code>start</code> は最初の引用符つきの引数をタイトルとして扱うので、<strong>タイトルは必ず引用符で囲む</strong> (空白や日本語を含んでも、コマンドと取り違えない)。エージェント名の表記は 87。</p>
 
 	<h2>入口の cmd</h2>
 	<ul>
@@ -264,7 +266,7 @@
 		<tbody>
 			<tr><td class="nowrap">共通部: フォルダの決定</td><td>年のフォルダの作成 ・ 置き場の直下を先に探す ・ 年のフォルダの中を探す ・ 無ければ <code>&lt;日付&gt;-&lt;名前&gt;</code> を作る ・ 複数に当たったときの選び方 (いまの動きの固定) ・ 置き場が無いとき終了コード 1</td><td><code>node:test</code> ・ <code>bun test</code>。一時の置き場を作る</td></tr>
 			<tr><td class="nowrap">共通部: 履歴の判定</td><td>3 つのエージェントで、履歴あり ・ 無し ・ <strong>フォルダだけあって履歴が 0 個</strong> (<code>claude</code>)・ 削除済みの会話のみ (<code>codex</code>)。符号化 (<code>:</code> と <code>\</code> が <code>-</code>) の総当たり</td><td>一時のホームに、履歴の形を作る。<code>codex</code> は一時の <code>sqlite</code> を作る</td></tr>
-			<tr><td class="nowrap">共通部: 引数の決定</td><td>履歴ありで続きの引数 (<code>-c</code> ・ <code>resume</code>)、無しで付けない。3 つのエージェントすべて</td><td>関数の戻り値を確かめる</td></tr>
+			<tr><td class="nowrap">共通部: 引数の決定</td><td>履歴ありで続きの引数 (<code>-c</code> ・ <code>resume</code>)、無しで付けない。3 つのエージェントすべて。窓のタイトルの組み立て (空白や日本語を含むとき、引用符で囲まれること)</td><td>関数の戻り値を確かめる</td></tr>
 			<tr><td class="nowrap"><code>ag-trusted</code></td><td>追加できる ・ 登録済みなら書かない (控えも作らない) ・ キーが無い ・ 空の配列 ・ <strong>許可リストの部分がバイトで同一</strong> ・ 控えができる ・ JSON が壊れていれば書かず終了コード 3 ・ 読んだあとに更新されたら読み直す</td><td>一時の <code>settings.json</code>。実物と同じ形 (2 つの空白 ・ LF ・ Go 風のエスケープ) の材料を使う</td></tr>
 			<tr><td class="nowrap">入口の cmd (<code>cc</code> ・ <code>cx</code> ・ <code>ag</code>)</td><td>履歴の有無で、代役が受けた引数が変わる ・ <code>CLAUDE</code> で始まる変数が <code>claude</code> に渡らない ・ <strong>呼んだ窓の環境変数とカレントが前後で変わらない</strong> ・ 作業用の変数が渡らない</td><td><code>run-cc-tests.ts</code> を広げ、<code>cx</code> ・ <code>ag</code> を新しく足す (いま <code>cx</code> の試験は無い)</td></tr>
 		</tbody>
@@ -326,6 +328,19 @@
 	</div>
 	<p><strong>推す理由</strong>: 無言で終わると、打ち間違いに気づけない。3 本で動きが揃う。</p>
 
+	<h2>87: 窓のタイトルの「エージェント名」の表記</h2>
+	<p>タイトルの形は <code>&lt;エージェント名&gt; &lt;フォルダ名&gt;</code> に決まった (利用者の判断)。名前の表記が 2 通りある。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>案</th><th>内容</th><th>恒久 / 暫定</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><strong>87-A (推奨)</strong></td><td>起こす相手の名前: <code>claude</code> ・ <code>codex</code> ・ <code>agy</code>。例: <code>claude 20261101-foo</code></td><td>恒久</td></tr>
+			<tr><td class="nowrap">87-B</td><td>入口のコマンド名: <code>cc</code> ・ <code>cx</code> ・ <code>ag</code>。例: <code>cc 20261101-foo</code></td><td>恒久</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p><strong>推す理由</strong>: いまの <code>cx</code> のタイトル (<code>codex</code>) と同じ系統で、窓を見て、起動している相手がすぐ分かる。<code>cc</code> ・ <code>cx</code> ・ <code>ag</code> は、打ちやすくした略で、窓の一覧では何のことか分かりにくい。<strong>87-B の利点</strong>は、短く、打ったコマンドと一致すること。</p>
+
 	<h2>利用者の手元で確かめること (実装の後)</h2>
 	<ul>
 		<li><code>ag</code> で、新しいフォルダが<strong>信頼の確認を出さずに</strong>起動する。<code>trustedWorkspaces</code> の完全一致 (大小 ・ 区切り) が合っている証拠になる</li>
@@ -341,6 +356,7 @@
 		<li><code>agy</code> が、会話を消したときに <code>last_conversations.json</code> のキーを消すか</li>
 		<li><code>start</code> の引数 (窓の題 ・ セッション名に空白や <code>/</code> を含む) を、node の子プロセスでいまの cmd と同じに渡せるか (代役を使った試験で確かめる)</li>
 		<li><code>cx.cmd</code> の動き (窓への漏れ ・ カレント) は、いまの試験が無いので、実測していない</li>
+		<li>起こした <code>claude</code> ・ <code>codex</code> ・ <code>agy</code> が、起動したあとで、自分で窓のタイトルを書き換えるか。書き換えるなら、<code>start</code> で付けたタイトルは、起動直後だけになる</li>
 	</ul>
 </section>
 
