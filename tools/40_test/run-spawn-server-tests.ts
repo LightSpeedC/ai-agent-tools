@@ -50,9 +50,39 @@ async function waitFor(cond: () => boolean, ms: number): Promise<boolean> {
 	return cond();
 }
 
+/*
+	見えている最上位の窓の持ち主 (pid) ・ 前面の窓の持ち主 ・ rootPid の子孫 (rootPid を含む) を、PowerShell で調べる。
+	コンソールの窓の持ち主は、窓の本体 (conhost) ではなく、そのコンソールに付いたプロセス (cmd 等) として返る (実測)
+*/
+function inspectWindows(rootPid: number): { foreground: number; visible: number[]; tree: number[] } {
+	const script = [
+		"Add-Type -TypeDefinition @'",
+		'using System; using System.Collections.Generic; using System.Runtime.InteropServices;',
+		'public static class W {',
+		'	delegate bool P(IntPtr h, IntPtr l);',
+		'	[DllImport("user32.dll")] static extern bool EnumWindows(P p, IntPtr l);',
+		'	[DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);',
+		'	[DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);',
+		'	[DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();',
+		'	public static uint[] Visible() { var l = new List<uint>(); EnumWindows((h, x) => { if (IsWindowVisible(h)) { uint p; GetWindowThreadProcessId(h, out p); l.Add(p); } return true; }, IntPtr.Zero); return l.ToArray(); }',
+		'	public static uint Foreground() { uint p; GetWindowThreadProcessId(GetForegroundWindow(), out p); return p; }',
+		'}',
+		"'@",
+		'$all = Get-CimInstance Win32_Process',
+		'$ids = @(' + rootPid + ')',
+		'for ($i = 0; $i -lt $ids.Count; $i++) { foreach ($c in @($all | Where-Object { $_.ParentProcessId -eq $ids[$i] })) { $ids += $c.ProcessId } }',
+		'@{ foreground = [int][W]::Foreground(); visible = @([W]::Visible() | ForEach-Object { [int]$_ }); tree = @($ids) } | ConvertTo-Json -Compress',
+	].join('\n');
+	const encoded = Buffer.from(script, 'utf16le').toString('base64');
+	const out = execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { encoding: 'utf8', timeout: 30000 }).trim();
+	return JSON.parse(out);
+}
+
+// サーバーは SPAWN_SERVER_TEST_HIDE=1 で立てる: 起動する窓を非表示にする (試験が、作業中の画面と
+// フォーカスを奪わないため。共通ルール「窓が要る試験は、非表示で裏に回す」)。窓そのもの (conhost) は作られる
 function startServer(): Promise<ChildProcess> {
 	return new Promise((resolve, reject) => {
-		const p = spawn(process.argv[0], [tool, '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, SPAWN_TEST_MARK: 'mark-' + port } });
+		const p = spawn(process.argv[0], [tool, '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, SPAWN_TEST_MARK: 'mark-' + port, SPAWN_SERVER_TEST_HIDE: '1' } });
 		let out = '';
 		const timer = setTimeout(() => reject(new Error('サーバーが立ちません: ' + out)), 15000);
 		p.stdout!.on('data', (d) => { out += d; serverLog += d; if (out.includes('待ち受け')) { clearTimeout(timer); resolve(p); } });
@@ -212,6 +242,12 @@ try {
 			+ 'for ($i = 0; $i -lt $ids.Count; $i++) { foreach ($c in @($all | Where-Object { $_.ParentProcessId -eq $ids[$i] })) { $ids += $c.ProcessId; $names += $c.Name } }; $names -join ","'],
 			{ encoding: 'utf8', timeout: 20000 }).trim();
 		assertTrue('8 新しい窓で開く（conhost がいる）', /conhost\.exe/i.test(tree), tree);
+		// SPAWN_SERVER_TEST_HIDE=1 のとき、窓は作られても、見えず、前面を奪わない
+		// (指定が無ければ、新しい窓が見えて、前面を奪う。実測 2026-11-01)
+		const seen = inspectWindows(pid);
+		const visibleOwned = seen.visible.filter((p) => seen.tree.includes(p));
+		assertEqual('8 起動した窓は見えない (非表示の指定が効く)', 0, visibleOwned.length);
+		assertTrue('8 起動した窓が前面を奪わない', !seen.tree.includes(seen.foreground), '前面の窓の持ち主 pid=' + seen.foreground + ' が、起動した子孫の中にいる');
 		// サーバーだけを止める（/T を付けない。Ctrl+C に近い）。/T を付けると、
 		// CreateProcessW で起動したものはサーバーの子なので道連れになる（計画 p260930-01 第 4 章）
 		kill(server.pid!, false);

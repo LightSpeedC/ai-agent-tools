@@ -15,6 +15,17 @@
 import { execFile } from 'node:child_process';
 
 const CREATE_NEW_CONSOLE = 0x10;
+const STARTF_USESHOWWINDOW = 0x1;
+const SW_HIDE = 0;
+
+/**
+ * SPAWN_SERVER_TEST_HIDE=1 のとき、起動する窓を非表示にする。試験が、作業中の画面と
+ * フォーカスを奪わないため (共通ルール「窓が要る試験は、非表示で裏に回す」)。
+ * 窓そのもの (conhost) は作られる (SW_HIDE で実測)。本番は指定せず、いつも見える窓
+ */
+function hideWindow(): boolean {
+	return process.env.SPAWN_SERVER_TEST_HIDE === '1';
+}
 
 function commandLine(command: string, title: string): string {
 	return 'cmd.exe /d /s /c "title ' + title + ' & ' + command + '"';
@@ -34,7 +45,10 @@ async function viaBunFfi(line: string, cwd: string): Promise<number> {
 		GetLastError: { args: [], returns: FFIType.u32 },
 	});
 	const si = new Uint8Array(104);
-	new DataView(si.buffer).setUint32(0, 104, true);
+	const siView = new DataView(si.buffer);
+	siView.setUint32(0, 104, true);
+	// dwFlags は 60 バイト目、wShowWindow は 64 バイト目 (x64 の配置)
+	if (hideWindow()) { siView.setUint32(60, STARTF_USESHOWWINDOW, true); siView.setUint16(64, SW_HIDE, true); }
 	const pi = new Uint8Array(24);
 	// CreateProcessW は lpCommandLine を書き換えることがあるので、書き込める領域で渡す
 	const cmd = Buffer.from(line + '\0', 'utf16le');
@@ -74,7 +88,7 @@ async function viaKoffi(line: string, cwd: string): Promise<number> {
 	const api = koffiApi!;
 	const pi: { hProcess?: unknown; hThread?: unknown; dwProcessId?: number } = {};
 	const cmd = Buffer.from(line + '\0', 'utf16le');
-	if (!api.create(null, cmd, null, null, 0, CREATE_NEW_CONSOLE, null, cwd, { cb: api.sizeofSi }, pi)) {
+	if (!api.create(null, cmd, null, null, 0, CREATE_NEW_CONSOLE, null, cwd, hideWindow() ? { cb: api.sizeofSi, dwFlags: STARTF_USESHOWWINDOW, wShowWindow: SW_HIDE } : { cb: api.sizeofSi }, pi)) {
 		throw new Error('CreateProcessW が失敗しました（' + api.lastError() + '）');
 	}
 	api.close(pi.hThread);
@@ -89,7 +103,7 @@ async function viaKoffi(line: string, cwd: string): Promise<number> {
 function viaStartProcess(line: string, cwd: string): Promise<number> {
 	const script = '$c = $env:SPAWN_LINE; $w = $env:SPAWN_CWD; Remove-Item Env:SPAWN_LINE, Env:SPAWN_CWD; '
 		+ '$a = $c.Substring($c.IndexOf(" ") + 1); '
-		+ '(Start-Process -FilePath cmd.exe -ArgumentList $a -WorkingDirectory $w -PassThru).Id';
+		+ '(Start-Process -FilePath cmd.exe -ArgumentList $a -WorkingDirectory $w -PassThru' + (hideWindow() ? ' -WindowStyle Hidden' : '') + ').Id';
 	return new Promise((resolve, reject) => {
 		execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', script],
 			{ encoding: 'utf8', timeout: 15000, windowsHide: true, env: { ...process.env, SPAWN_LINE: line, SPAWN_CWD: cwd } },
