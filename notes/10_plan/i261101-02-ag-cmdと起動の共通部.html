@@ -154,7 +154,7 @@
 <p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools の <code>bin/</code> (<code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> ・ <code>ag-trusted.cmd</code>) と、<code>src/</code> の起動の共通部 ・ <code>ag-trusted</code>。入力は、プロジェクト名の一部 (省略可) と、各エージェントの履歴の置き場 (読み取りのみ)。出力は、決めたフォルダで新しい窓に起動したエージェントと、<code>agy</code> の <code>settings.json</code> への信頼の書き足し (<code>ag-trusted</code> だけ)。</p>
 
 <div class="callout callout-important">
-	<p><strong>承認待ち (2026-11-01)。</strong>決めたことは第 1 章。<strong>この計画の中で決める点が 2 つ</strong> (85 ・ 86) ある。承認 (「実装して」) の前に、第 5 章で選ぶ。</p>
+	<p><strong>承認待ち (2026-11-01)。</strong>決めたことは第 1 章 (この計画の中で決める点の 85-A ・ 86-A を含む)。承認 (「実装して」) はまだ。</p>
 </div>
 
 <div class="toc">
@@ -181,6 +181,8 @@
 			<tr><td class="nowrap">84-A</td><td>共通部は TypeScript の 1 本。<code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> は薄い入口。判定は <code>node:test</code> の単体試験にする</td></tr>
 			<tr><td class="nowrap">利用者の指定</td><td><strong>起動の引数。</strong>続き: <code>agy --dangerously-skip-permissions --mode auto -c</code>。新規は <code>-c</code> を付けない。<code>--project</code> ・ <code>--new-project</code> は使わない</td></tr>
 			<tr><td class="nowrap">利用者の指定</td><td><strong>続きにする条件。</strong>既存のフォルダでも、<strong>そのエージェントの履歴が無ければ続きにしない</strong> (<code>agy</code> は <code>-c</code> なし、<code>cx</code> は <code>resume</code> なし、<code>cc</code> は <code>-c</code> なし)。別のエージェントが先にフォルダを作ることがあるため</td></tr>
+			<tr><td class="nowrap">85-A</td><td>共通部が、決めて、<strong>起こすところまで</strong>行う。環境の整理も、子プロセスの設定で行う。cmd は 1 行。結果の文字を cmd に返さないので、日本語のフォルダ名が化けない (2026-11-01、第 5 章)</td></tr>
+			<tr><td class="nowrap">86-A</td><td>名前を渡さずに呼んだときは、3 本とも <code>[NG]</code> のメッセージを出して終了する (<code>cc</code> の動きに揃える)。<code>cx</code> は、無言で終わらなくなる (仕様の変更。2026-11-01、第 5 章)</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -200,7 +202,7 @@
 	<ol>
 		<li><strong>置き場</strong> (<code>CC_ROOT</code>。未設定のとき <code>W:\</code>) があるか確かめる。無ければ <code>[NG]</code> を出して終了コード 1</li>
 		<li><strong>年のフォルダ</strong> (<code>W:\&lt;yyyy&gt;</code>) を、無ければ作る</li>
-		<li><strong>名前が無いとき</strong>は、第 5 章の 86 に従う</li>
+		<li><strong>名前が無いとき</strong>は、<code>[NG]</code> のメッセージを出して終了する (86-A)</li>
 		<li><strong>探す。</strong>置き場の直下で <code>*&lt;名前&gt;*</code> に当たるフォルダ → 年のフォルダの中で当たるフォルダ → どちらも無ければ、年のフォルダの中に <code>&lt;yyyymmdd&gt;-&lt;名前&gt;</code> を作る。複数に当たったときの選び方は、いまの動きを試験で固定してから、そのまま揃える</li>
 		<li><strong>そのエージェントの履歴を見る</strong> (下の表)。あれば続き、無ければ新規</li>
 		<li><strong>起こす</strong> (下の表)</li>
@@ -236,7 +238,7 @@
 	<h2>入口の cmd</h2>
 	<ul>
 		<li><code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> は、<code>node "%~dp0..\src\agent-launch\main.ts" &lt;エージェント&gt; %*</code> の 1 行 (<code>cx.cmd</code> の画面消去 <code>cls</code> は cmd 側に残す)</li>
-		<li>作業用の変数 (<code>YMD</code> ・ <code>Y</code> ・ <code>XMD</code> ・ <code>HMSC</code> ・ <code>XHM</code>) と、<code>CC_ROOT</code> の設定を、cmd からなくす。<strong>窓の環境変数とカレントは、前後で変わらない</strong> (80-A。85-A の構成なら、作りとして満たされる)</li>
+		<li>作業用の変数 (<code>YMD</code> ・ <code>Y</code> ・ <code>XMD</code> ・ <code>HMSC</code> ・ <code>XHM</code>) と、<code>CC_ROOT</code> の設定を、cmd からなくす。<strong>窓の環境変数とカレントは、前後で変わらない</strong> (80-A。85-A に決まったので、作りとして満たされる)</li>
 		<li>置き換えるときに、古い処理を cmd から<strong>削除する</strong> (置き換えの手順に入れる)</li>
 	</ul>
 
@@ -298,7 +300,7 @@
 <section class="ch05" id="ch05">
 	<h1>決める点と、確かめること</h1>
 
-	<h2>85: 共通部が、どこまでを受け持つか</h2>
+	<h2>85: 共通部が、どこまでを受け持つか (2026-11-01、85-A に決定)</h2>
 	<p>履歴の判定は、JSON や <code>sqlite</code> を読む。結果 (フォルダ ・ 続きか新規か) を cmd に返す形にすると、<strong>日本語のフォルダ名が文字化けする</strong>おそれがある。共通部が出す文字は UTF-8 で、cmd の <code>for /f</code> は窓のコードページで読むため。コードページは変えない決まり (共通ルール「コンソールのコードページを変更しない」)。</p>
 	<div class="tablewrap">
 	<table>
@@ -311,7 +313,7 @@
 	</div>
 	<p><strong>推す理由</strong>: 化ける道を作らず、80-A を作りとして満たせる。cmd が薄くなる。<strong>弱点</strong>は、新しい窓の起こし方 (<code>start</code> の引数の引用) を、node から再現する作業が増えること。代役で試験する。</p>
 
-	<h2>86: 名前を渡さずに呼んだとき</h2>
+	<h2>86: 名前を渡さずに呼んだとき (2026-11-01、86-A に決定)</h2>
 	<p>いまは、<code>cc</code> が <code>[NG] プロジェクトはありません。</code> を出して終わる。<code>cx</code> は何も言わず終わる (年のフォルダへ移るだけ)。</p>
 	<div class="tablewrap">
 	<table>
