@@ -152,7 +152,7 @@
 	<div class="inner">
 		<h1>less 計画</h1>
 		<p class="lead">UTF-8 出力を DOS の <code>more</code> で受けると文字化けする問題を、UTF-8 セーフなページャーで解決する。</p>
-		<p class="date">📅 作成: 2026-09-17 / 更新: 2026-09-19</p>
+		<p class="date">📅 作成: 2026-09-17 / 更新: 2026-11-01</p>
 	</div>
 </div>
 
@@ -407,6 +407,7 @@ chcp</code></pre>
 			<li><strong>端末の桁数（<code>process.stdout.columns</code>）が変わったら作り直す必要がある</strong>が、リサイズの検知は今回のツールでは未対応（別の話として残す）</li>
 		</ul>
 		<p><strong>未実装。</strong>着手は今回の一連の修正の確認が済んでからでよい（利用者の指示）。</p>
+		<p><strong>結果（2026-11-01、71-A）。</strong>利用者の承認を受けて、B の設計どおりに実装した。折り返しの計算は <code>src/less/wrap.ts</code>、表示は <code>src/less/main.ts</code>。現在の姿は <a href="../50_spec/lessの折り返し.html">less の折り返し</a>（詳細仕様）にある。<strong>計画から足した判断が 2 つ。</strong>(1) TAB は、8 桁の区切りまでの空白に広げて数える（端末が広げる幅と同じにしないと、画面行の数が狂うため）。(2) 改行なしで終わる最後の行に <code>[改行なし] [EOF]</code> を足すと桁数を超えるときは、別の 1 行に出す（はみ出して端末が折り返すと、画面行の数が狂うため）。ステータス行の ％ は、画面行の数を基準にした。リサイズへの対応は、計画どおり別の話として残した。</p>
 	</div>
 
 	<div class="callout">

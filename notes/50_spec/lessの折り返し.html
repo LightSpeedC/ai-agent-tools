@@ -1,0 +1,217 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>less の折り返し (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch03{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>less の折り返し (ai-agent-tools)</h1>
+		<p class="lead"><code>less</code> が、端末の桁数を超える行を、どう数え、どう出すか。</p>
+		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-01</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p>詳細仕様 (いまの姿)。使い方は <code>TOOLS-USAGE</code> の「ページングして読む（less）」にあり、ここには、その結論の根拠と内訳を書く。実装は <code>src/less/wrap.ts</code> (計算) と <code>src/less/main.ts</code> (表示)。</p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">折り返しの規則</a></li>
+		<li class="ch02"><a href="#ch02">画面行と EOF の表示</a></li>
+		<li class="ch03"><a href="#ch03">限界と、確かめていないこと</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>折り返しの規則</h1>
+	<p>端末は、桁数を超えた行を自動で 2 行以上に折り返す。画面の行を「論理行 1 つ＝画面 1 行」で数えると、以降の行番号とカーソル位置がずれる。そこで、<strong>論理行を、端末が使う 1 行ずつ (画面行) に、先に分けて持つ</strong>。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>規則</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">桁数</td><td>起動したときの <code>process.stdout.columns</code>。取れなければ 80。2 未満は 2 に直す (2 桁文字が 1 つも置けなくならないため)</td></tr>
+			<tr><td class="nowrap">表示幅</td><td>ASCII ・ 半角ｶﾀｶﾅは 1 桁、それ以外は 2 桁 (<code>displayWidth</code>)。サロゲートペア (絵文字等) は、1 文字で 2 桁</td></tr>
+			<tr><td class="nowrap">折り返す位置</td><td>ちょうど桁数まで入る行は、折り返さない (端末は、行末ちょうどのあとに改行が来ても、1 行分しか進めない)。桁数を超える文字から、次の画面行に送る</td></tr>
+			<tr><td class="nowrap">右端に 1 桁だけ残る所</td><td>そこへ 2 桁文字が来るときは、その 1 桁へ<strong>空白を入れて</strong>折り返す。端末が「置けない文字は次の行へ送る」のと同じ結果になり、文字が分断されない。この空白は、画面行の末尾に残る</td></tr>
+			<tr><td class="nowrap">TAB</td><td>8 桁の区切りまでの空白に広げる (端末が広げる幅と同じにするため)。桁数を超えて広げない。行がちょうど埋まっているときは、次の画面行の先頭から数える</td></tr>
+			<tr><td class="nowrap">空行</td><td>画面行 1 つとして残る</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>画面行と EOF の表示</h1>
+	<ul>
+		<li>入力を全部読んだあと、<strong>1 回だけ</strong>、論理行から画面行の配列 (<code>rows</code>) を作る。スクロール量 ・ 表示位置 ・ ステータス行の ％ は、すべてこの <code>rows</code> を基準に数える</li>
+		<li>出力先が端末でないとき (素通し) は、折り返さない。論理行のまま、UTF-8 で流す</li>
+	</ul>
+	<h2>[EOF] と [改行なし] の出す場所</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>入力の終わり</th><th>出す場所</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">改行で終わる</td><td>実データの後ろに続く別の 1 行 (仮想行) に <code>[EOF]</code></td></tr>
+			<tr><td class="nowrap">改行なしで終わり、最後の画面行に収まる</td><td>その行の末尾に <code>[改行なし] [EOF]</code></td></tr>
+			<tr><td class="nowrap">改行なしで終わり、収まらない</td><td>はみ出すと端末が折り返して画面行の数が狂うため、別の 1 行に <code>[改行なし] [EOF]</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>仮想行は、スクロール量と表示位置の計算にそのまま混ぜる。「画面に余裕があるときだけ出す」という特別扱いは持たない。</p>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>限界と、確かめていないこと</h1>
+	<ul>
+		<li><strong>端末の大きさを変えても、折り返しは起動したときの桁数のまま</strong> (リサイズへの対応は未実装)</li>
+		<li><strong>色などのエスケープシーケンスを含む行は、見えない文字も幅に数える。</strong>折り返す位置がずれる。この限界は、折り返しを入れる前からあり、今回も直していない</li>
+		<li>結合文字 ・ ゼロ幅文字は、非 ASCII として 2 桁に数える (近似)</li>
+		<li><strong>実際の画面での見え方は、利用者の実機での確認が済んでいない。</strong>自動試験は、折り返しの計算 (<code>wrapLines</code>) と [EOF] の出す場所 (<code>eofPlacement</code>) だけ。キー操作による画面の遷移は、対話が要るため自動化していない</li>
+	</ul>
+	<h2>経緯</h2>
+	<ul>
+		<li>折り返しの方式 (B 案: 1 論理行が使う画面行を計算に入れる) の採用と設計: <a href="../10_plan/i260917-01-less.html">less 計画</a></li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

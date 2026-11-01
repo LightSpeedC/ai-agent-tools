@@ -17,24 +17,10 @@ import { parseArgs } from '../lib/args.ts';
 import { enableWindowsConsoleVt } from '../lib/win-console.ts';
 import { detect } from '../lib/detector.ts';
 import { decode } from '../lib/codec.ts';
+import { displayWidth, eofPlacement, wrapLines } from './wrap.ts';
 
 const ExitOk = 0;
 const ExitBadArgs = 2;
-
-/**
- * 表示幅を数える（ASCII・半角ｶﾀｶﾅは1桁、それ以外は2桁。実機で確認済み）。
- * 手でスペースを数えて決め打ちすると、ラベルを変えたときに数え直しを
- * 忘れて桁がずれる（実際に踏んだ。共通ルール「全角・半角混在のテキストを
- * 桁揃えするとき」を参照）
- */
-function displayWidth(s: string): number {
-	let w = 0;
-	for (const ch of s) {
-		const c = ch.codePointAt(0) ?? 0;
-		w += (c < 0x80 || (c >= 0xff61 && c <= 0xff9f)) ? 1 : 2;
-	}
-	return w;
-}
 
 /** label を target 桁まで空白で埋める */
 function pad(label: string, target: number): string {
@@ -123,7 +109,16 @@ async function main(argv: string[]): Promise<number> {
 		return ExitOk;
 	}
 
-	return page(lines, keyStream, hasTrailingNewline(text));
+	// 端末の桁数を超える行は、端末が自動で 2 行以上に折り返す。画面行の数を
+	// 先に数えておかないと、行番号とカーソル位置が以降ずれる（計画 B）
+	const columns = terminalColumns();
+	return page(wrapLines(lines, columns), keyStream, hasTrailingNewline(text), columns);
+}
+
+/** 端末の桁数。取れないときは 80 */
+function terminalColumns(): number {
+	const cols = process.stdout.columns;
+	return cols != null && cols > 0 ? cols : 80;
 }
 
 /**
@@ -236,38 +231,46 @@ function clampTop(top: number, lineCount: number, height: number): number {
 	return top > max ? max : top;
 }
 
-function page(lines: string[], key: KeySource, hasTrailingNewline: boolean): Promise<number> {
+/**
+ * rows は、折り返し済みの画面行（端末が 1 行ずつ使う文字列）。論理行ではない。
+ * 長い行が 2 行以上を使っても、スクロール量と行番号は画面行で数える
+ */
+function page(rows: string[], key: KeySource, hasTrailingNewline: boolean, columns: number): Promise<number> {
 	return new Promise((resolve) => {
 		let top = 0;
 
 		const EofMarker = '\x1b[7m[EOF]\x1b[0m';
 
 		/**
-		 * 改行ありで終わる場合、[EOF] を「実データの後ろに続くもう1行」として
-		 * 数える。スクロール量・top の可動範囲（clampTop）の計算にそのまま
-		 * 混ぜられるため、「画面に余裕があるときだけ表示する」ような特別扱いが
-		 * 要らない（実データがちょうど画面いっぱいになる回でも、この仮想行の
-		 * ぶんだけ普通に1行分スクロールして表示できる）
+		 * [EOF] を「実データの後ろに続くもう1行」として数える場合がある（改行ありで
+		 * 終わるとき、または改行なしで終わって最後の画面行に収まらないとき）。
+		 * スクロール量・top の可動範囲（clampTop）の計算にそのまま混ぜられるため、
+		 * 「画面に余裕があるときだけ表示する」ような特別扱いが要らない（実データが
+		 * ちょうど画面いっぱいになる回でも、この仮想行のぶんだけ普通に1行分
+		 * スクロールして表示できる）
 		 */
-		const virtualLength = lines.length + (hasTrailingNewline ? 1 : 0);
+		const placement = eofPlacement(rows, columns, hasTrailingNewline);
+		const virtualLength = rows.length + (placement.extra ? 1 : 0);
 
 		/**
-		 * 表示する行のテキスト。idx は lines.length（＝仮想行）まで受け付ける。
-		 * 改行が無いまま終わっている実データの最終行にだけ、末尾へ
-		 * 「[改行なし] [EOF]」を付け足す（同じ行に収まるため仮想行を増やさない）
+		 * 表示する行のテキスト。idx は rows.length（＝仮想行）まで受け付ける。
+		 * 改行が無いまま終わっていて、最後の画面行に収まるときだけ、その行の末尾へ
+		 * 「[改行なし] [EOF]」を付け足す（同じ行に収まるため仮想行を増やさない）。
+		 * 収まらないときは、はみ出して端末が折り返すと画面行の数が狂うため、
+		 * 別の 1 行に出す
 		 */
 		function displayLine(idx: number): string {
-			if (idx === lines.length) { return EofMarker; }
-			const text = lines[idx];
-			if (idx !== lines.length - 1 || hasTrailingNewline) { return text; }
+			if (idx === rows.length) { return hasTrailingNewline ? EofMarker : '[改行なし] ' + EofMarker; }
+			const text = rows[idx];
+			if (idx !== rows.length - 1 || !placement.inline) { return text; }
 			return text + ' [改行なし] ' + EofMarker;
 		}
 
 		/** ステータス行の文字列（前後の反転表示の記号は含まない） */
 		function statusText(): string {
 			const h = pageHeight();
-			const shown = Math.min(top + h, lines.length);
-			const pct = lines.length === 0 ? 100 : Math.round((shown / lines.length) * 100);
+			const shown = Math.min(top + h, rows.length);
+			const pct = rows.length === 0 ? 100 : Math.round((shown / rows.length) * 100);
 			return '-- less (' + pct + '%) q で終了 | Page Up | ↑ | ↓・Enter | Page Down・Space --';
 		}
 
