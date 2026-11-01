@@ -214,16 +214,16 @@
 <section class="ch01" id="ch01">
 	<h1>運用・方針の決定事項</h1>
 
-	<details open>
-		<summary><span class="badge b-warn">着手</span><span class="no">i261101-04</span>html2md: li の中の表で、太字のセルの次のセルが太字で始まると <code>****</code> が残る (ai-chat-lite の i261101-03)</summary>
+	<details>
+		<summary><span class="badge b-ok">済</span><span class="no">i261101-04</span>html2md: li の中の表で、太字のセルの次のセルが太字で始まると <code>****</code> が残る (ai-chat-lite の i261101-03)</summary>
 		<div class="issue-body">
 			<p>2026-11-01 に <code>ai-chat-lite</code> から依頼 (ai-chat-lite #1737)。check-markdown で 1 か所再現するとのこと。</p>
 			<p><strong>原因 (実測)。</strong>ai-chat-lite の <code>issues-archive.html</code> の i260917-01 は、<code>&lt;li&gt;</code> の中に表を持つ。<code>convertList</code> (<code>src/html2md/table.ts</code>) は li の中身を 1 行のテキストにするため、表のセルが区切りなしでつながり、<code>**node ・ Rust の 2 本****☑**</code> になる。表の中 (<code>convertTable</code>) では起きない。</p>
 			<ul>
 				<li><span class="badge b-ok">済</span>再現と、❌Red のテスト <code>tests/cases/strong-cell-in-li</code> (期待値は手書き) を先に書いた。落ちるのを見た</li>
 				<li><span class="badge b-ok">済</span>直した: <code>src/html2md/inline.ts</code> の「残ったタグを落とす」の前で、<code>&lt;/td&gt;</code> ・ <code>&lt;/th&gt;</code> を空白にする。✅Green</li>
-				<li><span class="badge b-warn">着手</span>全件テスト、commit ・ push、報告元への返信と、変換し直しての確認依頼</li>
-				<li><span class="badge b-none">未</span>報告元 (ai-chat-lite) の確認 (確認が取れるまで済にしない)</li>
+				<li><span class="badge b-ok">済</span>全件テスト (29 本成功)、commit ・ push (688fbf5)、報告元への返信と確認依頼 (#1746)</li>
+				<li><span class="badge b-ok">済</span>報告元 (ai-chat-lite) の確認 (#1747、2026-11-02): 変換し直し、check-markdown で <code>issues-archive.md</code> の崩れが 0 件になった</li>
 				<li><span class="badge b-none">未</span>決めること: li の中の表を、1 行に潰さず表のまま出すか。いまは潰す (読みにくいが、崩れはしない)。仕様を決めるので、必要なら別に案を出す</li>
 			</ul>
 		</div>
