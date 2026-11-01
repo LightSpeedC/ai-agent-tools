@@ -154,7 +154,7 @@
 <p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools の <code>bin/</code> (<code>cc.cmd</code> ・ <code>cx.cmd</code> ・ <code>ag.cmd</code> ・ <code>ag-trusted.cmd</code>) と、<code>src/</code> の起動の共通部 ・ <code>ag-trusted</code>。入力は、プロジェクト名の一部 (省略可) と、各エージェントの履歴の置き場 (読み取りのみ)。出力は、決めたフォルダで新しい窓に起動したエージェントと、<code>agy</code> の <code>settings.json</code> への信頼の書き足し (<code>ag-trusted</code> だけ)。</p>
 
 <div class="callout callout-important">
-	<p><strong>承認待ち (2026-11-01)。</strong>決めたことは第 1 章 (この計画の中で決める点の 85-A ・ 86-A を含む)。承認 (「実装して」) はまだ。</p>
+	<p><strong>承認待ち (2026-11-01)。</strong>決めたことは第 1 章 (この計画の中で決める点の 85-A ・ 86-A ・ 87-B を含む)。承認 (「実装して」) はまだ。</p>
 </div>
 
 <div class="toc">
@@ -183,7 +183,7 @@
 			<tr><td class="nowrap">利用者の指定</td><td><strong>続きにする条件。</strong>既存のフォルダでも、<strong>そのエージェントの履歴が無ければ続きにしない</strong> (<code>agy</code> は <code>-c</code> なし、<code>cx</code> は <code>resume</code> なし、<code>cc</code> は <code>-c</code> なし)。別のエージェントが先にフォルダを作ることがあるため</td></tr>
 			<tr><td class="nowrap">85-A</td><td>共通部が、決めて、<strong>起こすところまで</strong>行う。環境の整理も、子プロセスの設定で行う。cmd は 1 行。結果の文字を cmd に返さないので、日本語のフォルダ名が化けない (2026-11-01、第 5 章)</td></tr>
 			<tr><td class="nowrap">86-A</td><td>名前を渡さずに呼んだときは、3 本とも <code>[NG]</code> のメッセージを出して終了する (<code>cc</code> の動きに揃える)。<code>cx</code> は、無言で終わらなくなる (仕様の変更。2026-11-01、第 5 章)</td></tr>
-			<tr><td class="nowrap">タイトル</td><td>新しい窓のタイトルを、3 本とも <code>&lt;エージェント名&gt; &lt;フォルダ名&gt;</code> の形に揃える (形は 2026-11-01、利用者の判断。<strong>エージェント名の表記は、第 5 章の 87 で決める</strong>)</td></tr>
+			<tr><td class="nowrap">タイトル</td><td>新しい窓のタイトルを、3 本とも <code>&lt;エージェント名&gt; &lt;フォルダ名&gt;</code> の形に揃える (形は 2026-11-01、利用者の判断。<strong>エージェント名は <code>cc</code> ・ <code>cx</code> ・ <code>ag</code></strong> (87-B。2026-11-01、第 5 章))</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -235,7 +235,7 @@
 	</table>
 	</div>
 	<p>起こすときのフォルダ (カレント) は、<strong>共通部が子プロセスの設定で渡す</strong>。呼んだ窓のカレントは動かさない。</p>
-	<p><strong>窓のタイトル</strong>は、3 本とも <code>start "&lt;エージェント名&gt; &lt;フォルダ名&gt;" …</code> の形にする。<code>start</code> は最初の引用符つきの引数をタイトルとして扱うので、<strong>タイトルは必ず引用符で囲む</strong> (空白や日本語を含んでも、コマンドと取り違えない)。エージェント名の表記は 87。</p>
+	<p><strong>窓のタイトル</strong>は、3 本とも <code>start "&lt;エージェント名&gt; &lt;フォルダ名&gt;" …</code> の形にする。<code>start</code> は最初の引用符つきの引数をタイトルとして扱うので、<strong>タイトルは必ず引用符で囲む</strong> (空白や日本語を含んでも、コマンドと取り違えない)。エージェント名は <code>cc</code> ・ <code>cx</code> ・ <code>ag</code> (87-B)。例: <code>start "cc 20261101-foo" …</code></p>
 
 	<h2>入口の cmd</h2>
 	<ul>
@@ -328,7 +328,7 @@
 	</div>
 	<p><strong>推す理由</strong>: 無言で終わると、打ち間違いに気づけない。3 本で動きが揃う。</p>
 
-	<h2>87: 窓のタイトルの「エージェント名」の表記</h2>
+	<h2>87: 窓のタイトルの「エージェント名」の表記 (2026-11-01、87-B に決定)</h2>
 	<p>タイトルの形は <code>&lt;エージェント名&gt; &lt;フォルダ名&gt;</code> に決まった (利用者の判断)。名前の表記が 2 通りある。</p>
 	<div class="tablewrap">
 	<table>
