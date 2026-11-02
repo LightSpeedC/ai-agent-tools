@@ -1,0 +1,421 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>JSONL 二分探索ツール 計画 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>JSONL 二分探索ツール 計画 (ai-agent-tools)</h1>
+		<p class="lead">セッションの JSONL が数百 MB になっても、時刻や位置で必要な範囲だけを速く読めるようにする。バイト位置へ飛び、改行で行頭に合わせる二分探索の CLI を、TypeScript (node ・ bun) と Rust で作る案。</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-03</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools (共有ツールの置き場)。入力は、Claude Code のセッションログ (JSONL。<code>~/.claude/projects/&lt;プロジェクト&gt;/&lt;セッション&gt;.jsonl</code> と、各プロジェクトの <code>etc/history/jsonl/</code> の写し)。出力は、時刻・位置で範囲を絞って読む共有 CLI の案 (TypeScript 版と Rust 版)。<strong>この計画は案と決めることの提示まで。承認をいただくまで実装しない。</strong></p>
+
+<div class="callout callout-important">
+	<p><strong>結論 (推奨)</strong>: <strong>二分探索が効くのは「時刻や位置で範囲を絞る」問い</strong> (この時間帯の発言・最後の N 件・この位置の 1 行)。語の検索は並びが無く二分探索できないので、<strong>範囲を絞ってから走査する</strong>。<strong>時刻の並びは厳密には単調でない</strong> (実測で最大 560 秒の逆戻り) ので、<strong>余裕 (マージン) を持たせた二分探索で入口を決め、そこから前方へ走査して正確に絞る</strong>。<strong>まず TypeScript で作り、実測してから Rust で同じ出力のものを作る</strong> (突き合わせテストの相手がある状態で移す)。</p>
+</div>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">目的と実測</a></li>
+		<li class="ch02"><a href="#ch02">何が二分探索できるか</a></li>
+		<li class="ch03"><a href="#ch03">ツールの案</a></li>
+		<li class="ch04"><a href="#ch04">決めること</a></li>
+		<li class="ch05"><a href="#ch05">進め方とリスク</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>目的と実測</h1>
+	<h2>やりたいこと</h2>
+	<ul>
+		<li>セッションの JSONL が長くなる (file-manager 等) と、ふつうの検索は遅い。<strong>バイト位置で読み、改行で行頭に合わせ、二分探索で見つける</strong></li>
+		<li>実装は <strong>node ・ bun の TypeScript と、Rust</strong> の両方</li>
+		<li>AI エージェントが「あの時刻の前後」「最後の数十件」を、ログ全体を読まずに取れる</li>
+	</ul>
+	<h2>実測 (このマシンのセッションログ)</h2>
+	<p>計測は一時スクリプトで行い、結果の数だけを使った (中身は表示していない)。大きい 2 本の値は次のとおり。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>ai-agent-tools の最大</th><th>file-manager の最大</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">大きさ</td><td class="num">102.0 MB</td><td class="num">600.8 MB</td></tr>
+			<tr><td class="nowrap">行数</td><td class="num">36,023 行</td><td class="num">216,546 行</td></tr>
+			<tr><td class="nowrap">行の長さ (中央値 ・ 99 パーセンタイル ・ 最大)</td><td class="num">669 B ・ 51 KB ・ 408 KB</td><td class="num">850 B ・ 30 KB ・ 1,066 KB</td></tr>
+			<tr><td class="nowrap">時刻 (<code>timestamp</code>) の無い行</td><td class="num">13,246 行 (37%)</td><td class="num">97,297 行 (45%)</td></tr>
+			<tr><td class="nowrap">前の行より古い時刻の行 (逆戻り)</td><td class="num">1,793 回 ・ 最大 379 秒 ・ 中央値 0 秒</td><td class="num">15,706 回 ・ 最大 560 秒 ・ 中央値 0 秒</td></tr>
+			<tr><td class="nowrap">時刻の範囲</td><td class="num">約 880.7 時間</td><td class="num">約 344.5 時間</td></tr>
+			<tr><td class="nowrap">生の走査 (8 MB ずつ読み、改行を探す)</td><td class="num">約 0.1 秒</td><td class="num">約 0.5〜0.7 秒</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>ほかの大きなログは、oracle-cloud が 217.5 MB、ai-chat-lite が 199.3 MB、ai-agent-rules が 121.2 MB。</p>
+	<h2>ふつうの検索の時間 (ai-agent-tools の最大、102 MB)</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>方法</th><th>時間</th><th>備考</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>Select-String -SimpleMatch</code></td><td class="num">約 2.4 秒</td><td>語を含む行を拾う</td></tr>
+			<tr><td class="nowrap"><code>Get-Content</code> ＋ <code>Where-Object</code></td><td class="num">約 2.5 秒</td><td>同上</td></tr>
+			<tr><td class="nowrap">node の <code>readline</code> ＋ <code>JSON.parse</code></td><td class="num">約 0.63 秒</td><td>全行を JSON として読み、種類で絞り語で探す</td></tr>
+			<tr><td class="nowrap">生の走査 (改行だけ数える)</td><td class="num">約 0.1 秒</td><td>JSON を読まない</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li>600 MB に比例すれば、<code>Select-String</code> は十数秒、<code>readline</code> ＋ <code>JSON.parse</code> は数秒 (<strong>見込み。この 2 つは 600 MB では未測定</strong>)</li>
+		<li>ただし、<strong>全体を走査する速さは、JSON を読まなければ 600 MB でも 1 秒未満</strong>。二分探索が効くのは、<strong>走査を避けられる問い</strong>だ</li>
+	</ul>
+	<div class="callout callout-important">
+		<p><strong>見立て</strong>: 「遅い」の中身は、ツールの選び方 (全行を文字列にして比べる・全行を JSON にする) が大きい。それでも、時間帯や位置で絞れる問いは二分探索なら<strong>ミリ秒</strong> (600 MB で約 30 回の読み) に収まり、読む量も数百 KB で済む。AI の文脈に入れるべき量を小さくできる点が、速さ以上の利点になる。</p>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>何が二分探索できるか</h1>
+	<h2>改行で位置を合わせる仕組み</h2>
+	<ul>
+		<li><strong>任意のバイト位置 p から次の改行 (0x0A) まで読み進めると、行頭に合う</strong>。UTF-8 では 0x0A が複数バイト文字の途中に現れない (後続バイトは 0x80〜0xBF) ので、日本語・絵文字の途中に飛んでも壊れない</li>
+		<li><strong>JSONL の 1 行の中に生の改行は無い</strong> (文字列中の改行は <code>\n</code> と書かれる)。この前提は、上の 2 本で行数の数え方が一致していることを確かめた範囲では成り立つ</li>
+		<li>行が長い (最大 1 MB 超) ので、位置合わせの読みは 64 KB から倍々に増やす</li>
+		<li>書き込み中の (生きている) セッションは、<strong>最後の行が途中のことがある</strong>。最後の改行で終わる位置までを対象にする</li>
+	</ul>
+	<h2>問いの種類ごとの方法</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>問い</th><th>方法</th><th>かかる読みの量</th></tr></thead>
+		<tbody>
+			<tr><td>この時刻の前後の行が欲しい</td><td><strong>二分探索</strong> (時刻)。マージンを引いた時刻で入口を決め、前方へ走査して正確に絞る</td><td>約 30 回の位置合わせ ＋ 範囲の分</td></tr>
+			<tr><td>この時間帯の発言を全部</td><td><strong>二分探索</strong>で入口を決め、終わりの時刻まで走査</td><td>範囲の分</td></tr>
+			<tr><td>最後の N 件</td><td><strong>末尾から逆向きに</strong>塊を読み、改行を数える</td><td>N 行ぶん</td></tr>
+			<tr><td>この位置 (バイト) の 1 行</td><td>位置合わせの 1 回</td><td>1 行ぶん</td></tr>
+			<tr><td>この語を含む行 (時間帯の指定なし)</td><td><strong>二分探索できない</strong> (並びが無い)。全走査 (メモリは一定)</td><td>全体 (600 MB で 1 秒未満の見込み)</td></tr>
+			<tr><td>この語を含む行 (時間帯の指定あり)</td><td>二分探索で範囲を絞ってから走査</td><td>範囲の分</td></tr>
+			<tr><td>行番号 N の行</td><td>二分探索できない (行の長さがばらばら)。位置か時刻で指す</td><td>—</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h2>時刻の並びは厳密には単調でない</h2>
+	<ul>
+		<li>時刻のある行でも、<strong>前の行より古い</strong>ことがある (2 本で 1,793 回と 15,706 回。最大は 379 秒と 560 秒)。中央値は 0 秒で、ほぼ整列していて、時々少し戻る形</li>
+		<li><strong>時刻の無い行が 4 割前後</strong>ある (<code>custom-title</code> ・ <code>agent-name</code> ・ <code>mode</code> ・ <code>permission-mode</code> ・ <code>bridge-session</code> ・ <code>api-request-blob</code> ・ <code>last-prompt</code> ・ <code>cost-state</code> ・ <code>tools-used</code> ・ <code>atis-latch</code>)。二分探索の途中で止まった行に時刻が無ければ、<strong>時刻のある次の行まで読み進める</strong></li>
+		<li>厳密な二分探索は、逆戻りで入口を取りこぼす。<strong>マージン M を引いた時刻 (T − M) 以上の最初の行を二分探索で見つけ、そこから前方へ走査して、T 以上の行を正確に拾う</strong>。M が逆戻りの最大より大きければ、取りこぼさない</li>
+		<li>M の既定は、実測の最大 (560 秒) の約 3 倍の 30 分 (決めること 101)。実測が 2 本だけなので、<code>--margin</code> で変えられるようにする</li>
+		<li>時刻の範囲が長い (約 880 時間) のは、<strong>再開 (resume) したセッションがつながっているため</strong>と見込まれる (確かめていない)。範囲は 1 本の中で、おおむね前から後ろへ進む</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>ツールの案</h1>
+	<h2>コマンド (案。名前は決めること 104)</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>操作</th><th>例</th><th>中身</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">概要</td><td><code>jsonl-seek stat &lt;file&gt;</code></td><td>大きさ・最初と最後の時刻・おおよその行数 (行数は標本から推定。数え切るなら全走査)</td></tr>
+			<tr><td class="nowrap">時刻で入る</td><td><code>jsonl-seek at &lt;file&gt; "11/02 06:47"</code></td><td>その時刻以上の最初の行。位置 (バイト) を付けて返す</td></tr>
+			<tr><td class="nowrap">範囲</td><td><code>jsonl-seek range &lt;file&gt; --from "11/02 06:00" --to "11/02 07:00" [--type user] [--grep 語]</code></td><td>時間帯の行を、種類や語で絞って返す</td></tr>
+			<tr><td class="nowrap">末尾</td><td><code>jsonl-seek tail &lt;file&gt; -n 30</code></td><td>最後の N 行 (最後の途中の行は除く)</td></tr>
+			<tr><td class="nowrap">位置で 1 行</td><td><code>jsonl-seek show &lt;file&gt; --offset 123456</code></td><td>その位置を含む 1 行の全文</td></tr>
+			<tr><td class="nowrap">語で探す</td><td><code>jsonl-seek find &lt;file&gt; 語 [--from … --to …]</code></td><td>範囲を絞って走査。結果に位置を付ける</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>時刻の書き方は JST</strong> (<code>月/日 時:分</code> または <code>yyyy/mm/dd hh:mm:ss</code>)。ログ内の時刻は UTC なので、ツールが変換する (共通ルール「会話中で日時を報告するときはJST」)</li>
+		<li><strong>結果にバイト位置を付ける</strong>。あとから <code>show --offset</code> で 1 回の読みで再取得できる (位置指定の読みを、使い回せる形にする)</li>
+		<li><strong>既定の出力は 1 行 1 件の短い形</strong> (位置 ・ 時刻 ・ 種類 ・ 先頭 300 文字ほど)。最大 1 MB 超の行が AI の文脈を使い切らないように、全文は <code>show</code> で取る (決めること 102)。<code>--json</code> で機械向けの出力も出す</li>
+		<li><strong>パスは <code>~</code> に伏せて表示する</strong> (共通ルール「フルパスを出さない」)。行の中身にユーザプロファイル配下のパスがあれば、既定で <code>~</code> に置き換える。<code>--raw</code> で生のまま出す</li>
+		<li><strong>プロジェクト名で選べるようにする</strong> (<code>--project file-manager</code>)。<code>~/.claude/projects</code> 配下のセッションから、最後の時刻 (末尾の標本) で選ぶ。確認なしで参照してよい範囲 (共通ルール「プロジェクトフォルダ外へのアクセス」) の中で動く</li>
+		<li><strong>読み取り専用</strong>。ログを書き換えない。開いたら閉じる。生きているセッションの追記と競合しない (開いた時点の大きさを使う)</li>
+		<li>Claude Code の JSONL の形 (<code>type</code> ・ <code>message</code>) への依存は、<strong>表示用の抽出に限る</strong>。抽出に失敗した行は、生の行を返す (形は版で変わりうる)</li>
+	</ul>
+	<h2>実装の分担</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>実装</th><th>役目</th><th>要点</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">TypeScript (bun ・ node)</td><td>仕様を固める本命の最初の実装。ほかの共有ツールと同じ入口 (<code>bin/</code>) に置く</td><td><code>fs.readSync</code> の位置指定と <code>Buffer.indexOf(0x0A)</code>。<strong>同期 API を使うので、固まらないよう上限を付ける</strong> (共通ルール「同期 API は、そのプロセスの非同期処理を止める」)。bun ・ node の両方で通す</td></tr>
+			<tr><td class="nowrap">Rust</td><td>同じ出力を出す別の実装。TypeScript 版の結果と突き合わせる</td><td><code>File</code> の <code>seek</code> と、<code>memchr</code> での改行探し。<code>cargo</code> は 1.99.1 が入っている (実測)。フォルダ名は C# の <code>〜Cs</code> に倣い <code>〜Rs</code> を提案 (決めること 100)</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>Rust にする価値は、実測してから決める</strong>。TypeScript の生の走査が 600 MB で 1 秒未満なので、速さの差は小さいかもしれない (<strong>Rust の速度は未測定</strong>)。差が小さくても、<strong>単体で配れる exe にできる</strong> (bun ・ node が無い環境) ことと、Rust の共有ツールの足がかりになることが利点</li>
+		<li><strong>2 つの実装は同じ試験の材料で通す</strong>。出力が一致することを、総当たりで突き合わせる (第 5 章)</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>決めること</h1>
+	<p>共通ルール「複数の解決案がある場合の対応」に従い、推奨を A にする。<strong>番号は、前の計画 (<code>p261103-01</code>) の 93〜99 の続き</strong> (100 から) の通し番号。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>決めること</th><th>案</th><th>推す理由</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nowrap">100-A</td>
+				<td rowspan="3">実装の順序 (恒久)</td>
+				<td><strong>A</strong>: TypeScript を先に作り、実測してから、同じ出力の Rust を作る</td>
+				<td>TypeScript 版が突き合わせの相手になる (共通ルール「移植で落ちるのは、言語が肩代わりしていた比較」)。Rust の価値を実測で確かめてから作れる</td>
+			</tr>
+			<tr>
+				<td class="nowrap">100-B</td>
+				<td><strong>B</strong>: TypeScript と Rust を同時に作る</td>
+				<td>早く揃う。ただし、仕様の穴が両方に入り、直しが 2 倍になる</td>
+			</tr>
+			<tr>
+				<td class="nowrap">100-C</td>
+				<td><strong>C</strong>: Rust だけを作る</td>
+				<td>exe 1 本で済む。ただし、ほかの共有ツールと入口・試験の仕組みが違い、bun ・ node での確認ができない</td>
+			</tr>
+			<tr>
+				<td class="nowrap">101-A</td>
+				<td rowspan="2">時刻の逆戻りのマージンの既定</td>
+				<td><strong>A</strong>: 30 分 (<code>--margin</code> で変更可)</td>
+				<td>実測の最大 (560 秒) の約 3 倍。実測が 2 本だけなので余裕を取る。余裕分の走査は 30 分ぶんで、読みは増えても小さい</td>
+			</tr>
+			<tr>
+				<td class="nowrap">101-B</td>
+				<td><strong>B</strong>: 10 分</td>
+				<td>読みが少ない。ただし、実測の最大の約 1.1 倍しかなく、別のログで取りこぼす恐れがある</td>
+			</tr>
+			<tr>
+				<td class="nowrap">102-A</td>
+				<td rowspan="2">既定の出力</td>
+				<td><strong>A</strong>: 1 行 1 件の短い形 (位置 ・ 時刻 ・ 種類 ・ 先頭 300 文字ほど)。全文は <code>show</code></td>
+				<td>最大 1 MB 超の行が、AI の文脈を使い切らない。位置が付くので、あとから 1 回の読みで全文を取れる</td>
+			</tr>
+			<tr>
+				<td class="nowrap">102-B</td>
+				<td><strong>B</strong>: 生の行をそのまま出す</td>
+				<td>加工が無い。ただし、1 行で 1 MB 近く出る行があり、使いにくい</td>
+			</tr>
+			<tr>
+				<td class="nowrap">103-A</td>
+				<td rowspan="2">対象の指し方</td>
+				<td><strong>A</strong>: パスを渡す形と、<code>--project</code> でプロジェクト名から選ぶ形の両方</td>
+				<td>「file-manager の最後の 1 時間」のような問いが 1 コマンドで済む。参照は確認なしの範囲 (<code>~/.claude</code>) に限る</td>
+			</tr>
+			<tr>
+				<td class="nowrap">103-B</td>
+				<td><strong>B</strong>: パスだけ</td>
+				<td>作る量が最小。ただし、セッションのパスを毎回探す手間が残る</td>
+			</tr>
+			<tr>
+				<td class="nowrap">104</td>
+				<td>CLI の名前</td>
+				<td>案: <code>jsonl-seek</code>。ほかの共有ツールや OS のコマンドとぶつからないかを、実装の前に <code>Get-Command</code> で確かめる</td>
+				<td>名前の衝突は、採否が決まってから確かめる</td>
+			</tr>
+			<tr>
+				<td class="nowrap">105-A</td>
+				<td rowspan="2">語の検索</td>
+				<td><strong>A</strong>: 範囲を絞ってから走査 (全走査も許す)。索引は作らない</td>
+				<td>全走査が 600 MB で 1 秒未満 (生の走査) なので、索引は過剰。作り直しや古さの管理が増えない</td>
+			</tr>
+			<tr>
+				<td class="nowrap">105-B</td>
+				<td><strong>B</strong>: 索引 (SQLite の全文検索) も作る</td>
+				<td>繰り返しの語検索は速い。ただし、ログが追記されるたびに作り直しが要り、機密を含む内容を別の DB に複製する</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>進め方とリスク</h1>
+	<h2>フェーズ</h2>
+	<p>承認のあと、小さく区切って進める。各フェーズの終わりに、全件テストを通し、commit と push をする (ローカルルール第 6 章)。</p>
+	<ol>
+		<li><strong>フェーズ 0 (決める)</strong>: 第 4 章の番号の採否をいただく</li>
+		<li><strong>フェーズ 1 (仕様と試験の材料)</strong>: 振る舞いの仕様を <code>notes/50_spec/</code> に書く。<strong>試験の材料</strong> (合成した JSONL) を <code>tests/</code> に置く。逆戻りのある並び ・ 時刻の無い行 ・ 1 MB 超の行 ・ 日本語と 4 バイトの絵文字 ・ 最後が途中の行 ・ 空のファイル ・ 1 行だけのファイルを含める</li>
+		<li><strong>フェーズ 2 (TypeScript 版)</strong>: <code>stat</code> ・ <code>at</code> ・ <code>range</code> ・ <code>tail</code> ・ <code>show</code> ・ <code>find</code> を、テストを先に書いて (❌Red を見てから) 実装する (✅Green)。bun ・ node の両方で通す</li>
+		<li><strong>フェーズ 3 (実測)</strong>: 600 MB のログで、二分探索 ・ 全走査 ・ <code>Select-String</code> ・ <code>readline</code> ＋ <code>JSON.parse</code> を比べる。計測の道具は <code>tools/</code> に置く。Rust 版を作る価値をここで決める</li>
+		<li><strong>フェーズ 4 (Rust 版)</strong>: 同じ試験の材料で通す。<strong>TypeScript 版と出力を突き合わせる</strong> (下)。元の実装は消さない</li>
+		<li><strong>フェーズ 5 (公開)</strong>: <code>bin/</code> に入口を置く (<strong>テストが全件一致してから置く</strong>。ローカルルール第 3 章「置いてからテストしない」)。<code>TOOLS-USAGE</code> に使い方を足す。使い方 (見出し名) を知らせる周知の案は、必要なときに出す</li>
+	</ol>
+	<h2>テストの方針</h2>
+	<ul>
+		<li><strong>答え合わせの相手がある</strong>: 単純な全走査 (1 行ずつ読んで時刻を比べる) を相手に、<strong>二分探索の結果が一致する</strong>ことを総当たりで確かめる (共通ルール「答え合わせの相手があれば突き合わせる」)。時刻・マージン・並び (逆戻りの量) を変えて、取りこぼしが無いことを見る</li>
+		<li><strong>ランダムな並びのテストは、結果の正しさも見る</strong> (件数 ・ 順序 ・ 内容)。壊れていないことだけを見ない</li>
+		<li><strong>期待値は先に手で書く</strong>。実装の出力から golden を作らない</li>
+		<li><strong>位置合わせ</strong>: 全バイト位置から始めて、行頭が正しく取れる (日本語・絵文字の途中を含む)</li>
+		<li><strong>生きているログ</strong>: 追記中のファイルを読んでも、最後の途中の行を出さない</li>
+		<li>冪等 ・ 本番のログを触らない (材料は <code>tests/</code> と <code>tmp/</code>)。<strong>実ログに対する試験は、中身を出さず件数や位置だけを見る</strong></li>
+	</ul>
+	<h2>リスク</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>リスク</th><th>備え</th></tr></thead>
+		<tbody>
+			<tr><td>逆戻りが想定より大きいログで、入口を取りこぼす</td><td>マージンを引数にする。ツールが、見つけた範囲の手前に「マージンより古い行があるか」を調べる自己点検 (<code>--verify</code>) を持つ。実測は 2 本だけ。<strong>別のログで最大を測り直す</strong></td></tr>
+			<tr><td>行が 1 MB を超え、位置合わせの読みが大きくなる</td><td>読む塊を倍々に増やす。上限を決め、超えたら警告して先へ進む</td></tr>
+			<tr><td>Claude Code の JSONL の形が版で変わる</td><td>形への依存は表示用の抽出だけに限る。失敗したら生の行を返す。<code>type</code> ・ <code>timestamp</code> の読み取りが外れたら、警告を出す</td></tr>
+			<tr><td>出力に個人名・パス・機密が出て、AI の応答にそのまま載る</td><td>パスと行の中のユーザプロファイルの値は、既定で伏せる。出力を応答へ引き写すときは、共通ルール「機密情報のマスキング」に従う</td></tr>
+			<tr><td>TypeScript と Rust で結果がずれる (正規化 ・ 時刻の解釈 ・ 文字の扱い)</td><td>同じ材料で総当たりに突き合わせる。例外は出ず静かにずれるので、突き合わせが唯一の安全網</td></tr>
+			<tr><td>同期 API で固まる</td><td>1 回の読みの大きさと回数に上限を付ける。固まったことに気づけるようにする</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<div class="callout callout-warning">
+		<p><strong>この計画の限界</strong>: 実測は、このマシンの 2 本のログだけ。Rust の速度、600 MB での <code>Select-String</code> ・ <code>readline</code> の時間、時刻の逆戻りの最大は<strong>未測定または 2 本だけ</strong>。構成は変わりうる。時刻の範囲が長い理由 (再開) は<strong>見込み</strong>で、確かめていない。</p>
+	</div>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>
