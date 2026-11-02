@@ -290,7 +290,7 @@
 		<tbody>
 			<tr><td class="nowrap">正本</td><td>課題 1 件 = 1 ファイル。<code>notes/40_issues/items/i261103-01.md</code> のような置き場</td><td>管理</td><td>CLI と AI (Edit)。人も読める</td></tr>
 			<tr><td class="nowrap">索引</td><td>SQLite (FTS5 の全文検索)。ファイルから作り直せる派生物</td><td>除外 (先頭 <code>_</code> のフォルダ)</td><td>CLI が自動で作り直す</td></tr>
-			<tr><td class="nowrap">人向けの表示</td><td><code>issues.html</code> (いまと同じ見た目。章ごとの色、<code>details</code> の開閉、状態のバッジ)</td><td>管理 (案 3-A)</td><td>CLI が生成する。手で直さない</td></tr>
+			<tr><td class="nowrap">人向けの表示</td><td><code>issues.html</code> (いまと同じ見た目。章ごとの色、<code>details</code> の開閉、状態のバッジ)</td><td>管理 (案 95-A)</td><td>CLI が生成する。手で直さない</td></tr>
 			<tr><td class="nowrap">全体の横断</td><td>登録したプロジェクトの課題を集める読み取り専用の索引と HTML</td><td>管理外 (集約側)</td><td>CLI (後続のフェーズ)</td></tr>
 		</tbody>
 	</table>
@@ -349,7 +349,7 @@ refs: [p261103-01]           # 計画・調査の番号
 	<ul>
 		<li><strong>いまの <code>issues.html</code> と同じ見た目</strong> (章ごとの色相、<code>details</code> の開閉、バッジ、目次、タイトルにプロジェクト名)。生成なので、共通ルール「課題の管理」の「既定の開閉は状態で決める」「件数と状態は中身から数え直す」が自動で守られる</li>
 		<li><code>&lt;meta name="md-skip"&gt;</code> のまま。Markdown は作らない</li>
-		<li>生成物は commit する (案 3-A)。README からのリンクが切れず、GitHub 上でも見える。同じ中身なら書かないので、差分は課題が変わったときだけ</li>
+		<li>生成物は commit する (案 95-A)。README からのリンクが切れず、GitHub 上でも見える。同じ中身なら書かないので、差分は課題が変わったときだけ</li>
 	</ul>
 
 	<h2>差分と commit の見え方</h2>
@@ -369,84 +369,84 @@ refs: [p261103-01]           # 計画・調査の番号
 
 <section class="ch04" id="ch04">
 	<h1>決めること</h1>
-	<p>共通ルール「複数の解決案がある場合の対応」に従い、推奨を A にする。<strong>番号は 1-A 等で、部分的に採否を伝えられる</strong>。</p>
+	<p>共通ルール「複数の解決案がある場合の対応」に従い、推奨を A にする。<strong>番号は 93-A 等で、部分的に採否を伝えられる</strong>。</p>
 	<div class="tablewrap">
 	<table>
 		<thead><tr><th>番号</th><th>決めること</th><th>案</th><th>推す理由</th></tr></thead>
 		<tbody>
 			<tr>
-				<td class="nowrap">1-A</td>
+				<td class="nowrap">93-A</td>
 				<td rowspan="3">課題の正本をどこに置くか (恒久)</td>
 				<td><strong>A</strong>: 1 件 1 ファイル (テキスト)。SQLite は作り直せる索引にだけ使う</td>
 				<td>差分・競合・Read ・ Grep の 4 条件を満たす。SQLite を正本にしないので、バイナリの競合も <code>-wal</code> の事故も起きない</td>
 			</tr>
 			<tr>
-				<td class="nowrap">1-B</td>
+				<td class="nowrap">93-B</td>
 				<td><strong>B</strong>: Backlog.md を採る (自作しない)</td>
-				<td>作る量が最小。ただし、3 段階の状態・ID ・ 日本語の見た目・「報告元の確認」の扱いを合わせられるか未確認。試用してから決める (6-A)</td>
+				<td>作る量が最小。ただし、3 段階の状態・ID ・ 日本語の見た目・「報告元の確認」の扱いを合わせられるか未確認。試用してから決める (98-A)</td>
 			</tr>
 			<tr>
-				<td class="nowrap">1-C</td>
+				<td class="nowrap">93-C</td>
 				<td><strong>C</strong>: 現状維持で、1 件ごとの HTML に分ける (暫定)</td>
 				<td>共通ルールにすでにある形で、すぐできる。<strong>暫定</strong>: 件数の数え直し・検索・「済」の拒否が手作業のまま残る</td>
 			</tr>
 			<tr>
-				<td class="nowrap">2-A</td>
+				<td class="nowrap">94-A</td>
 				<td rowspan="2">本文の形式</td>
 				<td><strong>A</strong>: Markdown (先頭にメタ情報)</td>
 				<td>AI が読み書きしやすく、差分が素直。HTML への変換は生成側が担う</td>
 			</tr>
 			<tr>
-				<td class="nowrap">2-B</td>
+				<td class="nowrap">94-B</td>
 				<td><strong>B</strong>: HTML の断片 (先頭にメタ情報)</td>
 				<td>既存の課題を無損失で移せる。ただし、タグが混ざって AI の編集と差分が読みにくくなる</td>
 			</tr>
 			<tr>
-				<td class="nowrap">3-A</td>
+				<td class="nowrap">95-A</td>
 				<td rowspan="2">人向けの HTML</td>
 				<td><strong>A</strong>: 生成して commit する</td>
 				<td>README のリンクが切れず、GitHub でも見える。中身が同じなら書かないので、差分は小さい</td>
 			</tr>
 			<tr>
-				<td class="nowrap">3-B</td>
+				<td class="nowrap">95-B</td>
 				<td><strong>B</strong>: commit せず、見るときに生成する</td>
 				<td>二重管理が無い。ただし、GitHub 上で見えず、README からのリンク先が無い時期ができる</td>
 			</tr>
 			<tr>
-				<td class="nowrap">4-A</td>
+				<td class="nowrap">96-A</td>
 				<td rowspan="2">既存の課題の移行</td>
 				<td><strong>A</strong>: 未・着手の課題だけを新しい形へ移す。済は <code>issues.html</code> と <code>issues-archive.html</code> に残す</td>
 				<td>移すのは 3 件程度で済む。「移すときに本文を書き換えない」「済は元のグループに残す」と矛盾しない。ただし、過去の課題は新旧 2 か所に分かれる</td>
 			</tr>
 			<tr>
-				<td class="nowrap">4-B</td>
+				<td class="nowrap">96-B</td>
 				<td><strong>B</strong>: 全 68 件を移す</td>
 				<td>1 か所に揃う。ただし、リッチな HTML (表・図) を Markdown にする作業が大きく、無損失にならない</td>
 			</tr>
 			<tr>
-				<td class="nowrap">5-A</td>
+				<td class="nowrap">97-A</td>
 				<td rowspan="2">全体の横断</td>
 				<td><strong>A</strong>: 後続のフェーズで、読み取り専用の集約を作る (登録リストは利用者が承認)</td>
 				<td>各プロジェクトの形が揃ってから作るほうが、作る量が小さい。外を読むことの承認も、そのときに取れる</td>
 			</tr>
 			<tr>
-				<td class="nowrap">5-B</td>
+				<td class="nowrap">97-B</td>
 				<td><strong>B</strong>: 横断は作らず、各プロジェクトの管理だけにする</td>
 				<td>最小。ただし、「全体でも使いたい」の要望は満たさない</td>
 			</tr>
 			<tr>
-				<td class="nowrap">6-A</td>
+				<td class="nowrap">98-A</td>
 				<td rowspan="2">Backlog.md を先に試すか</td>
 				<td><strong>A</strong>: 試す (<code>tmp/</code> の使い捨てで、1 時間ほど)</td>
-				<td>案 1-B の判断材料になる。<strong>ダウンロードの許可が要る</strong> (取得するものと、取得元を示して確認する)</td>
+				<td>案 93-B の判断材料になる。<strong>ダウンロードの許可が要る</strong> (取得するものと、取得元を示して確認する)</td>
 			</tr>
 			<tr>
-				<td class="nowrap">6-B</td>
-				<td><strong>B</strong>: 試さず、1-A で進める</td>
+				<td class="nowrap">98-B</td>
+				<td><strong>B</strong>: 試さず、93-A で進める</td>
 				<td>早い。ただし、「簡単な代替が無いか調べてから複雑な案を出す」の確認が、紹介記事の範囲に留まる</td>
 			</tr>
 			<tr>
-				<td class="nowrap">7</td>
+				<td class="nowrap">99</td>
 				<td>CLI の名前</td>
 				<td>案: <code>issue</code> (短く、意味が通る)。ほかの共有ツールや OS のコマンドとぶつからないかを、実装の前に <code>Get-Command</code> で確かめる</td>
 				<td>名前の衝突は、採否が決まってから確かめる</td>
@@ -461,12 +461,12 @@ refs: [p261103-01]           # 計画・調査の番号
 	<h2>フェーズ</h2>
 	<p>承認のあと、小さく区切って進める。各フェーズの終わりに、全件テストを通し、commit と push をする (ローカルルール第 6 章)。</p>
 	<ol>
-		<li><strong>フェーズ 0 (決める)</strong>: 第 4 章の番号の採否をいただく。6-A なら、Backlog.md を試して、1-A と 1-B を最終決定する</li>
+		<li><strong>フェーズ 0 (決める)</strong>: 第 4 章の番号の採否をいただく。98-A なら、Backlog.md を試して、93-A と 93-B を最終決定する</li>
 		<li><strong>フェーズ 1 (形と検査)</strong>: 1 件のファイルの形 (項目・状態・やること) を、仕様として <code>notes/50_spec/</code> に書く。読み込みと <code>issue check</code> を、テストを先に書いて実装する</li>
 		<li><strong>フェーズ 2 (操作)</strong>: <code>new</code> ・ <code>list</code> ・ <code>show</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>search</code> を実装する。<strong>「済」の拒否</strong> (やることが残っている・報告元の確認が無い) もここで入れる</li>
 		<li><strong>フェーズ 3 (表示)</strong>: <code>issue render</code> で、いまの <code>issues.html</code> と同じ見た目の HTML を生成する。<strong>先に期待値を手で書いた golden</strong> で比べる。<code>check-contrast</code> で実測する</li>
-		<li><strong>フェーズ 4 (移行)</strong>: 4-A なら、未・着手の課題を新しい形へ移し、<code>issues.html</code> を生成物に切り替える。共通ルール「課題の管理」と「プロジェクトフォルダ構成」に、書き換えが要るかを確かめる (書き換えは案を示して指示を待つ)</li>
-		<li><strong>フェーズ 5 (横断)</strong>: 5-A なら、登録リストの形と、外を読むことの承認の取り方を決め、集約を作る</li>
+		<li><strong>フェーズ 4 (移行)</strong>: 96-A なら、未・着手の課題を新しい形へ移し、<code>issues.html</code> を生成物に切り替える。共通ルール「課題の管理」と「プロジェクトフォルダ構成」に、書き換えが要るかを確かめる (書き換えは案を示して指示を待つ)</li>
+		<li><strong>フェーズ 5 (横断)</strong>: 97-A なら、登録リストの形と、外を読むことの承認の取り方を決め、集約を作る</li>
 		<li><strong>周知</strong>: 公開 CLI なので <code>TOOLS-USAGE</code> に使い方を足す。共通ルールを変えたときだけ、周知の案を出す</li>
 	</ol>
 	<h2>テストの方針</h2>
@@ -483,10 +483,10 @@ refs: [p261103-01]           # 計画・調査の番号
 		<thead><tr><th>リスク</th><th>備え</th></tr></thead>
 		<tbody>
 			<tr><td>課題の形が、他プロジェクトの実情に合わない (file-manager 等)</td><td>フェーズ 1 の仕様を、先に file-manager 側の課題の数と形を見て決める。<strong>そのプロジェクトの課題を読むには、対象と目的を示して確認を取る</strong> (共通ルール「プロジェクトフォルダ外へのアクセス」)。この計画の作成では、他プロジェクトの課題は読んでいない</td></tr>
-			<tr><td>新旧 2 か所に課題が分かれて、探しにくくなる (4-A)</td><td><code>issue search</code> が旧 <code>issues.html</code> も走査できるようにするか、移行の終わりに旧側へ案内の 1 行を置く</td></tr>
+			<tr><td>新旧 2 か所に課題が分かれて、探しにくくなる (96-A)</td><td><code>issue search</code> が旧 <code>issues.html</code> も走査できるようにするか、移行の終わりに旧側へ案内の 1 行を置く</td></tr>
 			<tr><td>直接 Edit した誤りが、生成物に出る</td><td><code>issue check</code> を commit の前の決まりにする (全件テストに組み込む)</td></tr>
 			<tr><td>索引 (SQLite) が古い</td><td>索引は派生物。古ければ作り直す。ファイルの更新日時と比べて、CLI が自動で判断する</td></tr>
-			<tr><td>外の形に寄せすぎて、既存の運用 (3 段階の状態・36 進数の ID) が崩れる</td><td>1-B を採る場合は、合わない点を先に一覧にして、採否を決める</td></tr>
+			<tr><td>外の形に寄せすぎて、既存の運用 (3 段階の状態・36 進数の ID) が崩れる</td><td>93-B を採る場合は、合わない点を先に一覧にして、採否を決める</td></tr>
 		</tbody>
 	</table>
 	</div>
