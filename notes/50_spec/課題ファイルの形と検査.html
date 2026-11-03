@@ -1,0 +1,326 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>課題ファイルの形と検査の仕様 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch03{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8); border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:6px; padding:13px 16px; overflow-x:auto; margin:14px 0;
+	}
+	pre code{ border:none; padding:0; background:transparent; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ（共通ルール「root の README.html と資料の html は相互リンクする」） */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
+		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは「読み込み」と <code>issue check</code> まで。</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-03</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p>課題を 1 件 1 ファイルで持つ形と、その検査 (<code>issue check</code>) の<strong>いまの姿</strong>。決めた経緯と、番号付きの決定は <a href="../10_plan/p261103-01-課題管理ツール.html">課題管理ツール 計画</a> にある。実装と食い違ったら、実装が正しい。</p>
+
+<div class="callout">
+	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code>。<code>issue new</code> ・ <code>list</code> ・ <code>set</code> 等の操作と、HTML の生成は、まだ実装していない (第 3 章)。</p>
+</div>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">置き場と 1 件のファイルの形</a></li>
+		<li class="ch02"><a href="#ch02"><code>issue check</code> の検査</a></li>
+		<li class="ch03"><a href="#ch03">まだ無いもの ・ 限界</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>置き場と 1 件のファイルの形</h1>
+	<h2>置き場</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>置き場</th><th>中身</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>notes/40_issues/items/</code></td><td>進行中の課題。済の課題も、グループが片付くまでここに残す。状態ではフォルダを分けない</td></tr>
+			<tr><td class="nowrap"><code>notes/40_issues/items/archived/</code></td><td>グループの全件が済になって、退避した課題。中はすべて済</td></tr>
+			<tr><td class="nowrap"><code>notes/40_issues/items/project-id.txt</code></td><td>プロジェクトを見分ける UUID。リポジトリに commit する</td></tr>
+			<tr><td class="nowrap"><code>notes/40_issues/items/groups.txt</code></td><td>グループ (章) の名前を、表示順に 1 行ずつ並べる。<strong>任意</strong></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h2>ファイル名</h2>
+	<p><code>&lt;id&gt;-&lt;件名&gt;.md</code> (例: <code>i261103-01-li内の表.md</code>)。</p>
+	<ul>
+		<li><strong><code>&lt;id&gt;</code></strong>: <code>i</code> ＋ <code>yymmdd</code> ＋ <code>-</code> ＋ 2 桁の連番。連番は 36 進数で、英字は小文字。<code>l</code> は読み間違えるので大文字の <code>L</code> と書く (<code>0a</code> ・ <code>0k</code> ・ <code>0L</code> ・ <code>0m</code>)</li>
+		<li><strong><code>&lt;件名&gt;</code></strong>: 立てるときに決める短い名前で、<strong>あとから変えない</strong>。英数字 ・ ハイフン ・ 下線 ・ ピリオド ・ 日本語 (ひらがな ・ カタカナ ・ 漢字) だけ。空白は入れない。30 文字を超えると警告する</li>
+		<li>題を直しても、ファイル名は動かない。題は本文のメタ情報の <code>title</code> に自由に書く</li>
+	</ul>
+	<h2>1 件のファイル</h2>
+	<p>先頭に <code>---</code> で囲んだメタ情報 (F2 の <code>キー: 値</code> の行)、そのあとが Markdown の本文。</p>
+<pre><code class="language-markdown">---
+schema: 1
+id: i261103-01
+title: li の中の表を、表のまま出す
+state: 未
+group: html2md
+created: 2026-11-03
+from: ai-chat-lite #1737
+confirmed: false
+refs: p261103-01
+---
+
+(本文。Markdown)
+
+## やること
+- [未] convertList で項目の中の表を convertTable に渡す
+- [着手] check-markdown で実測する
+- [済] 原因の特定</code></pre>
+	<h2>キー項目</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>キー</th><th>必須</th><th>値</th><th>備考</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>schema</code></td><td>必須</td><td>整数 <code>1</code></td><td>形の版</td></tr>
+			<tr><td class="nowrap"><code>id</code></td><td>必須</td><td>上の <code>&lt;id&gt;</code> の形</td><td>ファイル名の先頭と一致させる</td></tr>
+			<tr><td class="nowrap"><code>title</code></td><td>必須</td><td>1 行の文字列</td><td>最初の <code>: </code> で分けるので、値の中にコロンがあってもよい</td></tr>
+			<tr><td class="nowrap"><code>state</code></td><td>必須</td><td><code>未</code> / <code>着手</code> / <code>済</code></td><td><code>済</code> は、やることが残っている間と、報告元の確認が無い間は付けられない</td></tr>
+			<tr><td class="nowrap"><code>group</code></td><td>必須</td><td>文字列</td><td>章 (グループ) の名前。<code>groups.txt</code> があれば、そこに並んでいる名前</td></tr>
+			<tr><td class="nowrap"><code>created</code></td><td>必須</td><td><code>yyyy-mm-dd</code> (実在する日付)</td><td>立てた日。変えない</td></tr>
+			<tr><td class="nowrap"><code>from</code></td><td>任意</td><td>文字列 (<code>プロジェクト名 #発言番号</code>)</td><td>他プロジェクトからの報告のときだけ書く</td></tr>
+			<tr><td class="nowrap"><code>confirmed</code></td><td><code>from</code> があるとき必須</td><td><code>true</code> / <code>false</code></td><td>報告元の確認。<code>true</code> になるまで <code>済</code> にできない</td></tr>
+			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>カンマ区切りの番号 (<code>p261103-01, r261025-01</code>)</td><td>計画 ・ 調査 ・ 課題の番号。ほかのプロジェクトの番号は <code>プロジェクト名:番号</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>更新日 (<code>updated</code>) は持たない。更新の経緯は <code>git log -- &lt;課題のファイル&gt;</code> で見る。</p>
+	<h2>F2 の書き方の決まり</h2>
+	<ul>
+		<li>先頭の行が <code>---</code>。次の <code>---</code> の行までがメタ情報。1 行 1 キー</li>
+		<li><code>キー: 値</code> の形。最初の <code>: </code> で分け、前後の空白を除く。キーは小文字の英数字と <code>_</code></li>
+		<li><strong>引用符 ・ コメント (<code>#</code>) ・ 複数行 ・ 入れ子は無い</strong>。<code>#</code> は値の一部 (<code>#1737</code> 等)</li>
+		<li>値の型は 4 つだけ: 文字列 ・ 整数 ・ 真偽 (<code>true</code> / <code>false</code>) ・ 一覧 (カンマ区切りの文字列)。どのキーがどの型かは、上の表が決める</li>
+		<li>値が空のキーは書かない。任意のキーは、無ければ省く。空行はメタ情報の中に置けない</li>
+		<li>キーの順は上の表の順。順が違っても読めるが、警告する。知らないキーも読めるが、警告する</li>
+		<li>UTF-8 (BOM 無し) ・ LF。BOM と CR は誤りとして止める</li>
+	</ul>
+	<h2>やること</h2>
+	<ul>
+		<li>本文の中の、行頭が <code>- [未]</code> ・ <code>- [着手]</code> ・ <code>- [済]</code> の行。状態の語は 3 つだけで、これ以外は誤り</li>
+		<li>課題が <code>済</code> なのに、<code>未</code> か <code>着手</code> のやることが残っていれば誤り</li>
+	</ul>
+	<h2><code>project-id.txt</code></h2>
+	<p>課題ファイルと同じ <code>キー: 値</code> の行だけで、<code>---</code> の区切りは付けない。</p>
+<pre><code class="language-text">schema: 1
+project_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7</code></pre>
+	<ul>
+		<li><code>project_id</code> は小文字 32 桁の 16 進数 (UUID のハイフン無し)</li>
+		<li><code>project_name</code> は持たない (フォルダ名から読む。リネームで古くならないため)</li>
+	</ul>
+	<h2><code>groups.txt</code></h2>
+	<p>グループ (章) の名前を、表示順に 1 行ずつ。空行は無視する。同じ名前を 2 度書くと誤り。課題の <code>group</code> がここに無ければ警告する。</p>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1><code>issue check</code> の検査</h1>
+<pre><code class="language-shell">issue check                  # 作業フォルダから親をたどって、プロジェクトを探す
+issue check --root &lt;dir&gt;      # プロジェクトのフォルダを指す
+issue check --json           # 結果を JSON で出す</code></pre>
+	<ul>
+		<li><strong>プロジェクトの探し方</strong>: 作業フォルダから親へたどり、<code>notes/40_issues/items/</code> を持つ最初のフォルダ。<code>--root</code> があれば、そのフォルダを使う。見つからなければ終了コード 5</li>
+		<li><strong>読み取り専用</strong>。何も書き換えない。ほかのプロジェクトも読まない</li>
+		<li><strong>出力に絶対パスを出さない</strong>。ファイルはプロジェクトからの相対パス (<code>/</code> 区切り)</li>
+	</ul>
+	<h2>出力</h2>
+<pre><code class="language-text">[NG] notes/40_issues/items/i261103-01-li内の表.md [value] state が 未 / 着手 / 済 のどれでもない: 完了
+[警告] notes/40_issues/items/i261103-02-x.md [key-order] キーの順が決まりと違う: title
+[NG] 課題 2 件 (進行中 2 件 ・ archived 0 件)。エラー 1 件 ・ 警告 1 件</code></pre>
+	<p>最後の 1 行は、エラーがあれば <code>[NG] 課題 N 件 (進行中 M 件 ・ archived K 件)。エラー E 件 ・ 警告 W 件</code>。エラーが無く警告があれば <code>[OK] …。エラー 0 件 ・ 警告 W 件</code>。どちらも無ければ <code>[OK] …。問題なし</code>。<code>--json</code> では <code>ok</code> ・ <code>errors</code> ・ <code>warnings</code> ・ <code>issues</code> ・ <code>archived</code> ・ <code>findings</code> (<code>level</code> ・ <code>code</code> ・ <code>file</code> ・ <code>message</code>) を持つ。</p>
+	<h2>終了コード</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>コード</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">0</td><td>エラーが無い (警告があってもよい)</td></tr>
+			<tr><td class="nowrap">1</td><td>エラーが 1 件以上ある</td></tr>
+			<tr><td class="nowrap">5</td><td>引数の誤り ・ プロジェクトが見つからない</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>2 は使わない (Stop フックが 2 を「続ける」と読むため)。</p>
+	<h2>検査の一覧</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>種別 (<code>code</code>)</th><th>重さ</th><th>見ること</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>project-id</code></td><td>エラー</td><td><code>project-id.txt</code> が無い ・ 読めない ・ <code>schema</code> が 1 でない ・ <code>project_id</code> が小文字 32 桁の 16 進数でない</td></tr>
+			<tr><td class="nowrap"><code>name</code></td><td>エラー</td><td>ファイル名が <code>&lt;id&gt;-&lt;件名&gt;.md</code> の形でない (<code>i</code> で始まらない <code>.md</code> を含む) ・ 件名に使えない文字がある</td></tr>
+			<tr><td class="nowrap"><code>encoding</code></td><td>エラー</td><td>BOM がある ・ CR (CRLF) がある</td></tr>
+			<tr><td class="nowrap"><code>meta</code></td><td>エラー</td><td>先頭が <code>---</code> でない ・ 閉じの <code>---</code> が無い ・ <code>キー: 値</code> の形でない行 ・ 値が空 ・ キーの重複 ・ メタ情報の中の空行</td></tr>
+			<tr><td class="nowrap"><code>key</code></td><td>エラー</td><td>必須のキーが無い</td></tr>
+			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>state</code> ・ <code>created</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>id</code> がファイル名の先頭と違う</td></tr>
+			<tr><td class="nowrap"><code>duplicate</code></td><td>エラー</td><td>同じ <code>id</code> のファイルが複数ある (<code>items/</code> と <code>archived/</code> をまたぐ場合も)。別の PC やクラウドで、件名違いで同じ番号が立つと、git は競合を出さないので、ここで止める</td></tr>
+			<tr><td class="nowrap"><code>todo</code></td><td>エラー</td><td>やることの状態が 3 つ以外 ・ <code>済</code> なのに <code>未</code> か <code>着手</code> のやることが残っている</td></tr>
+			<tr><td class="nowrap"><code>confirmed</code></td><td>エラー / 警告</td><td><code>from</code> があるのに <code>confirmed</code> が無い (エラー) ・ <code>済</code> なのに <code>confirmed</code> が <code>true</code> でない (エラー) ・ <code>from</code> が無いのに <code>confirmed</code> がある (警告)</td></tr>
+			<tr><td class="nowrap"><code>archived</code></td><td>エラー</td><td><code>archived/</code> の中に、<code>済</code> でない課題がある</td></tr>
+			<tr><td class="nowrap"><code>key-order</code></td><td>警告</td><td>キーの順が、表の順と違う</td></tr>
+			<tr><td class="nowrap"><code>unknown-key</code></td><td>警告</td><td>知らないキーがある</td></tr>
+			<tr><td class="nowrap"><code>refs</code></td><td>警告</td><td><code>refs</code> の参照先が見つからない (課題は <code>items/</code> ・ <code>archived/</code>、計画 ・ 調査 ・ アイデアは <code>notes/</code> のファイル名の先頭)。<code>プロジェクト名:番号</code> の形は、外を読まないので確かめない</td></tr>
+			<tr><td class="nowrap"><code>slug-long</code></td><td>警告</td><td>件名が 30 文字を超える</td></tr>
+			<tr><td class="nowrap"><code>group</code></td><td>エラー / 警告</td><td><code>groups.txt</code> で同じ名前が重複している (エラー) ・ 課題の <code>group</code> が <code>groups.txt</code> に無い (警告)</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>まだ無いもの ・ 限界</h1>
+	<ul>
+		<li><strong>操作</strong>: <code>issue new</code> ・ <code>list</code> ・ <code>show</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>search</code> ・ <code>init</code> ・ <code>archive</code> ・ <code>unarchive</code>。フェーズ 2 以降</li>
+		<li><strong>HTML の生成</strong> (<code>issue render</code>)、<strong>索引 DB</strong>、<strong>横断</strong>: フェーズ 3 以降</li>
+		<li><strong>番号の予約 (<code>_lock/</code>)</strong>: <code>issue new</code> と一緒に入れる。いまは、重複を <code>issue check</code> が後から止めるだけ</li>
+		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>
+		<li><strong><code>refs</code> の参照先は、ファイル名の先頭だけで探す</strong>。移行前の課題 (<code>issues.html</code> の中の番号) は見つけられず、警告になる</li>
+		<li>他のプロジェクトのファイルは読まない。検査するのは、見つけた 1 つのプロジェクトだけ</li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>
