@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="format-detection" content="telephone=no">
-<title>課題管理ツール 計画 (ai-agent-tools)</title>
+<title>p261103-01 課題管理ツール 計画 (ai-agent-tools)</title>
 <style>
 	:root{
 		--navy1:#12224d; --navy2:#2f5fbf;
@@ -153,7 +153,7 @@
 
 <div class="titlebar">
 	<div class="inner">
-		<h1>課題管理ツール 計画 (ai-agent-tools)</h1>
+		<h1>p261103-01 課題管理ツール 計画 (ai-agent-tools)</h1>
 		<p class="lead">課題が大きくなったプロジェクトのために、課題を 1 件 1 ファイルで持ち、AI エージェントが読み書き・検索でき、人向けの HTML も出せる共有ツールを作る。保存方法を比べ、案と決めることを示す。</p>
 		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-03</p>
 	</div>
@@ -166,7 +166,7 @@
 <p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools (共有ツールの置き場)。入力は、各プロジェクトの課題 (まず ai-agent-tools の <code>notes/40_issues/issues.html</code>)。出力は、課題の保存形式の案と、課題を扱う共有 CLI と、人向けの HTML 生成の案。<strong>この計画は案と決めることの提示まで。承認をいただくまで実装しない。</strong></p>
 
 <div class="callout callout-important">
-	<p><strong>結論 (推奨)</strong>: <strong>課題を 1 件 1 ファイルのテキスト (先頭にメタ情報、本文は Markdown) で持ち、これを正本にする</strong>。SQLite は<strong>正本にせず</strong>、ファイルから作り直せる索引 (検索・集計用) に使う。<code>issues.html</code> のような人向け HTML は、ファイルから<strong>生成</strong>する。操作は共有 CLI 1 本にまとめ、AI エージェントはそれと、ふだんの Read ・ Edit ・ Grep の両方で扱える。</p>
+	<p><strong>結論 (推奨)</strong>: <strong>課題を 1 件 1 ファイルのテキスト (先頭に <code>キー: 値</code> のメタ情報、本文は Markdown。形式は F2、第 3 章) で持ち、これを正本にする</strong>。SQLite は<strong>正本にせず</strong>、ファイルから作り直せる索引 (検索・集計用) に使う。<code>issues.html</code> のような人向け HTML は、ファイルから<strong>生成</strong>する。操作は共有 CLI 1 本にまとめ、AI エージェントはそれと、ふだんの Read ・ Edit ・ Grep の両方で扱える。</p>
 </div>
 
 <div class="toc">
@@ -288,7 +288,7 @@
 	<table>
 		<thead><tr><th>層</th><th>中身</th><th>git</th><th>誰が書くか</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap">正本</td><td>課題 1 件 = 1 ファイル。<code>notes/40_issues/items/i261103-01.md</code> のような置き場</td><td>管理</td><td>CLI と AI (Edit)。人も読める</td></tr>
+			<tr><td class="nowrap">正本</td><td>課題 1 件 = 1 ファイル。<code>notes/40_issues/items/i261103-01-li内の表.md</code> のような置き場</td><td>管理</td><td>CLI と AI (Edit)。人も読める</td></tr>
 			<tr><td class="nowrap">索引</td><td>SQLite (FTS5 の全文検索)。ファイルから作り直せる派生物</td><td>除外 (先頭 <code>_</code> のフォルダ)</td><td>CLI が自動で作り直す</td></tr>
 			<tr><td class="nowrap">人向けの表示</td><td><code>issues.html</code> (いまと同じ見た目。章ごとの色、<code>details</code> の開閉、状態のバッジ)</td><td>管理 (案 95-A)</td><td>CLI が生成する。手で直さない</td></tr>
 			<tr><td class="nowrap">全体の横断</td><td>登録したプロジェクトの課題を集める読み取り専用の索引と HTML</td><td>管理外 (集約側)</td><td>CLI (後続のフェーズ)</td></tr>
@@ -296,17 +296,134 @@
 	</table>
 	</div>
 
+	<h2>ファイル形式 (決定: F2)</h2>
+	<p><strong>決定 (2026-11-03、利用者の判断): F2</strong>。先頭に <code>キー: 値</code> の行を並べ、本文は Markdown にする。メタ情報の書き方を、YAML の部分集合に絞った<strong>自作の単純な形</strong>にする。比べた候補は次のとおり。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>案</th><th>形</th><th>良い点</th><th>気になる点</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">F1</td><td>Markdown ＋ YAML のメタ情報</td><td>見慣れた形。GitHub でメタ情報が表で出る。Backlog.md に近い</td><td>YAML の型の落とし穴 (<code>true</code> ・ 数字 ・ コロン)。パーサが要り、依存が増える</td></tr>
+			<tr><td class="nowrap"><strong>F2 (採用)</strong></td><td>Markdown ＋ 自作の <code>キー: 値</code> 行</td><td>数十行で読み書きでき、依存が増えない。落とし穴を仕様で潰せる</td><td>独自仕様なので、仕様書が要る。ほかのツールは直接読めない</td></tr>
+			<tr><td class="nowrap">F3</td><td>Markdown ＋ TOML</td><td>型が素直</td><td>bun ・ node の標準に読み込みが無く、パーサが要る</td></tr>
+			<tr><td class="nowrap">F4</td><td>メタ情報を別ファイル (JSON ＋ <code>.md</code>)</td><td>JSON は標準で読み書きできる</td><td>1 件が 2 ファイルになり、差分と commit の単位が割れる</td></tr>
+			<tr><td class="nowrap">F5</td><td>HTML の断片 (94-B)</td><td>いまの課題を無損失で移せる</td><td>タグが混ざり、AI の編集と差分が読みにくい</td></tr>
+			<tr><td class="nowrap">F6</td><td>JSON 1 件 1 ファイル</td><td>機械で確実に読み書きできる</td><td>長い本文が 1 行の文字列になり、差分が読めない</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>キー項目 (案)</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>キー</th><th>必須</th><th>値</th><th>備考</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>schema</code></td><td>必須</td><td>整数 (いまは 1)</td><td>形の版。あとで項目を足すときに読み替える</td></tr>
+			<tr><td class="nowrap"><code>id</code></td><td>必須</td><td><code>i</code> ＋ <code>yymmdd-nn</code> (nn は 36 進数 2 桁)</td><td>ファイル名の先頭 (<code>&lt;id&gt;-&lt;件名&gt;.md</code>) と一致させる。重複は <code>issue check</code> が止める</td></tr>
+			<tr><td class="nowrap"><code>title</code></td><td>必須</td><td>1 行の文字列</td><td>最初の <code>: </code> で分けるので、値の中にコロンがあってもよい</td></tr>
+			<tr><td class="nowrap"><code>state</code></td><td>必須</td><td><code>未</code> / <code>着手</code> / <code>済</code></td><td>3 段階 (共通ルール「課題の管理」)。<code>済</code> は、やることが残っている間・報告元の確認が無い間は拒否する</td></tr>
+			<tr><td class="nowrap"><code>group</code></td><td>必須</td><td>文字列</td><td>いまの章 (グループ) の名前。表示順の持ち方は 109</td></tr>
+			<tr><td class="nowrap"><code>created</code></td><td>必須</td><td><code>yyyy-mm-dd</code> (JST)</td><td>立てた日。変えない。書式は「ドキュメントの作成日・更新日」と同じ</td></tr>
+			<tr><td class="nowrap"><code>from</code></td><td>任意</td><td>文字列 (<code>プロジェクト名 #発言番号</code>)</td><td>報告元。他プロジェクトからの報告のときだけ書く</td></tr>
+			<tr><td class="nowrap"><code>confirmed</code></td><td><code>from</code> があるとき必須</td><td><code>true</code> / <code>false</code></td><td>報告元の確認。<code>true</code> になるまで <code>済</code> にできない</td></tr>
+			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>カンマ区切りの番号 (<code>p261103-01, r261025-01</code>)</td><td>計画・調査の番号。<code>issue check</code> が、参照先の有無を確かめる</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p><strong>置かないキー</strong>: <code>updated</code> (更新日。持つかは 108) ・ 優先度 ・ 担当 ・ ラベル ・ 期限 ・ 依存。いまの運用に無く、足すかは 107。</p>
+
+	<h2>F2 の書き方の決まり (案)</h2>
+	<ul>
+		<li><strong>先頭行が <code>---</code>、次の <code>---</code> までがメタ情報</strong>。1 行 1 キー</li>
+		<li><strong><code>キー: 値</code> の形</strong>。最初の <code>: </code> で分け、前後の空白を除く。キーは小文字の英数字と <code>_</code></li>
+		<li><strong>引用符・コメント (<code>#</code>)・複数行・入れ子は使わない</strong>。<code>#</code> が値の一部 (<code>#1737</code>) になるので、コメントは無い</li>
+		<li><strong>値の型は 4 つだけ</strong>: 文字列 ・ 整数 ・ 真偽 (<code>true</code> / <code>false</code>) ・ 一覧 (カンマ区切りの文字列)。どのキーがどの型かは、キー項目の表が決める。型の取り違えは <code>issue check</code> が止める</li>
+		<li><strong>値が空のキーは書かない</strong>。任意のキーは、無ければ省く</li>
+		<li><strong>キーの順は固定</strong> (表の順)。CLI は必ずこの順で書く。直接 Edit で順が変わっても読めるが、<code>issue check</code> が警告する</li>
+		<li><strong>知らないキーは、CLI が書き戻すときも残す</strong>。<code>issue check</code> が警告する (将来の版の項目を、古い CLI が消さないため)</li>
+		<li><strong>UTF-8 (BOM 無し) ・ LF</strong>。<code>.editorconfig</code> の <code>*.md</code> の決めと同じ</li>
+		<li><strong>YAML のパーサでも同じ値に読める範囲に収める</strong>。将来 F1 に替えるときの道を残すため。ただし、Backlog.md との互換は保証しない</li>
+	</ul>
+
+	<h2>ファイル名と置き場 (案)</h2>
+	<ul>
+		<li><strong>置き場は 2 つ</strong>: <code>notes/40_issues/items/</code> (進行中。済も、グループが片付くまでここに残す) と、<code>notes/40_issues/items/archived/</code> (グループごと片付いたもの)。<strong>状態ではフォルダを分けない</strong>。状態は <code>state</code> キーだけが正本で、状態を変えてもファイルは動かない</li>
+		<li><strong>ファイル名は <code>&lt;id&gt;-&lt;件名&gt;.md</code></strong> (例: <code>i261103-01-li内の表.md</code>)。件名は<strong>立てるときに決める短いスラッグ</strong>で、<strong>あとから変えない</strong>。題を直しても名前は動かず、パスが安定する。題は <code>title:</code> に自由に書ける</li>
+		<li><strong>件名の決まり</strong>: 30 文字ほどまで。使える文字は共通ルール「ファイル・フォルダの名前に使ってよい文字」に従う (英数字 ・ ハイフン ・ 下線 ・ ピリオド ・ 日本語。空白なし)。<code>issue new</code> は題から案を作り、使えない文字を <code>-</code> に直す</li>
+		<li><strong>同じ ID の重複を、2 段で止める</strong>。件名が違うと別のファイルになり、git でも競合しないので、ファイルの排他だけでは防げない。
+			<ul>
+				<li><strong>同じ PC</strong>: 立てる前に、<code>notes/40_issues/_lock/&lt;id&gt;/</code> を <code>mkdir</code> で作る (先頭 <code>_</code> のフォルダは Git 管理外。<code>mkdir</code> は既にあれば失敗するので排他になる)。取れなければ次の番号にし、立て終えたら消す</li>
+				<li><strong>別の PC ・ クラウド</strong>: <code>issue check</code> が、同じ ID のファイルが複数ないかを止める。<code>issue check</code> は commit の前の決まりにし、pull のあとにも流す</li>
+			</ul>
+		</li>
+		<li><strong><code>archived/</code> に入れるのは、グループの全件が済になったときだけ</strong> (<code>issue archive &lt;group&gt;</code>)。<code>git mv</code> で動かし、本文は書き換えない。<code>group</code> キーは残る。<code>issue check</code> は、<code>archived/</code> の中がすべて済であることを検査する</li>
+		<li><strong>一覧と検索は、既定で <code>archived/</code> を見ない</strong> (<code>--all</code> で含める)。Grep を使うときは <code>items/*.md</code> に絞る</li>
+		<li><strong>参照は ID で書く</strong> (<code>refs</code> ・ 資料の文中)。パスで書かない。ID からパスを引くのは CLI。パスが動くのは <code>archived/</code> へ移すときだけだが、件名が名前に入るので、パスを直接書くと壊れやすい</li>
+	</ul>
+
+	<h2>識別子と索引 DB の表 (決定: 122-A ・ 123-A ・ 124-A ・ 125-A)</h2>
+	<p><strong>決定 (2026-11-03、利用者の判断)</strong>。PC とクラウドで、同じ DDL ・ 同じ <code>schema_version</code> の索引 DB を使う。「どのプロジェクトか」と「どの checkout (clone) の観測か」を、別の識別子で持つ。<strong>ホスト名とコンピュータ名は、キーにも列にも使わない</strong> (共通ルール「機密情報のマスキング」の対象であり、クラウドのコンテナ名は毎回変わるため)。</p>
+	<ul>
+		<li><strong><code>project_id</code> (122-A ・ 125-A)</strong>: リポジトリに commit する UUID のファイル <code>notes/40_issues/items/project-id.txt</code>。F2 と同じ <code>キー: 値</code> の行で、<code>---</code> の区切りは付けず、ファイル全体をメタ情報として読む。キーは <code>schema</code> と <code>project_id</code> (小文字 32 桁の 16 進数、ハイフンなし)。<code>project_name</code> はファイルに持たず、フォルダ名から読む (リネームで古くならないため)。<code>issue init</code> か、最初の <code>issue new</code> が作る</li>
+		<li><strong><code>checkout_id</code> (123-A)</strong>: DB の <code>meta</code> に、作るときの乱数の UUID を入れる。DB を捨てれば、新しい観測として始まる。<strong>横断の DB は、各プロジェクトの DB を取り込まず</strong>、課題のファイルを直接読み直す。登録 1 件ごとの <code>checkout_id</code> は、横断の DB の中で覚える (毎回作り直すと、全行が新しい観測になるため)</li>
+		<li><strong>同じ DDL (124-A)</strong>: PC とクラウドで、表の定義も <code>schema_version</code> も同じにする。クラウドは環境が毎回作り直されるので、最初の呼び出しで DB を作り直す</li>
+		<li><strong><code>issue check</code> が見ること</strong>: <code>project-id.txt</code> が無い・形が違う。同じ <code>project_id</code> なのにフォルダ名が違う (フォルダごとコピーの検出。横断で見る)。<code>items/</code> の <code>.md</code> に、<code>i</code> で始まらない名前が混ざっている</li>
+	</ul>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>表</th><th>主キー</th><th>主な列 (案)</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>project</code></td><td><code>project_id</code></td><td><code>project_name</code> (フォルダ名)</td></tr>
+			<tr><td class="nowrap"><code>checkout</code></td><td><code>checkout_id</code></td><td><code>project_id</code> ・ <code>environment_kind</code> (<code>local</code> / <code>cloud</code>) ・ <code>created_at</code> ・ <code>last_scanned_at</code></td></tr>
+			<tr><td class="nowrap"><code>issue_file</code></td><td>(<code>checkout_id</code>, <code>file_path</code>)</td><td><code>issue_id</code> ・ <code>file_modified_at</code> ・ <code>file_bytes</code> ・ <code>file_sha256</code> ・ <code>cached_at</code> ・ 課題の内容。<code>file_path</code> は、プロジェクトのルートからの相対パス</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>列名と表名は、共通ルール「DB 定義のルール」に従う (日時は JST の 23 文字、語尾は <code>_at</code>)。<strong>列は案</strong>で、変更の判定方法 ・ 全体を捨てる条件 ・ 日本語の検索などの決めること (検討中) が決まると変わりうる。主キーを <code>file_path</code> にするのは、同じ ID が複数のファイルにあっても衝突させないため。</p>
+
+	<h2>索引 DB と、ファイルの更新日付との比較 (案)</h2>
+	<p>索引 DB は<strong>派生物</strong>で、捨てても課題のファイルから作り直せる。各行に「元のファイルのどの状態から作ったか」を持たせ、現在のファイルと比べて、捨てる行を決める。<strong>比べ方は「ファイルのほうが新しいか」ではなく「前と同じか」</strong>にする。<code>git checkout</code> で古い版へ戻すと更新日時は戻した時刻 (新しい) になり、<code>cp -p</code> や zip の展開は古い更新日時のまま内容だけが違うファイルを作る。「新しければ作り直す」では後者を見逃す。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>ファイルの状態</th><th>判定</th><th>動き</th></tr></thead>
+		<tbody>
+			<tr><td>更新日時もサイズも同じ</td><td>変わっていない</td><td>読まない (<code>stat</code> だけ)</td></tr>
+			<tr><td>更新日時だけ違い、サイズは同じ</td><td>中身を確かめる</td><td>SHA-256 が同じなら、更新日時だけ直す (checkout や touch)</td></tr>
+			<tr><td>更新日時かサイズが違い、SHA-256 も違う</td><td>変わった</td><td>再解析して、行を置き換える</td></tr>
+			<tr><td>ファイルが無くなった</td><td>消えた</td><td>行を削除する</td></tr>
+			<tr><td>ファイルが新しく現れた</td><td>増えた</td><td>行を追加する</td></tr>
+			<tr><td>ID は同じで、パスだけ違う (<code>archived/</code> へ移動)</td><td>動いた</td><td>SHA-256 が同じなら、パスだけ直す</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>全体をまとめて捨てる条件</strong>: <code>meta</code> に持つ <code>schema_version</code> (形の版) と <code>parser_version</code> (ファイルの読み方の版) の違い、DB の破損。捨てるときは、本体 ・ <code>-wal</code> ・ <code>-shm</code> を<strong>3 つまとめて</strong>捨てる (共通ルール「SQLite の大原則」)。作り直しは、一時の DB に作ってから置き換え、途中で止まっても半端な DB を残さない</li>
+		<li><strong>形が変わったら、捨てて作り直す</strong>。派生物なので移行は要らない。共通ルール「DB 定義のルール」の「版管理」(<code>ver_000001/</code>) の例外にあたる。ローカルルールへの書き方は、案を示して指示を待つ</li>
+		<li><strong>置き場</strong>: プロジェクトごとの DB は <code>notes/40_issues/_index/issues.sqlite</code> (先頭 <code>_</code> のフォルダなので Git 管理外)。横断の DB は ai-agent-tools の <code>_</code> フォルダ</li>
+		<li><strong>効果は測ってから決める</strong> (共通ルール「性能」)。いまの課題は 68 件で、全部を Grep するだけでも速い可能性がある。効くのは、全文検索と横断が入ったとき。<code>stat</code> の走査の時間は未測定</li>
+		<li><strong>日本語の全文検索は未確認</strong>。FTS5 の標準の分かち書きは日本語に向かない。<code>trigram</code> なら部分一致できるが、2 文字以下の語は引けない。組み込みの SQLite に FTS5 があるかを、bun と node で実測する</li>
+		<li><strong>更新順の一覧には使えない</strong>。ファイルの更新日時は checkout で変わる。更新順が要るなら、108-B (<code>updated</code> キー) か <code>git log</code> から取る</li>
+	</ul>
+
+	<h2>範囲: プロジェクト ・ PC 内の全体 ・ クラウド (案)</h2>
+	<ul>
+		<li><strong>プロジェクトローカル</strong> (この計画の主題): CLI は、作業フォルダから親をたどって <code>notes/40_issues/items/</code> を探す。見つからなければ <code>--root</code>。ほかのプロジェクトを読み書きしない</li>
+		<li><strong>PC 内の全体 (横断)</strong>: 登録リストに載せたプロジェクトだけを、<strong>読み取り専用</strong>で集める。外を読む承認は、登録のときに利用者が取る (共通ルール「プロジェクトフォルダ外へのアクセス」)。ID はプロジェクトをまたぐと重なりうるので、<code>プロジェクト名 + ID</code> で指す。<strong>出力は commit しない</strong> (他プロジェクトの課題が、public のリポジトリに載る恐れがあるため)</li>
+		<li><strong>クラウド</strong>: ファイルが git の中にあるので、プロジェクトローカルはそのまま動く。条件は、PowerShell が無いので拡張子なしの sh 入口を <code>cloud-session-start</code> の PATH に乗せること、TypeScript の本体が Linux で動くこと (未実測)、同じ PC にしか効かない <code>_lock/</code> の代わりに <code>issue check</code> が重複 ID を止めること。横断は、ほかのリポジトリが clone されておらず、private は書き込み権限付きで追加しないと読めないので難しい</li>
+		<li><strong>将来案 (今は作らない)</strong>: C2 = 集約用のリポジトリを 1 つ持ち、各リポジトリの課題を集めて生成する (他のリポジトリを読む権限と更新の仕組みが要る)。C3 = GitHub Issues と同期する (双方向の同期が複雑で、「ファイルが正本」と衝突しやすい)</li>
+		<li><strong>いま決めておくと将来が楽になること</strong>: <code>refs</code> に <code>プロジェクト名:ID</code> も書ける。CLI の既定の範囲はそのプロジェクトだけ。集約はすべて派生物にする。絶対パスをファイルに書かない (登録リストは <code>~</code> 表記)</li>
+	</ul>
+
 	<h2>1 件のファイル (案)</h2>
 <pre><code class="language-markdown">---
+schema: 1
 id: i261103-01
 title: li の中の表を、表のまま出す
-state: 未            # 未 / 着手 / 済
-group: html2md       # いまの章 (グループ)
-created: 2026/11/03
-updated: 2026/11/03
-from: ai-chat-lite #1737     # 報告元 (無ければ省く)
-confirmed: false             # 報告元の確認。from があるとき、true になるまで済にできない
-refs: [p261103-01]           # 計画・調査の番号
+state: 未
+group: html2md
+created: 2026-11-03
+from: ai-chat-lite #1737
+confirmed: false
+refs: p261103-01
 ---
 
 (本文。Markdown)
@@ -318,7 +435,7 @@ refs: [p261103-01]           # 計画・調査の番号
 	<ul>
 		<li><strong>メタ情報は先頭の十数行</strong>。状態を変えるのは 1 行の差分になる</li>
 		<li><strong>「やること」は 1 行 1 件、行頭に状態</strong>。いまの「やることも 3 段階」の決まりと同じ。件数は機械が数える</li>
-		<li><strong>ID はいまの決まりのまま</strong> (<code>i</code> ＋ <code>yymmdd-nn</code>、nn は 36 進数 2 桁)。<strong>連番は CLI が付ける</strong>。同じ日に 2 つのセッションが同じ番号を取らないよう、ファイルを「無ければ作る」の排他で作り、取れなければ次の番号にする</li>
+		<li><strong>ID はいまの決まりのまま</strong> (<code>i</code> ＋ <code>yymmdd-nn</code>、nn は 36 進数 2 桁)。<strong>連番は CLI が付ける</strong>。同じ日に 2 つのセッションが同じ番号を取らないよう、<strong>番号の予約を排他で取る</strong> (前の小節「ファイル名と置き場」)。取れなければ次の番号にする</li>
 		<li><strong>課題の並びは保存しない</strong>。表示のときに、グループ・状態・番号で並べる。並びの変更が差分に出ない</li>
 		<li><strong>履歴は git が持つ</strong>。<code>git log -- 課題のファイル</code> が、その課題の経緯になる。ファイルの中に更新履歴を書かない</li>
 		<li><strong>形の版を持つ</strong> (<code>schema: 1</code>)。あとで項目を足すときに、読み替えられる</li>
@@ -335,7 +452,9 @@ refs: [p261103-01]           # 計画・調査の番号
 			<tr><td class="nowrap">状態を変える</td><td><code>issue set i261103-01 --state 着手</code> ／ <code>issue todo i261103-01 --done 2</code></td><td>1 行だけの差分。書き間違いが無い</td></tr>
 			<tr><td class="nowrap">済にする</td><td><code>issue set i261103-01 --state 済</code></td><td><strong>やることが残っている・報告元の確認が無いときは拒否する</strong>。「記録を先に済と書かない」を道具が守る</td></tr>
 			<tr><td class="nowrap">検査</td><td><code>issue check</code></td><td>ID の重複・形の誤り・状態の不一致・参照切れ・件数を、機械が数える</td></tr>
-			<tr><td class="nowrap">表示を作る</td><td><code>issue render</code></td><td><code>issues.html</code> と、グループごとの件数・目次を生成する。中身が同じなら書かない (ローカルルール第 5 章)</td></tr>
+			<tr><td class="nowrap">初期化</td><td><code>issue init</code></td><td><code>project-id.txt</code> を作る (無ければ)。最初の <code>issue new</code> も、無ければ作る。フォルダごとコピーして別のプロジェクトにしたときは、<code>issue init --new-id</code> で振り直す</td></tr>
+				<tr><td class="nowrap">片付ける</td><td><code>issue archive &lt;group&gt;</code> ／ <code>issue unarchive &lt;group&gt;</code></td><td>グループの全件が済のときだけ、<code>items/archived/</code> へ <code>git mv</code> する。本文は書き換えない。戻すのは <code>unarchive</code></td></tr>
+				<tr><td class="nowrap">表示を作る</td><td><code>issue render</code></td><td><code>issues.html</code> と、グループごとの件数・目次を生成する。中身が同じなら書かない (ローカルルール第 5 章)</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -349,6 +468,7 @@ refs: [p261103-01]           # 計画・調査の番号
 	<ul>
 		<li><strong>いまの <code>issues.html</code> と同じ見た目</strong> (章ごとの色相、<code>details</code> の開閉、バッジ、目次、タイトルにプロジェクト名)。生成なので、共通ルール「課題の管理」の「既定の開閉は状態で決める」「件数と状態は中身から数え直す」が自動で守られる</li>
 		<li><code>&lt;meta name="md-skip"&gt;</code> のまま。Markdown は作らない</li>
+		<li><strong><code>issues.html</code> は <code>items/</code> 直下から、<code>issues-archive.html</code> は <code>items/archived/</code> から生成する</strong>。README がリンクするのは <code>issues.html</code> だけ、という決まりは変わらない</li>
 		<li>生成物は commit する (案 95-A)。README からのリンクが切れず、GitHub 上でも見える。同じ中身なら書かないので、差分は課題が変わったときだけ</li>
 	</ul>
 
@@ -377,7 +497,7 @@ refs: [p261103-01]           # 計画・調査の番号
 			<tr>
 				<td class="nowrap">93-A</td>
 				<td rowspan="3">課題の正本をどこに置くか (恒久)</td>
-				<td><strong>A</strong>: 1 件 1 ファイル (テキスト)。SQLite は作り直せる索引にだけ使う</td>
+				<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: 1 件 1 ファイル (テキスト)。SQLite は作り直せる索引にだけ使う</td>
 				<td>差分・競合・Read ・ Grep の 4 条件を満たす。SQLite を正本にしないので、バイナリの競合も <code>-wal</code> の事故も起きない</td>
 			</tr>
 			<tr>
@@ -393,7 +513,7 @@ refs: [p261103-01]           # 計画・調査の番号
 			<tr>
 				<td class="nowrap">94-A</td>
 				<td rowspan="2">本文の形式</td>
-				<td><strong>A</strong>: Markdown (先頭にメタ情報)</td>
+				<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: Markdown (先頭にメタ情報)</td>
 				<td>AI が読み書きしやすく、差分が素直。HTML への変換は生成側が担う</td>
 			</tr>
 			<tr>
@@ -404,7 +524,7 @@ refs: [p261103-01]           # 計画・調査の番号
 			<tr>
 				<td class="nowrap">95-A</td>
 				<td rowspan="2">人向けの HTML</td>
-				<td><strong>A</strong>: 生成して commit する</td>
+				<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: 生成して commit する</td>
 				<td>README のリンクが切れず、GitHub でも見える。中身が同じなら書かないので、差分は小さい</td>
 			</tr>
 			<tr>
@@ -415,7 +535,7 @@ refs: [p261103-01]           # 計画・調査の番号
 			<tr>
 				<td class="nowrap">96-A</td>
 				<td rowspan="2">既存の課題の移行</td>
-				<td><strong>A</strong>: 未・着手の課題だけを新しい形へ移す。済は <code>issues.html</code> と <code>issues-archive.html</code> に残す</td>
+				<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: 未・着手の課題だけを新しい形へ移す。済は <code>issues.html</code> と <code>issues-archive.html</code> に残す</td>
 				<td>移すのは 3 件程度で済む。「移すときに本文を書き換えない」「済は元のグループに残す」と矛盾しない。ただし、過去の課題は新旧 2 か所に分かれる</td>
 			</tr>
 			<tr>
@@ -426,7 +546,7 @@ refs: [p261103-01]           # 計画・調査の番号
 			<tr>
 				<td class="nowrap">97-A</td>
 				<td rowspan="2">全体の横断</td>
-				<td><strong>A</strong>: 後続のフェーズで、読み取り専用の集約を作る (登録リストは利用者が承認)</td>
+				<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: 後続のフェーズで、読み取り専用の集約を作る (登録リストは利用者が承認)</td>
 				<td>各プロジェクトの形が揃ってから作るほうが、作る量が小さい。外を読むことの承認も、そのときに取れる</td>
 			</tr>
 			<tr>
@@ -442,14 +562,224 @@ refs: [p261103-01]           # 計画・調査の番号
 			</tr>
 			<tr>
 				<td class="nowrap">98-B</td>
-				<td><strong>B</strong>: 試さず、93-A で進める</td>
+				<td><strong>決定済み (2026-11-03、利用者の判断): B</strong>: 試さず、93-A で進める</td>
 				<td>早い。ただし、「簡単な代替が無いか調べてから複雑な案を出す」の確認が、紹介記事の範囲に留まる</td>
 			</tr>
 			<tr>
 				<td class="nowrap">99</td>
 				<td>CLI の名前</td>
-				<td>案: <code>issue</code> (短く、意味が通る)。ほかの共有ツールや OS のコマンドとぶつからないかを、実装の前に <code>Get-Command</code> で確かめる</td>
+				<td><strong>決定済み (2026-11-03、利用者の判断): <code>issue</code></strong> (短く、意味が通る)。ほかの共有ツールや OS のコマンドとぶつからないかを、実装の前に <code>Get-Command</code> で確かめる</td>
 				<td>名前の衝突は、採否が決まってから確かめる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">106</td>
+					<td>ファイル形式</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): F2</strong> (Markdown ＋ 自作の <code>キー: 値</code> 行)。比較は第 3 章</td>
+					<td>依存を増やさず、YAML の型の落とし穴を仕様で避けられる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">107-A</td>
+					<td rowspan="2">キー項目を増やすか (第 3 章のキー項目の表)</td>
+					<td><strong>A</strong>: 表の 9 キーだけにする</td>
+					<td>いまの運用 (3 段階の状態 ・ 報告元の確認 ・ 参照) に要るものだけ。必要になった時点で、<code>schema</code> を上げて足す</td>
+				</tr>
+				<tr>
+					<td class="nowrap">107-B</td>
+					<td><strong>B</strong>: 優先度 ・ 担当 ・ ラベル ・ 期限 ・ 依存も持つ</td>
+					<td>多機能。ただし、使われない項目の入力と検査が増える</td>
+				</tr>
+				<tr>
+					<td class="nowrap">108-A</td>
+					<td rowspan="2">更新日 (<code>updated</code>) を持つか</td>
+					<td><strong>A</strong>: 持たない。更新の経緯は <code>git log -- 課題のファイル</code> で見る</td>
+					<td>状態を変えるたびに 2 行の差分になるのを避ける。履歴は git が持つ、と同じ向き</td>
+				</tr>
+				<tr>
+					<td class="nowrap">108-B</td>
+					<td><strong>B</strong>: 持つ (CLI が自動で更新)</td>
+					<td>一覧で更新順に並べやすい。ただし、直接 Edit したときは更新日が古いままになり、<code>issue check</code> でも直せない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">109-A</td>
+					<td rowspan="2">グループ (章) の表示順の置き場</td>
+					<td><strong>A</strong>: <code>items/groups.txt</code> に 1 行 1 グループで並べる (並びが表示順)</td>
+					<td>表示順を明示でき、色相の割り当て (章数で決まる) もこの並びで決まる。ファイルは 1 つ増える</td>
+				</tr>
+				<tr>
+					<td class="nowrap">109-B</td>
+					<td><strong>B</strong>: グループ名の最初の課題の番号順で自動にする</td>
+					<td>ファイルが増えない。ただし、番号順が表示順になり、並べ替えられない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">110-A</td>
+					<td rowspan="2">ファイル名</td>
+					<td><strong>A</strong>: <code>&lt;id&gt;-&lt;件名&gt;.md</code>。件名は立てるときに決める短いスラッグで、あとから変えない</td>
+					<td>一覧 ・ <code>git log --stat</code> で中身が分かる。題を直しても名前が動かない。重複は、予約の <code>mkdir</code> と <code>issue check</code> の 2 段で止める</td>
+				</tr>
+				<tr>
+					<td class="nowrap">110-B</td>
+					<td><strong>B</strong>: <code>&lt;id&gt;.md</code> (件名なし)</td>
+					<td>重複の排他がファイルの作成だけで済み、単純。ただし、一覧で ID しか見えず、中身は開くまで分からない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">111-A</td>
+					<td rowspan="2">片付いたグループの置き場</td>
+					<td><strong>A</strong>: グループの全件が済になったら、<code>items/archived/</code> へ移す (<code>issue archive</code>)</td>
+					<td>既存の「グループごと片付いたら <code>issues-archive</code> へ移す」と対応する。普段の一覧が小さく済む。移すのは稀で、パスが動くのもそのときだけ</td>
+				</tr>
+				<tr>
+					<td class="nowrap">111-B</td>
+					<td><strong>B</strong>: 移さず、すべて <code>items/</code> に残す</td>
+					<td>ファイルが動かない。ただし、<code>items/</code> が増え続け、<code>issues-archive.html</code> に当たるものを作れない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">112-A</td>
+					<td rowspan="2">片付いたグループに新しい課題を立てるとき</td>
+					<td><strong>A</strong>: 拒否し、<code>issue unarchive &lt;group&gt;</code> で戻してから立てる</td>
+					<td>グループが <code>items/</code> と <code>archived/</code> の 2 か所に分かれない。戻すのは、利用者が意図した操作になる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">112-B</td>
+					<td><strong>B</strong>: 警告だけして、<code>items/</code> に立てる</td>
+					<td>手間が無い。ただし、同じグループが 2 か所に分かれ、<code>issue list</code> と <code>issues-archive.html</code> に分散する</td>
+				</tr>
+				<tr>
+					<td class="nowrap">122-A</td>
+					<td><code>project_id</code> の決め方</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong> (リポジトリに commit する UUID のファイル)</td>
+					<td>clone ・ 浅い clone ・ クラウドを通して変わらず、リネームにも強い。最初の commit の SHA (案 C) は、浅い clone で黙って違う値になるため採らない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">123-A</td>
+					<td><code>checkout_id</code> の決め方</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong> (DB の <code>meta</code> に入れる乱数の UUID)</td>
+					<td>値が安定し、生のホスト名とパスを持たない。横断の DB は、各 DB を取り込まず、ファイルを直接読み直す</td>
+				</tr>
+				<tr>
+					<td class="nowrap">124-A</td>
+					<td>PC とクラウドの DB 定義</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong> (同じ DDL ・ 同じ <code>schema_version</code>)</td>
+					<td>クラウドは毎回作り直すだけで済み、定義が 2 つに分かれない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">125-A</td>
+					<td><code>project_id</code> のファイルの置き場と名前</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong> (<code>notes/40_issues/items/project-id.txt</code>。F2 の <code>キー: 値</code>、<code>---</code> なし)</td>
+					<td>名前で中身が分かり、<code>groups.txt</code> と同じ場所に道具の管理ファイルが揃う。<code>.txt</code> なので、課題 (<code>.md</code>) と取り違えない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">113-A</td>
+					<td rowspan="2">CLI の既定の範囲</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: そのプロジェクトだけ。横断は <code>--all-projects</code> を付けたときだけ</td>
+					<td>他プロジェクトを意図せず読まない。外を読むことの承認の取り方と合う</td>
+				</tr>
+				<tr>
+					<td class="nowrap">113-B</td>
+					<td><strong>B</strong>: 既定で、登録したプロジェクトも含める</td>
+					<td>全体が一度に見える。ただし、外を読むことが既定になる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">114-A</td>
+					<td rowspan="3">横断の登録リストの置き場</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: ai-agent-tools の <code>_</code> フォルダに、利用者が手で書く (<code>~</code> 表記)</td>
+					<td>他に影響せず、承認の記録にもなる。PC ごとに作る必要がある</td>
+				</tr>
+				<tr>
+					<td class="nowrap">114-B</td>
+					<td><strong>B</strong>: Vault の <code>projects/!projects.md</code> を読む</td>
+					<td>一覧がすでにある。ただし、課題を持たないプロジェクトも載り、承認の取り方が曖昧になる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">114-C</td>
+					<td><strong>C</strong>: 各プロジェクトが「課題を持つ」と宣言するファイルを置き、探して集める</td>
+					<td>増減が自動。ただし、探すためにプロジェクトの外を走査することになり、承認の問題が大きい</td>
+				</tr>
+				<tr>
+					<td class="nowrap">115-A</td>
+					<td rowspan="2">横断の出力</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: commit せず、<code>_</code> フォルダに置く</td>
+					<td>他プロジェクトの課題が、public のリポジトリに載る恐れを避ける</td>
+				</tr>
+				<tr>
+					<td class="nowrap">115-B</td>
+					<td><strong>B</strong>: commit する</td>
+					<td>どの PC からも見える。ただし、公開範囲を誤ると漏れる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">116-A</td>
+					<td rowspan="2">クラウドでの横断</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: 各リポジトリ単独で動くことを要件にする。集約リポジトリ (C2) と GitHub Issues 連携 (C3) は、将来案として書くだけにする</td>
+					<td>いまの設計のまま、クラウドでも使える。権限と更新の仕組みを、必要になってから決められる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">116-B</td>
+					<td><strong>B</strong>: 今から集約リポジトリ (C2) を作る</td>
+					<td>クラウドでも全体が見える。ただし、他のリポジトリを読む権限と、集約の更新の仕組みが先に要る</td>
+				</tr>
+				<tr>
+					<td class="nowrap">117-A</td>
+					<td rowspan="2">索引 DB の置き場</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: <code>notes/40_issues/_index/issues.sqlite</code> (先頭 <code>_</code> で Git 管理外)</td>
+					<td>プロジェクトと一緒に動く。捨てても作り直せる派生物</td>
+				</tr>
+				<tr>
+					<td class="nowrap">117-B</td>
+					<td><strong>B</strong>: プロジェクトの外 (ユーザ共通のキャッシュフォルダ)</td>
+					<td>プロジェクトの中を汚さない。ただし、ユーザプロファイル配下のパスを扱い、プロジェクトのコピーに付いてこない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">118-A</td>
+					<td rowspan="3">変更の判定方法</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: 更新日時とサイズが一致なら信頼し、違えば SHA-256 で確かめる</td>
+					<td><code>cp -p</code> や checkout の見逃しを防ぎつつ、読む量を減らせる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">118-B</td>
+					<td><strong>B</strong>: 更新日時だけで判定する</td>
+					<td>単純。ただし、更新日時が合って中身が違う場合を見逃す</td>
+				</tr>
+				<tr>
+					<td class="nowrap">118-C</td>
+					<td><strong>C</strong>: 毎回、全部読む (キャッシュなし)</td>
+					<td>見逃しがない。ただし、件数が増えると遅くなる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">119-A</td>
+					<td rowspan="2">全体を捨てる条件</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: <code>schema_version</code> と <code>parser_version</code> の違い、破損。3 つ組で捨て、一時の DB に作ってから置き換える</td>
+					<td>読み方を直したときに、全行が古くなる事故を防ぐ。途中で止まっても、半端な DB が残らない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">119-B</td>
+					<td><strong>B</strong>: 行ごとの判定だけにする</td>
+					<td>単純。ただし、読み方の変更や破損に気づけない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">120-A</td>
+					<td rowspan="2">日本語の全文検索</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: FTS5 の <code>trigram</code> と <code>LIKE</code> を併用する。先に、組み込みの SQLite の FTS5 の有無を bun と node で実測する</td>
+					<td>3 文字以上は速く、2 文字以下は <code>LIKE</code> で補える</td>
+				</tr>
+				<tr>
+					<td class="nowrap">120-B</td>
+					<td><strong>B</strong>: <code>LIKE</code> だけにする</td>
+					<td>FTS5 の有無に左右されない。ただし、件数が増えると遅い</td>
+				</tr>
+				<tr>
+					<td class="nowrap">121-A</td>
+					<td rowspan="3">キャッシュを持つか</td>
+					<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: フェーズ 2 の前に実測して決める。全部読む方法と、キャッシュを、同じ件数 ・ 同じ場所で比べ、数字で残す。<strong>実測の場所は file-manager のプロジェクト</strong> (課題が大きいプロジェクトで試す)。そのプロジェクトの課題を読むときは、対象と目的を示して確認を取る (共通ルール「プロジェクトフォルダ外へのアクセス」)</td>
+					<td>共通ルール「性能」の「測ってから決める」に従う。68 件では効果が出ない可能性がある</td>
+				</tr>
+				<tr>
+					<td class="nowrap">121-B</td>
+					<td><strong>B</strong>: 実測せず、持つ</td>
+					<td>横断と全文検索の下地になる。ただし、効果が数字で示せない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">121-C</td>
+					<td><strong>C</strong>: 持たない</td>
+					<td>仕組みが最小。ただし、横断と全文検索が重くなる</td>
 			</tr>
 		</tbody>
 	</table>
@@ -463,7 +793,7 @@ refs: [p261103-01]           # 計画・調査の番号
 	<ol>
 		<li><strong>フェーズ 0 (決める)</strong>: 第 4 章の番号の採否をいただく。98-A なら、Backlog.md を試して、93-A と 93-B を最終決定する</li>
 		<li><strong>フェーズ 1 (形と検査)</strong>: 1 件のファイルの形 (項目・状態・やること) を、仕様として <code>notes/50_spec/</code> に書く。読み込みと <code>issue check</code> を、テストを先に書いて実装する</li>
-		<li><strong>フェーズ 2 (操作)</strong>: <code>new</code> ・ <code>list</code> ・ <code>show</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>search</code> を実装する。<strong>「済」の拒否</strong> (やることが残っている・報告元の確認が無い) もここで入れる</li>
+		<li><strong>フェーズ 2 (操作)</strong>: <code>new</code> ・ <code>list</code> ・ <code>show</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>search</code> ・ <code>archive</code> ・ <code>unarchive</code> を実装する。番号の予約 (<code>_lock/</code>) もここで入れる。<strong>「済」の拒否</strong> (やることが残っている・報告元の確認が無い) もここで入れる</li>
 		<li><strong>フェーズ 3 (表示)</strong>: <code>issue render</code> で、いまの <code>issues.html</code> と同じ見た目の HTML を生成する。<strong>先に期待値を手で書いた golden</strong> で比べる。<code>check-contrast</code> で実測する</li>
 		<li><strong>フェーズ 4 (移行)</strong>: 96-A なら、未・着手の課題を新しい形へ移し、<code>issues.html</code> を生成物に切り替える。共通ルール「課題の管理」と「プロジェクトフォルダ構成」に、書き換えが要るかを確かめる (書き換えは案を示して指示を待つ)</li>
 		<li><strong>フェーズ 5 (横断)</strong>: 97-A なら、登録リストの形と、外を読むことの承認の取り方を決め、集約を作る</li>
@@ -485,7 +815,8 @@ refs: [p261103-01]           # 計画・調査の番号
 			<tr><td>課題の形が、他プロジェクトの実情に合わない (file-manager 等)</td><td>フェーズ 1 の仕様を、先に file-manager 側の課題の数と形を見て決める。<strong>そのプロジェクトの課題を読むには、対象と目的を示して確認を取る</strong> (共通ルール「プロジェクトフォルダ外へのアクセス」)。この計画の作成では、他プロジェクトの課題は読んでいない</td></tr>
 			<tr><td>新旧 2 か所に課題が分かれて、探しにくくなる (96-A)</td><td><code>issue search</code> が旧 <code>issues.html</code> も走査できるようにするか、移行の終わりに旧側へ案内の 1 行を置く</td></tr>
 			<tr><td>直接 Edit した誤りが、生成物に出る</td><td><code>issue check</code> を commit の前の決まりにする (全件テストに組み込む)</td></tr>
-			<tr><td>索引 (SQLite) が古い</td><td>索引は派生物。古ければ作り直す。ファイルの更新日時と比べて、CLI が自動で判断する</td></tr>
+			<tr><td>別の PC ・ クラウドで、同じ ID が別の件名で立つ (git では競合しない)</td><td><code>issue check</code> が、同じ ID の複数ファイルを止める。commit の前と pull のあとに流す。並行書き込みのテストで確かめる</td></tr>
+				<tr><td>索引 (SQLite) が古い</td><td>索引は派生物。古ければ作り直す。ファイルの更新日時と比べて、CLI が自動で判断する</td></tr>
 			<tr><td>外の形に寄せすぎて、既存の運用 (3 段階の状態・36 進数の ID) が崩れる</td><td>93-B を採る場合は、合わない点を先に一覧にして、採否を決める</td></tr>
 		</tbody>
 	</table>
