@@ -136,7 +136,7 @@
 	<div class="inner">
 		<h1>環境変数の仕様 (ai-agent-tools)</h1>
 		<p class="lead">このプロジェクトの道具が、読む ・ 設定する ・ 消す環境変数の一覧。試験用は後半の章に分けてある。</p>
-		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-01</p>
+		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-05</p>
 	</div>
 </div>
 
@@ -218,6 +218,7 @@
 			<tr><td class="nowrap"><code>TRANSCRIBE_TEST_VENDOR</code></td><td><code>src/transcribe</code></td><td>whisper の置き場。試験が本物の <code>_vendor</code> を触らないため</td><td><code>_vendor/whisper</code></td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>CONVERT_AUDIO_TEST_VENDOR</code></td><td><code>src/convert-audio</code></td><td>ffmpeg の置き場。同上</td><td><code>_vendor/ffmpeg</code></td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>SAFE_PUSH_TEST_HOSTNAME</code></td><td><code>src/safe-push</code></td><td>ロックに書くホスト名。別のホストのロックを試す</td><td><code>os.hostname()</code></td><td>本番の道具が読む</td></tr>
+				<tr><td class="nowrap"><code>ISSUE_TEST_TODAY</code></td><td><code>src/issue</code></td><td>今日の日付 (<code>yyyy-mm-dd</code>)。<code>issue new</code> の id の日付と <code>created</code> に使う。試験が固定する</td><td>JST の今日</td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>SPAWN_SERVER_TEST_NO_FFI</code></td><td><code>src/spawn-server-ts</code></td><td><code>1</code> で、最初から <code>Start-Process</code> で起動する (代わりの道を通す)</td><td>FFI で起動し、読めなければ以後 <code>Start-Process</code></td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>AGENT_LAUNCH_TEST_HOME</code></td><td><code>src/agent-launch/main.ts</code></td><td>履歴の置き場 (ホームのフォルダ)</td><td>本物のホーム</td><td>本番の道具が読む (試験の入口)</td></tr>
 			<tr><td class="nowrap"><code>AGENT_LAUNCH_TEST_HIDE</code></td><td><code>src/agent-launch/main.ts</code></td><td><code>1</code> で、窓を作らず非表示のまま番人を動かし、番人に「尋ねずに終わる」と渡す</td><td>見える窓で、尋ねる (本番)</td><td>本番の道具が読む (試験の入口)</td></tr>

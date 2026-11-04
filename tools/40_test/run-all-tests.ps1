@@ -68,6 +68,8 @@ $Suites = @(
 	@{ Name = 'safe-push'; Script = 'run-safe-push-tests.ts'; TimeoutSec = 300 },
 	# 課題管理ツール issue のフェーズ 1: 課題ファイルの形と issue check。小さなプロジェクトを tmp/ に作って検査する
 	@{ Name = 'issue'; Script = 'run-issue-tests.ts' },
+	# 課題管理ツール issue のフェーズ 2 の前半: init ・ new (番号の予約と同時実行を含む) ・ show ・ list
+	@{ Name = 'issue (操作)'; Script = 'run-issue-ops-tests.ts' },
 	# 一括実行の時間の上限そのもの。止める相手は、このテストが起動する眠るだけの node
 	@{ Name = '試験の時間の上限'; Script = 'run-timeout-tests.ts' },
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },

@@ -26,15 +26,15 @@ export type CheckResult = {
 export const ItemsRel = 'notes/40_issues/items';
 
 /** <id>-<件名>.md。連番は 36 進数 2 桁で、英字は小文字、l は大文字の L */
-const NamePattern = /^(i\d{6}-[0-9a-kLm-z]{2})-(.+)\.md$/;
-const IdPattern = /^i\d{6}-[0-9a-kLm-z]{2}$/;
+export const NamePattern = /^(i\d{6}-[0-9a-kLm-z]{2})-(.+)\.md$/;
+export const IdPattern = /^i\d{6}-[0-9a-kLm-z]{2}$/;
 /** 件名に使える文字: 英数字 ・ ハイフン ・ 下線 ・ ピリオド ・ ひらがな ・ カタカナ ・ 漢字 */
-const SlugPattern = /^[0-9A-Za-z_.\-ぁ-ゖァ-ヺー々㐀-䶿一-鿿]+$/;
-const SlugMax = 30;
-const ProjectIdPattern = /^[0-9a-f]{32}$/;
+export const SlugPattern = /^[0-9A-Za-z_.\-ぁ-ゖァ-ヺー々㐀-䶿一-鿿]+$/;
+export const SlugMax = 30;
+export const ProjectIdPattern = /^[0-9a-f]{32}$/;
 /** 番号 (課題 ・ 計画 ・ 調査)。ほかのプロジェクトの番号は「プロジェクト名:番号」 */
-const RefPattern = /^(?:[A-Za-z0-9_.-]+:)?([a-z]\d{6}-[0-9a-kLm-z]{2})$/;
-const TodoLine = /^\s*- \[([^\]]*)\]/;
+export const RefPattern = /^(?:[A-Za-z0-9_.-]+:)?([a-z]\d{6}-[0-9a-kLm-z]{2})$/;
+export const TodoLine = /^\s*- \[([^\]]*)\]/;
 const Required = ['schema', 'id', 'title', 'group', 'created'] as const;
 /** refs の参照先を探す、notes/ の下のフォルダ（ファイル名の先頭が番号） */
 const RefFolders = ['notes/01_research', 'notes/02_ideas', 'notes/10_plan'];
@@ -87,7 +87,7 @@ function normalize(text: string, rel: string, add: Add): string {
 }
 
 /** フォルダ直下の .md の名前 (並べ替え済み)。フォルダが無ければ空 */
-function listMdNames(dir: string): string[] {
+export function listMdNames(dir: string): string[] {
 	try {
 		return fs.readdirSync(dir, { withFileTypes: true })
 			.filter((e) => e.isFile() && e.name.toLowerCase().endsWith('.md'))

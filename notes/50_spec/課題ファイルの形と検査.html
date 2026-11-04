@@ -12,10 +12,11 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
-	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
-	.ch03{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -142,7 +143,7 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
-		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは「読み込み」と <code>issue check</code> まで。</p>
+		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> まで。</p>
 		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-05</p>
 	</div>
 </div>
@@ -154,7 +155,7 @@
 <p>課題を 1 件 1 ファイルで持つ形と、その検査 (<code>issue check</code>) の<strong>いまの姿</strong>。決めた経緯と、番号付きの決定は <a href="../10_plan/p261103-01-課題管理ツール.html">課題管理ツール 計画</a> にある。実装と食い違ったら、実装が正しい。</p>
 
 <div class="callout">
-	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code>。<code>issue new</code> ・ <code>list</code> ・ <code>set</code> 等の操作と、HTML の生成は、まだ実装していない (第 3 章)。</p>
+	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code>。<code>issue set</code> 等の残りの操作と、HTML の生成は、まだ実装していない (第 4 章)。</p>
 </div>
 
 <div class="toc">
@@ -162,7 +163,8 @@
 	<ol>
 		<li class="ch01"><a href="#ch01">置き場と 1 件のファイルの形</a></li>
 		<li class="ch02"><a href="#ch02"><code>issue check</code> の検査</a></li>
-		<li class="ch03"><a href="#ch03">まだ無いもの ・ 限界</a></li>
+		<li class="ch03"><a href="#ch03">操作 (<code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code>)</a></li>
+		<li class="ch04"><a href="#ch04">まだ無いもの ・ 限界</a></li>
 	</ol>
 </div>
 
@@ -324,11 +326,51 @@ issue check --json           # 結果を JSON で出す</code></pre>
 </section>
 
 <section class="ch03" id="ch03">
+	<h1>操作 (<code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code>)</h1>
+	<p>共通の決まり: 出力に絶対パスを出さない (相対パス ・ <code>/</code> 区切り)。終了コードは、成功 0 ・ 失敗 1 (見つからない ・ 重複 ・ 番号を使い切った) ・ 引数の誤り 5 (2 は使わない)。プロジェクトは、<code>--root</code> か、作業フォルダから親をたどって探す。</p>
+	<h2><code>issue init [--root &lt;dir&gt;] [--new-id]</code></h2>
+	<ul>
+		<li><code>project-id.txt</code> を作る (<code>schema: 1</code> ＋ 乱数の <code>project_id</code>)。<code>items/</code> が無ければ作るが、<strong>状態のフォルダは作らない</strong> (空フォルダを作らない)</li>
+		<li>既にあれば変えず、「既にある」と出す。<code>--new-id</code> は <code>project_id</code> を振り直す (フォルダごとコピーして別のプロジェクトにしたとき)</li>
+		<li>プロジェクトは、<code>--root</code>、無ければ作業フォルダから親をたどって見つけたもの、それも無ければ作業フォルダ</li>
+	</ul>
+	<h2><code>issue new --title &lt;題&gt; --group &lt;グループ&gt; [--slug &lt;件名&gt;] [--from &lt;報告元&gt;] [--refs &lt;番号,…&gt;] [--body &lt;本文&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li><code>todo/</code> に <code>&lt;id&gt;-&lt;件名&gt;.md</code> を作る。<strong>引数はすべて、何かを作る前に確かめる</strong>。誤りなら、何も作らず終了コード 5</li>
+		<li><strong>id</strong> は、<code>i</code> ＋ 今日の日付 (JST の <code>yymmdd</code>) ＋ 連番。連番は、<strong>その日の既存の最大 (4 つのフォルダすべて) の次</strong>で、36 進数 2 桁 (<code>09</code> の次は <code>0a</code>、<code>0k</code> の次は <code>0L</code>)。その日の最初は <code>01</code></li>
+		<li><strong>件名</strong>は、<code>--slug</code> があればそれ、無ければ題から作る (使えない文字 ・ 空白は <code>-</code> に直し、30 文字までに切る)。<code>--slug</code> が使えない文字を含む ・ 30 文字を超える ・ 題からも作れない (記号だけ等) ときは終了コード 5</li>
+		<li><strong><code>groups.txt</code> があれば</strong>、<code>--group</code> がそこに並んでいる名前であること (誤字を防ぐため)。無ければ何でもよい</li>
+		<li><code>--from</code> があれば、<code>from</code> と <code>confirmed: false</code> を書く。<code>--refs</code> は番号をカンマで区切り、カンマのあとに空白 1 つで書く。形が違えば終了コード 5</li>
+		<li>メタ情報は、決まりの順で書く。本文は、閉じの <code>---</code> の次の空行のあと。<code>--body</code> が無ければ空行だけ。UTF-8 (BOM 無し) ・ LF</li>
+		<li><code>project-id.txt</code> が無ければ、<code>issue init</code> と同じに作る。<code>--root</code> で指したプロジェクトに <code>items/</code> が無くても作れる。<code>--root</code> が無く、プロジェクトが見つからなければ終了コード 5 (<code>issue init</code> を促す)</li>
+		<li><strong>番号の予約</strong>: 作る前に <code>notes/40_issues/_lock/&lt;id&gt;/</code> を <code>mkdir</code> で作る (<code>mkdir</code> は既にあれば失敗するので、排他になる)。先頭 <code>_</code> のフォルダなので Git 管理外。取れなければ次の番号を試し、作り終えたら消す。<strong>60 秒より古い予約は、持ち主が居ないとみなして消し、取り直す</strong>。予約を取ったあとにも、同じ id のファイルが無いかをもう一度見る</li>
+		<li>予約が効くのは<strong>同じ PC の中だけ</strong>。別の PC やクラウドで、件名違いに同じ番号が立つと、<code>issue check</code> の <code>duplicate</code> が後から止める</li>
+		<li>出力: <code>[OK] &lt;相対パス&gt; を作った (&lt;id&gt;)</code>。<code>--json</code> は <code>{ id, file }</code></li>
+		<li>今日の日付は、環境変数 <code>ISSUE_TEST_TODAY</code> (<code>yyyy-mm-dd</code>) で固定できる (試験用。<a href="環境変数.html">環境変数の仕様</a>)</li>
+	</ul>
+	<h2><code>issue show &lt;id&gt; [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li><code>&lt;id&gt;-</code> で始まるファイルを、<strong>4 つのフォルダから探して</strong>読む。id は完全一致 (例: <code>i261103-01</code>)。形が違えば終了コード 5、見つからなければ 1、同じ id のファイルが複数あれば 1 (「複数ある」と出す)</li>
+		<li>出力: 1 行目に <code>&lt;id&gt;  &lt;状態&gt; (&lt;フォルダ&gt;/)  &lt;相対パス&gt;</code>、続けてファイルの全文。<code>archived/</code> の課題は、状態が 済 で、フォルダが <code>archived/</code></li>
+		<li><code>--json</code>: <code>id</code> ・ <code>state</code> (未 ・ 着手 ・ 済) ・ <code>folder</code> ・ <code>file</code> ・ <code>meta</code> (キーと値) ・ <code>body</code> ・ <code>todos</code> (<code>{ state, text }</code> の配列)</li>
+	</ul>
+	<h2><code>issue list [--state 未,着手,済,archived | --all] [--group &lt;g&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li><strong>既定は未・着手</strong> (<code>todo/</code> と <code>doing/</code> だけを読む)。<code>--state</code> は、未 ・ 着手 ・ 済 (<code>done/</code>) ・ <code>archived</code> をカンマで区切る。<code>--all</code> は 4 つすべて。<code>--state</code> と <code>--all</code> は同時に使えない。知らない語は終了コード 5</li>
+		<li><code>--group</code> で、グループが一致するものだけに絞る</li>
+		<li><strong>id の順</strong>に並べる (日付、次に 36 進数の連番。文字コード順ではない: <code>L</code> は <code>0</code> 〜 <code>9</code> と <code>a</code> 〜 <code>k</code> の後)。フォルダには関わらない</li>
+		<li>出力: 1 行 1 件 <code>&lt;id&gt;  &lt;状態&gt;  &lt;グループ&gt;  &lt;題&gt;</code> (<code>archived/</code> は <code>済 (archived)</code>)、最後の行が <code>N 件</code>。<code>--json</code> は <code>{ id, state, folder, group, title, created, file }</code> の配列</li>
+		<li>メタ情報が読めない課題は、飛ばして標準エラーに警告を出す (終了コードは 0)。理由は <code>issue check</code> で確かめる</li>
+		<li>費用は、読むフォルダの件数で決まる。済 ・ <code>archived/</code> は、既定では読まない</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
 	<h1>まだ無いもの ・ 限界</h1>
 	<ul>
-		<li><strong>操作</strong>: <code>issue new</code> ・ <code>list</code> ・ <code>show</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>search</code> ・ <code>init</code> ・ <code>archive</code> ・ <code>unarchive</code>。フェーズ 2 以降</li>
+		<li><strong>操作</strong>: <code>issue set</code> (状態の変更。<code>git mv</code> で隣のフォルダへ動かす) ・ <code>todo</code> (やることの状態) ・ <code>search</code> ・ <code>archive</code> ・ <code>unarchive</code>。フェーズ 2 の後半</li>
 		<li><strong>HTML の生成</strong> (<code>issue render</code>)、<strong>索引 DB</strong>、<strong>横断</strong>: フェーズ 3 以降</li>
-		<li><strong>番号の予約 (<code>_lock/</code>)</strong>: <code>issue new</code> と一緒に入れる。いまは、重複を <code>issue check</code> が後から止めるだけ</li>
+		<li><strong>番号の予約 (<code>_lock/</code>) は、同じ PC の中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める</li>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>
 		<li><strong><code>refs</code> の参照先は、ファイル名の先頭だけで探す</strong>。移行前の課題 (<code>issues.html</code> の中の番号) は見つけられず、警告になる</li>
 		<li>他のプロジェクトのファイルは読まない。検査するのは、見つけた 1 つのプロジェクトだけ</li>

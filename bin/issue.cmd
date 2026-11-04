@@ -1,5 +1,5 @@
 @echo off
-rem issue: 課題管理ツール。課題を 1 件 1 ファイルで持ち、検査する (いまは check まで)。
+rem issue: 課題管理ツール。課題を 1 件 1 ファイルで持ち、検査 ・ 作成 ・ 閲覧する (check ・ init ・ new ・ show ・ list)。
 rem 中身は src\issue\main.ts。bun を優先し、無ければ node で走らせる。
 rem
 rem if ( ) のブロックの中で %errorlevel% を見ないこと。
