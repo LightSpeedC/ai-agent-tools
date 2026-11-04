@@ -63,6 +63,11 @@
 		color:var(--accent,#12224d);
 		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
 	}
+	h3{
+		border-bottom:2px dotted var(--accent2,#2f5fbf);
+		display:inline-block; margin:20px 0 8px; padding-bottom:3px;
+		color:var(--ink,#1c2330); background:transparent;
+	}
 	p{ margin:12px 0; }
 	ul,ol{ margin:12px 0; padding-left:1.6em; }
 	li{ margin:5px 0; }
@@ -155,7 +160,7 @@
 	<div class="inner">
 		<h1>p261103-01 課題管理ツール 計画 (ai-agent-tools)</h1>
 		<p class="lead">課題が大きくなったプロジェクトのために、課題を 1 件 1 ファイルで持ち、AI エージェントが読み書き・検索でき、人向けの HTML も出せる共有ツールを作る。保存方法を比べ、案と決めることを示す。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-03</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-05</p>
 	</div>
 </div>
 
@@ -167,6 +172,7 @@
 
 <div class="callout callout-important">
 	<p><strong>実装の状況 (2026-11-03)</strong>: 決めること (93〜125) は全件決まり、利用者の指示 (「p261103-01 実装して」) で実装に着手した。<strong>フェーズ 1 (形と検査) は済</strong>: 仕様 <a href="../50_spec/課題ファイルの形と検査.html">課題ファイルの形と検査の仕様</a>、<code>issue check</code> (<code>src/issue/</code> ・ <code>bin/issue</code>)、テスト 68 件 (<code>tools/40_test/run-issue-tests.ts</code>。node ・ bun の両方で通る)。先にテストを書いて 63 件が落ちる (❌Red) のを見てから実装した。<strong>フェーズ 2 以降 (操作 ・ 表示 ・ 移行 ・ 横断) は未</strong>。この計画の本文は、当時の考えとして書き換えない。</p>
+	<p><strong>2026-11-05</strong>: 121-A の実測で、キャッシュは持たないことにし (121-C)、<strong>状態をフォルダで持つ形に変えた (126-A)</strong>。フェーズ 1 の <code>issue check</code> と仕様を、この形に直した (<code>state</code> キーを無くし、<code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> ・ <code>archived/</code> を検査する)。</p>
 </div>
 
 <div class="callout callout-important">
@@ -415,6 +421,19 @@
 		<li><strong>クラウド</strong>: ファイルが git の中にあるので、プロジェクトローカルはそのまま動く。条件は、PowerShell が無いので拡張子なしの sh 入口を <code>cloud-session-start</code> の PATH に乗せること、TypeScript の本体が Linux で動くこと (未実測)、同じ PC にしか効かない <code>_lock/</code> の代わりに <code>issue check</code> が重複 ID を止めること。横断は、ほかのリポジトリが clone されておらず、private は書き込み権限付きで追加しないと読めないので難しい</li>
 		<li><strong>将来案 (今は作らない)</strong>: C2 = 集約用のリポジトリを 1 つ持ち、各リポジトリの課題を集めて生成する (他のリポジトリを読む権限と更新の仕組みが要る)。C3 = GitHub Issues と同期する (双方向の同期が複雑で、「ファイルが正本」と衝突しやすい)</li>
 		<li><strong>いま決めておくと将来が楽になること</strong>: <code>refs</code> に <code>プロジェクト名:ID</code> も書ける。CLI の既定の範囲はそのプロジェクトだけ。集約はすべて派生物にする。絶対パスをファイルに書かない (登録リストは <code>~</code> 表記)</li>
+	</ul>
+
+	<h2>状態の持ち方 (決定: 126-A。2026-11-05)</h2>
+	<p>この小節は、<strong>前の小節 (ファイル名と置き場) ・ キー項目の表 ・ 次の「1 件のファイル」の例のうち、<code>state</code> に関わる部分を置き換える</strong>。経緯は「121-A の実測」の、状態でフォルダを分けた場合。</p>
+	<ul>
+		<li><strong>置き場は 4 つ</strong>: <code>items/todo/</code> (未) ・ <code>items/doing/</code> (着手) ・ <code>items/done/</code> (済) ・ <code>items/archived/</code> (グループの全件が済になって退避したもの)。<code>project-id.txt</code> と <code>groups.txt</code> は <code>items/</code> 直下のまま。<code>items/</code> 直下や、4 つ以外のフォルダに課題を置くと誤り</li>
+		<li><strong><code>state</code> キーは持たない</strong> (キー項目は 8 個)。状態はフォルダが正本で、二重管理が無い。<code>state</code> キーが残っていれば誤りとして止める</li>
+		<li><strong>状態を変える</strong>: <code>issue set &lt;id&gt; --state 着手</code> が、ファイルを <code>git mv</code> で隣のフォルダへ動かす。直接 <code>mv</code> しても同じ。移動は、本文の変更と別の commit にする (git の rename 検出が、小さなファイルで外れないように)</li>
+		<li><strong>「済」の拒否</strong>: <code>done/</code> と <code>archived/</code> に置けるのは、やることが残っておらず、報告元の確認が済んだ課題だけ。<code>issue set --state 済</code> は、満たさなければ移動を拒否する。直接の移動は、<code>issue check</code> が誤りとして止める</li>
+		<li><strong>ID からパスを引く</strong> (<code>issue show</code> 等) は、4 つのフォルダを順に見る。<strong>参照は ID で書き、パスで書かない</strong>ことは、変わらない</li>
+		<li><strong>重複 ID の検査</strong>は、4 つのフォルダにまたがる。新規は必ず <code>todo/</code> に作る</li>
+		<li><strong>一覧と検索の既定</strong>: 「未・着手」は <code>todo/</code> と <code>doing/</code> だけを読む。済 ・ archived を含めるのは <code>--all</code> を付けたときだけ</li>
+		<li><strong>117〜120 (索引 DB) は、いまは使わない</strong> (121-C)。将来、件数が約 2000 件を超える、または横断で合計が増えたときの案として残す</li>
 	</ul>
 
 	<h2>1 件のファイル (案)</h2>
@@ -782,8 +801,19 @@ refs: p261103-01
 				</tr>
 				<tr>
 					<td class="nowrap">121-C</td>
-					<td><strong>C</strong>: 持たない</td>
+					<td><strong>決定 (2026-11-05、利用者の判断。実測の結果): C</strong>: 持たない。117〜120 は、将来キャッシュを持つときの案として残す</td>
 					<td>仕組みが最小。ただし、横断と全文検索が重くなる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">126-A</td>
+					<td rowspan="2">状態の持ち方</td>
+					<td><strong>決定済み (2026-11-05、利用者の判断): A</strong>: <code>state</code> キーをやめ、<code>items/</code> の下の <code>todo/</code> (未) ・ <code>doing/</code> (着手) ・ <code>done/</code> (済) ・ <code>archived/</code> (グループごと片付いて退避) で持つ。状態の変更は <code>issue set</code> (内部で <code>git mv</code>) か直接の移動で行い、<code>issue check</code> が食い違いを検出する</td>
+					<td>実測で、未・着手だけ読む費用が、キャッシュの判定より小さい (390 件 ・ 14% で 4.9 ms 対 16 ms)。費用が、全体の件数ではなく未・着手の件数で決まる。同じ課題を同時に更新することは基本的に無いので、移動の競合は小さい</td>
+				</tr>
+				<tr>
+					<td class="nowrap">126-B</td>
+					<td><strong>B</strong>: 従来どおり <code>state</code> キーで持つ (<code>archived/</code> だけ分ける)</td>
+					<td>状態を変えても、ファイルは動かない。ただし、実測で効果が出ない (全部読む費用が、全体の件数に比例する)</td>
 			</tr>
 		</tbody>
 	</table>
@@ -803,6 +833,66 @@ refs: p261103-01
 		<li><strong>フェーズ 5 (横断)</strong>: 97-A なら、登録リストの形と、外を読むことの承認の取り方を決め、集約を作る</li>
 		<li><strong>周知</strong>: 公開 CLI なので <code>TOOLS-USAGE</code> に使い方を足す。共通ルールを変えたときだけ、周知の案を出す</li>
 	</ol>
+	<h2>121-A の実測 (2026-11-05)</h2>
+	<p>キャッシュを持つかを決めるために、<strong>全部読む方法</strong>と<strong>キャッシュの判定</strong>を、同じ件数 ・ 同じ場所で比べた。道具は <code>tools/50_run/bench-issue-cache/bench.ts</code> (node ・ bun の両方で流せる)。</p>
+	<ul>
+		<li><strong>規模</strong>: file-manager のプロジェクトを読み取りで数えた。課題は約 390 件 (進行中 345 件 ＋ archived 45 件)、課題の HTML は合計約 1 MB で、<strong>1 件 約 2.7 KB</strong>。この大きさの作り物の課題 (<code>tmp/</code> の下) を、68 ・ 390 ・ 2000 ・ 5000 件で用意した。file-manager の実物の中身は、計測に使っていない (形式が HTML で違うため)</li>
+		<li><strong>測ったもの</strong> (7 回の中央値): <code>check</code> = 全部読む検査、<code>read</code> = 全部読むだけ、<code>stat</code> = キャッシュの判定に要る最小限 (一覧を取って各ファイルを <code>stat</code>)、<code>validate</code> = キャッシュの判定 (DB を開く ＋ 全行の更新日時とサイズを読む ＋ <code>stat</code> と比べる ＋ 閉じる)。起動の時間は、<code>node -e 0</code> が 46 ms、<code>bun -e 0</code> が 19 ms</li>
+	</ul>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>件数</th><th>処理系</th><th><code>check</code> (全部読む検査)</th><th><code>read</code> (全部読む)</th><th><code>stat</code> (判定の最小限)</th><th><code>validate</code> (キャッシュの判定)</th><th>キャッシュを作る (1 回)</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">68</td><td>node / bun</td><td>6.8 / 5.6 ms</td><td>5.2 / 4.3 ms</td><td>3.1 / 1.9 ms</td><td>3.6 / 2.7 ms</td><td>36 / 35 ms</td></tr>
+			<tr><td class="nowrap"><strong>390</strong></td><td>node / bun</td><td><strong>32 / 27 ms</strong></td><td>29 / 21 ms</td><td>12 / 8.9 ms</td><td><strong>16 / 11 ms</strong></td><td>114 / 88 ms</td></tr>
+			<tr><td class="nowrap">2000</td><td>node / bun</td><td>192 / 161 ms</td><td>156 / 129 ms</td><td>64 / 59 ms</td><td>73 / 63 ms</td><td>543 / 454 ms</td></tr>
+			<tr><td class="nowrap">5000</td><td>node / bun</td><td>461 / 390 ms</td><td>450 / 331 ms</td><td>196 / 127 ms</td><td>227 / 151 ms</td><td>1913 / 1114 ms</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>件数</th><th>処理系</th><th>検索: 全部読む (2 文字 ・ 5 文字)</th><th>検索: <code>LIKE</code> (2 文字 / 5 文字)</th><th>検索: FTS5 <code>trigram</code> (5 文字)</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><strong>390</strong></td><td>node / bun</td><td>27 ・ 28 / 22 ・ 22 ms</td><td>2.4 / 4.6 ms ・ 2.2 / 3.9 ms</td><td>0.5 / 0.4 ms</td></tr>
+			<tr><td class="nowrap">2000</td><td>node / bun</td><td>140 ・ 139 / 118 ・ 117 ms</td><td>8.2 / 14 ms ・ 6.9 / 12 ms</td><td>0.5 / 0.8 ms</td></tr>
+			<tr><td class="nowrap">5000</td><td>node / bun</td><td>343 ・ 362 / 287 ・ 288 ms</td><td>14 / 29 ms ・ 17 / 29 ms</td><td>0.9 / 0.6 ms</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h3>読み取れること</h3>
+	<ul>
+		<li><strong>判定の費用は、<code>stat</code> がほとんど</strong>。<code>validate</code> は <code>stat</code> の 1.1 〜 1.3 倍で、<code>check</code> の約半分。キャッシュは、全部読む方法に対して<strong>およそ 2 倍まで</strong>しか速くならない (<code>stat</code> の費用は消せない)</li>
+		<li><strong>file-manager の規模 (390 件) では、差は 1 回あたり約 11 〜 16 ms</strong>。起動を含む 1 回の全体 (node 約 126 ms ・ bun 約 56 ms) に対して、1 〜 3 割。人が呼ぶ CLI では気づかない大きさ</li>
+		<li><strong>差が大きくなるのは、約 2000 件から</strong> (約 100 ms 以上)。5000 件では約 230 ms</li>
+		<li><strong>検索は、キャッシュの判定を足しても速い</strong>: 390 件で、全部読む 27 ms に対して、<code>validate</code> 16 ms ＋ FTS5 0.5 ms。<code>LIKE</code> だけでも、本文の検索は 390 件で 2 〜 5 ms</li>
+		<li><strong>FTS5 の <code>trigram</code> は node 26 ・ bun 1.4 のどちらの組み込み SQLite でも使えた</strong> (120-A の前提)。2 文字の語は <code>trigram</code> で 0 件になり、<code>LIKE</code> なら引ける</li>
+		<li><strong>キャッシュを作る費用は 1 回 100 ms 前後</strong> (390 件)。クラウドでは毎回作り直す</li>
+	</ul>
+	<h3>状態でフォルダを分けた場合 (2026-11-05 の追加の実測)</h3>
+	<p>利用者の指摘 (「済と未・着手は同時に更新しない。状態でフォルダを分けるほうが、検索の効果が大きい」) を受けて、<code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> ・ <code>archived/</code> に分けた配置で、未・着手 (<code>todo/</code> ＋ <code>doing/</code>) だけを読む費用を測った。<strong>未・着手の割合は実測で、ai-agent-tools が約 4% (3 / 72 件)、file-manager が約 14% (56 / 392 件)</strong>。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>件数</th><th>未・着手の割合</th><th>処理系</th><th>全部読む</th><th>未・着手だけ読む</th><th>比</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><strong>390</strong></td><td>4%</td><td>node / bun</td><td>29 / 25 ms</td><td>1.1 / 1.1 ms</td><td>27 / 22 倍</td></tr>
+			<tr><td class="nowrap"><strong>390</strong></td><td>14%</td><td>node / bun</td><td>30 / 24 ms</td><td><strong>4.9 / 3.3 ms</strong></td><td>6.1 / 7.2 倍</td></tr>
+			<tr><td class="nowrap">2000</td><td>4%</td><td>node / bun</td><td>146 / 119 ms</td><td>5.1 / 4.8 ms</td><td>29 / 25 倍</td></tr>
+			<tr><td class="nowrap">5000</td><td>4%</td><td>node / bun</td><td>381 / 308 ms</td><td>13 / 11 ms</td><td>29 / 27 倍</td></tr>
+			<tr><td class="nowrap">5000</td><td>14%</td><td>node / bun</td><td>380 / 309 ms</td><td>54 / 41 ms</td><td>7.1 / 7.6 倍</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>390 件 (14%) で、キャッシュの判定 16 / 11 ms に対して、未・着手だけ読むと 4.9 / 3.3 ms</strong>。フォルダ分けのほうが、キャッシュより速い</li>
+		<li>検索 (5 文字) も同じ傾向。390 件で、全部読む 27 / 22 ms に対して、未・着手だけなら 1.2 〜 3.7 ms</li>
+		<li><strong>キャッシュは「1 件ごとの費用を下げる」が、フォルダ分けは「見ない件数を減らす」</strong>。済は読むことも <code>stat</code> することもしない。済は増え続け、未・着手は少ないままなので、<strong>費用は全体の件数ではなく、未・着手の件数で決まる</strong></li>
+		<li>全体を見る問い (<code>issue check</code> ・ 済の履歴の検索) は、従来どおり全件になる。390 件で約 30 ms</li>
+	</ul>
+	<div class="callout">
+		<p><strong>この実測の限界</strong>: (1) <strong>OS のファイルキャッシュは温まっている</strong>。冷えたディスクでの時間は測っていない (全部読む方法も <code>stat</code> も遅くなるが、比は未確認)。(2) 課題は同じ形の作り物で、中身の複雑さは測っていない。(3) CPU の値は、Windows では 15 ms 刻みで、68 件では 0 になる。(4) 更新日時は整数 (ミリ秒) で持った。本番の「23 文字の日時の TEXT」では、変換の費用が少し増える。(5) 横断 (複数のプロジェクトの合計) の件数は、まだ数えていない。</p>
+	</div>
+
 	<h2>テストの方針</h2>
 	<ul>
 		<li><strong>不具合を直すときと同じ順序</strong>: 期待値を先に手で書き、落ちる (❌Red) のを見てから実装する (✅Green)</li>

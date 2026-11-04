@@ -2,6 +2,7 @@
 	issue（課題管理ツール）のフェーズ 1 のテスト: 課題ファイルの読み込みと `issue check`。
 	計画は p261103-01、仕様は notes/50_spec/課題ファイルの形と検査.html。
 
+	状態は state キーではなく、置いてあるフォルダ (todo / doing / done / archived) で持つ (計画の 126-A)。
 	期待値は、仕様から先に手で書いた（実装の出力から作っていない）。
 	本物のプロジェクトには触らない。tmp/ の下に、ケースごとの小さなプロジェクトを作る。
 
@@ -33,11 +34,15 @@ function fwd(p: string): string {
 
 const ProjectIdText = 'schema: 1\nproject_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\n';
 const Items = 'notes/40_issues/items/';
+const Todo = Items + 'todo/';
+const Doing = Items + 'doing/';
+const Done = Items + 'done/';
+const Archived = Items + 'archived/';
 
-/** メタ情報の既定の並び（仕様のキー項目の表の順） */
-const KeyOrder = ['schema', 'id', 'title', 'state', 'group', 'created', 'from', 'confirmed', 'refs'];
+/** メタ情報の既定の並び（仕様のキー項目の表の順。state は持たない） */
+const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs'];
 const Defaults: Record<string, string> = {
-	schema: '1', id: 'i261103-01', title: 'li の中の表を、表のまま出す', state: '未', group: 'html2md', created: '2026-11-03',
+	schema: '1', id: 'i261103-01', title: 'li の中の表を、表のまま出す', group: 'html2md', created: '2026-11-03',
 };
 
 /**
@@ -51,8 +56,8 @@ function issueText(over: Record<string, string | null> = {}, body: string = '\n�
 	return '---\n' + lines.join('\n') + '\n---\n' + body;
 }
 
-/** 課題 1 件の標準のファイル名 */
-const Name1 = Items + 'i261103-01-li内の表.md';
+/** 課題 1 件の標準のファイル名 (todo/ の中) */
+const Name1 = Todo + 'i261103-01-li内の表.md';
 
 function mkProject(name: string, files: Record<string, string>): string {
 	const dir = path.join(work, name);
@@ -98,7 +103,7 @@ console.log('--- 正しいプロジェクト');
 {
 	const dir = std('ok-one', { [Name1]: issueText() });
 	const r = checkRun(dir);
-	check('正しい課題 1 件は、終了コード 0 で「問題なし」', r.code === 0 && r.out.includes('[OK] 課題 1 件 (進行中 1 件 ・ archived 0 件)。問題なし'), r.out);
+	check('正しい課題 1 件 (todo/) は、終了コード 0 で「問題なし」', r.code === 0 && r.out.includes('[OK] 課題 1 件 (未 1 件 ・ 着手 0 件 ・ 済 0 件 ・ archived 0 件)。問題なし'), r.out);
 	check('出力に絶対パスを出さない', !r.out.includes(dir) && !r.out.includes(fwd(dir)), r.out);
 }
 {
@@ -111,21 +116,36 @@ console.log('--- 正しいプロジェクト');
 	check('題に ": " や "#" を含んでも読める (最初の ": " で分けるだけで、コメントは無い)', checkRun(dir).code === 0);
 }
 {
-	const dir = std('ok-36', { [Items + 'i261103-0L-大文字のエル.md']: issueText({ id: 'i261103-0L' }) });
+	const dir = std('ok-36', { [Todo + 'i261103-0L-大文字のエル.md']: issueText({ id: 'i261103-0L' }) });
 	check('連番の 36 進数で、l は大文字の L (0L) なら読める', checkRun(dir).code === 0);
 }
 {
-	const dir = std('ok-done', {
-		[Name1]: issueText({ state: '済', from: 'project-a #1', confirmed: 'true' }, '\n本文\n\n## やること\n- [済] a\n- [済] b\n'),
-	});
-	check('済で、やることが全部済で、報告元の確認が true なら読める', checkRun(dir).code === 0, checkRun(dir).out);
+	const dir = std('ok-doing', { [Doing + 'i261103-01-着手中.md']: issueText() });
+	const r = checkRun(dir);
+	check('doing/ の課題は読める (着手として数える)', r.code === 0 && r.out.includes('未 0 件 ・ 着手 1 件'), r.out);
 }
 {
-	const dir = std('ok-archived', {
-		[Items + 'archived/i261103-01-old.md']: issueText({ state: '済', group: 'less' }),
+	const dir = std('ok-done', {
+		[Done + 'i261103-01-済.md']: issueText({ from: 'project-a #1', confirmed: 'true' }, '\n本文\n\n## やること\n- [済] a\n- [済] b\n'),
 	});
 	const r = checkRun(dir);
-	check('archived/ に済の課題があれば読める (件数は archived に数える)', r.code === 0 && r.out.includes('進行中 0 件 ・ archived 1 件'), r.out);
+	check('done/ で、やることが全部済で、報告元の確認が true なら読める (済として数える)', r.code === 0 && r.out.includes('済 1 件'), r.out);
+}
+{
+	const dir = std('ok-archived', { [Archived + 'i261103-01-old.md']: issueText({ group: 'less' }) });
+	const r = checkRun(dir);
+	check('archived/ の課題は読める (archived として数える)', r.code === 0 && r.out.includes('課題 1 件 (未 0 件 ・ 着手 0 件 ・ 済 0 件 ・ archived 1 件)'), r.out);
+}
+{
+	const dir = std('ok-counts', {
+		[Todo + 'i261103-01-a.md']: issueText({ id: 'i261103-01' }),
+		[Doing + 'i261103-02-b.md']: issueText({ id: 'i261103-02' }),
+		[Doing + 'i261103-03-c.md']: issueText({ id: 'i261103-03' }),
+		[Done + 'i261103-04-d.md']: issueText({ id: 'i261103-04' }),
+		[Archived + 'i261103-05-e.md']: issueText({ id: 'i261103-05' }),
+	});
+	const r = checkRun(dir);
+	check('4 つのフォルダの件数を、それぞれ数える (未 1 ・ 着手 2 ・ 済 1 ・ archived 1)', r.code === 0 && r.out.includes('課題 5 件 (未 1 件 ・ 着手 2 件 ・ 済 1 件 ・ archived 1 件)'), r.out);
 }
 
 console.log('--- project-id.txt');
@@ -150,29 +170,43 @@ console.log('--- project-id.txt');
 	check('project_id のキーが無ければエラー', errorWith(checkRun(dir), 'project-id'));
 }
 
-console.log('--- ファイル名');
+console.log('--- 置き場 (状態のフォルダ)');
 {
-	const dir = std('name-nonissue', { [Items + 'memo.md']: '# メモ\n' });
-	check('items/ に i で始まらない .md があればエラー (name)', errorWith(checkRun(dir), 'name', 'memo.md'));
+	const dir = std('place-root', { [Items + 'i261103-01-直下.md']: issueText() });
+	check('items/ 直下に課題があればエラー (place)', errorWith(checkRun(dir), 'place', 'i261103-01-直下.md'));
 }
 {
-	const dir = std('name-space', { [Items + 'i261103-01-a b.md']: issueText() });
+	const dir = std('place-other', { [Items + 'other/i261103-01-別.md']: issueText() });
+	check('todo / doing / done / archived 以外のフォルダに課題があればエラー (place)', errorWith(checkRun(dir), 'place'));
+}
+{
+	const dir = std('place-state-key', { [Name1]: issueText({ state: '未' }) });
+	check('state キーが残っていればエラー (state-key。状態はフォルダで持つ)', errorWith(checkRun(dir), 'state-key'));
+}
+
+console.log('--- ファイル名');
+{
+	const dir = std('name-nonissue', { [Todo + 'memo.md']: '# メモ\n' });
+	check('状態のフォルダの中に、i で始まらない .md があればエラー (name)', errorWith(checkRun(dir), 'name', 'memo.md'));
+}
+{
+	const dir = std('name-space', { [Todo + 'i261103-01-a b.md']: issueText() });
 	check('件名に空白があればエラー (name)', errorWith(checkRun(dir), 'name'));
 }
 {
-	const dir = std('name-lowerl', { [Items + 'i261103-0l-小文字のエル.md']: issueText({ id: 'i261103-0l' }) });
+	const dir = std('name-lowerl', { [Todo + 'i261103-0l-小文字のエル.md']: issueText({ id: 'i261103-0l' }) });
 	check('連番に小文字の l を使えばエラー (L と書く決め)', errorWith(checkRun(dir), 'name'));
 }
 {
-	const dir = std('name-noslug', { [Items + 'i261103-01.md']: issueText() });
+	const dir = std('name-noslug', { [Todo + 'i261103-01.md']: issueText() });
 	check('件名の無いファイル名 (<id>.md) はエラー (name)', errorWith(checkRun(dir), 'name'));
 }
 {
-	const dir = std('name-long', { [Items + 'i261103-01-' + 'あ'.repeat(31) + '.md']: issueText() });
+	const dir = std('name-long', { [Todo + 'i261103-01-' + 'あ'.repeat(31) + '.md']: issueText() });
 	check('件名が 30 文字を超えれば警告 (slug-long)。エラーではない', warnWith(checkRun(dir), 'slug-long'));
 }
 {
-	const dir = std('name-id-mismatch', { [Items + 'i261103-02-x.md']: issueText({ id: 'i261103-01' }) });
+	const dir = std('name-id-mismatch', { [Todo + 'i261103-02-x.md']: issueText({ id: 'i261103-01' }) });
 	check('id キーがファイル名の先頭と違えばエラー (value)', errorWith(checkRun(dir), 'value', 'i261103-02-x.md'));
 }
 
@@ -190,15 +224,15 @@ console.log('--- メタ情報の形');
 	check('値が空のキーはエラー (meta)', errorWith(checkRun(dir), 'meta'));
 }
 {
-	const dir = std('meta-dup', { [Name1]: issueText().replace('state: 未\n', 'state: 未\nstate: 着手\n') });
+	const dir = std('meta-dup', { [Name1]: issueText().replace('group: html2md\n', 'group: html2md\ngroup: less\n') });
 	check('キーが重複すればエラー (meta)', errorWith(checkRun(dir), 'meta'));
 }
 {
-	const dir = std('meta-badline', { [Name1]: issueText().replace('state: 未\n', 'state: 未\nこれはキーではない\n') });
+	const dir = std('meta-badline', { [Name1]: issueText().replace('group: html2md\n', 'group: html2md\nこれはキーではない\n') });
 	check('キー: 値の形でない行があればエラー (meta)', errorWith(checkRun(dir), 'meta'));
 }
 {
-	const dir = std('meta-blankline', { [Name1]: issueText().replace('state: 未\n', 'state: 未\n\n') });
+	const dir = std('meta-blankline', { [Name1]: issueText().replace('group: html2md\n', 'group: html2md\n\n') });
 	check('メタ情報の中の空行はエラー (meta)', errorWith(checkRun(dir), 'meta'));
 }
 {
@@ -211,13 +245,9 @@ console.log('--- メタ情報の形');
 }
 
 console.log('--- 必須キーと値');
-for (const key of ['schema', 'id', 'title', 'state', 'group', 'created']) {
+for (const key of ['schema', 'id', 'title', 'group', 'created']) {
 	const dir = std('key-' + key, { [Name1]: issueText({ [key]: null }) });
 	check('必須の ' + key + ' が無ければエラー (key)', errorWith(checkRun(dir), 'key'));
-}
-{
-	const dir = std('value-state', { [Name1]: issueText({ state: '完了' }) });
-	check('state が 未 / 着手 / 済 以外ならエラー (value)', errorWith(checkRun(dir), 'value'));
 }
 {
 	const dir = std('value-schema', { [Name1]: issueText({ schema: '2' }) });
@@ -242,7 +272,7 @@ for (const key of ['schema', 'id', 'title', 'state', 'group', 'created']) {
 
 console.log('--- 警告で済むもの');
 {
-	const text = issueText().replace('title: li の中の表を、表のまま出す\nstate: 未\n', 'state: 未\ntitle: li の中の表を、表のまま出す\n');
+	const text = issueText().replace('title: li の中の表を、表のまま出す\ngroup: html2md\n', 'group: html2md\ntitle: li の中の表を、表のまま出す\n');
 	const dir = std('warn-order', { [Name1]: text });
 	check('キーの順が仕様と違えば警告 (key-order)。エラーではない', warnWith(checkRun(dir), 'key-order'));
 }
@@ -281,9 +311,9 @@ console.log('--- refs');
 {
 	const dir = std('refs-issue', {
 		[Name1]: issueText({ refs: 'i261103-02' }),
-		[Items + 'i261103-02-b.md']: issueText({ id: 'i261103-02' }),
+		[Done + 'i261103-02-b.md']: issueText({ id: 'i261103-02' }),
 	});
-	check('refs の課題が items/ にあれば警告にならない', checkRun(dir).code === 0 && !checkRun(dir).out.includes('[refs]'));
+	check('refs の課題が、どの状態のフォルダにあっても警告にならない', checkRun(dir).code === 0 && !checkRun(dir).out.includes('[refs]'), checkRun(dir).out);
 }
 {
 	const dir = std('refs-plan', {
@@ -298,34 +328,30 @@ console.log('--- refs');
 	check('refs の プロジェクト名:番号 は、外を読まないので確かめない', checkRun(dir).code === 0 && !checkRun(dir).out.includes('[refs]'), checkRun(dir).out);
 }
 
-console.log('--- 重複と archived');
+console.log('--- 重複');
 {
-	const dir = std('dup-items', {
-		[Items + 'i261103-01-a.md']: issueText(),
-		[Items + 'i261103-01-b.md']: issueText(),
+	const dir = std('dup-same-folder', {
+		[Todo + 'i261103-01-a.md']: issueText(),
+		[Todo + 'i261103-01-b.md']: issueText(),
 	});
 	check('同じ id が 2 つのファイルにあればエラー (duplicate)。別の PC で件名違いに立った場合', errorWith(checkRun(dir), 'duplicate'));
 }
 {
-	const dir = std('dup-archived', {
-		[Items + 'i261103-01-a.md']: issueText(),
-		[Items + 'archived/i261103-01-b.md']: issueText({ state: '済' }),
+	const dir = std('dup-folders', {
+		[Todo + 'i261103-01-a.md']: issueText(),
+		[Archived + 'i261103-01-b.md']: issueText(),
 	});
-	check('items/ と archived/ に同じ id があればエラー (duplicate)', errorWith(checkRun(dir), 'duplicate'));
-}
-{
-	const dir = std('archived-open', { [Items + 'archived/i261103-01-a.md']: issueText({ state: '着手' }) });
-	check('archived/ に済でない課題があればエラー (archived)', errorWith(checkRun(dir), 'archived'));
+	check('todo/ と archived/ のように、フォルダをまたいで同じ id があればエラー (duplicate)', errorWith(checkRun(dir), 'duplicate'));
 }
 
-console.log('--- やること ・ 報告元の確認');
+console.log('--- やること ・ 報告元の確認 (済は done/ ・ archived/ に置く)');
 {
-	const dir = std('todo-open', { [Name1]: issueText({ state: '済' }, '\n## やること\n- [済] a\n- [着手] b\n') });
-	check('済なのに着手のやることが残っていればエラー (todo)', errorWith(checkRun(dir), 'todo'));
+	const dir = std('todo-open-done', { [Done + 'i261103-01-a.md']: issueText({}, '\n## やること\n- [済] a\n- [着手] b\n') });
+	check('done/ にあるのに、着手のやることが残っていればエラー (todo)', errorWith(checkRun(dir), 'todo'));
 }
 {
-	const dir = std('todo-todo', { [Name1]: issueText({ state: '済' }, '\n## やること\n- [未] a\n') });
-	check('済なのに未のやることが残っていればエラー (todo)', errorWith(checkRun(dir), 'todo'));
+	const dir = std('todo-open-archived', { [Archived + 'i261103-01-a.md']: issueText({}, '\n## やること\n- [未] a\n') });
+	check('archived/ にあるのに、未のやることが残っていればエラー (todo)', errorWith(checkRun(dir), 'todo'));
 }
 {
 	const dir = std('todo-badstate', { [Name1]: issueText({}, '\n## やること\n- [x] a\n') });
@@ -333,15 +359,23 @@ console.log('--- やること ・ 報告元の確認');
 }
 {
 	const dir = std('todo-fine', { [Name1]: issueText({}, '\n## やること\n- [未] a\n- [着手] b\n- [済] c\n') });
-	check('未・着手の課題に、未・着手・済のやることが混ざっていてもよい', checkRun(dir).code === 0);
+	check('todo/ の課題に、未・着手・済のやることが混ざっていてもよい', checkRun(dir).code === 0);
 }
 {
 	const dir = std('confirmed-missing', { [Name1]: issueText({ from: 'project-a #1' }) });
 	check('from があるのに confirmed が無ければエラー (confirmed)', errorWith(checkRun(dir), 'confirmed'));
 }
 {
-	const dir = std('confirmed-false-done', { [Name1]: issueText({ state: '済', from: 'project-a #1', confirmed: 'false' }) });
-	check('報告元の確認が true でないのに済ならエラー (confirmed)', errorWith(checkRun(dir), 'confirmed'));
+	const dir = std('confirmed-false-done', { [Done + 'i261103-01-a.md']: issueText({ from: 'project-a #1', confirmed: 'false' }) });
+	check('報告元の確認が true でないのに done/ にあればエラー (confirmed)', errorWith(checkRun(dir), 'confirmed'));
+}
+{
+	const dir = std('confirmed-false-archived', { [Archived + 'i261103-01-a.md']: issueText({ from: 'project-a #1', confirmed: 'false' }) });
+	check('報告元の確認が true でないのに archived/ にあればエラー (confirmed)', errorWith(checkRun(dir), 'confirmed'));
+}
+{
+	const dir = std('confirmed-false-todo', { [Name1]: issueText({ from: 'project-a #1', confirmed: 'false' }) });
+	check('報告元の確認が false でも、todo/ ・ doing/ にあれば問題ない (済にしなければよい)', checkRun(dir).code === 0, checkRun(dir).out);
 }
 
 console.log('--- 呼び方 ・ 出力');
@@ -371,17 +405,21 @@ console.log('--- 呼び方 ・ 出力');
 	check('終了コードに 2 を使わない (Stop フックが 2 を「続ける」と読むため)', ![run(['frobnicate'], dir).code, run([], dir).code, run(['check', '--bogus'], dir).code].includes(2));
 }
 {
-	const dir = std('json', { [Name1]: issueText({ state: '完了' }), [Items + 'i261103-02-b.md']: issueText({ id: 'i261103-02', priority: 'x' }) });
+	const dir = std('json', {
+		[Name1]: issueText({ state: '未' }),
+		[Doing + 'i261103-02-b.md']: issueText({ id: 'i261103-02', priority: 'x' }),
+		[Done + 'i261103-03-c.md']: issueText({ id: 'i261103-03' }),
+	});
 	const r = checkRun(dir, ['--json']);
-	let parsed: { ok?: boolean; errors?: number; warnings?: number; issues?: number; archived?: number; findings?: { level: string; code: string; file: string; message: string }[] } = {};
+	let parsed: { ok?: boolean; errors?: number; warnings?: number; issues?: number; todo?: number; doing?: number; done?: number; archived?: number; findings?: { level: string; code: string; file: string; message: string }[] } = {};
 	try { parsed = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
-	check('--json は 1 つの JSON を出す (ok ・ errors ・ warnings ・ issues ・ archived ・ findings)',
-		parsed.ok === false && parsed.errors === 1 && parsed.warnings === 1 && parsed.issues === 2 && parsed.archived === 0 && Array.isArray(parsed.findings), r.out);
+	check('--json は 1 つの JSON を出す (ok ・ errors ・ warnings ・ issues ・ todo ・ doing ・ done ・ archived ・ findings)',
+		parsed.ok === false && parsed.errors === 1 && parsed.warnings === 1 && parsed.issues === 3 && parsed.todo === 1 && parsed.doing === 1 && parsed.done === 1 && parsed.archived === 0 && Array.isArray(parsed.findings), r.out);
 	check('--json でも、エラーがあれば終了コード 1', r.code === 1);
 	check('--json の findings に、重さ ・ 種別 ・ ファイル ・ 文を持つ', (parsed.findings ?? []).every((f) => f.level && f.code && f.file && f.message), r.out);
 }
 {
-	const dir = std('readonly', { [Name1]: issueText({ state: '完了' }) });
+	const dir = std('readonly', { [Name1]: issueText({ state: '未' }) });
 	const before = fs.readFileSync(path.join(dir, Name1), 'utf8');
 	checkRun(dir);
 	check('検査は何も書き換えない', fs.readFileSync(path.join(dir, Name1), 'utf8') === before);

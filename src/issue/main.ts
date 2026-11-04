@@ -78,12 +78,15 @@ function runCheck(rest: string[]): void {
 			errors,
 			warnings,
 			issues: result.issues,
+			todo: result.todo,
+			doing: result.doing,
+			done: result.done,
 			archived: result.archived,
 			findings: result.findings,
 		}));
 	} else {
 		for (const f of result.findings) console.log(label(f));
-		const count = `課題 ${result.issues} 件 (進行中 ${result.issues - result.archived} 件 ・ archived ${result.archived} 件)`;
+		const count = `課題 ${result.issues} 件 (未 ${result.todo} 件 ・ 着手 ${result.doing} 件 ・ 済 ${result.done} 件 ・ archived ${result.archived} 件)`;
 		if (errors > 0) console.log(`[NG] ${count}。エラー ${errors} 件 ・ 警告 ${warnings} 件`);
 		else if (warnings > 0) console.log(`[OK] ${count}。エラー 0 件 ・ 警告 ${warnings} 件`);
 		else console.log(`[OK] ${count}。問題なし`);

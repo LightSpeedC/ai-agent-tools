@@ -6,10 +6,13 @@
 	引用符 ・ コメント ・ 複数行 ・ 入れ子は無い。最初の「: 」で分け、値の前後の空白を除く。
 */
 
-/** メタ情報のキーの順（仕様のキー項目の表の順）。CLI はこの順で書く */
-export const KeyOrder = ['schema', 'id', 'title', 'state', 'group', 'created', 'from', 'confirmed', 'refs'] as const;
+/**
+ * メタ情報のキーの順（仕様のキー項目の表の順）。CLI はこの順で書く。
+ * 状態 (state) は持たない。状態は置いてあるフォルダで決まる (計画 p261103-01 の 126-A)
+ */
+export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs'] as const;
 
-/** 状態の 3 段階 */
+/** 状態の 3 段階。やること (- [未] 等) の状態に使う */
 export const States = ['未', '着手', '済'] as const;
 
 export type Pair = { key: string; value: string; line: number };

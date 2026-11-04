@@ -143,7 +143,7 @@
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
 		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは「読み込み」と <code>issue check</code> まで。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-03</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-05</p>
 	</div>
 </div>
 
@@ -173,8 +173,10 @@
 	<table>
 		<thead><tr><th>置き場</th><th>中身</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>notes/40_issues/items/</code></td><td>進行中の課題。済の課題も、グループが片付くまでここに残す。状態ではフォルダを分けない</td></tr>
-			<tr><td class="nowrap"><code>notes/40_issues/items/archived/</code></td><td>グループの全件が済になって、退避した課題。中はすべて済</td></tr>
+			<tr><td class="nowrap"><code>notes/40_issues/items/todo/</code></td><td>状態が未の課題</td></tr>
+			<tr><td class="nowrap"><code>notes/40_issues/items/doing/</code></td><td>状態が着手の課題</td></tr>
+			<tr><td class="nowrap"><code>notes/40_issues/items/done/</code></td><td>状態が済の課題。グループが片付くまで、ここに残す</td></tr>
+			<tr><td class="nowrap"><code>notes/40_issues/items/archived/</code></td><td>グループの全件が済になって、退避した課題 (済のまま)。<code>done/</code> と同じ条件を満たす</td></tr>
 			<tr><td class="nowrap"><code>notes/40_issues/items/project-id.txt</code></td><td>プロジェクトを見分ける UUID。リポジトリに commit する</td></tr>
 			<tr><td class="nowrap"><code>notes/40_issues/items/groups.txt</code></td><td>グループ (章) の名前を、表示順に 1 行ずつ並べる。<strong>任意</strong></td></tr>
 		</tbody>
@@ -193,7 +195,6 @@
 schema: 1
 id: i261103-01
 title: li の中の表を、表のまま出す
-state: 未
 group: html2md
 created: 2026-11-03
 from: ai-chat-lite #1737
@@ -215,16 +216,33 @@ refs: p261103-01
 			<tr><td class="nowrap"><code>schema</code></td><td>必須</td><td>整数 <code>1</code></td><td>形の版</td></tr>
 			<tr><td class="nowrap"><code>id</code></td><td>必須</td><td>上の <code>&lt;id&gt;</code> の形</td><td>ファイル名の先頭と一致させる</td></tr>
 			<tr><td class="nowrap"><code>title</code></td><td>必須</td><td>1 行の文字列</td><td>最初の <code>: </code> で分けるので、値の中にコロンがあってもよい</td></tr>
-			<tr><td class="nowrap"><code>state</code></td><td>必須</td><td><code>未</code> / <code>着手</code> / <code>済</code></td><td><code>済</code> は、やることが残っている間と、報告元の確認が無い間は付けられない</td></tr>
 			<tr><td class="nowrap"><code>group</code></td><td>必須</td><td>文字列</td><td>章 (グループ) の名前。<code>groups.txt</code> があれば、そこに並んでいる名前</td></tr>
 			<tr><td class="nowrap"><code>created</code></td><td>必須</td><td><code>yyyy-mm-dd</code> (実在する日付)</td><td>立てた日。変えない</td></tr>
 			<tr><td class="nowrap"><code>from</code></td><td>任意</td><td>文字列 (<code>プロジェクト名 #発言番号</code>)</td><td>他プロジェクトからの報告のときだけ書く</td></tr>
-			<tr><td class="nowrap"><code>confirmed</code></td><td><code>from</code> があるとき必須</td><td><code>true</code> / <code>false</code></td><td>報告元の確認。<code>true</code> になるまで <code>済</code> にできない</td></tr>
+			<tr><td class="nowrap"><code>confirmed</code></td><td><code>from</code> があるとき必須</td><td><code>true</code> / <code>false</code></td><td>報告元の確認。<code>true</code> になるまで、<code>done/</code> ・ <code>archived/</code> に置けない (済にできない)</td></tr>
 			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>カンマ区切りの番号 (<code>p261103-01, r261025-01</code>)</td><td>計画 ・ 調査 ・ 課題の番号。ほかのプロジェクトの番号は <code>プロジェクト名:番号</code></td></tr>
 		</tbody>
 	</table>
 	</div>
-	<p>更新日 (<code>updated</code>) は持たない。更新の経緯は <code>git log -- &lt;課題のファイル&gt;</code> で見る。</p>
+	<p>更新日 (<code>updated</code>) は持たない。更新の経緯は <code>git log -- &lt;課題のファイル&gt;</code> で見る。<code>state</code> も持たない (次の「状態」)。</p>
+	<h2>状態 (フォルダで持つ)</h2>
+	<p><strong>課題の状態は、<code>state</code> キーではなく、置いてあるフォルダで決まる</strong> (計画 p261103-01 の 126-A)。状態の正本がフォルダ 1 つなので、二重管理にならない。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>フォルダ</th><th>状態</th><th>置ける課題</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>todo/</code></td><td>未</td><td>すべて</td></tr>
+			<tr><td class="nowrap"><code>doing/</code></td><td>着手</td><td>すべて</td></tr>
+			<tr><td class="nowrap"><code>done/</code></td><td>済</td><td>やることが残っていない (<code>未</code> ・ <code>着手</code> が 0 件) 課題。<code>from</code> があれば <code>confirmed</code> が <code>true</code></td></tr>
+			<tr><td class="nowrap"><code>archived/</code></td><td>済 (退避)</td><td><code>done/</code> と同じ条件。グループの全件が済になって退避したもの</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>状態を変える</strong>のは、ファイルを隣のフォルダへ動かすこと (<code>git mv</code>)。動かしても、ファイル名 (<code>&lt;id&gt;-&lt;件名&gt;.md</code>) と中身は変わらない。動かすのは本文の変更と別の commit にする (git の rename 検出が、小さなファイルで外れないように)</li>
+		<li><strong><code>state</code> キーが残っていれば誤り</strong> (<code>state-key</code>)。<code>items/</code> 直下や、上の 4 つ以外のフォルダにある <code>.md</code> も誤り (<code>place</code>)</li>
+		<li>「未・着手」だけを読めば足りる問い (一覧 ・ 検索) は、<code>todo/</code> と <code>doing/</code> だけを読む。済は増え続けるが、費用は未・着手の件数で決まる</li>
+	</ul>
 	<h2>F2 の書き方の決まり</h2>
 	<ul>
 		<li>先頭の行が <code>---</code>。次の <code>---</code> の行までがメタ情報。1 行 1 キー</li>
@@ -238,7 +256,7 @@ refs: p261103-01
 	<h2>やること</h2>
 	<ul>
 		<li>本文の中の、行頭が <code>- [未]</code> ・ <code>- [着手]</code> ・ <code>- [済]</code> の行。状態の語は 3 つだけで、これ以外は誤り</li>
-		<li>課題が <code>済</code> なのに、<code>未</code> か <code>着手</code> のやることが残っていれば誤り</li>
+		<li>課題が <code>done/</code> か <code>archived/</code> にあるのに、<code>未</code> か <code>着手</code> のやることが残っていれば誤り</li>
 	</ul>
 	<h2><code>project-id.txt</code></h2>
 	<p>課題ファイルと同じ <code>キー: 値</code> の行だけで、<code>---</code> の区切りは付けない。</p>
@@ -263,10 +281,10 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><strong>出力に絶対パスを出さない</strong>。ファイルはプロジェクトからの相対パス (<code>/</code> 区切り)</li>
 	</ul>
 	<h2>出力</h2>
-<pre><code class="language-text">[NG] notes/40_issues/items/i261103-01-li内の表.md [value] state が 未 / 着手 / 済 のどれでもない: 完了
-[警告] notes/40_issues/items/i261103-02-x.md [key-order] キーの順が決まりと違う: title
-[NG] 課題 2 件 (進行中 2 件 ・ archived 0 件)。エラー 1 件 ・ 警告 1 件</code></pre>
-	<p>最後の 1 行は、エラーがあれば <code>[NG] 課題 N 件 (進行中 M 件 ・ archived K 件)。エラー E 件 ・ 警告 W 件</code>。エラーが無く警告があれば <code>[OK] …。エラー 0 件 ・ 警告 W 件</code>。どちらも無ければ <code>[OK] …。問題なし</code>。<code>--json</code> では <code>ok</code> ・ <code>errors</code> ・ <code>warnings</code> ・ <code>issues</code> ・ <code>archived</code> ・ <code>findings</code> (<code>level</code> ・ <code>code</code> ・ <code>file</code> ・ <code>message</code>) を持つ。</p>
+<pre><code class="language-text">[NG] notes/40_issues/items/todo/i261103-01-li内の表.md [state-key] state キーは持たない (状態はフォルダで持つ)
+[警告] notes/40_issues/items/todo/i261103-02-x.md [key-order] キーの順が決まりと違う (決まり: schema ・ id ・ title ・ …)
+[NG] 課題 2 件 (未 2 件 ・ 着手 0 件 ・ 済 0 件 ・ archived 0 件)。エラー 1 件 ・ 警告 1 件</code></pre>
+	<p>最後の 1 行は、エラーがあれば <code>[NG] 課題 N 件 (未 a 件 ・ 着手 b 件 ・ 済 c 件 ・ archived d 件)。エラー E 件 ・ 警告 W 件</code>。エラーが無く警告があれば <code>[OK] …。エラー 0 件 ・ 警告 W 件</code>。どちらも無ければ <code>[OK] …。問題なし</code>。<code>--json</code> では <code>ok</code> ・ <code>errors</code> ・ <code>warnings</code> ・ <code>issues</code> (全件) ・ <code>todo</code> ・ <code>doing</code> ・ <code>done</code> ・ <code>archived</code> (フォルダごとの件数) ・ <code>findings</code> (<code>level</code> ・ <code>code</code> ・ <code>file</code> ・ <code>message</code>) を持つ。</p>
 	<h2>終了コード</h2>
 	<div class="tablewrap">
 	<table>
@@ -286,17 +304,18 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<tbody>
 			<tr><td class="nowrap"><code>project-id</code></td><td>エラー</td><td><code>project-id.txt</code> が無い ・ 読めない ・ <code>schema</code> が 1 でない ・ <code>project_id</code> が小文字 32 桁の 16 進数でない</td></tr>
 			<tr><td class="nowrap"><code>name</code></td><td>エラー</td><td>ファイル名が <code>&lt;id&gt;-&lt;件名&gt;.md</code> の形でない (<code>i</code> で始まらない <code>.md</code> を含む) ・ 件名に使えない文字がある</td></tr>
+			<tr><td class="nowrap"><code>place</code></td><td>エラー</td><td><code>items/</code> 直下や、<code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> ・ <code>archived/</code> 以外のフォルダに、<code>.md</code> がある</td></tr>
+			<tr><td class="nowrap"><code>state-key</code></td><td>エラー</td><td><code>state</code> キーが残っている (状態はフォルダで持つ)</td></tr>
 			<tr><td class="nowrap"><code>encoding</code></td><td>エラー</td><td>BOM がある ・ CR (CRLF) がある</td></tr>
 			<tr><td class="nowrap"><code>meta</code></td><td>エラー</td><td>先頭が <code>---</code> でない ・ 閉じの <code>---</code> が無い ・ <code>キー: 値</code> の形でない行 ・ 値が空 ・ キーの重複 ・ メタ情報の中の空行</td></tr>
 			<tr><td class="nowrap"><code>key</code></td><td>エラー</td><td>必須のキーが無い</td></tr>
-			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>state</code> ・ <code>created</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>id</code> がファイル名の先頭と違う</td></tr>
-			<tr><td class="nowrap"><code>duplicate</code></td><td>エラー</td><td>同じ <code>id</code> のファイルが複数ある (<code>items/</code> と <code>archived/</code> をまたぐ場合も)。別の PC やクラウドで、件名違いで同じ番号が立つと、git は競合を出さないので、ここで止める</td></tr>
-			<tr><td class="nowrap"><code>todo</code></td><td>エラー</td><td>やることの状態が 3 つ以外 ・ <code>済</code> なのに <code>未</code> か <code>着手</code> のやることが残っている</td></tr>
-			<tr><td class="nowrap"><code>confirmed</code></td><td>エラー / 警告</td><td><code>from</code> があるのに <code>confirmed</code> が無い (エラー) ・ <code>済</code> なのに <code>confirmed</code> が <code>true</code> でない (エラー) ・ <code>from</code> が無いのに <code>confirmed</code> がある (警告)</td></tr>
-			<tr><td class="nowrap"><code>archived</code></td><td>エラー</td><td><code>archived/</code> の中に、<code>済</code> でない課題がある</td></tr>
+			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>created</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>id</code> がファイル名の先頭と違う</td></tr>
+			<tr><td class="nowrap"><code>duplicate</code></td><td>エラー</td><td>同じ <code>id</code> のファイルが複数ある (4 つのフォルダをまたぐ場合も)。別の PC やクラウドで、件名違いで同じ番号が立つと、git は競合を出さないので、ここで止める</td></tr>
+			<tr><td class="nowrap"><code>todo</code></td><td>エラー</td><td>やることの状態が 3 つ以外 ・ <code>done/</code> か <code>archived/</code> にあるのに、<code>未</code> か <code>着手</code> のやることが残っている</td></tr>
+			<tr><td class="nowrap"><code>confirmed</code></td><td>エラー / 警告</td><td><code>from</code> があるのに <code>confirmed</code> が無い (エラー) ・ <code>done/</code> か <code>archived/</code> にあるのに <code>confirmed</code> が <code>true</code> でない (エラー) ・ <code>from</code> が無いのに <code>confirmed</code> がある (警告)</td></tr>
 			<tr><td class="nowrap"><code>key-order</code></td><td>警告</td><td>キーの順が、表の順と違う</td></tr>
 			<tr><td class="nowrap"><code>unknown-key</code></td><td>警告</td><td>知らないキーがある</td></tr>
-			<tr><td class="nowrap"><code>refs</code></td><td>警告</td><td><code>refs</code> の参照先が見つからない (課題は <code>items/</code> ・ <code>archived/</code>、計画 ・ 調査 ・ アイデアは <code>notes/</code> のファイル名の先頭)。<code>プロジェクト名:番号</code> の形は、外を読まないので確かめない</td></tr>
+			<tr><td class="nowrap"><code>refs</code></td><td>警告</td><td><code>refs</code> の参照先が見つからない (課題は 4 つのフォルダのどれか、計画 ・ 調査 ・ アイデアは <code>notes/</code> のファイル名の先頭)。<code>プロジェクト名:番号</code> の形は、外を読まないので確かめない</td></tr>
 			<tr><td class="nowrap"><code>slug-long</code></td><td>警告</td><td>件名が 30 文字を超える</td></tr>
 			<tr><td class="nowrap"><code>group</code></td><td>エラー / 警告</td><td><code>groups.txt</code> で同じ名前が重複している (エラー) ・ 課題の <code>group</code> が <code>groups.txt</code> に無い (警告)</td></tr>
 		</tbody>
