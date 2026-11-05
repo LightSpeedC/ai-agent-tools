@@ -331,7 +331,6 @@
 			<tr><td class="nowrap"><code>schema</code></td><td>必須</td><td>整数 (いまは 1)</td><td>形の版。あとで項目を足すときに読み替える</td></tr>
 			<tr><td class="nowrap"><code>id</code></td><td>必須</td><td><code>i</code> ＋ <code>yymmdd-nn</code> (nn は 36 進数 2 桁)</td><td>ファイル名の先頭 (<code>&lt;id&gt;-&lt;件名&gt;.md</code>) と一致させる。重複は <code>issue check</code> が止める</td></tr>
 			<tr><td class="nowrap"><code>title</code></td><td>必須</td><td>1 行の文字列</td><td>最初の <code>: </code> で分けるので、値の中にコロンがあってもよい</td></tr>
-			<tr><td class="nowrap"><code>state</code></td><td>必須</td><td><code>未</code> / <code>着手</code> / <code>済</code></td><td>3 段階 (共通ルール「課題の管理」)。<code>済</code> は、やることが残っている間・報告元の確認が無い間は拒否する</td></tr>
 			<tr><td class="nowrap"><code>group</code></td><td>必須</td><td>文字列</td><td>いまの章 (グループ) の名前。表示順の持ち方は 109</td></tr>
 			<tr><td class="nowrap"><code>created</code></td><td>必須</td><td><code>yyyy-mm-dd</code> (JST)</td><td>立てた日。変えない。書式は「ドキュメントの作成日・更新日」と同じ</td></tr>
 			<tr><td class="nowrap"><code>from</code></td><td>任意</td><td>文字列 (<code>プロジェクト名 #発言番号</code>)</td><td>報告元。他プロジェクトからの報告のときだけ書く</td></tr>
@@ -357,7 +356,7 @@
 
 	<h2>ファイル名と置き場 (案)</h2>
 	<ul>
-		<li><strong>置き場は 2 つ</strong>: <code>notes/40_issues/items/</code> (進行中。済も、グループが片付くまでここに残す) と、<code>notes/40_issues/items/archived/</code> (グループごと片付いたもの)。<strong>状態ではフォルダを分けない</strong>。状態は <code>state</code> キーだけが正本で、状態を変えてもファイルは動かない</li>
+		<li><strong>置き場は 4 つ</strong>: <code>notes/40_issues/items/</code> の下の <code>todo/</code> (未) ・ <code>doing/</code> (着手) ・ <code>done/</code> (済) ・ <code>archived/</code> (グループごと片付いたもの)。状態は、置いてあるフォルダで決まる (次の小節「状態の持ち方」)</li>
 		<li><strong>ファイル名は <code>&lt;id&gt;-&lt;件名&gt;.md</code></strong> (例: <code>i261103-01-li内の表.md</code>)。件名は<strong>立てるときに決める短いスラッグ</strong>で、<strong>あとから変えない</strong>。題を直しても名前は動かず、パスが安定する。題は <code>title:</code> に自由に書ける</li>
 		<li><strong>件名の決まり</strong>: 30 文字ほどまで。使える文字は共通ルール「ファイル・フォルダの名前に使ってよい文字」に従う (英数字 ・ ハイフン ・ 下線 ・ ピリオド ・ 日本語。空白なし)。<code>issue new</code> は題から案を作り、使えない文字を <code>-</code> に直す</li>
 		<li><strong>同じ ID の重複を、2 段で止める</strong>。件名が違うと別のファイルになり、git でも競合しないので、ファイルの排他だけでは防げない。
@@ -366,9 +365,9 @@
 				<li><strong>別の PC ・ クラウド</strong>: <code>issue check</code> が、同じ ID のファイルが複数ないかを止める。<code>issue check</code> は commit の前の決まりにし、pull のあとにも流す</li>
 			</ul>
 		</li>
-		<li><strong><code>archived/</code> に入れるのは、グループの全件が済になったときだけ</strong> (<code>issue archive &lt;group&gt;</code>)。<code>git mv</code> で動かし、本文は書き換えない。<code>group</code> キーは残る。<code>issue check</code> は、<code>archived/</code> の中がすべて済であることを検査する</li>
-		<li><strong>一覧と検索は、既定で <code>archived/</code> を見ない</strong> (<code>--all</code> で含める)。Grep を使うときは <code>items/*.md</code> に絞る</li>
-		<li><strong>参照は ID で書く</strong> (<code>refs</code> ・ 資料の文中)。パスで書かない。ID からパスを引くのは CLI。パスが動くのは <code>archived/</code> へ移すときだけだが、件名が名前に入るので、パスを直接書くと壊れやすい</li>
+		<li><strong><code>archived/</code> に入れるのは、グループの全件が済になったときだけ</strong> (<code>issue archive &lt;group&gt;</code>)。<code>git mv</code> で動かし、本文は書き換えない。<code>group</code> キーは残る。<code>issue check</code> は、<code>archived/</code> の課題が、<code>done/</code> と同じ条件 (やることが残っていない ・ 報告元の確認が済んでいる) を満たすことを検査する</li>
+		<li><strong>一覧と検索は、既定で未・着手 (<code>todo/</code> と <code>doing/</code>) だけを読む</strong> (<code>--all</code> で 4 つすべて)。Grep を使うときは <code>items/todo/</code> ・ <code>items/doing/</code> に絞る</li>
+		<li><strong>参照は ID で書く</strong> (<code>refs</code> ・ 資料の文中)。パスで書かない。ID からパスを引くのは CLI。状態を変える (フォルダを動かす) たびにパスが変わるので、パスを直接書くと壊れる</li>
 	</ul>
 
 	<h2>識別子と索引 DB の表 (決定: 122-A ・ 123-A ・ 124-A ・ 125-A)</h2>
@@ -425,7 +424,7 @@
 	</ul>
 
 	<h2>状態の持ち方 (決定: 126-A。2026-11-05)</h2>
-	<p>この小節は、<strong>前の小節 (ファイル名と置き場) ・ キー項目の表 ・ 次の「1 件のファイル」の例のうち、<code>state</code> に関わる部分を置き換える</strong>。経緯は「121-A の実測」の、状態でフォルダを分けた場合。</p>
+	<p>課題の状態は、<code>state</code> キーではなく、置いてあるフォルダで持つ。経緯は「121-A の実測」の、状態でフォルダを分けた場合。</p>
 	<ul>
 		<li><strong>置き場は 4 つ</strong>: <code>items/todo/</code> (未) ・ <code>items/doing/</code> (着手) ・ <code>items/done/</code> (済) ・ <code>items/archived/</code> (グループの全件が済になって退避したもの)。<code>project-id.txt</code> と <code>groups.txt</code> は <code>items/</code> 直下のまま。<code>items/</code> 直下や、4 つ以外のフォルダに課題を置くと誤り</li>
 		<li><strong><code>state</code> キーは持たない</strong> (キー項目は 8 個)。状態はフォルダが正本で、二重管理が無い。<code>state</code> キーが残っていれば誤りとして止める</li>
@@ -442,7 +441,6 @@
 schema: 1
 id: i261103-01
 title: li の中の表を、表のまま出す
-state: 未
 group: html2md
 created: 2026-11-03
 from: ai-chat-lite #1737
@@ -492,7 +490,7 @@ refs: p261103-01
 	<ul>
 		<li><strong>いまの <code>issues.html</code> と同じ見た目</strong> (章ごとの色相、<code>details</code> の開閉、バッジ、目次、タイトルにプロジェクト名)。生成なので、共通ルール「課題の管理」の「既定の開閉は状態で決める」「件数と状態は中身から数え直す」が自動で守られる</li>
 		<li><code>&lt;meta name="md-skip"&gt;</code> のまま。Markdown は作らない</li>
-		<li><strong><code>issues.html</code> は <code>items/</code> 直下から、<code>issues-archive.html</code> は <code>items/archived/</code> から生成する</strong>。README がリンクするのは <code>issues.html</code> だけ、という決まりは変わらない</li>
+		<li><strong><code>issues.html</code> は <code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> から、<code>issues-archive.html</code> は <code>archived/</code> から生成する</strong>。README がリンクするのは <code>issues.html</code> だけ、という決まりは変わらない</li>
 		<li>生成物は commit する (案 95-A)。README からのリンクが切れず、GitHub 上でも見える。同じ中身なら書かないので、差分は課題が変わったときだけ</li>
 	</ul>
 
@@ -604,7 +602,7 @@ refs: p261103-01
 				<tr>
 					<td class="nowrap">107-A</td>
 					<td rowspan="2">キー項目を増やすか (第 3 章のキー項目の表)</td>
-					<td><strong>A</strong>: 表の 9 キーだけにする</td>
+					<td><strong>A</strong>: 表の 8 キーだけにする</td>
 					<td>いまの運用 (3 段階の状態 ・ 報告元の確認 ・ 参照) に要るものだけ。必要になった時点で、<code>schema</code> を上げて足す</td>
 				</tr>
 				<tr>
