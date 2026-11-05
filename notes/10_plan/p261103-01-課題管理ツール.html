@@ -813,6 +813,50 @@ refs: p261103-01
 					<td class="nowrap">126-B</td>
 					<td><strong>B</strong>: 従来どおり <code>state</code> キーで持つ (<code>archived/</code> だけ分ける)</td>
 					<td>状態を変えても、ファイルは動かない。ただし、実測で効果が出ない (全部読む費用が、全体の件数に比例する)</td>
+				</tr>
+				<tr>
+					<td class="nowrap">127-A</td>
+					<td rowspan="2">済の課題 (HTML のまま) の行き先 (生成した <code>issues.html</code> が、元の <code>issues.html</code> を置き換えるため)</td>
+					<td><strong>決定済み (2026-11-05、利用者の判断): A (恒久)</strong>: 旧 <code>issues.html</code> を、書き換えずに <code>issues-legacy.html</code> へ改名して残す (<code>md-skip</code>)。旧 <code>issues-archive.html</code> もそのまま。新しい <code>issues.html</code> は生成物で、先頭から旧へのリンクを置く</td>
+					<td>「移すときに本文を書き換えない」と矛盾せず、費用は各プロジェクトの改名 1 回。ただし、過去の課題は新旧 2 か所に分かれる (<code>issue search</code> が旧 HTML も走査するかは別に決める)</td>
+				</tr>
+				<tr>
+					<td class="nowrap">127-B</td>
+					<td><strong>B (恒久)</strong>: 済も含めて全件を Markdown に移す (機械変換 ＋ 目視)</td>
+					<td>1 か所に揃う。ただし約 740 件 (file-manager 392 件 ・ ai-chat-lite 98 件を含む) で、表 ・ コードブロック ・ callout を Markdown に直す作業が大きく、無損失にならない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">128-A</td>
+					<td rowspan="2">画像 ・ svg の置き場</td>
+					<td><strong>決定済み (2026-11-05、利用者の判断): A (恒久)</strong>: <code>items/images/&lt;id&gt;-&lt;名前&gt;.&lt;拡張子&gt;</code> に共通で置き、Markdown は <code>![説明](../images/…)</code> で参照する。svg もファイルにして同じく参照する。<code>issue check</code> が、リンク先の有無と、参照されない画像を検査する。生成した HTML では、<code>items/images/</code> に書き換える</td>
+					<td>状態を変えて動かしても、<code>../images/</code> が壊れない。GitHub でも表示できる。1 件 1 ファイル (93-A) のまま</td>
+				</tr>
+				<tr>
+					<td class="nowrap">128-B</td>
+					<td><strong>B (恒久)</strong>: 課題ごとにフォルダを作り、課題の Markdown と画像を一緒に置く (<code>items/&lt;状態&gt;/&lt;id&gt;-&lt;件名&gt;/</code>)</td>
+					<td>画像が課題と一緒に動く。ただし、課題が 1 ファイルでなくなり (93-A と食い違う)、状態を変える移動がフォルダごとになる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">129-A</td>
+					<td rowspan="2">明るい版 ・ 暗い版の画像の書き方 (file-manager が <code>*-light.png</code> ・ <code>*-dark.png</code> を使う)</td>
+					<td><strong>決定済み (2026-11-05、利用者の判断): A (恒久)</strong>: 画像は 2 枚 (<code>&lt;名前&gt;-light.png</code> ・ <code>&lt;名前&gt;-dark.png</code>) にし、Markdown には URL の末尾の印 (<code>#gh-light-mode-only</code> ・ <code>#gh-dark-mode-only</code>) を付けた 2 行で書く。生成した HTML では、<code>&lt;picture&gt;</code> と <code>prefers-color-scheme</code> に変換する</td>
+					<td>GitHub は、この印で明暗を切り替えられる。生成した HTML でも、同じ書き方から明暗を切り替えられる</td>
+				</tr>
+				<tr>
+					<td class="nowrap">129-B</td>
+					<td><strong>B (恒久)</strong>: 明暗を分けず、1 枚で足りる絵にする (背景を白で作る)</td>
+					<td>書き方が単純で、検査も要らない。ただし、ダークモードで白い箱が浮き、画面の見え方を確かめる課題には向かない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">130-A</td>
+					<td rowspan="2">生成する課題行 (<code>summary</code>) の並び</td>
+					<td><strong>決定済み (2026-11-05、利用者の判断): A (恒久)</strong>: 番号 → 状態のバッジ → 題 (<code>&lt;span class="no"&gt;</code> の後に <code>&lt;span class="badge …"&gt;</code>)。調査で 17 件が採用している形</td>
+					<td>多数派に揃えると、ほかのプロジェクトを開く人の見慣れた形になる。番号は固定の幅なので、縦に揃って探しやすい</td>
+				</tr>
+				<tr>
+					<td class="nowrap">130-B</td>
+					<td><strong>B (恒久)</strong>: 状態のバッジ → 番号 → 題 (ai-agent-tools ・ ai-chat-lite など 9 件の形)</td>
+					<td>状態を先頭で拾える。ただし、バッジの幅 (未 ・ 着手 ・ 済) が違うので、番号が縦に揃わない</td>
 			</tr>
 		</tbody>
 	</table>
@@ -891,6 +935,33 @@ refs: p261103-01
 	<div class="callout">
 		<p><strong>この実測の限界</strong>: (1) <strong>OS のファイルキャッシュは温まっている</strong>。冷えたディスクでの時間は測っていない (全部読む方法も <code>stat</code> も遅くなるが、比は未確認)。(2) 課題は同じ形の作り物で、中身の複雑さは測っていない。(3) CPU の値は、Windows では 15 ms 刻みで、68 件では 0 になる。(4) 更新日時は整数 (ミリ秒) で持った。本番の「23 文字の日時の TEXT」では、変換の費用が少し増える。(5) 横断 (複数のプロジェクトの合計) の件数は、まだ数えていない。</p>
 	</div>
+
+	<h2>他プロジェクトの課題ページの調査 (2026-11-05)</h2>
+	<p>課題ページの書き方を統一するための材料として、このPCのプロジェクトの課題ページを読み取りだけで調べた。Claude Code の設定に載っているプロジェクト 145 件のうち、<code>notes/40_issues</code> を持つ 28 件が対象。<strong>件数と形だけを集め、中身は読んでいない</strong>。形の判定は文字列の照合なので、想定外の書き方は拾えていない。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>現状</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">課題の番号の要素</td><td><code>span.no</code> が 24 件、<code>code.no</code> が 1 件 (ai-agent-rules)、<code>span.id</code> が 1 件 (claude-code-proxy)、番号なしが 1 件 (20260620-obsidian-mcp)</td></tr>
+			<tr><td class="nowrap">状態のバッジの位置</td><td><code>summary</code> の中で、番号の後が 17 件、番号の前が 9 件 (ai-agent-tools ・ ai-chat-lite を含む)</td></tr>
+			<tr><td class="nowrap">状態のバッジの class</td><td>ai-chat-lite だけ <code>b-done</code> ・ <code>b-todo</code>。予約語の <code>b-ok</code> ・ <code>b-warn</code> ・ <code>b-none</code> ・ <code>b-ng</code> ではない</td></tr>
+			<tr><td class="nowrap">id の形</td><td>約 740 件のうち、新形式でないのは 1 件 (file-manager の <code>i261020-0l</code>。小文字の <code>l</code>)</td></tr>
+			<tr><td class="nowrap">Markdown の生成</td><td><code>md-skip</code> は 3 件 (ai-agent-tools ・ claude-code-proxy ・ 20260620-obsidian-mcp)。ほかは <code>issues.md</code> を生成し、<code>md-flat</code> を付けているのは約 14 件、付けていないのは約 11 件</td></tr>
+			<tr><td class="nowrap">⌂ の戻るアイコン (svg)</td><td>6 件には無い (文字リンク)</td></tr>
+			<tr><td class="nowrap">本文の部品</td><td>表 ・ コードブロック ・ callout ・ <code>h3</code> を使う。ai-chat-lite は 表 100 ・ コードブロック 27 ・ callout 135 ・ <code>h3</code> 137、ai-agent-tools は 21 ・ 7 ・ 23 ・ 35</td></tr>
+			<tr><td class="nowrap">規模</td><td>file-manager が 392 件 (約 525 KB。最大)、ai-chat-lite が 98 件 (約 334 KB)、ai-agent-tools が 97 件 (約 176 KB)。ほかは 1 〜 20 件</td></tr>
+			<tr><td class="nowrap">画像 ・ 図</td><td><strong>どの課題ページにも、<code>&lt;img&gt;</code> も、本文の <code>&lt;svg&gt;</code> も無い</strong> (<code>&lt;svg&gt;</code> は ⌂ のアイコンだけ)。file-manager の <code>notes/40_issues/images/</code> に画像が 6 件あるが、課題ページからは参照されていない</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h3>読み取れること</h3>
+	<ul>
+		<li>生成するようになれば、番号の要素 ・ バッジの位置と class ・ 戻るアイコンのばらつきは、<strong>生成側の 1 つの定義に揃う</strong>。実際の費用は、既存の課題を Markdown に直す作業 (file-manager と ai-chat-lite の約 490 件を含む)</li>
+		<li>計画の 96-A (未・着手だけ移す) では、<strong>済の課題 (HTML のまま) の行き先</strong>が決まっていない (127)</li>
+		<li><strong>画像 ・ svg は、移行で壊れるものが、いまは無い</strong>。これから使うときの書き方は、決まりが要る (128 ・ 129)。インライン <code>&lt;svg&gt;</code> は、GitHub が除去するので Markdown に書けない。<code>.svg</code> のファイルにして、画像として参照する (共通ルール「HTML→Markdown 変換ルール」)。独立ファイルの svg には、<code>xmlns</code> ・ <code>width</code> ・ <code>height</code> と、白い背景の矩形を付ける</li>
+		<li>状態のフォルダ (<code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> ・ <code>archived/</code>) は <code>items/</code> の下の同じ深さなので、<strong><code>../images/</code> は、状態を変えて動かしても壊れない</strong></li>
+		<li><code>issue check</code> に足すとよい検査: 画像のリンク先があるか、画像が置き場の中か、課題から参照されていない画像 (孤児) が無いか</li>
+	</ul>
 
 	<h2>テストの方針</h2>
 	<ul>
