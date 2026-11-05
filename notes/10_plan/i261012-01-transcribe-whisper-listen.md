@@ -16,7 +16,7 @@
 
 ## 1. 背景
 
-2026-10-12 に `20261004-kamishibai-animation` から依頼（ai-chat-lite #1437、[課題 i261012-01](../40_issues/issues.html)）。音声の書き起こしを、各プロジェクトが個別に whisper を呼ぶのではなく、共有ツールから名前で呼べるようにする。
+2026-10-12 に `20261004-kamishibai-animation` から依頼（ai-chat-lite #1437、[課題 i261012-01](../40_issues/issues-legacy.html)）。音声の書き起こしを、各プロジェクトが個別に whisper を呼ぶのではなく、共有ツールから名前で呼べるようにする。
 
 - 本体は whisper.cpp v1.9.4（BLAS x64 版）の `whisper-cli`
 - モデルは `ggml-large-v3-turbo-q5_0.bin`（547MB）

@@ -604,7 +604,7 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 
 	<h2>決着 10 — chapters は data-columns 付きの表にする <span class="badge b-ok">対処済み</span></h2>
 
-	<p><code>20260822-powershell-pwsh-learn</code> からの要求（<a href="../40_issues/issues.html">課題 i260830-05</a>）。<code>&lt;ul class="chapters"&gt;</code> の中の <code>span</code> 3 つが連結され、リンクのラベルが 1 本の長い文字列になっていた。</p>
+	<p><code>20260822-powershell-pwsh-learn</code> からの要求（<a href="../40_issues/issues-legacy.html">課題 i260830-05</a>）。<code>&lt;ul class="chapters"&gt;</code> の中の <code>span</code> 3 つが連結され、リンクのラベルが 1 本の長い文字列になっていた。</p>
 
 	<p>要求元 HTML を <code>&lt;table&gt;</code> に書き換える案（各プロジェクトが手作業で書き換え、カード風の見た目を失う）と比べ、<strong>html2md が <code>chapters</code> 構造を解釈して表にする案を選んだ</strong>。要求元は既存の HTML 構造のまま、次回変換で自動的に表になる。</p>
 
@@ -658,7 +658,7 @@ int j = block.LastIndexOf("&lt;/" + tag + "&gt;");   // 子要素の閉じタグ
 
 	<h2>決着 11 — 他ファイルへのアンカーも見出しアンカーへ張り替える <span class="badge b-ok">対処済み</span></h2>
 
-	<p><a href="../40_issues/issues.html">課題 i260830-07</a>。同一ファイル内の <code>#chNN</code> は見出しアンカーに張り替えていたが、<strong>他ファイルへのリンクのアンカー部分は変換していなかった。</strong></p>
+	<p><a href="../40_issues/issues-legacy.html">課題 i260830-07</a>。同一ファイル内の <code>#chNN</code> は見出しアンカーに張り替えていたが、<strong>他ファイルへのリンクのアンカー部分は変換していなかった。</strong></p>
 
 <pre><code>[03.2 実行ポリシー](docs/03-実行環境.html#ch02)
   ↓ いま

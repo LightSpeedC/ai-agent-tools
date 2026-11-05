@@ -94,7 +94,7 @@
 
 ## 4. exe にする理由と作り方
 
-共通実装は PowerShell スクリプトではなく、`csc.exe` でビルドする C# の exe にする。`check-markdown.ps1` も当初は同じく exe に置き換える計画だったが、2026-09-05 に**やらないと決めて閉じた**（[課題 i260830-13](../40_issues/issues.html)）。ps1 のまま動いており、C# 化しても得るものが無いと判断したため、`check-markdown.ps1`・`check-contrast.ps1` は ps1 のまま残す。
+共通実装は PowerShell スクリプトではなく、`csc.exe` でビルドする C# の exe にする。`check-markdown.ps1` も当初は同じく exe に置き換える計画だったが、2026-09-05 に**やらないと決めて閉じた**（[課題 i260830-13](../40_issues/issues-legacy.html)）。ps1 のまま動いており、C# 化しても得るものが無いと判断したため、`check-markdown.ps1`・`check-contrast.ps1` は ps1 のまま残す。
 
 ### なぜ exe か
 
@@ -200,7 +200,7 @@ CommonMark は `**` の前後にある文字を見て、それが開き記号と
 | 4 | 各プロジェクトの HTML のクラス名を取り決めに合わせる | 1 プロジェクトずつ、見た目を確かめてから次に移る |
 | 5 | 各プロジェクトの `tools/30_html2md` にランチャーを置き、旧 `src/scripts/70_html2md` の ps1 / mjs を退避する | ダブルクリックで従来どおり動くこと |
 | 6 | 生成した Markdown を `check-markdown` にかける | `**` の残りが 0 件になること |
-| 7 | `check-markdown` を C# に移す（2026-09-05 にやらないと決めて閉じた。[課題 i260830-13](../40_issues/issues.html)） | — |
+| 7 | `check-markdown` を C# に移す（2026-09-05 にやらないと決めて閉じた。[課題 i260830-13](../40_issues/issues-legacy.html)） | — |
 | 8 | 旧 ps1 / mjs を削除する | 削除対象を提示して確認を取ってから実施 |
 
 段階 3 が要になる。5 本はそれぞれ別の HTML を相手にしてきたので、共通版が同じ HTML から同じ内容を出せるかは実際に流してみないと分からない。差分が出た箇所は、共通版の不足か、旧版の不具合か、意図した仕様変更かを 1 件ずつ判断する。
@@ -250,7 +250,7 @@ html2md.exe [オプション]
 
 ここに置く道具を別の処理系へ移すときの決めごと。**コマンド名を変えずに中身を入れ替える**ため、使う側から見て何が変わるかを先に決めておく。
 
-いまのところ対象になるのは、[html2md のベンチ](../../tools/90_misc/bench-html2md/処理系比較-html2md.html)で `html2md-ps.ps1` が実際の資料 9 ファイルに 29.6 秒かかると分かったことによる。詳しくは[課題 i260912-02](../40_issues/issues.html) と [check-public 計画](p260912-01-check-public.md)。
+いまのところ対象になるのは、[html2md のベンチ](../../tools/90_misc/bench-html2md/処理系比較-html2md.html)で `html2md-ps.ps1` が実際の資料 9 ファイルに 29.6 秒かかると分かったことによる。詳しくは[課題 i260912-02](../40_issues/issues-legacy.html) と [check-public 計画](p260912-01-check-public.md)。
 
 ### 1. オプションは `--` に揃える
 

@@ -353,7 +353,7 @@
 <section class="ch04" id="ch04">
 	<h1>exe にする理由と作り方</h1>
 
-	<p>共通実装は PowerShell スクリプトではなく、<code>csc.exe</code> でビルドする C# の exe にする。<code>check-markdown.ps1</code> も当初は同じく exe に置き換える計画だったが、2026-09-05 に<strong>やらないと決めて閉じた</strong>（<a href="../40_issues/issues.html">課題 i260830-13</a>）。ps1 のまま動いており、C# 化しても得るものが無いと判断したため、<code>check-markdown.ps1</code>・<code>check-contrast.ps1</code> は ps1 のまま残す。</p>
+	<p>共通実装は PowerShell スクリプトではなく、<code>csc.exe</code> でビルドする C# の exe にする。<code>check-markdown.ps1</code> も当初は同じく exe に置き換える計画だったが、2026-09-05 に<strong>やらないと決めて閉じた</strong>（<a href="../40_issues/issues-legacy.html">課題 i260830-13</a>）。ps1 のまま動いており、C# 化しても得るものが無いと判断したため、<code>check-markdown.ps1</code>・<code>check-contrast.ps1</code> は ps1 のまま残す。</p>
 
 	<h2>なぜ exe か</h2>
 	<ul>
@@ -567,7 +567,7 @@
 			</tr>
 			<tr>
 				<td class="nowrap">7</td>
-				<td><code>check-markdown</code> を C# に移す（2026-09-05 にやらないと決めて閉じた。<a href="../40_issues/issues.html">課題 i260830-13</a>）</td>
+				<td><code>check-markdown</code> を C# に移す（2026-09-05 にやらないと決めて閉じた。<a href="../40_issues/issues-legacy.html">課題 i260830-13</a>）</td>
 				<td>&#8212;</td>
 			</tr>
 			<tr>
@@ -655,7 +655,7 @@
 
 	<p>ここに置く道具を別の処理系へ移すときの決めごと。<strong>コマンド名を変えずに中身を入れ替える</strong>ため、使う側から見て何が変わるかを先に決めておく。</p>
 
-	<p>いまのところ対象になるのは、<a href="../../tools/90_misc/bench-html2md/処理系比較-html2md.html">html2md のベンチ</a>で <code>html2md-ps.ps1</code> が実際の資料 9 ファイルに 29.6 秒かかると分かったことによる。詳しくは<a href="../40_issues/issues.html">課題 i260912-02</a> と <a href="p260912-01-check-public.html">check-public 計画</a>。</p>
+	<p>いまのところ対象になるのは、<a href="../../tools/90_misc/bench-html2md/処理系比較-html2md.html">html2md のベンチ</a>で <code>html2md-ps.ps1</code> が実際の資料 9 ファイルに 29.6 秒かかると分かったことによる。詳しくは<a href="../40_issues/issues-legacy.html">課題 i260912-02</a> と <a href="p260912-01-check-public.html">check-public 計画</a>。</p>
 
 	<h2>1. オプションは <code>--</code> に揃える</h2>
 

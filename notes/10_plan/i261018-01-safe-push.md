@@ -4,7 +4,7 @@
 
 > 📅 作成: 2026-10-18 / 更新: 2026-10-18
 
-[^^](../../README.md) ／ [課題 i261018-01](../40_issues/issues.html)
+[^^](../../README.md) ／ [課題 i261018-01](../40_issues/issues-legacy.html)
 
 ## 目次
 

@@ -96,7 +96,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 
 ## 3. 課題
 
-これから解決することは [課題](notes/40_issues/issues.html) に集めている。
+これから解決することは、`notes/40_issues/items/` に 1 件 1 ファイルの Markdown で集めている。移行前の課題は [旧課題](notes/40_issues/issues-legacy.html) に残る。
 
 ## 4. 品質レビュー
 

@@ -434,7 +434,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<h1>まだ無いもの ・ 限界</h1>
 	<ul>
 		<li><strong><code>issue confirm</code> は、自己申告</strong>。報告元から OK が出たことを、道具は確かめない。報告元へ返信し、OK をもらってから呼ぶのは、人か AI の役目 (共通ルール「課題の管理」)</li>
-		<li><strong>横断</strong> (ほかのプロジェクトの課題をまとめて見る) と、旧 <code>issues.html</code> からの移行: 後続のフェーズ。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
+		<li><strong>横断</strong> (ほかのプロジェクトの課題をまとめて見る): 後続のフェーズ。<strong>旧 HTML の課題</strong>は、このプロジェクトでは <code>notes/40_issues/issues-legacy.html</code> と <code>issues-archive.html</code> に、書き換えずに残してある (未・着手だった 3 件だけを新しい形へ移した)。<code>issue list</code> ・ <code>issue search</code> は、旧 HTML を読まない。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
 		<li><strong>番号の予約 (<code>_lock/</code>) は、同じ PC の中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める</li>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>
 		<li><strong><code>refs</code> の参照先は、ファイル名の先頭だけで探す</strong>。移行前の課題 (<code>issues.html</code> の中の番号) は見つけられず、警告になる</li>

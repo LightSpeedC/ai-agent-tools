@@ -4,7 +4,7 @@ public のリポジトリに出す前に、出してはいけないものが混�
 
 > 📅 作成: 2026-09-12 / 更新: 2026-10-18
 
-[^^](../../README.md) ／ [共通化計画](html2md-plan.md) ／ [課題](../40_issues/issues.html)
+[^^](../../README.md) ／ [共通化計画](html2md-plan.md) ／ [課題](../40_issues/issues-legacy.html)
 
 ## 目次
 
@@ -17,7 +17,7 @@ public のリポジトリに出す前に、出してはいけないものが混�
 
 ## 1. 何を解決するか
 
-[課題 i260912-01](../40_issues/issues.html)。`ai-agent-rules` からの依頼。<strong>public のリポジトリに出したものは消せない。</strong>個人名・実体パス・認証情報が 1 度でも混ざれば、履歴を書き換えない限り残る。
+[課題 i260912-01](../40_issues/issues-legacy.html)。`ai-agent-rules` からの依頼。<strong>public のリポジトリに出したものは消せない。</strong>個人名・実体パス・認証情報が 1 度でも混ざれば、履歴を書き換えない限り残る。
 
 共通ルールには「機密情報のマスキング」と「コミット前の確認」があり、人が目で確かめる形になっている。<strong>目視は、量が増えると必ず抜ける。</strong>異体字の混入のように、そもそも目で見分けられないものもある。
 
@@ -52,7 +52,7 @@ public のリポジトリに出す前に、出してはいけないものが混�
 | 案 | 内容 | 採否 |
 |---|---|---|
 | A（採用） | `check-public.ps1` ＋ `check-public.cmd`。`check-markdown` ・ `check-contrast` と同じ形 | ✅ **採用** 検査系は ps1 で揃っている。正規表現の調整が頻繁に要る種類の処理で、ビルドを挟まないほうが直しやすい |
-| B | C# で書き `check-public.exe` にする | ⬜ **見送り** [i260830-13](../40_issues/issues.html) で `check-markdown` の exe 化を「やらない」と決めた前例に揃える。起動の速さが要る場面が無い |
+| B | C# で書き `check-public.exe` にする | ⬜ **見送り** [i260830-13](../40_issues/issues-legacy.html) で `check-markdown` の exe 化を「やらない」と決めた前例に揃える。起動の速さが要る場面が無い |
 
 ### html2md の検査からも呼ぶ
 

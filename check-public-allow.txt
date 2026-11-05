@@ -2,7 +2,7 @@
 # パス                          項目     語
 
 # 課題と品質レビューの本文に書いた、変数名の例 (右辺に英字と数字が入る形)
-notes/40_issues/issues.html     secret   scanner2.
+notes/40_issues/issues-legacy.html     secret   scanner2.
 notes/80_quality_review/        secret   scanner2.
 
 # check-public 自身の試験の材料。見つかるべき値を、わざと入れてある

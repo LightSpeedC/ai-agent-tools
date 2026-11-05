@@ -12,8 +12,8 @@
 	  ・タイトルバーの「📅 作成: … / 更新: …」
 	  ・表を tablewrap で包んでいるか（数だけ比べる）、var() のフォールバック
   ・グラデーション・var() の地の前に、色だけの地を直書きしているか（直すのは fix-html-bg.ts）
-	  ・README からリンクされているか（issues-archive は README からリンクしない）、issues と
-	    issues-archive の相互リンク、issues ・ status のタイトルにプロジェクト名があるか
+	  ・README からリンクされているか（issues-archive は README からリンクしない）、issues-legacy と
+	    issues-archive の相互リンク、issues-legacy ・ status のタイトルにプロジェクト名があるか
 
 	終了コードは 0（外れなし）・ 1（外れあり）。
 */
@@ -89,8 +89,8 @@ for (const f of files) {
 	const isArchive = f.endsWith('issues-archive.html');
 	if (!isReadme && !isArchive && !readme.includes('href="' + f + '"')) { ng.push('README からリンクされていない'); }
 	if (isArchive && readme.includes('issues-archive.html')) { ng.push('README が issues-archive にリンクしている'); }
-	if (f.endsWith('issues.html') && !s.includes('href="issues-archive.html"')) { ng.push('issues-archive へのリンクが無い'); }
-	if (isArchive && !s.includes('href="issues.html"')) { ng.push('issues へのリンクが無い'); }
+	if (f.endsWith('issues-legacy.html') && !s.includes('href="issues-archive.html"')) { ng.push('issues-archive へのリンクが無い'); }
+	if (isArchive && !s.includes('href="issues-legacy.html"')) { ng.push('issues-legacy へのリンクが無い'); }
 	if (/(^|\/)(issues|status)/.test(path.posix.basename(f)) && !/<title>[^<]*ai-agent-tools/.test(s)) { ng.push('タイトルにプロジェクト名（ai-agent-tools）が無い'); }
 
 	if (ng.length > 0) { bad++; }

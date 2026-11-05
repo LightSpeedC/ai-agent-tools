@@ -16,7 +16,7 @@ WAV 等の音声を ffmpeg で mp3 等に変える共有コマンド `convert-au
 
 ## 1. 背景
 
-2026-10-12 に `20261004-kamishibai-animation` から依頼（ai-chat-lite #1439、[課題 i261012-02](../40_issues/issues.html)）。事前生成の WAV（108 本、33MB）を mp3 にして、配信の容量を減らしたい。
+2026-10-12 に `20261004-kamishibai-animation` から依頼（ai-chat-lite #1439、[課題 i261012-02](../40_issues/issues-legacy.html)）。事前生成の WAV（108 本、33MB）を mp3 にして、配信の容量を減らしたい。
 
 transcribe（[i261012-01](i261012-01-transcribe-whisper-listen.md)）の 16kHz への変換に使う案もあったが、whisper-cli が自分で直すと実測で分かったため、**transcribe からは使わない**。
 

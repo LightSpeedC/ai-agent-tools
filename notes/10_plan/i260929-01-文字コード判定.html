@@ -173,7 +173,7 @@
 
 <section class="ch01" id="ch01">
 	<h1>背景</h1>
-	<p><a href="../40_issues/issues.html">課題 i260929-01</a>。<code>src/lib/detector.ts</code> の <code>detect()</code> は、UTF-8 と SJIS の両方で成立し非 ASCII を含むバイト列を <code>null</code>（判定しない）にする。半角カナの SJIS（<code>ﾂｱ</code> = <code>C2 B1</code>）が UTF-8 の <code>±</code> と同じ形になるためである。</p>
+	<p><a href="../40_issues/issues-legacy.html">課題 i260929-01</a>。<code>src/lib/detector.ts</code> の <code>detect()</code> は、UTF-8 と SJIS の両方で成立し非 ASCII を含むバイト列を <code>null</code>（判定しない）にする。半角カナの SJIS（<code>ﾂｱ</code> = <code>C2 B1</code>）が UTF-8 の <code>±</code> と同じ形になるためである。</p>
 	<p>ところが UTF-8 の日本語（<code>あ</code> = <code>E3 81 82</code>）も SJIS の並びとして成り立ちやすく、<strong>ふつうの日本語の UTF-8 まで止まる</strong>。<code>bin/cx.cmd</code> を UTF-8 にしたものは、SJIS の構造検査も CP932 の厳密なデコードも通った。</p>
 	<p>案 A（UTF-8 の 2 バイト列を含まなければ UTF-8）では、<code>×</code> <code>°</code> <code>±</code> を含む日本語の UTF-8 が直らない。そのため B を採る。</p>
 </section>
