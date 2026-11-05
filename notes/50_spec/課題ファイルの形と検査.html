@@ -369,7 +369,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<h1>まだ無いもの ・ 限界</h1>
 	<ul>
 		<li><strong>操作</strong>: <code>issue set</code> (状態の変更。<code>git mv</code> で隣のフォルダへ動かす) ・ <code>todo</code> (やることの状態) ・ <code>search</code> ・ <code>archive</code> ・ <code>unarchive</code>。フェーズ 2 の後半</li>
-		<li><strong>HTML の生成</strong> (<code>issue render</code>)、<strong>索引 DB</strong>、<strong>横断</strong>: フェーズ 3 以降</li>
+		<li><strong>HTML の表示</strong> (<code>issue view</code>。<code>notes/40_issues/_issues.html</code> に生成し、commit しない)、<strong>横断</strong>: フェーズ 3 以降。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
 		<li><strong>番号の予約 (<code>_lock/</code>) は、同じ PC の中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める</li>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>
 		<li><strong><code>refs</code> の参照先は、ファイル名の先頭だけで探す</strong>。移行前の課題 (<code>issues.html</code> の中の番号) は見つけられず、警告になる</li>

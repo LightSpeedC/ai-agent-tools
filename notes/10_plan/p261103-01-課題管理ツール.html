@@ -301,7 +301,7 @@
 		<tbody>
 			<tr><td class="nowrap">正本</td><td>課題 1 件 = 1 ファイル。<code>notes/40_issues/items/i261103-01-li内の表.md</code> のような置き場</td><td>管理</td><td>CLI と AI (Edit)。人も読める</td></tr>
 			<tr><td class="nowrap">索引</td><td>SQLite (FTS5 の全文検索)。ファイルから作り直せる派生物</td><td>除外 (先頭 <code>_</code> のフォルダ)</td><td>CLI が自動で作り直す</td></tr>
-			<tr><td class="nowrap">人向けの表示</td><td><code>issues.html</code> (いまと同じ見た目。章ごとの色、<code>details</code> の開閉、状態のバッジ)</td><td>管理 (案 95-A)</td><td>CLI が生成する。手で直さない</td></tr>
+			<tr><td class="nowrap">人向けの表示</td><td><code>notes/40_issues/_issues.html</code> (いまと同じ見た目。章ごとの色、<code>details</code> の開閉、状態のバッジ)</td><td>除外 (先頭 <code>_</code>。131-A)</td><td>CLI が生成する。手で直さない</td></tr>
 			<tr><td class="nowrap">全体の横断</td><td>登録したプロジェクトの課題を集める読み取り専用の索引と HTML</td><td>管理外 (集約側)</td><td>CLI (後続のフェーズ)</td></tr>
 		</tbody>
 	</table>
@@ -476,7 +476,7 @@ refs: p261103-01
 			<tr><td class="nowrap">検査</td><td><code>issue check</code></td><td>ID の重複・形の誤り・状態の不一致・参照切れ・件数を、機械が数える</td></tr>
 			<tr><td class="nowrap">初期化</td><td><code>issue init</code></td><td><code>project-id.txt</code> を作る (無ければ)。最初の <code>issue new</code> も、無ければ作る。フォルダごとコピーして別のプロジェクトにしたときは、<code>issue init --new-id</code> で振り直す</td></tr>
 				<tr><td class="nowrap">片付ける</td><td><code>issue archive &lt;group&gt;</code> ／ <code>issue unarchive &lt;group&gt;</code></td><td>グループの全件が済のときだけ、<code>items/archived/</code> へ <code>git mv</code> する。本文は書き換えない。戻すのは <code>unarchive</code></td></tr>
-				<tr><td class="nowrap">表示を作る</td><td><code>issue render</code></td><td><code>issues.html</code> と、グループごとの件数・目次を生成する。中身が同じなら書かない (ローカルルール第 5 章)</td></tr>
+				<tr><td class="nowrap">表示を見る</td><td><code>issue view</code></td><td><code>_issues.html</code> を毎回作り直して、既定のアプリで開く (131-A)。グループごとの件数・目次を持つ。更新の操作 (<code>new</code> ・ <code>set</code> 等) の最後にも自動で作り直す。中身が同じなら書かない (ローカルルール第 5 章)</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -491,7 +491,9 @@ refs: p261103-01
 		<li><strong>いまの <code>issues.html</code> と同じ見た目</strong> (章ごとの色相、<code>details</code> の開閉、バッジ、目次、タイトルにプロジェクト名)。生成なので、共通ルール「課題の管理」の「既定の開閉は状態で決める」「件数と状態は中身から数え直す」が自動で守られる</li>
 		<li><code>&lt;meta name="md-skip"&gt;</code> のまま。Markdown は作らない</li>
 		<li><strong><code>issues.html</code> は <code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> から、<code>issues-archive.html</code> は <code>archived/</code> から生成する</strong>。README がリンクするのは <code>issues.html</code> だけ、という決まりは変わらない</li>
-		<li>生成物は commit する (案 95-A)。README からのリンクが切れず、GitHub 上でも見える。同じ中身なら書かないので、差分は課題が変わったときだけ</li>
+		<li><strong>生成物は commit しない</strong> (131-A。95-A を置き換えた)。<code>_issues.html</code> は先頭 <code>_</code> で Git 管理外なので、差分の混ざり ・ 競合 ・ 古いままの生成物が無い。README からはリンクを張れない (GitHub では除外されたファイルへのリンクが切れる)。課題の Markdown は、GitHub がそのまま描画する</li>
+		<li><strong>生成する HTML の決まり</strong>: <code>&lt;meta name="md-skip"&gt;</code> を入れる (<code>html2md</code> が <code>_issues.md</code> を作らないように)。ページの末尾に、作った日時と元の件数を書く。画像は <code>items/images/…</code>、旧 HTML は <code>issues-legacy.html</code> を、同じフォルダからの相対パスで参照する。<code>check-html-rules</code> は、<code>_</code> で始まるファイルを飛ばす (手元に有るときだけ検査の対象になり、別の clone やクラウドで結果が変わるのを防ぐ)</li>
+		<li><strong><code>issue check</code> が、<code>.gitignore</code> で <code>_issues.html</code> が除外されているかを見る</strong> (<code>git check-ignore</code>)。除外されていなければ警告。<code>_lock/</code> (番号の予約) も、同じ <code>_*</code> の決まりに頼っている</li>
 	</ul>
 
 	<h2>差分と commit の見え方</h2>
@@ -546,7 +548,7 @@ refs: p261103-01
 			<tr>
 				<td class="nowrap">95-A</td>
 				<td rowspan="2">人向けの HTML</td>
-				<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: 生成して commit する</td>
+				<td><strong>決定済み (2026-11-03、利用者の判断): A</strong>: 生成して commit する。<strong>2026-11-05 に 131-A で置き換えた</strong> (commit しない)</td>
 				<td>README のリンクが切れず、GitHub でも見える。中身が同じなら書かないので、差分は小さい</td>
 			</tr>
 			<tr>
@@ -857,6 +859,28 @@ refs: p261103-01
 					<td class="nowrap">130-B</td>
 					<td><strong>B (恒久)</strong>: 状態のバッジ → 番号 → 題 (ai-agent-tools ・ ai-chat-lite など 9 件の形)</td>
 					<td>状態を先頭で拾える。ただし、バッジの幅 (未 ・ 着手 ・ 済) が違うので、番号が縦に揃わない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">131-A</td>
+					<td rowspan="3">人向けの HTML の置き場 (95-A を置き換える)</td>
+					<td><strong>決定済み (2026-11-05、利用者の判断): A (恒久)</strong>: <code>notes/40_issues/_issues.html</code> に生成し、commit しない。<code>issue view</code> が作り直して開き、更新の操作の最後にも自動で作り直す</td>
+					<td>生成物が git に入らないので、差分の混ざり ・ 競合 ・ 古いままの生成物が無い。場所が固定で、画像と旧 HTML のパスを書き換えずに済む。残す生成物として自然</td>
+				</tr>
+				<tr>
+					<td class="nowrap">131-B</td>
+					<td><strong>B (恒久)</strong>: <code>tmp/issue-view/</code> に生成し、<code>issue view</code> で開く</td>
+					<td>git に入らない。ただし、置き場が一時のままで、画像のパスを書き換える必要がある</td>
+				</tr>
+				<tr>
+					<td class="nowrap">131-C</td>
+					<td><strong>C (恒久)</strong>: 従来どおり、生成して commit する (95-A のまま)</td>
+					<td>README と GitHub から見える。ただし、どの課題の変更でも同じ 1 ファイルが変わり、混ざる問題が残る</td>
+				</tr>
+				<tr>
+					<td class="nowrap">132</td>
+					<td>共通ルールの書き換え (131-A を採ったことによる)</td>
+					<td><strong>続き (未決)</strong>: 共通ルール「課題の管理」(課題は <code>issues.html</code> に集約する) と、「HTMLデザインルール」の README の決め (リンクするのは <code>issues.html</code> だけ) の書き換え案を出す。ai-agent-rules への依頼になるので、案を示してから、指示を待つ</td>
+					<td>ほかのプロジェクトに影響する変更のため</td>
 			</tr>
 		</tbody>
 	</table>
@@ -871,7 +895,7 @@ refs: p261103-01
 		<li><strong>フェーズ 0 (決める)</strong>: 第 4 章の番号の採否をいただく。98-A なら、Backlog.md を試して、93-A と 93-B を最終決定する</li>
 		<li><strong>フェーズ 1 (形と検査)</strong>: 1 件のファイルの形 (項目・状態・やること) を、仕様として <code>notes/50_spec/</code> に書く。読み込みと <code>issue check</code> を、テストを先に書いて実装する</li>
 		<li><strong>フェーズ 2 (操作)</strong>: <code>new</code> ・ <code>list</code> ・ <code>show</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>search</code> ・ <code>archive</code> ・ <code>unarchive</code> を実装する。番号の予約 (<code>_lock/</code>) もここで入れる。<strong>「済」の拒否</strong> (やることが残っている・報告元の確認が無い) もここで入れる</li>
-		<li><strong>フェーズ 3 (表示)</strong>: <code>issue render</code> で、いまの <code>issues.html</code> と同じ見た目の HTML を生成する。<strong>先に期待値を手で書いた golden</strong> で比べる。<code>check-contrast</code> で実測する</li>
+		<li><strong>フェーズ 3 (表示)</strong>: <code>issue view</code> で、いまの <code>issues.html</code> と同じ見た目の HTML を <code>_issues.html</code> に生成する (131-A)。更新の操作の最後の自動の作り直し、<code>issue check</code> の <code>.gitignore</code> の検査、<code>check-html-rules</code> が <code>_</code> で始まるファイルを飛ばす変更も、ここで入れる。<strong>先に期待値を手で書いた golden</strong> で比べる。<code>check-contrast</code> で実測する</li>
 		<li><strong>フェーズ 4 (移行)</strong>: 96-A なら、未・着手の課題を新しい形へ移し、<code>issues.html</code> を生成物に切り替える。共通ルール「課題の管理」と「プロジェクトフォルダ構成」に、書き換えが要るかを確かめる (書き換えは案を示して指示を待つ)</li>
 		<li><strong>フェーズ 5 (横断)</strong>: 97-A なら、登録リストの形と、外を読むことの承認の取り方を決め、集約を作る</li>
 		<li><strong>周知</strong>: 公開 CLI なので <code>TOOLS-USAGE</code> に使い方を足す。共通ルールを変えたときだけ、周知の案を出す</li>
