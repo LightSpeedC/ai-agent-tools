@@ -143,7 +143,7 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
-		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>archive</code> ・ <code>unarchive</code> まで。</p>
+		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> まで。</p>
 		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-05</p>
 	</div>
 </div>
@@ -155,7 +155,7 @@
 <p>課題を 1 件 1 ファイルで持つ形と、その検査 (<code>issue check</code>) の<strong>いまの姿</strong>。決めた経緯と、番号付きの決定は <a href="../10_plan/p261103-01-課題管理ツール.html">課題管理ツール 計画</a> にある。実装と食い違ったら、実装が正しい。</p>
 
 <div class="callout">
-	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>archive</code> ・ <code>unarchive</code>。HTML の表示 (<code>issue view</code>) と横断は、まだ実装していない (第 4 章)。</p>
+	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code>。HTML の表示 (<code>issue view</code>) と横断は、まだ実装していない (第 4 章)。</p>
 </div>
 
 <div class="toc">
@@ -384,6 +384,14 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><strong><code>done/</code> ・ <code>archived/</code> の課題には、未のやることを足せず、やることを 未 ・ 着手 に戻せない</strong> (終了コード 1。先に <code>issue set --state 着手</code>)。済のままにする操作は通る</li>
 		<li>BOM や CR のあるファイルは、書き換えずに終了コード 1 (<code>issue check</code> で直す)。出力: <code>[OK] &lt;id&gt; のやること &lt;n&gt; を &lt;状態&gt; にした: &lt;文&gt;</code></li>
 	</ul>
+	<h2><code>issue confirm &lt;id&gt; [--undo] [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li>報告元の確認 (<code>confirmed</code>) を <code>true</code> に直す。<code>--undo</code> は <code>false</code> に戻す。<strong>フォルダは動かさず、その行だけを書き換える</strong> (キーの順は変えない)。<code>confirmed</code> のキーが無ければ、<code>from</code> の次に足す</li>
+		<li><code>from</code> (報告元) が無い課題は、終了コード 5 (<code>confirmed</code> は、他プロジェクトからの報告の課題だけに要る。ファイルは変えない)</li>
+		<li>既に同じ値なら、何もせず終了コード 0 (「既に」と出す)。<code>done/</code> ・ <code>archived/</code> の課題は、<code>false</code> に戻せない (終了コード 1。先に <code>issue set --state 着手</code>)。<code>true</code> にする操作は通る (直接動かした誤りを直せる)</li>
+		<li>BOM や CR のあるファイルは、書き換えずに終了コード 1。見つからなければ 1、id の形が違う ・ id が無い ・ 知らないオプションは 5</li>
+		<li>出力: <code>[OK] &lt;id&gt; の報告元の確認 (confirmed) を true にした (報告元: &lt;from&gt;)</code>。<code>--json</code> は <code>{ id, confirmed, from, changed, file }</code></li>
+	</ul>
 	<h2><code>issue archive &lt;group&gt;</code> ・ <code>issue unarchive &lt;group&gt;</code> (<code>[--root &lt;dir&gt;] [--json]</code>)</h2>
 	<ul>
 		<li><strong><code>archive</code></strong>: グループの全件が済 (<code>done/</code>) なら、その課題を <code>archived/</code> へ動かす (追跡中なら <code>git mv</code>)。<strong>1 件でも満たさなければ (未・着手が残っている ・ 済の条件を満たさない ・ メタ情報を読めない課題がある)、1 件も動かさず終了コード 1</strong> (その id を出す)。課題が 1 件も無いグループは 1。既に全件が <code>archived/</code> なら、終了コード 0 (「既に」と出す)</li>
@@ -399,7 +407,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 <section class="ch04" id="ch04">
 	<h1>まだ無いもの ・ 限界</h1>
 	<ul>
-		<li><strong>報告元の確認 (<code>confirmed</code>) を <code>true</code> にする操作</strong>は、まだ無い。ファイルを直接 Edit する (<code>issue set</code> は、<code>confirmed</code> が <code>true</code> でないと済にできない)</li>
+		<li><strong><code>issue confirm</code> は、自己申告</strong>。報告元から OK が出たことを、道具は確かめない。報告元へ返信し、OK をもらってから呼ぶのは、人か AI の役目 (共通ルール「課題の管理」)</li>
 		<li><strong>HTML の表示</strong> (<code>issue render</code> = 生成だけ ・ <code>issue view</code> = 生成して開く ・ <code>--standalone</code> = 渡す用の自己完結した HTML。<code>notes/40_issues/_issues.html</code> に生成し、commit しない)、<strong>横断</strong>: フェーズ 3 以降。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
 		<li><strong>番号の予約 (<code>_lock/</code>) は、同じ PC の中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める</li>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>

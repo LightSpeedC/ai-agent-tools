@@ -469,6 +469,44 @@ export function editTodo(root: string, id: string, edit: TodoEdit): { todos: Tod
 	return { todos, changed: todos[edit.n - 1] };
 }
 
+// ---- 報告元の確認 (confirm) ----
+
+export type ConfirmResult = { id: string; confirmed: boolean; from: string; changed: boolean; file: string };
+
+/**
+ * 報告元の確認 (confirmed) を true / false に直す。フォルダは動かさず、その行だけを書き換える。
+ * from (報告元) が無い課題には要らないので、UsageError。BOM や CR のあるファイルは、書き換えない
+ */
+export function setConfirmed(root: string, id: string, value: boolean): ConfirmResult {
+	const located = locateIssue(root, id);
+	const rel = `${ItemsRel}/${located.folder}/${located.name}`;
+	const abs = path.join(itemsDirOf(root), located.folder, located.name);
+	const raw = fs.readFileSync(abs, 'utf8');
+	if (raw.startsWith('﻿') || raw.includes('\r')) throw new Failure(`${rel} に BOM か CR (CRLF) がある。issue check で確かめて直してから (書き換えない)`);
+	const parts = splitIssue(raw);
+	if (parts.broken) throw new Failure(`${rel} のメタ情報を読めない。issue check で確かめて直してから (書き換えない)`);
+	const get = (k: string): string | undefined => parts.parsed.pairs.find((p) => p.key === k)?.value;
+	const from = get('from');
+	if (from === undefined) throw new UsageError(`${id} には from (報告元) が無い。confirmed は、他プロジェクトからの報告の課題だけに要る`);
+	const isDone = located.folder === 'done' || located.folder === 'archived';
+	if (isDone && !value) throw new Failure(`${id} は ${located.folder}/ にある。報告元の確認を false に戻せない (先に issue set --state 着手)`);
+	const text = value ? 'true' : 'false';
+	if (get('confirmed') === text) return { id, confirmed: value, from, changed: false, file: rel };
+
+	const lines = raw.split('\n');
+	const end = lines.indexOf('---', 1);
+	let confirmedAt = -1;
+	let fromAt = -1;
+	for (let i = 1; i < end; i++) {
+		if (/^confirmed:/.test(lines[i])) confirmedAt = i;
+		if (/^from:/.test(lines[i])) fromAt = i;
+	}
+	if (confirmedAt >= 0) lines[confirmedAt] = `confirmed: ${text}`;
+	else lines.splice(fromAt + 1, 0, `confirmed: ${text}`);
+	fs.writeFileSync(abs, lines.join('\n'));
+	return { id, confirmed: value, from, changed: true, file: rel };
+}
+
 // ---- 探す (search) ----
 
 export type SearchHit = ListItem & { matches: { line: number; text: string }[] };

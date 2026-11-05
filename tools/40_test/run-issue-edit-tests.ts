@@ -338,6 +338,70 @@ const groupFiles: Record<string, string> = {
 	check('unarchive で戻せば、new できる', run(['new', '--title', '新しい件', '--group', 'less'], dir).code === 0);
 }
 
+// ---- confirm ----
+
+console.log('--- confirm');
+const fromFalse = issueText({ from: 'project-a #1', confirmed: 'false' });
+const fromTrue = issueText({ from: 'project-a #1', confirmed: 'true' });
+{
+	const dir = std('confirm-basic', { [Todo + A]: fromFalse });
+	const r = run(['confirm', 'i261103-01'], dir);
+	check('confirm は、confirmed を true に直す (その行だけ。ほかは変えない)', r.code === 0 && read(dir, Todo + A) === fromTrue, r.out + r.err + ' / ' + read(dir, Todo + A));
+	check('confirm の出力に、true と報告元が出る (絶対パスは出ない)', r.out.includes('true') && r.out.includes('project-a #1') && !r.out.includes(dir), r.out);
+	const u = run(['confirm', 'i261103-01', '--undo'], dir);
+	check('--undo は、confirmed を false に戻す', u.code === 0 && read(dir, Todo + A) === fromFalse, u.out + u.err);
+}
+{
+	const dir = std('confirm-already', { [Todo + A]: fromTrue });
+	const r = run(['confirm', 'i261103-01'], dir);
+	check('既に true なら、何もせず終了コード 0 (「既に」と出す)', r.code === 0 && r.out.includes('既に') && read(dir, Todo + A) === fromTrue, r.out);
+}
+{
+	const dir = std('confirm-nofrom', { [Todo + A]: issueText() });
+	const before = read(dir, Todo + A);
+	const r = run(['confirm', 'i261103-01'], dir);
+	check('from が無い課題は、終了コード 5 (confirmed は要らない。ファイルは変えない)', r.code === 5 && read(dir, Todo + A) === before, r.out + r.err);
+}
+{
+	const dir = std('confirm-nokey', { [Todo + A]: issueText({ from: 'project-a #1' }) });
+	const r = run(['confirm', 'i261103-01'], dir);
+	check('from はあるが confirmed のキーが無いときは、from の次に confirmed: true を足す', r.code === 0 && read(dir, Todo + A) === fromTrue, r.out + r.err + ' / ' + read(dir, Todo + A));
+}
+{
+	const dir = std('confirm-undo-done', { [Done + A]: fromTrue });
+	const r = run(['confirm', 'i261103-01', '--undo'], dir);
+	check('done/ にある課題の確認は、false に戻せない (終了コード 1。先に issue set --state 着手)', r.code === 1 && read(dir, Done + A) === fromTrue, r.out + r.err);
+}
+{
+	const dir = std('confirm-fix-done', { [Done + A]: fromFalse });
+	check('done/ に置かれて確認が false の課題 (直接動かした誤り) は、confirm で直せる', run(['confirm', 'i261103-01'], dir).code === 0 && run(['check'], dir).code === 0, run(['check'], dir).out);
+}
+{
+	const dir = std('confirm-then-set', { [Doing + A]: fromFalse });
+	check('確認が false のあいだは、済にできない', run(['set', 'i261103-01', '--state', '済'], dir).code === 1);
+	run(['confirm', 'i261103-01'], dir);
+	check('confirm したあとは、済にできる (やることが無ければ)', run(['set', 'i261103-01', '--state', '済'], dir).code === 0 && exists(dir, Done + A));
+}
+{
+	const dir = std('confirm-args', { [Todo + A]: fromFalse });
+	check('見つからない id は終了コード 1', run(['confirm', 'i261103-99'], dir).code === 1);
+	check('id の形でない引数は終了コード 5', run(['confirm', 'xyz'], dir).code === 5);
+	check('id が無ければ終了コード 5', run(['confirm'], dir).code === 5);
+	check('知らないオプションは終了コード 5', run(['confirm', 'i261103-01', '--bogus'], dir).code === 5);
+}
+{
+	const dir = std('confirm-crlf', { [Todo + A]: fromFalse.split('\n').join('\r\n') });
+	const before = read(dir, Todo + A);
+	check('CRLF のファイルは書き換えない (終了コード 1。issue check で直す)', run(['confirm', 'i261103-01'], dir).code === 1 && read(dir, Todo + A) === before);
+}
+{
+	const dir = std('confirm-json', { [Todo + A]: fromFalse });
+	const r = run(['confirm', 'i261103-01', '--json'], dir);
+	let p: { id?: string; confirmed?: boolean; from?: string; changed?: boolean; file?: string } = {};
+	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
+	check('--json は { id, confirmed, from, changed, file } を出す', p.id === 'i261103-01' && p.confirmed === true && p.from === 'project-a #1' && p.changed === true && p.file === Todo + A, r.out);
+}
+
 console.log('');
 console.log(`=== issue (更新の操作): ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 fs.rmSync(work, { recursive: true, force: true });

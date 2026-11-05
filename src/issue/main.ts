@@ -20,13 +20,14 @@
 		issue set <id> --state 未|着手|済 [--root <dir>] [--json]   状態を変える (隣のフォルダへ動かす。追跡中なら git mv)
 		issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]
 		issue search <語> [--state … | --all] [--group <g>] [--root <dir>] [--json]
+		issue confirm <id> [--undo] [--root <dir>] [--json]         報告元の確認 (confirmed) を直す (その行だけ。フォルダは動かさない)
 		issue archive <group> ・ issue unarchive <group> [--root <dir>] [--json]
-	いまはフェーズ 2 まで (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ archive ・ unarchive)。view は、まだ無い。
+	いまはフェーズ 2 まで (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ confirm ・ archive ・ unarchive)。render ・ view は、まだ無い。
 */
 import path from 'node:path';
 import { Folders, checkProject, findProjectRoot, hasItems, type Finding, type Folder } from './check.ts';
 import {
-	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setState, showIssue, unarchiveGroup,
+	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
 
 const ExitOk = 0;
@@ -43,6 +44,7 @@ const Usage = [
 	'  issue search <語> [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
 	'  issue set <id> --state 未|着手|済 [--root <dir>] [--json]       状態を変える (隣のフォルダへ動かす)',
 	'  issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]',
+	'  issue confirm <id> [--undo] [--root <dir>] [--json]            報告元の確認 (confirmed) を true にする (--undo で false)',
 	'  issue archive <group> [--root <dir>] [--json]                  グループの全件が済なら、archived/ へ動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 ].join('\n');
@@ -278,6 +280,24 @@ function runTodo(rest: string[]): number {
 	return ExitOk;
 }
 
+function runConfirm(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json', '--undo'], positionals: 1 });
+	const id = requireId(o, 'issue confirm <id> [--undo]');
+	const root = existingRoot(o);
+	const value = !o.flags.has('--undo');
+	const r = setConfirmed(root, id, value);
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify({ id: r.id, confirmed: r.confirmed, from: r.from, changed: r.changed, file: r.file }));
+	} else if (!r.changed) {
+		console.log(`[OK] ${id} は既に confirmed: ${r.confirmed}。変えない (報告元: ${r.from})`);
+	} else if (value) {
+		console.log(`[OK] ${id} の報告元の確認 (confirmed) を true にした (報告元: ${r.from})`);
+	} else {
+		console.log(`[OK] ${id} の報告元の確認 (confirmed) を false に戻した (報告元: ${r.from})`);
+	}
+	return ExitOk;
+}
+
 function runGroupMove(rest: string[], kind: 'archive' | 'unarchive'): number {
 	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json'], positionals: 1 });
 	const group = o.positionals[0];
@@ -323,6 +343,7 @@ const commands: Record<string, (rest: string[]) => number> = {
 	search: runSearch,
 	set: runSet,
 	todo: runTodo,
+	confirm: runConfirm,
 	archive: (rest) => runGroupMove(rest, 'archive'),
 	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
 };
