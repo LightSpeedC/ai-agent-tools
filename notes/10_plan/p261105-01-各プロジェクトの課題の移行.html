@@ -1,0 +1,383 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>各プロジェクトの課題の移行 計画 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（5 章 / 色相 280 → 0 を 70 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(210,78%,25%); --accent2:hsl(210,58%,55%); --soft:hsl(210,28%,95%); }
+	.ch03{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch04{ --accent:hsl(70,78%,25%);  --accent2:hsl(70,58%,55%);  --soft:hsl(70,28%,95%); }
+	.ch05{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>各プロジェクトの課題の移行 計画 (ai-agent-tools)</h1>
+		<p class="lead">課題を 1 件 1 ファイルで持つ <code>issue</code> ツールへ、ほかのプロジェクトがどう移るか。このPC のプロジェクトと、別の PC ・ クラウドのプロジェクトの両方を扱う案。</p>
+		<p class="date">📅 作成: 2026-11-05 / 更新: 2026-11-05</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は、課題を <code>notes/40_issues/issues.html</code> で持つ、各プロジェクト (このPC の 28 件と、別の PC ・ クラウドのもの)。入力は、各プロジェクトの旧 <code>issues.html</code> (未・着手の課題)。出力は、各プロジェクトの <code>notes/40_issues/items/</code> (1 件 1 ファイルの Markdown) と、<code>issues-legacy.html</code>。<strong>この計画は案と決めることの提示まで。承認をいただくまで実装しない。</strong> ツールの設計は <a href="p261103-01-課題管理ツール.html">課題管理ツール 計画</a> (このプロジェクトでは、フェーズ 4 まで済)。</p>
+
+<div class="callout callout-important">
+	<p><strong>結論 (推奨)</strong>: <strong>各プロジェクトのセッションが、利用者の「移行して」の指示で、自分の課題を移す</strong> (他プロジェクトのファイルは直さない、という共通ルールのまま)。<strong>移すのは未・着手だけ</strong> (96-A) で、<strong>旧 HTML は書き換えずに <code>issues-legacy.html</code> へ改名する</strong> (127-A)。写し間違いを避けるため、<strong>未・着手を機械で移す <code>issue migrate</code> を足す</strong> (このプロジェクトの 3 件は手で書き写したが、28 件の書き方のばらつきを手作業では抱えきれない)。<strong>未・着手が 0 件のプロジェクトは急がず、次に課題を立てるとき</strong> (<code>issue new</code> が案内して止まる) に移す。<strong>別の PC は、移す PC を 1 台に決め、事前に全 PC で push しておく</strong>。順序は、ツールの公開 → 共通ルールの書き換え (132) → 周知 → 試しの 2 件 → 残り。</p>
+</div>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">現状と制約</a></li>
+		<li class="ch02"><a href="#ch02">1 つのプロジェクトの移し方</a></li>
+		<li class="ch03"><a href="#ch03">別の PC ・ クラウド</a></li>
+		<li class="ch04"><a href="#ch04">決めること</a></li>
+		<li class="ch05"><a href="#ch05">進め方とリスク</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>現状と制約</h1>
+	<h2>現状 (2026-11-05 の調査と、このプロジェクトでの実施)</h2>
+	<ul>
+		<li><strong>このPC の対象は 28 件</strong>。Claude Code の設定に載るプロジェクト 145 件のうち、<code>notes/40_issues</code> を持つもの。課題は約 740 件で、<strong>file-manager が 392 件、ai-chat-lite が 98 件、ai-agent-tools が 97 件</strong>。ほかは 1〜20 件 (<a href="p261103-01-課題管理ツール.html">課題管理ツール 計画</a>の調査の節)</li>
+		<li><strong>書き方がそろっていない</strong>: 課題の番号の要素が <code>span.no</code> (24 件) ・ <code>code.no</code> (1 件) ・ <code>span.id</code> (1 件) ・ 番号なし (1 件)。状態のバッジは、番号の後が 17 件、前が 9 件。ai-chat-lite だけバッジの class が <code>b-done</code> ・ <code>b-todo</code>。<code>md-skip</code> は 3 件</li>
+		<li><strong>何件が未・着手かは、まだ数えていない</strong>。このプロジェクトは 97 件のうち 3 件 (すべて着手) だった。<strong>「済が大半」という見込みで、未・着手を移すだけにすれば量は小さい</strong>が、実測するまでは見込み</li>
+		<li><strong>このプロジェクトでは移行済み</strong> (フェーズ 4): 3 件を <code>items/doing/</code> へ書き写し、旧 <code>issues.html</code> を <code>issues-legacy.html</code> へ改名し、README ・ 計画のリンク ・ <code>check-public-allow.txt</code> を直した。<strong>これが、ほかのプロジェクトの手本になる</strong></li>
+	</ul>
+	<h2>制約</h2>
+	<ul>
+		<li><strong>他プロジェクトのファイルは直さない</strong> (共通ルール「プロジェクトフォルダ外へのアクセス」)。ai-agent-tools のセッションから、各プロジェクトへ書き込めない。<strong>移すのは、各プロジェクトのセッション</strong>。読み取りは、プロジェクトごとの承認で足りる</li>
+		<li><strong>commit と push は、利用者の指示を待つ</strong> (共通ルール「修正は1点ずつ、確認を重視」)。各プロジェクトで、移行の指示と、commit の指示が要る</li>
+		<li><strong>共通ルール「課題の管理」と README のルールが、まだ旧形式のまま</strong> (<code>issues.html</code> に集約する、README は <code>issues.html</code> へリンクする)。<strong>書き換え (132) は、ツールの公開の後に、案を示して指示を待つ</strong>と決めてある。ルールが旧形式のまま移すと、各プロジェクトの AI が旧形式へ戻してしまう</li>
+		<li><strong>課題を持たない ・ 動いていないプロジェクトを、急いで移さない</strong>。移しても、集める相手が増えるだけで、得るものが無い</li>
+		<li><strong>画像 ・ 図で壊れるものは、いまの調査では無い</strong> (どの課題ページにも <code>&lt;img&gt;</code> も本文の <code>&lt;svg&gt;</code> も無い)</li>
+	</ul>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>1 つのプロジェクトの移し方</h1>
+	<h2>手順 (プロジェクトのセッションが、利用者の指示で行う)</h2>
+	<ol>
+		<li><strong>前提を確かめる</strong>: <code>issue</code> が呼べる (<code>issue --help</code>)。作業ツリーがきれい (<code>git status</code>) で、リモートと同じ (<code>pull</code> 済み)。<strong>別の PC に push していない課題の編集が無い</strong>ことを、利用者に確かめる (第 3 章)</li>
+		<li><strong>数える</strong>: <code>issue migrate --dry-run</code> が、旧 <code>issues.html</code> から、未・着手の課題の数と、読めなかったものを出す。<strong>書き込まない</strong></li>
+		<li><strong>移す</strong>: <code>issue migrate --apply</code> が、未・着手の課題を <code>items/todo/</code> ・ <code>items/doing/</code> へ書く (番号と作成日は旧のまま)。<strong>読めなかったもの</strong>は書かず、一覧で出す。人 (AI) が、旧の記録を見て手で書き写す (このプロジェクトで行った方法)</li>
+		<li><strong>数が合うか確かめる</strong>: 旧の未・着手の数 = 新の <code>todo/</code> + <code>doing/</code> の数。<code>issue check</code> が問題なし。<code>.gitignore</code> に <code>_*</code> がある (無ければ足す。<code>issue check</code> が警告する)</li>
+		<li><strong>旧 HTML を残す</strong>: <code>issues.html</code> を、書き換えずに <code>issues-legacy.html</code> へ改名する (<code>git mv</code>。127-A)。旧 <code>issues-archive.html</code> があれば、戻るリンクの名前だけを直す</li>
+		<li><strong>リンクを直す</strong>: <code>text find --path . --recurse</code> で <code>issues.html</code> を探し、<strong>リンク先の名前だけ</strong>を直す (README ・ 計画 ・ ローカルルール ・ <code>check-public-allow.txt</code> 等。本文は触らない。計画の本文は書き換えない)。README は、<code>notes/40_issues/items/</code> と旧課題へ案内する</li>
+		<li><strong>検査して、利用者の指示で commit と push</strong>: <code>html2md</code> ・ <code>check-markdown</code> ・ そのプロジェクトのテスト。<strong>移行は 1 commit</strong> にする (戻すときは 1 つを戻せばよい)</li>
+	</ol>
+	<h2><code>issue migrate</code> の案 (ai-agent-tools の側で作る)</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>項目</th><th>案</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">入力</td><td>旧 <code>issues.html</code> (既定は <code>notes/40_issues/issues.html</code>)。<code>details</code> の <code>summary</code> に、状態のバッジ ・ 番号 ・ 題があるものを 1 件と読む。グループは、直前の章 (<code>section</code> の <code>h1</code>) の見出し</td></tr>
+			<tr><td class="nowrap">書き方のばらつき</td><td>調査で見つかった形 (番号が <code>span.no</code> ・ <code>code.no</code> ・ <code>span.id</code>。バッジが番号の前 ・ 後。class が <code>b-ok</code> ・ <code>b-warn</code> ・ <code>b-none</code> ・ <code>b-done</code> ・ <code>b-todo</code> と、バッジの文字) を、すべて読む。<strong>読めない形は、推測せず「読めなかった」に出す</strong></td></tr>
+			<tr><td class="nowrap">出力</td><td>未 → <code>todo/</code>、着手 → <code>doing/</code> (済は移さない。96-A)。<code>created</code> は番号の日付。本文は、<strong>html2md の変換部品を再利用できるか</strong>を、先に確かめる (できなければ、課題管理の <code>render</code> の逆向きの小さな変換を書く)。やること行は <code>- [未|着手|済] 文</code></td></tr>
+			<tr><td class="nowrap">番号が無い課題</td><td>番号が無い旧形式 (調査では 1 件のプロジェクト) は、<code>issue new</code> と同じ規則で番号を振り、対応表を出す</td></tr>
+			<tr><td class="nowrap">安全</td><td>既定は <code>--dry-run</code> (書かない)。<code>--apply</code> は、<code>items/</code> に同じ番号が既にあれば、そのプロジェクトで止まる (重複を作らない)。旧 <code>issues.html</code> は、書き換えも削除もしない (改名は人が行う)。絶対パスを出さない</td></tr>
+			<tr><td class="nowrap">試験</td><td>期待値を先に手で書く。<strong>調査で見つかった各形</strong> (番号の要素 3 種 × バッジの位置 2 種 ほか) と、このプロジェクトの旧 <code>issues.html</code> (<code>git</code> の履歴にある移行前の版) を、材料にする。このプロジェクトで手で書き写した 3 件と、<strong>機械が出したものを突き合わせる</strong></td></tr>
+		</tbody>
+	</table>
+	</div>
+	<h2>旧形式のプロジェクトを、うっかり使わない備え</h2>
+	<ul>
+		<li><strong><code>issue new</code> が、旧 <code>issues.html</code> だけのプロジェクトで立てようとしたら、案内して止まる</strong> (終了コード 5。<code>issue migrate</code> を促す)。<code>issue init</code> も同じ。未・着手が 0 件のプロジェクトは、<strong>次に課題を立てるときに、ここで移す</strong></li>
+		<li><strong><code>issue check</code> が、<code>items/</code> と旧 <code>issues.html</code> が両方あるとき警告する</strong> (<code>legacy</code>)。旧形式のルールで動く AI が、移行後に <code>issues.html</code> を作り直した場合を、見つける</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>別の PC ・ クラウド</h1>
+	<h2>何が違うか</h2>
+	<ul>
+		<li><strong>同じプロジェクトを、複数の PC (と、クラウド) が git で共有している</strong>。移行は <strong>1 つのリポジトリの 1 回の commit</strong> で、ほかの PC は pull で受ける。<strong>PC ごとに移さない</strong> (同じ課題が 2 度立ち、git は競合を出さずに、重複した番号が残る)</li>
+		<li><strong>このPC には無いプロジェクトがある</strong>。このPC の調査 (28 件) には載らない。<strong>名簿は、利用者に伺うか、その PC のセッションに <code>issue migrate --dry-run</code> で数えてもらう</strong> (第 4 章 141-A)</li>
+		<li><strong>ツールが、その PC に入っているとは限らない</strong>。<code>ai-agent-tools</code> を <code>git pull</code> し、<code>bin/</code> が PATH にあり、node か bun がある PC でだけ動く。クラウドは <code>cloud-session-start</code> が、clone と PATH を行う</li>
+		<li><strong>共通ルールも、その PC で最新とは限らない</strong>。ルールが旧形式のままの PC の AI は、移行後に旧 <code>issues.html</code> を書き始める</li>
+		<li><code>project-id.txt</code> は、移行のときに 1 度だけ作り、<strong>commit する</strong>ので、どの PC でも同じ値になる (122-A ・ 125-A)。PC ごとに作らない。<code>_issues.html</code> は、各 PC が自分で生成する</li>
+	</ul>
+	<h2>別の PC があるプロジェクトの手順 (第 2 章の前後に足す)</h2>
+	<ol>
+		<li><strong>移行日を決める</strong>。その日まで、<strong>全 PC で、課題の編集を commit して push しておく</strong> (旧 <code>issues.html</code> への未 push の編集が、あとの競合の元になる)</li>
+		<li><strong>移す PC を 1 台に決める</strong> (そのプロジェクトのセッションが開いている PC)。第 2 章を行い、push する</li>
+		<li><strong>ほかの PC は、課題を触る前に pull する</strong>。そのとき、ツールと共通ルールも最新にする (<code>ai-agent-tools</code> ・ <code>ai-agent-rules</code> を <code>pull</code>)</li>
+		<li><strong>pull のあとに <code>issue check</code> を流す</strong>。重複と旧 <code>issues.html</code> の再出現を見つける</li>
+	</ol>
+	<h2>クラウド</h2>
+	<ul>
+		<li>クラウドの環境は、毎回作り直される。<strong>移行後のリポジトリを clone するだけで、新しい形になる</strong>。<code>cloud-session-start</code> が <code>ai-agent-tools</code> を最新にするので、<code>issue</code> も呼べる (sh の入口は bun を優先し、無ければ node。確かめる)</li>
+		<li>クラウドで課題を立てると、PC の番号と重ならない保証は <strong>同じ PC の中だけ</strong> (<code>_lock/</code>)。<strong>別の場所での重複は、<code>issue check</code> が後から止める</strong> (課題管理の 計画のリスクと同じ)</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>決めること</h1>
+	<p>共通ルール「複数の解決案がある場合の対応」に従い、推奨を A にする。<strong>番号は、前の計画 (<code>p261103-01</code>) の 136 の続き</strong> (137 から) の通し番号。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>決めること</th><th>案</th><th>推す理由</th></tr></thead>
+		<tbody>
+			<tr>
+				<td class="nowrap">137-A</td>
+				<td rowspan="2">移す作業を、だれが行うか (恒久)</td>
+				<td><strong>A</strong>: 各プロジェクトのセッションが、利用者の「移行して」の指示で行う</td>
+				<td>他プロジェクトのファイルは直さない、という共通ルールのまま動く。そのプロジェクトのテストと検査で確かめられる。ただし、利用者が 1 つずつ指示する手間がかかる</td>
+			</tr>
+			<tr>
+				<td class="nowrap">137-B</td>
+				<td><strong>B</strong>: ai-agent-tools のセッションが、プロジェクトごとの許可を得て、まとめて書き込む</td>
+				<td>指示が少なく、速い。ただし、書き込みの許可をプロジェクトごとに取る必要があり、そのプロジェクトのテストと commit の指示は結局そちらで要る。別の PC のプロジェクトには届かない</td>
+			</tr>
+			<tr>
+				<td class="nowrap">138-A</td>
+				<td rowspan="2">移す道具 (恒久)</td>
+				<td><strong>A</strong>: <code>issue migrate</code> を足し、機械が移す。読めない形は手で書き写す</td>
+				<td>28 件のばらつきを、1 回の実装で抱えられる。写し間違いが起きにくく、数の確認も機械で行える</td>
+			</tr>
+			<tr>
+				<td class="nowrap">138-B</td>
+				<td><strong>B</strong>: 道具を作らず、各プロジェクトの AI が手で書き写す (このプロジェクトでやった方法)</td>
+				<td>道具の実装が要らない。ただし、課題が多いプロジェクト (file-manager 等) で、写し間違いと手間が大きい</td>
+			</tr>
+			<tr>
+				<td class="nowrap">139-A</td>
+				<td rowspan="3">移す時期 (恒久)</td>
+				<td><strong>A</strong>: 未・着手があるプロジェクトは、周知のあと順に移す。0 件のプロジェクトは、次に課題を立てるとき (<code>issue new</code> が案内して止まる)</td>
+				<td>得るものがあるプロジェクトから移せる。動いていないプロジェクトに、手間をかけない</td>
+			</tr>
+			<tr>
+				<td class="nowrap">139-B</td>
+				<td><strong>B</strong>: すべてのプロジェクトを、期間を決めていっせいに移す</td>
+				<td>新旧が混ざる期間が短い。ただし、動いていないプロジェクトも指示が要る。別の PC の都合を合わせにくい</td>
+			</tr>
+			<tr>
+				<td class="nowrap">139-C</td>
+				<td><strong>C</strong>: そのプロジェクトで課題を触るときだけ移す</td>
+				<td>手間が最小。ただし、未・着手があるのに旧形式のままのプロジェクトが、いつまでも残る</td>
+			</tr>
+			<tr>
+				<td class="nowrap">140-A</td>
+				<td rowspan="2">別の PC があるプロジェクト (恒久)</td>
+				<td><strong>A</strong>: 移す PC を 1 台に決め、事前に全 PC で push する。移したあと、ほかの PC は pull し、<code>issue check</code> の <code>legacy</code> と重複の警告で、事故を見つける</td>
+				<td>1 回の commit で済み、競合が起きない。事故が起きても、道具が見つけられる</td>
+			</tr>
+			<tr>
+				<td class="nowrap">140-B</td>
+				<td><strong>B</strong>: 警告は足さず、移行期間は別の PC で課題を書かないことを周知するだけにする</td>
+				<td>道具の変更が要らない。ただし、周知を読まなかった PC の編集に、気づけない</td>
+			</tr>
+			<tr>
+				<td class="nowrap">141-A</td>
+				<td rowspan="2">進み具合の記録 (暫定)</td>
+				<td><strong>A</strong>: 状態は、各リポジトリの中身で判定する (<code>items/project-id.txt</code> と <code>issues-legacy.html</code> の有無)。ai-agent-tools では、名簿 (プロジェクト ・ 所在 ・ 未・着手の数 ・ 移行の済) を、報告のたびにこの計画の表へ足す</td>
+				<td>道具の追加が要らず、すぐ始められる。<strong>暫定</strong>: 別の PC の分は、報告が来るまで分からない</td>
+			</tr>
+			<tr>
+				<td class="nowrap">141-B</td>
+				<td><strong>B</strong>: 課題管理の「横断」(フェーズ 5) ができてから、各プロジェクトを読んで判定する</td>
+				<td>名簿を手で更新しない (恒久)。ただし、横断は、移行の後ろの作業で、移行の管理には間に合わない。別の PC の分は届かない</td>
+			</tr>
+			<tr>
+				<td class="nowrap">142-A</td>
+				<td rowspan="2">共通ルールとの前後 (恒久)</td>
+				<td><strong>A</strong>: ツールの公開 → 共通ルールの書き換え (132) → 周知 → 試し → 残り、の順にする。ルールの書き換えの前には、どのプロジェクトも移さない</td>
+				<td>ルールが旧形式のままだと、移したあとの AI が旧形式へ戻す。周知も、新しい形のルールを読ませる形にできる</td>
+			</tr>
+			<tr>
+				<td class="nowrap">142-B</td>
+				<td><strong>B</strong>: 試しの 1〜2 件を、ルールの書き換えの前に行う</td>
+				<td>実際のプロジェクトで、ルールの文言の穴を先に見つけられる。ただし、試しのプロジェクトでは、ルールと実態が一時的に食い違う</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+	<div class="callout callout-important">
+		<p><strong>利用者に伺いたいこと (決めることとは別)</strong>: (1) <strong>このPC 以外の PC は何台で、どのプロジェクトがあるか</strong> (名簿は、このPC の調査にしか無い)。(2) <strong>試しに移すプロジェクトの候補</strong>。推奨は、書き方が違う 2 件 (たとえば、バッジが番号の前で class が <code>b-done</code> の ai-chat-lite と、<code>md-skip</code> で番号が <code>span.id</code> の claude-code-proxy。ただし、どちらも課題を読む承認が要る)。(3) <strong>動いていないプロジェクトの扱い</strong> (139-A なら、次に使うときに移す)。</p>
+	</div>
+</section>
+
+<section class="ch05" id="ch05">
+	<h1>進め方とリスク</h1>
+	<h2>フェーズ</h2>
+	<p>承認のあと、小さく区切って進める。このプロジェクトの作業は、各フェーズの終わりに、全件テストを通し、commit と push をする (ローカルルール第 6 章)。<strong>各プロジェクトでの作業は、そのプロジェクトのセッションが行う</strong>。</p>
+	<ol>
+		<li><strong>フェーズ 0 (決める)</strong>: 第 4 章の番号の採否と、利用者に伺いたいことの回答をいただく</li>
+		<li><strong>フェーズ 1 (道具)</strong>: <code>issue migrate</code> ・ <code>issue new</code> の案内 ・ <code>issue check</code> の <code>legacy</code> 警告を、テストを先に書いて (❌Red を見てから) 実装する (✅Green)。材料は、調査で見つかった各形と、このプロジェクトの旧 <code>issues.html</code>。bun ・ node の両方で通す</li>
+		<li><strong>フェーズ 2 (公開)</strong>: <code>TOOLS-USAGE</code> に <code>issue</code> の使い方と<strong>移行の手順 (第 2 章)</strong>を書く。<strong>これは公開資料なので、書く前に利用者の指示を待つ</strong></li>
+		<li><strong>フェーズ 3 (共通ルール)</strong>: 142-A なら、共通ルール「課題の管理」と README のルールの書き換え (132) を、<strong>差分で示して指示を待つ</strong>。ローカルルール第 1 章 ・ 第 2 章の <code>issues.html</code> の記述も同じ</li>
+		<li><strong>フェーズ 4 (周知)</strong>: <code>public</code> ルームに、見出し名と変わった点だけを短く出す (案を示して確認を得る)。移行の手順は <code>TOOLS-USAGE</code> の見出し名で指す</li>
+		<li><strong>フェーズ 5 (試し)</strong>: 2 件のプロジェクトで、利用者の指示で移す。数が合うか ・ 書き方の違いで読み落としが無いか ・ 手順の穴を、<code>issue migrate</code> と手順の資料へ返す</li>
+		<li><strong>フェーズ 6 (残り)</strong>: 139-A の順に、未・着手があるプロジェクトから移す。別の PC のプロジェクトは、第 3 章の手順で行う。名簿 (141-A) を更新する</li>
+	</ol>
+	<h2>テストと確かめ</h2>
+	<ul>
+		<li><strong>期待値を先に手で書く</strong>。<code>issue migrate</code> の出力から、期待値を作らない (共通ルール「テストを先に書く」)</li>
+		<li><strong>数の突き合わせ</strong>: 旧の未・着手の数と、新の <code>todo/</code> + <code>doing/</code> の数が一致する。1 件ずつ、番号 ・ 題 ・ グループ ・ やること行の状態も比べる</li>
+		<li><strong>手で書き写した 3 件との突き合わせ</strong>: このプロジェクトの旧 <code>issues.html</code> (移行前の版) を、<code>issue migrate</code> に通し、手で書いたものと比べる。<strong>機械が出したものに、手で書いたものが無い点 (経緯の要約) は、差として記録する</strong></li>
+		<li><strong>移したあとの確かめ</strong>: <code>issue check</code> ・ <code>issue render</code> ・ そのプロジェクトのテスト ・ <code>html2md</code> ・ <code>check-markdown</code> ・ <code>check-html-rules</code> (あれば)</li>
+	</ul>
+	<h2>リスク</h2>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>リスク</th><th>備え</th></tr></thead>
+		<tbody>
+			<tr><td>書き方が想定と違う課題を、読み落とす</td><td>読めない形は、推測せず「読めなかった」に出す。数の突き合わせで、落ちた数を見つける。調査は文字列の照合で、<strong>想定外の書き方は拾えていない</strong>。試しの 2 件で見つかった形を、試験の材料へ足す</td></tr>
+			<tr><td>機械が出した本文の変換が崩れる (表 ・ callout ・ コード)</td><td>変換した本文を、旧と並べて目で見る (<code>issue render</code> の画面を撮って見る)。崩れた形は、試験の材料へ足す。<strong>旧 HTML は残る</strong>ので、元の記録は失われない</td></tr>
+			<tr><td>ルールが旧形式の PC の AI が、移行後に旧形式で書く</td><td>フェーズ 3 のあとにだけ移す (142-A)。<code>issue check</code> の <code>legacy</code> 警告。PC ごとに、ルールとツールを pull する</td></tr>
+			<tr><td>別の PC の未 push の編集と、移行が競合する</td><td>移行日の前に、全 PC で push する (第 3 章)。競合したら、移行の commit を戻して、編集を取り込んでから、やり直す (移行は 1 commit)</td></tr>
+			<tr><td>名簿が不完全で、移し忘れるプロジェクトが出る</td><td>139-A なら、次に課題を立てるときに <code>issue new</code> が案内する。旧形式のまま残っても、旧 HTML は読める</td></tr>
+			<tr><td>各プロジェクトが、移行の指示を受けるまで旧形式のまま、新旧が混ざる</td><td>混ざること自体は想定どおり (96-A ・ 127-A)。<code>issue</code> の横断は、新しい形のプロジェクトだけを集める。旧のプロジェクトは、旧 HTML のまま読める</td></tr>
+			<tr><td>移行の手順が、プロジェクトの事情 (独自の <code>issues.html</code> 検査 ・ テスト) と合わない</td><td>試しの 2 件で、<code>check-html-rules</code> 相当の検査 (<code>issues.html</code> を名指しするもの) を探す。<strong>このプロジェクトでは、<code>check-html-rules.ts</code> と <code>check-public-allow.txt</code> が当たった</strong>。手順に「<code>issues.html</code> を名指しする検査と設定を探す」を入れる</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<div class="callout callout-warning">
+		<p><strong>この計画の限界</strong>: <strong>各プロジェクトの未・着手の数は、未測定</strong>。28 件の書き方の調査は、件数と形だけで、中身は読んでいない。別の PC のプロジェクトの数と所在は、<strong>まったく分からない</strong>。<code>issue migrate</code> が html2md の変換部品を使えるかは、未確認。</p>
+	</div>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+</body>
+</html>
