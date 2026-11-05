@@ -265,7 +265,7 @@
 	<table>
 		<thead><tr><th>項目</th><th>前の計画</th><th>この計画での扱い</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap">移す範囲</td><td>未・着手だけ (96-A)</td><td>済みも <code>items/done/</code> へ。このプロジェクトの済み 94 件も、移す必要がある (未実施)</td></tr>
+			<tr><td class="nowrap">移す範囲</td><td>未・着手だけ (96-A)</td><td>済みも <code>items/done/</code> へ。このプロジェクトの済み 69 件 (済 46 ・ 保管 23。<code>issue migrate</code> の読み取りで測った。旧 HTML は 72 件で、3 件は移行済み) も、移す必要がある (未実施)</td></tr>
 			<tr><td class="nowrap"><code>issue migrate</code></td><td>未・着手を移す</td><td>済みも移す。<strong>読めなかった課題は、推測せず「読めなかった」に出す</strong> (前の計画と同じ)。<strong>約 740 件の書き方の違いを、先に <code>--dry-run</code> で数える</strong></td></tr>
 			<tr><td class="nowrap">旧 HTML</td><td><code>issues-legacy.html</code> へ改名して残す (127-A)</td><td>同じ。ただし済みは新しい形にもあるので、<strong>旧 HTML は、突き合わせ (写し間違いの確認) の相手</strong></td></tr>
 			<tr><td class="nowrap">0 件のプロジェクト</td><td>次に課題を立てるとき</td><td>済みがあれば、<strong>0 件でも検索の材料になる</strong>。移す時期は、この計画では決めない (前の計画の 139 のまま)</td></tr>
@@ -295,7 +295,7 @@
 	<h1>進め方とリスク</h1>
 	<h2>フェーズ (案。承認をいただくまで実装しない)</h2>
 	<ol>
-		<li><strong>このプロジェクトの済み 94 件を移す</strong>。<code>issue migrate</code> の最初の形を、ここで作り、旧 HTML と件数を突き合わせる</li>
+		<li><strong>このプロジェクトの済み 69 件を移す</strong> (最初の測定で 94 件と見込んでいたが、読み取りで 69 件と分かった)。<code>issue migrate</code> の最初の形を、ここで作り、旧 HTML と件数を突き合わせる</li>
 		<li><strong>索引</strong>。作る・更新する・作り直す。node と bun で通す</li>
 		<li><strong>検索と類似</strong>。<code>issue search</code> を索引へ移し、<code>issue similar</code> と <code>issue new</code> の提示を作る。精度は、このプロジェクトで測る</li>
 		<li><strong>相互リンク</strong>。<code>related</code> と、逆向きの表示</li>

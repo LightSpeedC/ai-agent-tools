@@ -78,6 +78,8 @@ $Suites = @(
 	@{ Name = 'issue (render)'; Script = 'run-issue-render-tests.ts' },
 	# 課題管理ツール issue のフェーズ 3b: view (開く) ・ 更新の操作の最後の自動の作り直し ・ check の .gitignore の検査
 	@{ Name = 'issue (view)'; Script = 'run-issue-view-tests.ts' },
+	# 課題管理ツール issue の移行 (p261106-01 のフェーズ 1): 旧 HTML の読み取りと migrate --dry-run
+	@{ Name = 'issue (migrate)'; Script = 'run-issue-migrate-tests.ts' },
 	# 一括実行の時間の上限そのもの。止める相手は、このテストが起動する眠るだけの node
 	@{ Name = '試験の時間の上限'; Script = 'run-timeout-tests.ts' },
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },

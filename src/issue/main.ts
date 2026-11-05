@@ -27,7 +27,9 @@
 		issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]
 		                                                            _issues.html を作り直して、既定のアプリで開く (開けなければパスを出して終了コード 0)
 	更新の操作 (new ・ set ・ todo ・ confirm ・ archive ・ unarchive) の最後に、_issues.html を作り直す (失敗しても警告だけ)。
-	いまはフェーズ 3b まで (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ confirm ・ archive ・ unarchive ・ render ・ view)。
+		issue migrate [--dry-run] [--root <dir>] [--json]
+		                                                            旧 issues.html (と issues-archive.html) の課題を読み、移す計画を出す。いまは読み取りだけ
+	いまはフェーズ 3b まで + migrate の読み取り (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ confirm ・ archive ・ unarchive ・ render ・ view ・ migrate)。
 */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -37,6 +39,7 @@ import { renderHtml, writeIfChanged } from './render.ts';
 import {
 	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
+import { planMigration } from './migrate.ts';
 
 const ExitOk = 0;
 const ExitFailed = 1;
@@ -59,6 +62,7 @@ const Usage = [
 	'                                                                 _issues.html を作り直して、既定のアプリで開く',
 	'  issue archive <group> [--root <dir>] [--json]                  グループの全件が済なら、archived/ へ動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
+	'  issue migrate [--dry-run] [--root <dir>] [--json]              旧 issues.html の課題を読み、移す計画を出す (いまは読み取りだけ。何も書かない)',
 ].join('\n');
 
 // ---- 引数 ----
@@ -451,6 +455,32 @@ function runList(rest: string[]): number {
 	return ExitOk;
 }
 
+// ---- migrate ----
+
+function runMigrate(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json', '--dry-run'], positionals: 0 });
+	const root = existingRoot(o);
+	const plan = planMigration(root);
+	const inFolder = (folder: Folder): number => plan.move.filter((m) => m.folder === folder).length;
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify({
+			read: plan.read,
+			sources: plan.sources,
+			move: plan.move.map((m) => ({ id: m.id, state: m.state, folder: m.folder, group: m.group, title: m.title, source: m.source })),
+			exists: plan.exists,
+			unreadable: plan.unreadable,
+		}));
+	} else {
+		console.log(`[dry-run] 旧 HTML から課題 ${plan.read} 件を読んだ`);
+		console.log('  ' + plan.sources.map((s) => `${s.file} ${s.count} 件`).join(' ・ '));
+		console.log(`  移す: ${plan.move.length} 件 (済 ${inFolder('done')} ・ 着手 ${inFolder('doing')} ・ 未 ${inFolder('todo')} ・ 保管 ${inFolder('archived')})`);
+		console.log(`  すでに items/ にある (移さない): ${plan.exists.length} 件`);
+		console.log(`  読めなかった: ${plan.unreadable.length} 件`);
+		for (const p of plan.unreadable) console.log(`    - ${p.where}: ${p.message}`);
+	}
+	return plan.unreadable.length > 0 ? ExitFailed : ExitOk;
+}
+
 // ---- 入口 ----
 
 const commands: Record<string, (rest: string[]) => number> = {
@@ -467,6 +497,7 @@ const commands: Record<string, (rest: string[]) => number> = {
 	view: runView,
 	archive: (rest) => runGroupMove(rest, 'archive'),
 	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
+	migrate: runMigrate,
 };
 
 function mainEntry(): number {

@@ -413,6 +413,17 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><strong>開けない環境 (画面の無い Linux 等) では、開かずにパスを出して終了コード 0</strong>。HTML は作る。出力: <code>[OK] &lt;相対パス&gt; を作り直して開いた</code> ・ 開けなければ <code>… 開けなかったので、自分で開く: &lt;相対パス&gt;</code>。<code>--json</code> は <code>render</code> の項目に <code>opened</code> を足したもの</li>
 		<li>試験では、環境変数 <code>ISSUE_TEST_OPEN_LOG</code> (開くパスを追記するファイル) と <code>ISSUE_TEST_OPEN_FAIL</code> (<code>1</code> なら開けなかった扱い) で、アプリを開かずに確かめる (<a href="環境変数.html">環境変数の仕様</a>)</li>
 	</ul>
+	<h2><code>issue migrate [--dry-run] [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li><strong>旧 <code>issues.html</code> の課題を読み、新しい形へ移す計画を出す</strong> (計画 p261105-01 の ch02 ・ p261106-01 の 143-A: 済みも移す)。<strong>いまは読み取りだけで、何も書かない</strong>。<code>--dry-run</code> を付けても付けなくても同じ (書き出しを足すときは、別の引数にする)</li>
+		<li><strong>読む旧 HTML</strong>: <code>notes/40_issues/issues-legacy.html</code> (無ければ <code>issues.html</code>) と <code>issues-archive.html</code>。どちらも無ければ終了コード 1</li>
+		<li><strong>読む形</strong>: <code>section</code> の <code>h1</code> がグループ、章の直下の <code>details</code> が課題 1 件。<code>summary</code> の状態のバッジ (未 ・ 着手 ・ 済) ・ <code>span.no</code> の番号 ・ 残りが件名 (タグを除いた 1 行)、<code>div.issue-body</code> が本文。本文の中の <code>details</code> (入れ子) は課題として数えない</li>
+		<li><strong>移し先</strong>: <code>issues-legacy.html</code> の済は <code>done/</code>、着手は <code>doing/</code>、未は <code>todo/</code>。<code>issues-archive.html</code> は <code>archived/</code></li>
+		<li><strong>読めない形は、推測で補わず「読めなかった」に出す</strong>: 番号が無い (新しい番号を勝手に振らない) ・ 状態が 未 ・ 着手 ・ 済 のどれでもない ・ 同じ番号が重複している (2 件目を読まない) ・ <code>issues-archive.html</code> の状態が済でない。<strong>1 件でもあれば終了コード 1</strong></li>
+		<li><strong>すでに <code>items/</code> にある番号は、移さない件数に数える</strong> (作り直さない)</li>
+		<li>出力: <code>[dry-run] 旧 HTML から課題 N 件を読んだ</code>、ファイルごとの件数、<code>移す: M 件 (済 ・ 着手 ・ 未 ・ 保管)</code>、<code>すでに items/ にある (移さない): E 件</code>、<code>読めなかった: U 件</code> (1 件ずつ <code>- グループ / 件名: 理由</code>)。<code>--json</code> は <code>{ read, sources, move, exists, unreadable }</code></li>
+		<li><strong>本文の Markdown への変換 ・ 書き出し ・ 件数の突き合わせは、まだ無い</strong> (計画 p261106-01 のフェーズ 1 の続き)。本文の変換は <code>html2md</code> の <code>Converter.convertFragment</code> を使う (157-A)</li>
+	</ul>
 	<h2>更新の操作の最後の、<code>_issues.html</code> の自動の作り直し</h2>
 	<ul>
 		<li><code>new</code> ・ <code>set</code> ・ <code>todo</code> (変える操作) ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> が成功したあと、<code>_issues.html</code> を既定の範囲 (未・着手・済) で作り直す (131-A)。<code>init</code> ・ <code>check</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>todo</code> の一覧と、失敗した操作は、作らない</li>
