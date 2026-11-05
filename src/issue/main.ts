@@ -24,9 +24,14 @@
 		issue archive <group> ・ issue unarchive <group> [--root <dir>] [--json]
 		issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]
 		                                                            HTML を作る (開かない。既定は _issues.html。渡す用は --standalone --out)
-	いまはフェーズ 3a まで (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ confirm ・ archive ・ unarchive ・ render)。view は、まだ無い。
+		issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]
+		                                                            _issues.html を作り直して、既定のアプリで開く (開けなければパスを出して終了コード 0)
+	更新の操作 (new ・ set ・ todo ・ confirm ・ archive ・ unarchive) の最後に、_issues.html を作り直す (失敗しても警告だけ)。
+	いまはフェーズ 3b まで (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ confirm ・ archive ・ unarchive ・ render ・ view)。
 */
+import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { Folders, checkProject, findProjectRoot, hasItems, type Finding, type Folder } from './check.ts';
 import { renderHtml, writeIfChanged } from './render.ts';
 import {
@@ -50,6 +55,8 @@ const Usage = [
 	'  issue confirm <id> [--undo] [--root <dir>] [--json]            報告元の確認 (confirmed) を true にする (--undo で false)',
 	'  issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]',
 	'                                                                 HTML を作る (開かない)。既定は notes/40_issues/_issues.html',
+	'  issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]',
+	'                                                                 _issues.html を作り直して、既定のアプリで開く',
 	'  issue archive <group> [--root <dir>] [--json]                  グループの全件が済なら、archived/ へ動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 ].join('\n');
@@ -165,6 +172,7 @@ function runNew(rest: string[]): number {
 		console.log(`[OK] ${r.rel} を作った (${r.id})`);
 		if (r.createdProjectId) console.log('     project-id.txt も作った');
 	}
+	autoRender(root);
 	return ExitOk;
 }
 
@@ -251,6 +259,7 @@ function runSet(rest: string[]): number {
 	} else {
 		console.log(`[OK] ${id} を ${r.from.state} から ${r.state} へ動かした (${r.from.folder}/ → ${r.folder}/)`);
 	}
+	autoRender(root);
 	return ExitOk;
 }
 
@@ -274,6 +283,7 @@ function runTodo(rest: string[]): number {
 		const r = editTodo(root, id, { kind: 'add', text: value });
 		if (json) console.log(JSON.stringify({ id, todos: r.todos, changed: r.changed }));
 		else console.log(`[OK] ${id} にやることを足した (${r.changed.n}): ${r.changed.text}`);
+		autoRender(root);
 		return ExitOk;
 	}
 	const n = /^\d+$/.test(value) ? Number(value) : NaN;
@@ -282,10 +292,81 @@ function runTodo(rest: string[]): number {
 	const r = editTodo(root, id, { kind: 'set', n, state });
 	if (json) console.log(JSON.stringify({ id, todos: r.todos, changed: r.changed }));
 	else console.log(`[OK] ${id} のやること ${r.changed.n} を ${r.changed.state} にした: ${r.changed.text}`);
+	autoRender(root);
 	return ExitOk;
 }
 
-// ---- render ----
+// ---- render ・ view ・ 自動の作り直し ----
+
+/** _issues.html の既定の範囲は、未・着手・済 (archived/ は --all のとき) */
+const DefaultRenderFolders: Folder[] = ['todo', 'doing', 'done'];
+
+function defaultOutFile(root: string): string {
+	return path.join(root, 'notes', '40_issues', '_issues.html');
+}
+
+function relShown(root: string, file: string): string {
+	const rel = path.relative(root, file);
+	return rel.startsWith('..') || path.isAbsolute(rel) ? path.basename(file) : rel.split(path.sep).join('/');
+}
+
+/**
+ * 更新の操作の最後に、_issues.html を既定の範囲で作り直す (131-A)。
+ * 失敗しても、主な操作は成功のまま、標準エラーに警告を出すだけ。標準出力は増やさない
+ */
+function autoRender(root: string): void {
+	try {
+		const outFile = defaultOutFile(root);
+		const r = renderHtml({ root, outFile, standalone: false, folders: DefaultRenderFolders, group: null, ids: [], warn: () => {} });
+		writeIfChanged(outFile, r.html);
+	} catch (e) {
+		console.error('[警告] _issues.html を作り直せなかった (主な操作は済んでいる): ' + (e instanceof Error ? e.message : String(e)));
+	}
+}
+
+/** 既定のアプリで開く。開けたら true。試験では ISSUE_TEST_OPEN_LOG (開くパスを追記) ・ ISSUE_TEST_OPEN_FAIL=1 (開けない扱い) で差し替える */
+function openWithDefaultApp(file: string): boolean {
+	const logFile = process.env.ISSUE_TEST_OPEN_LOG;
+	if (process.env.ISSUE_TEST_OPEN_FAIL === '1') return false;
+	if (logFile !== undefined && logFile !== '') {
+		fs.appendFileSync(logFile, file + '\n');
+		return true;
+	}
+	let r;
+	if (process.platform === 'win32') {
+		r = spawnSync('cmd.exe', ['/c', 'start', '', file], { timeout: 15000, windowsHide: true, stdio: 'ignore' });
+	} else if (process.platform === 'darwin') {
+		r = spawnSync('open', [file], { timeout: 15000, stdio: 'ignore' });
+	} else {
+		// 画面の無い環境 (クラウドの Linux 等) では、開けない
+		if (!process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) return false;
+		r = spawnSync('xdg-open', [file], { timeout: 15000, stdio: 'ignore' });
+	}
+	return r.error === undefined && r.status === 0;
+}
+
+function runView(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--state', '--group'], flags: ['--json', '--all'], positionals: 0 });
+	const folders: Folder[] = o.values.has('--state') || o.flags.has('--all') ? foldersFrom(o) : DefaultRenderFolders;
+	const root = existingRoot(o);
+	const outFile = defaultOutFile(root);
+	let warnings = 0;
+	const r = renderHtml({
+		root, outFile, standalone: false, folders, group: o.values.get('--group') ?? null, ids: [],
+		warn: (m) => { warnings++; console.error(m); },
+	});
+	const written = writeIfChanged(outFile, r.html);
+	const shown = relShown(root, outFile);
+	const opened = openWithDefaultApp(outFile);
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify({ file: shown, issues: r.count, written, warnings, opened }));
+	} else if (opened) {
+		console.log(`[OK] ${shown} を${written === 'unchanged' ? '(変更なし)' : written === 'created' ? '作って' : '作り直して'}開いた (課題 ${r.count} 件)`);
+	} else {
+		console.log(`[OK] ${shown} を${written === 'unchanged' ? '(変更なし)' : written === 'created' ? '作った' : '作り直した'} (課題 ${r.count} 件)。開けなかったので、自分で開く: ${shown}`);
+	}
+	return ExitOk;
+}
 
 function runRender(rest: string[]): number {
 	const o = parseOptions(rest, { valued: ['--root', '--out', '--state', '--group'], flags: ['--json', '--all', '--standalone'], positionals: 1000 });
@@ -295,9 +376,9 @@ function runRender(rest: string[]): number {
 	const standalone = o.flags.has('--standalone');
 	const outArg = o.values.get('--out');
 	if (standalone && outArg === undefined) throw new UsageError('--standalone は --out と一緒に使う (_issues.html は、ローカルで見る版のため。渡す用は tmp/ などへ出す)');
-	const folders: Folder[] = o.values.has('--state') || o.flags.has('--all') ? foldersFrom(o) : ['todo', 'doing', 'done'];
+	const folders: Folder[] = o.values.has('--state') || o.flags.has('--all') ? foldersFrom(o) : DefaultRenderFolders;
 	const root = existingRoot(o);
-	const outFile = outArg !== undefined ? path.resolve(outArg) : path.join(root, 'notes', '40_issues', '_issues.html');
+	const outFile = outArg !== undefined ? path.resolve(outArg) : defaultOutFile(root);
 	let warnings = 0;
 	const r = renderHtml({
 		root, outFile, standalone, folders, group: o.values.get('--group') ?? null, ids: o.positionals,
@@ -331,6 +412,7 @@ function runConfirm(rest: string[]): number {
 	} else {
 		console.log(`[OK] ${id} の報告元の確認 (confirmed) を false に戻した (報告元: ${r.from})`);
 	}
+	autoRender(root);
 	return ExitOk;
 }
 
@@ -349,6 +431,7 @@ function runGroupMove(rest: string[], kind: 'archive' | 'unarchive'): number {
 	} else {
 		console.log(`[OK] グループ ${group} の ${r.moved.length} 件を done/ へ戻した: ${r.moved.join(' ・ ')}`);
 	}
+	autoRender(root);
 	return ExitOk;
 }
 
@@ -381,6 +464,7 @@ const commands: Record<string, (rest: string[]) => number> = {
 	todo: runTodo,
 	confirm: runConfirm,
 	render: runRender,
+	view: runView,
 	archive: (rest) => runGroupMove(rest, 'archive'),
 	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
 };

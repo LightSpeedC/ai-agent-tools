@@ -4,6 +4,7 @@
 */
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { KeyOrder, States, parsePairs, splitIssue } from './meta.ts';
 
 export type Level = 'error' | 'warning';
@@ -284,6 +285,26 @@ function refExists(root: string, ref: string, ids: Set<string>): boolean {
 	return false;
 }
 
+/** Git の管理外であってほしいもの (root からの相対パス)。_lock/ は中の予約フォルダで調べる */
+const GitIgnoreTargets = ['notes/40_issues/_issues.html', 'notes/40_issues/_lock/'];
+
+/**
+ * `git check-ignore` で、管理外になっていないものを返す (表示は、末尾の / を除いた名前)。
+ * git の管理の外 ・ git が無い ・ 調べられないときは、何も返さない (見られないので警告しない)
+ */
+function notIgnoredByGit(root: string, targets: string[]): string[] {
+	const result: string[] = [];
+	for (const target of targets) {
+		// _lock/ は、中に作られる予約フォルダのパスで調べる (フォルダ自体の除外と、中身の除外は同じ _* で決まる)
+		const probe = target.endsWith('/') ? target + 'i000000-00' : target;
+		const r = spawnSync('git', ['check-ignore', '-q', '--', probe], { cwd: root, timeout: 15000 });
+		if (r.error !== undefined || r.status === null) return [];
+		if (r.status === 1) result.push(target.endsWith('/') ? path.posix.basename(target.slice(0, -1)) + '/' : path.posix.basename(target));
+		else if (r.status !== 0) return [];
+	}
+	return result;
+}
+
 /** プロジェクトの root を指して検査する。何も書き換えない */
 export function checkProject(root: string): CheckResult {
 	const findings: Finding[] = [];
@@ -322,6 +343,12 @@ export function checkProject(root: string): CheckResult {
 		for (const ref of info.refs) {
 			if (!refExists(root, ref, ids)) add('warning', 'refs', info.rel, `refs の参照先が見つからない: ${ref}`);
 		}
+	}
+
+	// 生成物 (_issues.html) と番号の予約 (_lock/) は、先頭 _ の決まりで Git から外れている前提
+	const notIgnored = notIgnoredByGit(root, GitIgnoreTargets);
+	if (notIgnored.length > 0) {
+		add('warning', 'gitignore', '.gitignore', `${notIgnored.join(' ・ ')} が Git の管理外になっていない (.gitignore に _* を足す)`);
 	}
 
 	findings.sort((a, b) => {
