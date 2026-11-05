@@ -476,7 +476,8 @@ refs: p261103-01
 			<tr><td class="nowrap">検査</td><td><code>issue check</code></td><td>ID の重複・形の誤り・状態の不一致・参照切れ・件数を、機械が数える</td></tr>
 			<tr><td class="nowrap">初期化</td><td><code>issue init</code></td><td><code>project-id.txt</code> を作る (無ければ)。最初の <code>issue new</code> も、無ければ作る。フォルダごとコピーして別のプロジェクトにしたときは、<code>issue init --new-id</code> で振り直す</td></tr>
 				<tr><td class="nowrap">片付ける</td><td><code>issue archive &lt;group&gt;</code> ／ <code>issue unarchive &lt;group&gt;</code></td><td>グループの全件が済のときだけ、<code>items/archived/</code> へ <code>git mv</code> する。本文は書き換えない。戻すのは <code>unarchive</code></td></tr>
-				<tr><td class="nowrap">表示を見る</td><td><code>issue view</code></td><td><code>_issues.html</code> を毎回作り直して、既定のアプリで開く (131-A)。グループごとの件数・目次を持つ。更新の操作 (<code>new</code> ・ <code>set</code> 等) の最後にも自動で作り直す。中身が同じなら書かない (ローカルルール第 5 章)</td></tr>
+				<tr><td class="nowrap">表示を作る</td><td><code>issue render [--out &lt;ファイル&gt;] [--standalone]</code></td><td><strong>生成だけで、開かない</strong> (134-A)。<code>_issues.html</code> (既定) か、<code>--out</code> で指した場所に作る。グループごとの件数・目次を持つ。更新の操作 (<code>new</code> ・ <code>set</code> 等) の最後の自動の作り直しも、これ。AI は、これを使う (窓を開かない)。中身が同じなら書かない (ローカルルール第 5 章)</td></tr>
+				<tr><td class="nowrap">表示を見る</td><td><code>issue view</code></td><td><code>issue render</code> で <code>_issues.html</code> を作り直して、既定のアプリで開く (131-A ・ 134-A)。人が見るときに使う</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -493,6 +494,8 @@ refs: p261103-01
 		<li><strong><code>issues.html</code> は <code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> から、<code>issues-archive.html</code> は <code>archived/</code> から生成する</strong>。README がリンクするのは <code>issues.html</code> だけ、という決まりは変わらない</li>
 		<li><strong>生成物は commit しない</strong> (131-A。95-A を置き換えた)。<code>_issues.html</code> は先頭 <code>_</code> で Git 管理外なので、差分の混ざり ・ 競合 ・ 古いままの生成物が無い。README からはリンクを張れない (GitHub では除外されたファイルへのリンクが切れる)。課題の Markdown は、GitHub がそのまま描画する</li>
 		<li><strong>生成する HTML の決まり</strong>: <code>&lt;meta name="md-skip"&gt;</code> を入れる (<code>html2md</code> が <code>_issues.md</code> を作らないように)。ページの末尾に、作った日時と元の件数を書く。画像は <code>items/images/…</code>、旧 HTML は <code>issues-legacy.html</code> を、同じフォルダからの相対パスで参照する。<code>check-html-rules</code> は、<code>_</code> で始まるファイルを飛ばす (手元に有るときだけ検査の対象になり、別の clone やクラウドで結果が変わるのを防ぐ)</li>
+		<li><strong>人が見るときと、生成だけのとき</strong> (134-A ・ 135-A): <code>issue view</code> は <code>issue render</code> を呼んで開く。AI が走らせるコマンドが窓を開くと、作業中の画面とフォーカスを奪うので、AI は <code>issue render</code> だけを使う。「up して」のように渡すときは、<code>issue render --standalone --out tmp/…</code> で<strong>自己完結した HTML</strong> (画像を <code>data:</code> URI で埋め込み、旧 HTML と Markdown へのリンクを外したもの) を作り、<code>SendUserFile</code> で送って、送ったら消す (共通ルール「一時ファイルの削除」)。<code>_issues.html</code> のままだと、受け手の端末で、画像と旧 HTML へのリンクが切れる</li>
+		<li><strong>実装のときに決める細部 (案。未決)</strong>: (1) <code>render</code> の引数は、<code>list</code> と同じ絞り込み (<code>--state</code> ・ <code>--all</code> ・ <code>--group</code>) と、<code>&lt;id&gt;</code> を指して 1 件だけの HTML を作る形。(2) <code>_issues.html</code> の既定の範囲は、未・着手・済で、済は閉じておく。<code>archived/</code> を含めるかは、実装のときに決める。(3) <code>view</code> が開けない環境 (クラウドの Linux 等) では、開かずにパスだけを出して終了コード 0。(4) 自動の作り直しが失敗しても、主な操作は成功させ、警告に留める。(5) <code>--standalone</code> の HTML の大きさを測る (画像が大きいと重くなる)</li>
 		<li><strong><code>issue check</code> が、<code>.gitignore</code> で <code>_issues.html</code> が除外されているかを見る</strong> (<code>git check-ignore</code>)。除外されていなければ警告。<code>_lock/</code> (番号の予約) も、同じ <code>_*</code> の決まりに頼っている</li>
 	</ul>
 
@@ -881,6 +884,33 @@ refs: p261103-01
 					<td>共通ルールの書き換え (131-A を採ったことによる)</td>
 					<td><strong>続き (未決)</strong>: 共通ルール「課題の管理」(課題は <code>issues.html</code> に集約する) と、「HTMLデザインルール」の README の決め (リンクするのは <code>issues.html</code> だけ) の書き換え案を出す。ai-agent-rules への依頼になるので、案を示してから、指示を待つ</td>
 					<td>ほかのプロジェクトに影響する変更のため</td>
+				</tr>
+				<tr>
+					<td class="nowrap">134-A</td>
+					<td rowspan="3">人が見るときと、生成だけのときのコマンドの分け方 (133 は、保留した別件の検討で使った番号)</td>
+					<td><strong>決定済み (2026-11-05、利用者の判断): A (恒久)</strong>: 生成だけの <code>issue render</code> と、生成して開く <code>issue view</code> の 2 つ。<code>view</code> は <code>render</code> を呼んで開く。更新の操作の最後の自動の作り直しは <code>render</code></td>
+					<td>名前が、やることを表す。AI は <code>render</code> だけを使えば、窓が開かず、作業中の画面とフォーカスを奪わない</td>
+				</tr>
+				<tr>
+					<td class="nowrap">134-B</td>
+					<td><strong>B (恒久)</strong>: <code>issue view</code> 1 つで、<code>--no-open</code> を付けると生成だけ</td>
+					<td>コマンドが 1 つ。ただし、AI が <code>--no-open</code> を付け忘れると、窓が開く</td>
+				</tr>
+				<tr>
+					<td class="nowrap">134-C</td>
+					<td><strong>C (恒久)</strong>: <code>issue view</code> 1 つで、既定は生成だけ。<code>--open</code> で開く</td>
+					<td>付け忘れても窓は開かない。ただし、人が <code>issue view</code> と打っても何も開かず、名前と動きが食い違う</td>
+				</tr>
+				<tr>
+					<td class="nowrap">135-A</td>
+					<td rowspan="2">渡す用 (「up して」など) の HTML</td>
+					<td><strong>決定済み (2026-11-05、利用者の判断): A (恒久)</strong>: <code>issue render --standalone</code> が、画像を <code>data:</code> URI で埋め込み、旧 HTML と Markdown へのリンクを外した、自己完結した HTML を作る。<code>--out &lt;ファイル&gt;</code> で出力先を指し、渡すときは <code>tmp/</code> へ出して、送ったら消す</td>
+					<td>相手の端末で、そのまま見られる。<code>tmp/</code> に作って消す流れは、共通ルール「一時ファイルの削除」と合う</td>
+				</tr>
+				<tr>
+					<td class="nowrap">135-B</td>
+					<td><strong>B (恒久)</strong>: <code>--standalone</code> を持たず、<code>_issues.html</code> をそのまま渡す</td>
+					<td>実装が要らない。ただし、受け手の端末で、画像と旧 HTML へのリンクが切れる</td>
 			</tr>
 		</tbody>
 	</table>
@@ -895,7 +925,7 @@ refs: p261103-01
 		<li><strong>フェーズ 0 (決める)</strong>: 第 4 章の番号の採否をいただく。98-A なら、Backlog.md を試して、93-A と 93-B を最終決定する</li>
 		<li><strong>フェーズ 1 (形と検査)</strong>: 1 件のファイルの形 (項目・状態・やること) を、仕様として <code>notes/50_spec/</code> に書く。読み込みと <code>issue check</code> を、テストを先に書いて実装する</li>
 		<li><strong>フェーズ 2 (操作)</strong>: <code>new</code> ・ <code>list</code> ・ <code>show</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>search</code> ・ <code>archive</code> ・ <code>unarchive</code> を実装する。番号の予約 (<code>_lock/</code>) もここで入れる。<strong>「済」の拒否</strong> (やることが残っている・報告元の確認が無い) もここで入れる</li>
-		<li><strong>フェーズ 3 (表示)</strong>: <code>issue view</code> で、いまの <code>issues.html</code> と同じ見た目の HTML を <code>_issues.html</code> に生成する (131-A)。更新の操作の最後の自動の作り直し、<code>issue check</code> の <code>.gitignore</code> の検査、<code>check-html-rules</code> が <code>_</code> で始まるファイルを飛ばす変更も、ここで入れる。<strong>先に期待値を手で書いた golden</strong> で比べる。<code>check-contrast</code> で実測する</li>
+		<li><strong>フェーズ 3 (表示)</strong>: <code>issue render</code> (生成だけ。<code>--out</code> ・ <code>--standalone</code>) と <code>issue view</code> (生成して開く) で、いまの <code>issues.html</code> と同じ見た目の HTML を <code>_issues.html</code> に生成する (131-A ・ 134-A ・ 135-A)。更新の操作の最後の自動の作り直し、<code>issue check</code> の <code>.gitignore</code> の検査、<code>check-html-rules</code> が <code>_</code> で始まるファイルを飛ばす変更も、ここで入れる。<strong>先に期待値を手で書いた golden</strong> で比べる。<code>check-contrast</code> で実測する</li>
 		<li><strong>フェーズ 4 (移行)</strong>: 96-A なら、未・着手の課題を新しい形へ移し、<code>issues.html</code> を生成物に切り替える。共通ルール「課題の管理」と「プロジェクトフォルダ構成」に、書き換えが要るかを確かめる (書き換えは案を示して指示を待つ)</li>
 		<li><strong>フェーズ 5 (横断)</strong>: 97-A なら、登録リストの形と、外を読むことの承認の取り方を決め、集約を作る</li>
 		<li><strong>周知</strong>: 公開 CLI なので <code>TOOLS-USAGE</code> に使い方を足す。共通ルールを変えたときだけ、周知の案を出す</li>

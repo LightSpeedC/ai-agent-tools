@@ -400,7 +400,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<h1>まだ無いもの ・ 限界</h1>
 	<ul>
 		<li><strong>報告元の確認 (<code>confirmed</code>) を <code>true</code> にする操作</strong>は、まだ無い。ファイルを直接 Edit する (<code>issue set</code> は、<code>confirmed</code> が <code>true</code> でないと済にできない)</li>
-		<li><strong>HTML の表示</strong> (<code>issue view</code>。<code>notes/40_issues/_issues.html</code> に生成し、commit しない)、<strong>横断</strong>: フェーズ 3 以降。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
+		<li><strong>HTML の表示</strong> (<code>issue render</code> = 生成だけ ・ <code>issue view</code> = 生成して開く ・ <code>--standalone</code> = 渡す用の自己完結した HTML。<code>notes/40_issues/_issues.html</code> に生成し、commit しない)、<strong>横断</strong>: フェーズ 3 以降。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
 		<li><strong>番号の予約 (<code>_lock/</code>) は、同じ PC の中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める</li>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>
 		<li><strong><code>refs</code> の参照先は、ファイル名の先頭だけで探す</strong>。移行前の課題 (<code>issues.html</code> の中の番号) は見つけられず、警告になる</li>
