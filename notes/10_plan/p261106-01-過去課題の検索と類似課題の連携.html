@@ -182,13 +182,15 @@
 			<tr><td class="nowrap">145-A (立てるときの提示と、横断の結びつき)</td><td>課題を立てるとき、似た過去の課題を提示する。別プロジェクトの課題とも結びつける。<strong>相互にリンクする</strong></td><td>―</td></tr>
 			<tr><td class="nowrap">146-A (作る順序)</td><td>1 つのプロジェクトの中から先に作り、横断はフェーズ 5 で足す</td><td>―</td></tr>
 			<tr><td class="nowrap">147-A (決定番号の持ち方。id の形は 152-A で改めた)</td><td>決定を、課題と同じ仕組みで 1 件 1 ファイルにする (id の形は 152-A)</td><td>プロジェクトごとの整数の連番 (<code>137-A</code> 等)</td></tr>
-			<tr><td class="nowrap">148-A 拡張 (関連は 1 か所にだけ書く)</td><td>決定のファイルにだけ関連する課題を書き、逆向きは索引と生成で出す。<strong>拡張: 課題・決定・計画・調査のすべてに、同じ方式を使う</strong> (拡張の読み方は、利用者の確認待ち)</td><td>―</td></tr>
+			<tr><td class="nowrap">148-A 拡張 (関連は 1 か所にだけ書く)</td><td>決定のファイルにだけ関連する課題を書き、逆向きは索引と生成で出す。<strong>拡張: 課題・決定・計画・調査をつなぐ網にする。ただし計画・調査は HTML で本文を書き換えないので、書かず、指される対象と読み取りだけにする</strong> (第 2 章)</td><td>―</td></tr>
 			<tr><td class="nowrap">149-A 拡張 (過去の決定も全面的に移す)</td><td>過去の決定も全件を新しい形へ移し、番号は全面的に振り直す。旧番号は <code>legacy_ids</code> に残す</td><td>―</td></tr>
 			<tr><td class="nowrap">150-B (本文の旧番号を書き換える)</td><td>計画・調査の本文にある旧番号を、機械で新しい id に書き換える</td><td>共通ルール「計画との関係」(計画の本文を書き換えない)</td></tr>
 			<tr><td class="nowrap">151-B (会話の記録からも拾う)</td><td>資料に残っていない決定を、会話の記録 (JSONL) からも拾う</td><td>―</td></tr>
 			<tr><td class="nowrap">152-A (決定の id は親の番号 + 連番)</td><td>決定の id を <code>&lt;親の番号&gt;-d&lt;連番&gt;</code> にする (例: <code>i261103-01-d1</code>)。親は課題・計画・調査のどれか。親が無い決定は、人が親を決め、本当に無ければ先に課題を立てる</td><td>147-A の id の形 (<code>d</code> + yymmdd-nn の独立した番号)</td></tr>
 			<tr><td class="nowrap">153-A (プロジェクトの id をコロンで囲む)</td><td>プロジェクトをまたぐ参照は <code>:&lt;プロジェクト id&gt;:&lt;記録の id&gt;</code> と書く (例: <code>:ai-agent-manager:i260924-02-d1</code>)</td><td>前の案の <code>&lt;project_id&gt;/&lt;id&gt;</code></td></tr>
 			<tr><td class="nowrap">154-A (参照には読める名前を書く)</td><td>参照に書くプロジェクトの名前は、プロジェクトのフォルダ名 (chat の名乗りと同じ)。<code>project-id.txt</code> に <code>name</code> を足し、乱数の <code>project_id</code> は内部の識別に残す。改名したら旧名を <code>legacy_names</code> に残し、索引が引き当てる</td><td>153-A の例が想定した「読める名前」と、実際の <code>project_id</code> (32 桁の乱数) のずれ</td></tr>
+			<tr><td class="nowrap">155-A (<code>related</code> に種類を持たない)</td><td><code>related</code> は「関連する」だけを書く。種類 (似ている・重複・続き) は持たない。あとから足しても、既存の <code>related</code> はそのまま読める</td><td>―</td></tr>
+			<tr><td class="nowrap">156-A (壊れた参照は警告)</td><td>同じプロジェクトの中で、指す先が無い参照は、<code>issue check</code> の警告にする (エラーにしない)。別プロジェクトの参照は検査しない</td><td>―</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -214,6 +216,30 @@
 		<li><strong>似ているかどうかの判定は、まず簡単な方法 (語の重なり) で作り、このプロジェクトの課題で、人が見て合うかを測ってから</strong>、別の方法を足すか決める。<strong>精度は、まだ測っていない</strong></li>
 		<li><strong>リンクは <code>related</code> に書く</strong> (利用者が選んだものだけ)。<strong>相互にたどれる</strong>ように、逆向きは索引から出す。<code>issue show</code> が「この課題を指している課題」も表示する</li>
 		<li><strong>横断 (別プロジェクトとの結びつき) は、フェーズ 5</strong> (146-A)。<code>project_id</code> が付いた id で指し、名簿と承認が要る</li>
+	</ul>
+	<h2>関連の書き場所と見え方 (148-A 拡張 ・ 155-A ・ 156-A)</h2>
+	<ul>
+		<li><strong>原則</strong>: 順方向だけをファイルに書き、逆向きは生成のときに計算する。同じ関係を両側に書かない (片側が古くなるのを防ぎ、別プロジェクトのファイルを直さずに済む)</li>
+	</ul>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>記録</th><th>関連を書けるか</th><th>書く場所</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">課題</td><td>書ける</td><td>課題のファイルの <code>refs</code> (計画 ・ 調査 ・ 構想を指す。既存) と <code>related</code> (似た課題を指す。新設)</td></tr>
+			<tr><td class="nowrap">決定</td><td>書ける</td><td>決定のファイルの <code>refs</code> (課題 ・ 計画 ・ 調査を指す) と <code>supersedes</code> (置き換えた決定)。親は id から分かる (152-A)</td></tr>
+			<tr><td class="nowrap">計画 ・ 調査</td><td><strong>書かない</strong> (指される対象になるだけ)</td><td>HTML で、本文は書き換えない (共通ルール「計画との関係」)。課題 ・ 決定が指し、逆向き (「この計画を指す課題 ・ 決定」) を生成して出す</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>計画 ・ 調査の本文にある <code>&lt;a href&gt;</code> と課題番号 (<code>i…</code>) は、索引が読み取り専用で拾う案</strong> (書き換えない)。拾う精度は未測定</li>
+		<li><strong>課題のカード (<code>_issues.html</code>)</strong>: 「関連」(その課題が書いた <code>related</code>) ・ 「この課題を指している」(逆向き。課題 ・ 決定) ・ 「この課題から出た決定」(親がこの課題の決定) を並べ、同じ HTML の中のアンカーで飛べる。<strong>決定のカード</strong>は、親 ・ 関連する課題や計画 ・ 置き換えた決定 ・ 置き換えられた決定を出す</li>
+		<li><strong><code>issue show &lt;id&gt;</code></strong> が、同じ内容を文字で出す (<code>--json</code> でも)。計画 ・ 調査の id を渡すと、「この計画を指す課題 ・ 決定」が出る</li>
+		<li><strong>別プロジェクト</strong>は <code>:名前:id</code> で書き、文字だけを出す。リンクにしない。逆向きは出せない (相手のファイルを読めない)。全プロジェクトを 1 枚にまとめるフェーズ 5 の集計ページの中だけは出せる</li>
+		<li><strong><code>related</code> に種類を持たない</strong> (155-A)。<code>related</code> を両側に書いても、表示は 1 つにまとめる (警告にしない)</li>
+		<li><strong>壊れた参照は警告</strong> (156-A)。同じプロジェクトの中で指す先が無いとき。別プロジェクトの参照は検査しない。決定の連番の重複は <code>duplicate</code> で止める (152-A)</li>
+		<li><strong>id は変えない</strong>ので、親が割れる ・ まとまる ・ プロジェクトが改名されても、書いた参照は切れない (改名は <code>legacy_names</code>。154-A)。生成は毎回全ファイルを読み直せ、索引は速くするためだけで、無くても動く</li>
+		<li><strong>まだ確かめていないこと</strong>: 既存の <code>refs</code> の値の区切り (<code>related</code> と揃える。実装のときに確かめる)。本文のリンクを拾う精度</li>
 	</ul>
 	<h2>決定の記録 (147-A)</h2>
 	<ul>
