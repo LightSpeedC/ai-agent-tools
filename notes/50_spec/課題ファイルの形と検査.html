@@ -143,7 +143,7 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
-		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> まで。</p>
+		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>archive</code> ・ <code>unarchive</code> まで。</p>
 		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-05</p>
 	</div>
 </div>
@@ -155,7 +155,7 @@
 <p>課題を 1 件 1 ファイルで持つ形と、その検査 (<code>issue check</code>) の<strong>いまの姿</strong>。決めた経緯と、番号付きの決定は <a href="../10_plan/p261103-01-課題管理ツール.html">課題管理ツール 計画</a> にある。実装と食い違ったら、実装が正しい。</p>
 
 <div class="callout">
-	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code>。<code>issue set</code> 等の残りの操作と、HTML の生成は、まだ実装していない (第 4 章)。</p>
+	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>archive</code> ・ <code>unarchive</code>。HTML の表示 (<code>issue view</code>) と横断は、まだ実装していない (第 4 章)。</p>
 </div>
 
 <div class="toc">
@@ -163,7 +163,7 @@
 	<ol>
 		<li class="ch01"><a href="#ch01">置き場と 1 件のファイルの形</a></li>
 		<li class="ch02"><a href="#ch02"><code>issue check</code> の検査</a></li>
-		<li class="ch03"><a href="#ch03">操作 (<code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code>)</a></li>
+		<li class="ch03"><a href="#ch03">操作</a></li>
 		<li class="ch04"><a href="#ch04">まだ無いもの ・ 限界</a></li>
 	</ol>
 </div>
@@ -326,7 +326,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 </section>
 
 <section class="ch03" id="ch03">
-	<h1>操作 (<code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code>)</h1>
+	<h1>操作</h1>
 	<p>共通の決まり: 出力に絶対パスを出さない (相対パス ・ <code>/</code> 区切り)。終了コードは、成功 0 ・ 失敗 1 (見つからない ・ 重複 ・ 番号を使い切った) ・ 引数の誤り 5 (2 は使わない)。プロジェクトは、<code>--root</code> か、作業フォルダから親をたどって探す。</p>
 	<h2><code>issue init [--root &lt;dir&gt;] [--new-id]</code></h2>
 	<ul>
@@ -363,12 +363,43 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li>メタ情報が読めない課題は、飛ばして標準エラーに警告を出す (終了コードは 0)。理由は <code>issue check</code> で確かめる</li>
 		<li>費用は、読むフォルダの件数で決まる。済 ・ <code>archived/</code> は、既定では読まない</li>
 	</ul>
+	<h2><code>issue search &lt;語&gt; [--state 未,着手,済,archived | --all] [--group &lt;g&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li>題と本文 (ファイルの全文) から、語を含む行を探す。<strong>英字は大小を区別しない</strong>。語は 1 つの文字列で、空白を含めて一致させる。語が無ければ終了コード 5</li>
+		<li>読むフォルダ (既定は未・着手。<code>--state</code> ・ <code>--all</code>) と <code>--group</code> の絞り方は、<code>list</code> と同じ</li>
+		<li>出力: <code>list</code> と同じ 1 行 ＋ 一致した行 (<code>    L&lt;行番号&gt;: &lt;行&gt;</code>。<strong>1 件の課題につき 3 行まで、1 行は 120 文字まで</strong>) ＋ 最後の行が <code>N 件</code>。<code>--json</code> は、課題の配列に <code>matches</code> (<code>{ line, text }</code> の配列。全件) を足したもの</li>
+		<li>メタ情報が読めない課題は、飛ばして標準エラーに警告を出す。見つからなければ <code>0 件</code> で終了コード 0</li>
+	</ul>
+	<h2><code>issue set &lt;id&gt; --state 未|着手|済 [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li><strong>状態を変える = ファイルを、隣のフォルダへ動かすこと</strong> (<code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code>)。<strong>git の管理下 (追跡中) なら <code>git mv</code></strong> で動かし、ステージされた rename になる。そうでなければ名前を変えるだけ。中身は変えない。commit はしない (動かす commit は、本文の変更と別にする)</li>
+		<li><strong>済にするときは、条件を満たさなければ、動かさずに終了コード 1</strong> (理由を出す): やること (未 ・ 着手) が残っている ・ <code>from</code> があるのに <code>confirmed</code> が <code>true</code> でない</li>
+		<li>既にその状態なら、何もせず終了コード 0 (「既に」と出す)。<code>archived/</code> の課題は動かさない (終了コード 1。<code>issue unarchive</code> を促す)。<code>--state</code> に <code>archived</code> や知らない語は終了コード 5。<code>--state</code> が無い ・ id の形が違うときも 5、見つからなければ 1</li>
+		<li>出力: <code>[OK] &lt;id&gt; を &lt;旧&gt; から &lt;新&gt; へ動かした (todo/ → doing/)</code>。<code>--json</code> は <code>{ id, state, folder, from: { state, folder }, file }</code></li>
+	</ul>
+	<h2><code>issue todo &lt;id&gt; [--add &lt;文&gt; | --done &lt;n&gt; | --doing &lt;n&gt; | --undone &lt;n&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li>引数が無ければ、やることを番号つきで出す (<code>&lt;n&gt; [&lt;状態&gt;] &lt;文&gt;</code>)。<code>--json</code> は <code>{ id, todos: [{ n, state, text }] }</code></li>
+		<li><code>--add</code> は、やることの最後に <code>- [未] &lt;文&gt;</code> を足す (やることの節が無ければ、ファイルの最後に <code>## やること</code> の節を作る)。<code>--done</code> ・ <code>--doing</code> ・ <code>--undone</code> は、n 番目の状態を 済 ・ 着手 ・ 未 にする。操作は 1 つだけ。番号が整数でない ・ 範囲外 ・ 文が空 ・ 改行を含むときは終了コード 5</li>
+		<li><strong><code>done/</code> ・ <code>archived/</code> の課題には、未のやることを足せず、やることを 未 ・ 着手 に戻せない</strong> (終了コード 1。先に <code>issue set --state 着手</code>)。済のままにする操作は通る</li>
+		<li>BOM や CR のあるファイルは、書き換えずに終了コード 1 (<code>issue check</code> で直す)。出力: <code>[OK] &lt;id&gt; のやること &lt;n&gt; を &lt;状態&gt; にした: &lt;文&gt;</code></li>
+	</ul>
+	<h2><code>issue archive &lt;group&gt;</code> ・ <code>issue unarchive &lt;group&gt;</code> (<code>[--root &lt;dir&gt;] [--json]</code>)</h2>
+	<ul>
+		<li><strong><code>archive</code></strong>: グループの全件が済 (<code>done/</code>) なら、その課題を <code>archived/</code> へ動かす (追跡中なら <code>git mv</code>)。<strong>1 件でも満たさなければ (未・着手が残っている ・ 済の条件を満たさない ・ メタ情報を読めない課題がある)、1 件も動かさず終了コード 1</strong> (その id を出す)。課題が 1 件も無いグループは 1。既に全件が <code>archived/</code> なら、終了コード 0 (「既に」と出す)</li>
+		<li><strong><code>unarchive</code></strong>: <code>archived/</code> のグループの課題を、<code>done/</code> へ戻す。無ければ終了コード 1</li>
+		<li><strong><code>issue new</code> は、<code>archived/</code> に退避済みのグループには立てない</strong> (終了コード 5。<code>issue unarchive</code> を促す。何も作らない。計画 p261103-01 の 112-A)</li>
+		<li>出力: <code>[OK] グループ &lt;g&gt; の N 件を archived/ へ動かした: &lt;id&gt; ・ …</code>。<code>--json</code> は <code>{ group, moved, count }</code></li>
+	</ul>
+	<ul>
+		<li>この小節の操作は、すべて<strong>作業ツリーのファイルを変えるだけで、commit しない</strong></li>
+	</ul>
 </section>
 
 <section class="ch04" id="ch04">
 	<h1>まだ無いもの ・ 限界</h1>
 	<ul>
-		<li><strong>操作</strong>: <code>issue set</code> (状態の変更。<code>git mv</code> で隣のフォルダへ動かす) ・ <code>todo</code> (やることの状態) ・ <code>search</code> ・ <code>archive</code> ・ <code>unarchive</code>。フェーズ 2 の後半</li>
+		<li><strong>報告元の確認 (<code>confirmed</code>) を <code>true</code> にする操作</strong>は、まだ無い。ファイルを直接 Edit する (<code>issue set</code> は、<code>confirmed</code> が <code>true</code> でないと済にできない)</li>
 		<li><strong>HTML の表示</strong> (<code>issue view</code>。<code>notes/40_issues/_issues.html</code> に生成し、commit しない)、<strong>横断</strong>: フェーズ 3 以降。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
 		<li><strong>番号の予約 (<code>_lock/</code>) は、同じ PC の中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める</li>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>

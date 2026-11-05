@@ -1,5 +1,5 @@
 #!/bin/sh
-# issue: 課題管理ツール。課題を 1 件 1 ファイルで持ち、検査 ・ 作成 ・ 閲覧する (check ・ init ・ new ・ show ・ list)。
+# issue: 課題管理ツール。課題を 1 件 1 ファイルで持ち、検査 ・ 作成 ・ 閲覧 ・ 更新する (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ archive ・ unarchive)。
 # 中身は src/issue/main.ts。bun を優先し、無ければ node で走らせる。
 #
 # exec の次の行には来ない。exec はプロセスを置き換えるためで、

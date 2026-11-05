@@ -16,11 +16,18 @@
 		5 引数の誤り ・ プロジェクトが見つからない
 
 	出力に絶対パスを出さない (ファイルはプロジェクトからの相対パス)。
-	いまはフェーズ 2 の前半 (check ・ init ・ new ・ show ・ list)。set ・ todo ・ search ・ archive は、まだ無い。
+	更新の操作 (new ・ set ・ todo ・ archive ・ unarchive) は、作業ツリーのファイルを変えるだけで、commit しない。
+		issue set <id> --state 未|着手|済 [--root <dir>] [--json]   状態を変える (隣のフォルダへ動かす。追跡中なら git mv)
+		issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]
+		issue search <語> [--state … | --all] [--group <g>] [--root <dir>] [--json]
+		issue archive <group> ・ issue unarchive <group> [--root <dir>] [--json]
+	いまはフェーズ 2 まで (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ archive ・ unarchive)。view は、まだ無い。
 */
 import path from 'node:path';
 import { Folders, checkProject, findProjectRoot, hasItems, type Finding, type Folder } from './check.ts';
-import { Failure, StateOf, UsageError, initProject, listIssues, newIssue, showIssue } from './ops.ts';
+import {
+	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setState, showIssue, unarchiveGroup,
+} from './ops.ts';
 
 const ExitOk = 0;
 const ExitFailed = 1;
@@ -33,6 +40,11 @@ const Usage = [
 	'  issue new --title <題> --group <グループ> [--slug <件名>] [--from <報告元>] [--refs <番号,…>] [--body <本文>] [--root <dir>] [--json]',
 	'  issue show <id> [--root <dir>] [--json]               課題を 1 件読む',
 	'  issue list [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
+	'  issue search <語> [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
+	'  issue set <id> --state 未|着手|済 [--root <dir>] [--json]       状態を変える (隣のフォルダへ動かす)',
+	'  issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]',
+	'  issue archive <group> [--root <dir>] [--json]                  グループの全件が済なら、archived/ へ動かす',
+	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 ].join('\n');
 
 // ---- 引数 ----
@@ -167,30 +179,134 @@ function runShow(rest: string[]): number {
 	return ExitOk;
 }
 
-// ---- list ----
+// ---- list ・ search ----
 
 const StateToFolder: Record<string, Folder> = { 未: 'todo', 着手: 'doing', 済: 'done', archived: 'archived' };
 
-function runList(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root', '--state', '--group'], flags: ['--json', '--all'], positionals: 0 });
-	let folders: Folder[] = ['todo', 'doing'];
+/** --state / --all から、読むフォルダを決める。既定は未・着手 */
+function foldersFrom(o: Options): Folder[] {
 	const stateArg = o.values.get('--state');
 	if (stateArg !== undefined && o.flags.has('--all')) throw new UsageError('--state と --all は同時に使えない');
-	if (o.flags.has('--all')) {
-		folders = [...Folders];
-	} else if (stateArg !== undefined) {
-		folders = stateArg.split(',').map((s) => s.trim()).map((s) => {
-			const folder = StateToFolder[s];
-			if (folder === undefined) throw new UsageError(`--state に使えない語: ${s} (未 ・ 着手 ・ 済 ・ archived をカンマで区切る)`);
-			return folder;
-		});
+	if (o.flags.has('--all')) return [...Folders];
+	if (stateArg === undefined) return ['todo', 'doing'];
+	return stateArg.split(',').map((s) => s.trim()).map((s) => {
+		const folder = StateToFolder[s];
+		if (folder === undefined) throw new UsageError(`--state に使えない語: ${s} (未 ・ 着手 ・ 済 ・ archived をカンマで区切る)`);
+		return folder;
+	});
+}
+
+function stateLabel(folder: Folder): string {
+	return folder === 'archived' ? '済 (archived)' : StateOf[folder];
+}
+
+function runSearch(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--state', '--group'], flags: ['--json', '--all'], positionals: 1 });
+	const term = o.positionals[0];
+	if (term === undefined || term === '') throw new UsageError('探す語が要る (issue search <語>)');
+	const folders = foldersFrom(o);
+	const root = existingRoot(o);
+	const hits = searchIssues(root, term, folders, o.values.get('--group') ?? null, (m) => console.error(m));
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify(hits));
+	} else {
+		for (const h of hits) {
+			console.log(`${h.id}  ${stateLabel(h.folder)}  ${h.group}  ${h.title}`);
+			for (const m of h.matches.slice(0, 3)) console.log(`    L${m.line}: ${m.text}`);
+		}
+		console.log(`${hits.length} 件`);
 	}
+	return ExitOk;
+}
+
+// ---- set ・ todo ・ archive ・ unarchive ----
+
+const IdPattern = /^i\d{6}-[0-9a-kLm-z]{2}$/;
+
+function requireId(o: Options, usage: string): string {
+	const id = o.positionals[0];
+	if (id === undefined) throw new UsageError(`id が要る (${usage})`);
+	if (!IdPattern.test(id)) throw new UsageError(`id の形が違う: ${id} (例: i261103-01)`);
+	return id;
+}
+
+function runSet(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--state'], flags: ['--json'], positionals: 1 });
+	const id = requireId(o, 'issue set <id> --state 未|着手|済');
+	const state = o.values.get('--state');
+	if (state === undefined) throw new UsageError('--state (未 ・ 着手 ・ 済) が要る');
+	const root = existingRoot(o);
+	const r = setState(root, id, state);
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify({ id: r.id, state: r.state, folder: r.folder, from: r.from, file: r.file }));
+	} else if (!r.moved) {
+		console.log(`[OK] ${id} は既に ${r.state} (${r.folder}/)。動かさない`);
+	} else {
+		console.log(`[OK] ${id} を ${r.from.state} から ${r.state} へ動かした (${r.from.folder}/ → ${r.folder}/)`);
+	}
+	return ExitOk;
+}
+
+function runTodo(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--add', '--done', '--doing', '--undone'], flags: ['--json'], positionals: 1 });
+	const id = requireId(o, 'issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>]');
+	const actions = ['--add', '--done', '--doing', '--undone'].filter((k) => o.values.has(k));
+	if (actions.length > 1) throw new UsageError(`操作は 1 つだけ: ${actions.join(' ・ ')}`);
+	const root = existingRoot(o);
+	const json = o.flags.has('--json');
+	if (actions.length === 0) {
+		const todos = listTodos(root, id);
+		if (json) console.log(JSON.stringify({ id, todos }));
+		else if (todos.length === 0) console.log('やることは 0 件');
+		else for (const t of todos) console.log(`${t.n} [${t.state}] ${t.text}`);
+		return ExitOk;
+	}
+	const action = actions[0];
+	const value = o.values.get(action) ?? '';
+	if (action === '--add') {
+		const r = editTodo(root, id, { kind: 'add', text: value });
+		if (json) console.log(JSON.stringify({ id, todos: r.todos, changed: r.changed }));
+		else console.log(`[OK] ${id} にやることを足した (${r.changed.n}): ${r.changed.text}`);
+		return ExitOk;
+	}
+	const n = /^\d+$/.test(value) ? Number(value) : NaN;
+	if (Number.isNaN(n)) throw new UsageError(`${action} には、やることの番号 (整数) を渡す: ${value}`);
+	const state = action === '--done' ? '済' : action === '--doing' ? '着手' : '未';
+	const r = editTodo(root, id, { kind: 'set', n, state });
+	if (json) console.log(JSON.stringify({ id, todos: r.todos, changed: r.changed }));
+	else console.log(`[OK] ${id} のやること ${r.changed.n} を ${r.changed.state} にした: ${r.changed.text}`);
+	return ExitOk;
+}
+
+function runGroupMove(rest: string[], kind: 'archive' | 'unarchive'): number {
+	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json'], positionals: 1 });
+	const group = o.positionals[0];
+	if (group === undefined || group === '') throw new UsageError(`グループが要る (issue ${kind} <group>)`);
+	const root = existingRoot(o);
+	const r = kind === 'archive' ? archiveGroup(root, group) : unarchiveGroup(root, group);
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify({ group: r.group, moved: r.moved, count: r.moved.length }));
+	} else if (r.moved.length === 0) {
+		console.log(`[OK] グループ ${group} は既に全件が archived/ にある。動かさない`);
+	} else if (kind === 'archive') {
+		console.log(`[OK] グループ ${group} の ${r.moved.length} 件を archived/ へ動かした: ${r.moved.join(' ・ ')}`);
+	} else {
+		console.log(`[OK] グループ ${group} の ${r.moved.length} 件を done/ へ戻した: ${r.moved.join(' ・ ')}`);
+	}
+	return ExitOk;
+}
+
+// ---- list ----
+
+function runList(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--state', '--group'], flags: ['--json', '--all'], positionals: 0 });
+	const folders = foldersFrom(o);
 	const root = existingRoot(o);
 	const items = listIssues(root, folders, o.values.get('--group') ?? null, (m) => console.error(m));
 	if (o.flags.has('--json')) {
 		console.log(JSON.stringify(items));
 	} else {
-		for (const i of items) console.log(`${i.id}  ${i.folder === 'archived' ? '済 (archived)' : StateOf[i.folder]}  ${i.group}  ${i.title}`);
+		for (const i of items) console.log(`${i.id}  ${stateLabel(i.folder)}  ${i.group}  ${i.title}`);
 		console.log(`${items.length} 件`);
 	}
 	return ExitOk;
@@ -204,6 +320,11 @@ const commands: Record<string, (rest: string[]) => number> = {
 	new: runNew,
 	show: runShow,
 	list: runList,
+	search: runSearch,
+	set: runSet,
+	todo: runTodo,
+	archive: (rest) => runGroupMove(rest, 'archive'),
+	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
 };
 
 function mainEntry(): number {

@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { Folders, ItemsRel, NamePattern, RefPattern, SlugMax, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
 import { splitIssue } from './meta.ts';
 
@@ -167,6 +168,11 @@ export function newIssue(root: string, o: NewOptions): { id: string; rel: string
 		if (!names.includes(group)) throw new UsageError(`--group ${group} が groups.txt に無い (あるのは: ${names.join(' ・ ')})`);
 	}
 
+	// 片付いて archived/ に退避したグループには立てない (112-A)。戻してから立てる
+	if (listIssues(root, ['archived'], group, () => {}).length > 0) {
+		throw new UsageError(`グループ ${group} は archived/ に退避済み。issue unarchive ${group} で戻してから立てる`);
+	}
+
 	const createdProjectId = initProject(root, false).result === 'created';
 
 	const today = todayJst();
@@ -220,8 +226,8 @@ export type IssueView = {
 	text: string;
 };
 
-/** id のファイルを、4 つのフォルダから探して読む */
-export function showIssue(root: string, id: string): IssueView {
+/** id のファイルを、4 つのフォルダから探す。無ければ、複数あれば Failure */
+export function locateIssue(root: string, id: string): { folder: Folder; name: string } {
 	const found: { folder: Folder; name: string }[] = [];
 	for (const folder of Folders) {
 		for (const name of listMdNames(path.join(itemsDirOf(root), folder))) {
@@ -230,7 +236,13 @@ export function showIssue(root: string, id: string): IssueView {
 	}
 	if (found.length === 0) throw new Failure(`${id} の課題が見つからない`);
 	if (found.length > 1) throw new Failure(`${id} のファイルが複数ある: ${found.map((f) => `${f.folder}/${f.name}`).join(' ・ ')} (issue check で確かめる)`);
-	const loaded = loadFile(root, found[0].folder, found[0].name);
+	return found[0];
+}
+
+/** id のファイルを、4 つのフォルダから探して読む */
+export function showIssue(root: string, id: string): IssueView {
+	const located = locateIssue(root, id);
+	const loaded = loadFile(root, located.folder, located.name);
 	const parts = splitIssue(loaded.text);
 	const meta: Record<string, string> = {};
 	for (const p of parts.parsed.pairs) meta[p.key] = p.value;
@@ -269,4 +281,229 @@ export function listIssues(root: string, folders: Folder[], group: string | null
 		}
 	}
 	return items.sort((a, b) => compareId(a.id, b.id));
+}
+
+// ---- 動かす (set ・ archive ・ unarchive) ----
+
+const TodoItemLine = /^(\s*- \[)(未|着手|済)(\]\s*)(.*)$/;
+
+/** 済 (done/ ・ archived/) に置ける条件を満たさない理由。満たしていれば空 */
+function doneBlockers(text: string): string[] {
+	const parts = splitIssue(text);
+	if (parts.broken) return ['メタ情報を読めない'];
+	const reasons: string[] = [];
+	const open = parts.body.split('\n').filter((l) => {
+		const m = TodoItemLine.exec(l);
+		return m !== null && m[2] !== '済';
+	}).length;
+	if (open > 0) reasons.push(`未・着手のやることが ${open} 件残っている`);
+	const get = (k: string): string | undefined => parts.parsed.pairs.find((p) => p.key === k)?.value;
+	if (get('from') !== undefined && get('confirmed') !== 'true') reasons.push('報告元の確認 (confirmed) が true でない');
+	return reasons;
+}
+
+/** ファイルを動かす。git の管理下 (追跡中) なら git mv、そうでなければ名前を変えるだけ */
+function moveIssueFile(root: string, fromRel: string, toRel: string): void {
+	const from = path.join(root, ...fromRel.split('/'));
+	const to = path.join(root, ...toRel.split('/'));
+	if (fs.existsSync(to)) throw new Failure(`${toRel} が既にある (動かさない)`);
+	fs.mkdirSync(path.dirname(to), { recursive: true });
+	const tracked = spawnSync('git', ['ls-files', '--error-unmatch', '--', fromRel], { cwd: root, encoding: 'utf8', timeout: 30000 }).status === 0;
+	if (tracked) {
+		const r = spawnSync('git', ['mv', '--', fromRel, toRel], { cwd: root, encoding: 'utf8', timeout: 30000 });
+		if (r.status !== 0) throw new Failure(`git mv に失敗した: ${(r.stderr ?? '').trim().split('\n')[0]}`);
+	} else {
+		fs.renameSync(from, to);
+	}
+}
+
+/** set で使える状態 (archived は archive で動かす) */
+export const SetTargets: Record<string, Folder> = { 未: 'todo', 着手: 'doing', 済: 'done' };
+
+export type SetResult = { id: string; state: string; folder: Folder; from: { state: string; folder: Folder }; file: string; moved: boolean };
+
+/** 課題の状態を変える (ファイルを隣のフォルダへ動かす)。済にするときは、条件を満たさなければ拒否する */
+export function setState(root: string, id: string, state: string): SetResult {
+	const target = SetTargets[state];
+	if (target === undefined) throw new UsageError(`--state に使えない語: ${state} (未 ・ 着手 ・ 済。archived は issue archive で動かす)`);
+	const cur = locateIssue(root, id);
+	const from = { state: StateOf[cur.folder], folder: cur.folder };
+	if (cur.folder === 'archived') throw new Failure(`${id} は archived/ にある。グループを戻す issue unarchive <group> のあとで動かす`);
+	const toRel = `${ItemsRel}/${target}/${cur.name}`;
+	if (cur.folder === target) return { id, state, folder: target, from, file: toRel, moved: false };
+	if (target === 'done') {
+		const reasons = doneBlockers(loadFile(root, cur.folder, cur.name).text);
+		if (reasons.length > 0) throw new Failure(`${id} を済にできない: ${reasons.join(' ・ ')}`);
+	}
+	moveIssueFile(root, `${ItemsRel}/${cur.folder}/${cur.name}`, toRel);
+	return { id, state, folder: target, from, file: toRel, moved: true };
+}
+
+function groupOf(text: string): string | null {
+	const parts = splitIssue(text);
+	if (parts.broken) return null;
+	return parts.parsed.pairs.find((p) => p.key === 'group')?.value ?? null;
+}
+
+type Member = { folder: Folder; name: string; id: string; text: string };
+
+/** 4 つのフォルダの課題を読む。メタ情報が読めない課題は、unreadable に入れる */
+function loadAll(root: string, folders: Folder[]): { members: (Member & { group: string })[]; unreadable: string[] } {
+	const members: (Member & { group: string })[] = [];
+	const unreadable: string[] = [];
+	for (const folder of folders) {
+		for (const name of listMdNames(path.join(itemsDirOf(root), folder))) {
+			const nameMatch = NamePattern.exec(name);
+			if (nameMatch === null) continue;
+			let text: string;
+			try {
+				text = loadFile(root, folder, name).text;
+			} catch {
+				unreadable.push(`${folder}/${name}`);
+				continue;
+			}
+			const group = groupOf(text);
+			if (group === null) unreadable.push(`${folder}/${name}`);
+			else members.push({ folder, name, id: nameMatch[1], text, group });
+		}
+	}
+	return { members, unreadable };
+}
+
+export type GroupMoveResult = { group: string; moved: string[]; already: number };
+
+/** グループの全件が済 (done/) なら、archived/ へ動かす。1 件でも満たさなければ、1 件も動かさない */
+export function archiveGroup(root: string, group: string): GroupMoveResult {
+	const { members, unreadable } = loadAll(root, ['todo', 'doing', 'done']);
+	if (unreadable.length > 0) throw new Failure(`メタ情報を読めない課題があり、グループを判定できない: ${unreadable.join(' ・ ')} (issue check で確かめる)`);
+	const mine = members.filter((m) => m.group === group);
+	const archivedCount = loadAll(root, ['archived']).members.filter((m) => m.group === group).length;
+	if (mine.length === 0 && archivedCount === 0) throw new Failure(`グループ ${group} の課題が無い`);
+	const open = mine.filter((m) => m.folder !== 'done');
+	if (open.length > 0) throw new Failure(`グループ ${group} に、未・着手の課題が残っている: ${open.map((m) => m.id).join(' ・ ')}`);
+	const problems: string[] = [];
+	for (const m of mine) {
+		const reasons = doneBlockers(m.text);
+		if (reasons.length > 0) problems.push(`${m.id} (${reasons.join(' ・ ')})`);
+	}
+	if (problems.length > 0) throw new Failure(`済の条件を満たさない課題がある: ${problems.join(' ・ ')}`);
+	for (const m of mine) {
+		if (fs.existsSync(path.join(itemsDirOf(root), 'archived', m.name))) throw new Failure(`${ItemsRel}/archived/${m.name} が既にある (動かさない)`);
+	}
+	const sorted = [...mine].sort((a, b) => compareId(a.id, b.id));
+	for (const m of sorted) moveIssueFile(root, `${ItemsRel}/done/${m.name}`, `${ItemsRel}/archived/${m.name}`);
+	return { group, moved: sorted.map((m) => m.id), already: archivedCount };
+}
+
+/** archived/ のグループの課題を、done/ へ戻す */
+export function unarchiveGroup(root: string, group: string): GroupMoveResult {
+	const { members, unreadable } = loadAll(root, ['archived']);
+	if (unreadable.length > 0) throw new Failure(`メタ情報を読めない課題がある: ${unreadable.join(' ・ ')} (issue check で確かめる)`);
+	const mine = members.filter((m) => m.group === group);
+	if (mine.length === 0) throw new Failure(`グループ ${group} の課題が archived/ に無い`);
+	for (const m of mine) {
+		if (fs.existsSync(path.join(itemsDirOf(root), 'done', m.name))) throw new Failure(`${ItemsRel}/done/${m.name} が既にある (動かさない)`);
+	}
+	const sorted = [...mine].sort((a, b) => compareId(a.id, b.id));
+	for (const m of sorted) moveIssueFile(root, `${ItemsRel}/archived/${m.name}`, `${ItemsRel}/done/${m.name}`);
+	return { group, moved: sorted.map((m) => m.id), already: 0 };
+}
+
+// ---- やること (todo) ----
+
+export type TodoItem = { n: number; state: string; text: string };
+
+function todoItemsOf(lines: string[]): { index: number; item: TodoItem }[] {
+	const out: { index: number; item: TodoItem }[] = [];
+	lines.forEach((line, index) => {
+		const m = TodoItemLine.exec(line);
+		if (m !== null) out.push({ index, item: { n: out.length + 1, state: m[2], text: m[4] } });
+	});
+	return out;
+}
+
+export function listTodos(root: string, id: string): TodoItem[] {
+	const located = locateIssue(root, id);
+	return todoItemsOf(loadFile(root, located.folder, located.name).text.split('\n')).map((t) => t.item);
+}
+
+export type TodoEdit = { kind: 'add'; text: string } | { kind: 'set'; n: number; state: string };
+
+/** やることを足す・状態を変える。BOM や CR のあるファイルは、書き換えない */
+export function editTodo(root: string, id: string, edit: TodoEdit): { todos: TodoItem[]; changed: TodoItem } {
+	const located = locateIssue(root, id);
+	const rel = `${ItemsRel}/${located.folder}/${located.name}`;
+	const abs = path.join(itemsDirOf(root), located.folder, located.name);
+	const raw = fs.readFileSync(abs, 'utf8');
+	if (raw.startsWith('﻿') || raw.includes('\r')) throw new Failure(`${rel} に BOM か CR (CRLF) がある。issue check で確かめて直してから (書き換えない)`);
+	const isDone = located.folder === 'done' || located.folder === 'archived';
+
+	if (edit.kind === 'add') {
+		const text = edit.text.trim();
+		if (text === '') throw new UsageError('--add の文が空');
+		if (/[\r\n]/.test(text)) throw new UsageError('--add の文に改行は書けない');
+		if (isDone) throw new Failure(`${id} は ${located.folder}/ にある。やること (未) を足せない (先に issue set --state 着手)`);
+		const lines = raw.split('\n');
+		const items = todoItemsOf(lines);
+		let next: string;
+		if (items.length > 0) {
+			lines.splice(items[items.length - 1].index + 1, 0, `- [未] ${text}`);
+			next = lines.join('\n');
+		} else {
+			next = (raw.endsWith('\n') ? raw : raw + '\n') + `\n## やること\n- [未] ${text}\n`;
+		}
+		fs.writeFileSync(abs, next);
+		const todos = todoItemsOf(next.split('\n')).map((t) => t.item);
+		return { todos, changed: todos[todos.length - 1] };
+	}
+
+	const lines = raw.split('\n');
+	const items = todoItemsOf(lines);
+	if (!Number.isInteger(edit.n) || edit.n < 1 || edit.n > items.length) throw new UsageError(`やることの番号が範囲外: ${edit.n} (1 〜 ${items.length})`);
+	if (isDone && edit.state !== '済') throw new Failure(`${id} は ${located.folder}/ にある。やることを ${edit.state} にできない (先に issue set --state 着手)`);
+	const target = items[edit.n - 1];
+	lines[target.index] = lines[target.index].replace(TodoItemLine, `$1${edit.state}$3$4`);
+	const next = lines.join('\n');
+	if (next !== raw) fs.writeFileSync(abs, next);
+	const todos = todoItemsOf(next.split('\n')).map((t) => t.item);
+	return { todos, changed: todos[edit.n - 1] };
+}
+
+// ---- 探す (search) ----
+
+export type SearchHit = ListItem & { matches: { line: number; text: string }[] };
+
+const SnippetMax = 120;
+
+/** 指定のフォルダの課題から、題と本文 (ファイルの全文) に語を含む行を探す。英字は大小を区別しない */
+export function searchIssues(root: string, term: string, folders: Folder[], group: string | null, warn: (message: string) => void): SearchHit[] {
+	const needle = term.toLowerCase();
+	const hits: SearchHit[] = [];
+	for (const folder of folders) {
+		for (const name of listMdNames(path.join(itemsDirOf(root), folder))) {
+			const nameMatch = NamePattern.exec(name);
+			if (nameMatch === null) continue;
+			let loaded: Loaded;
+			try {
+				loaded = loadFile(root, folder, name);
+			} catch {
+				warn(`[警告] ${ItemsRel}/${folder}/${name}: 読めない`);
+				continue;
+			}
+			const parts = splitIssue(loaded.text);
+			if (parts.broken) {
+				warn(`[警告] ${loaded.rel}: メタ情報を読めない (issue check で確かめる)`);
+				continue;
+			}
+			const get = (k: string): string => parts.parsed.pairs.find((p) => p.key === k)?.value ?? '';
+			if (group !== null && get('group') !== group) continue;
+			const matches: { line: number; text: string }[] = [];
+			loaded.text.split('\n').forEach((line, index) => {
+				if (line.toLowerCase().includes(needle)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, SnippetMax).join('') });
+			});
+			if (matches.length === 0) continue;
+			hits.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), file: loaded.rel, matches });
+		}
+	}
+	return hits.sort((a, b) => compareId(a.id, b.id));
 }
