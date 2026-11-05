@@ -22,10 +22,13 @@
 		issue search <語> [--state … | --all] [--group <g>] [--root <dir>] [--json]
 		issue confirm <id> [--undo] [--root <dir>] [--json]         報告元の確認 (confirmed) を直す (その行だけ。フォルダは動かさない)
 		issue archive <group> ・ issue unarchive <group> [--root <dir>] [--json]
-	いまはフェーズ 2 まで (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ confirm ・ archive ・ unarchive)。render ・ view は、まだ無い。
+		issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]
+		                                                            HTML を作る (開かない。既定は _issues.html。渡す用は --standalone --out)
+	いまはフェーズ 3a まで (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ confirm ・ archive ・ unarchive ・ render)。view は、まだ無い。
 */
 import path from 'node:path';
 import { Folders, checkProject, findProjectRoot, hasItems, type Finding, type Folder } from './check.ts';
+import { renderHtml, writeIfChanged } from './render.ts';
 import {
 	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
@@ -45,6 +48,8 @@ const Usage = [
 	'  issue set <id> --state 未|着手|済 [--root <dir>] [--json]       状態を変える (隣のフォルダへ動かす)',
 	'  issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]',
 	'  issue confirm <id> [--undo] [--root <dir>] [--json]            報告元の確認 (confirmed) を true にする (--undo で false)',
+	'  issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]',
+	'                                                                 HTML を作る (開かない)。既定は notes/40_issues/_issues.html',
 	'  issue archive <group> [--root <dir>] [--json]                  グループの全件が済なら、archived/ へ動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 ].join('\n');
@@ -280,6 +285,37 @@ function runTodo(rest: string[]): number {
 	return ExitOk;
 }
 
+// ---- render ----
+
+function runRender(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--out', '--state', '--group'], flags: ['--json', '--all', '--standalone'], positionals: 1000 });
+	for (const id of o.positionals) {
+		if (!IdPattern.test(id)) throw new UsageError(`id の形が違う: ${id} (例: i261103-01)`);
+	}
+	const standalone = o.flags.has('--standalone');
+	const outArg = o.values.get('--out');
+	if (standalone && outArg === undefined) throw new UsageError('--standalone は --out と一緒に使う (_issues.html は、ローカルで見る版のため。渡す用は tmp/ などへ出す)');
+	const folders: Folder[] = o.values.has('--state') || o.flags.has('--all') ? foldersFrom(o) : ['todo', 'doing', 'done'];
+	const root = existingRoot(o);
+	const outFile = outArg !== undefined ? path.resolve(outArg) : path.join(root, 'notes', '40_issues', '_issues.html');
+	let warnings = 0;
+	const r = renderHtml({
+		root, outFile, standalone, folders, group: o.values.get('--group') ?? null, ids: o.positionals,
+		warn: (m) => { warnings++; console.error(m); },
+	});
+	const written = writeIfChanged(outFile, r.html);
+	const relToRoot = path.relative(root, outFile);
+	const shown = relToRoot.startsWith('..') || path.isAbsolute(relToRoot) ? path.basename(outFile) : relToRoot.split(path.sep).join('/');
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify({ file: shown, issues: r.count, written, warnings }));
+	} else if (written === 'unchanged') {
+		console.log(`[OK] ${shown} は変更なし (課題 ${r.count} 件)`);
+	} else {
+		console.log(`[OK] ${shown} を${written === 'created' ? '作った' : '作り直した'} (課題 ${r.count} 件)`);
+	}
+	return ExitOk;
+}
+
 function runConfirm(rest: string[]): number {
 	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json', '--undo'], positionals: 1 });
 	const id = requireId(o, 'issue confirm <id> [--undo]');
@@ -344,6 +380,7 @@ const commands: Record<string, (rest: string[]) => number> = {
 	set: runSet,
 	todo: runTodo,
 	confirm: runConfirm,
+	render: runRender,
 	archive: (rest) => runGroupMove(rest, 'archive'),
 	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
 };

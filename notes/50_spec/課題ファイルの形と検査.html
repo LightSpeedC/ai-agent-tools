@@ -143,7 +143,7 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
-		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> まで。</p>
+		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> まで。</p>
 		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-05</p>
 	</div>
 </div>
@@ -155,7 +155,7 @@
 <p>課題を 1 件 1 ファイルで持つ形と、その検査 (<code>issue check</code>) の<strong>いまの姿</strong>。決めた経緯と、番号付きの決定は <a href="../10_plan/p261103-01-課題管理ツール.html">課題管理ツール 計画</a> にある。実装と食い違ったら、実装が正しい。</p>
 
 <div class="callout">
-	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code>。HTML の表示 (<code>issue view</code>) と横断は、まだ実装していない (第 4 章)。</p>
+	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code>。<code>issue view</code> と横断は、まだ実装していない (第 4 章)。</p>
 </div>
 
 <div class="toc">
@@ -392,6 +392,19 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li>BOM や CR のあるファイルは、書き換えずに終了コード 1。見つからなければ 1、id の形が違う ・ id が無い ・ 知らないオプションは 5</li>
 		<li>出力: <code>[OK] &lt;id&gt; の報告元の確認 (confirmed) を true にした (報告元: &lt;from&gt;)</code>。<code>--json</code> は <code>{ id, confirmed, from, changed, file }</code></li>
 	</ul>
+	<h2><code>issue render [&lt;id&gt;…] [--state … | --all] [--group &lt;g&gt;] [--out &lt;ファイル&gt;] [--standalone] [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li>課題の Markdown から、人が見る HTML を作る。<strong>生成だけで、開かない</strong> (計画の 134-A。開くのは、次の <code>issue view</code>)。既定の出力先は <code>notes/40_issues/_issues.html</code> で、先頭 <code>_</code> なので Git 管理外 (commit しない。131-A)</li>
+		<li><strong>範囲</strong>: 既定は未・着手・済 (<code>archived/</code> は含めない)。<code>--state</code> ・ <code>--all</code> ・ <code>--group</code> は <code>list</code> と同じ。<code>&lt;id&gt;</code> を 1 つ以上指せば、その課題だけを、どのフォルダからでも作る。見つからない id は終了コード 1、id の形が違えば 5</li>
+		<li><strong>ページの構成</strong>: タイトルバー (件数) ・ 戻る (<code>README.html</code>) と旧 HTML (<code>issues-legacy.html</code> があれば) へのリンク ・ 目次 ・ グループごとの章。章の順は <code>groups.txt</code> の並びで、無いものは最初の課題の id の順。章の色は章数で決まる (色相 280 → 0)</li>
+		<li><strong>課題の行</strong> (130-A): <code>details</code> の <code>summary</code> に、番号 → 状態のバッジ → 題の順に出す。バッジは 未 = <code>b-none</code> ・ 着手 = <code>b-warn</code> ・ 済 = <code>b-ok</code>、<code>archived/</code> は「済 ・ archived」。<strong>未・着手は開き、済は閉じる</strong>。本文の前に、作成日 ・ 報告元 (確認待ち / 確認済み) ・ 参照 (ページの中の課題は <code>#id</code> のリンク) ・ ファイルへのリンクを出す</li>
+		<li><strong>本文の変換</strong>: 見出し (<code>##</code> は h3、<code>###</code> は h4 …) ・ 段落 ・ 箇条書き (入れ子 ・ 番号つき。やること行は状態のバッジつき) ・ コードブロック (言語つき) ・ 表 (右寄せの列は、見出しも右寄せ) ・ 引用 ・ callout (<code>&gt; [!NOTE]</code> 等) ・ 区切り線 ・ 太字 ・ インラインのコード ・ リンク ・ 画像 ・ <code>&lt;br&gt;</code>。<strong>Markdown の中の HTML は、解釈せずエスケープする</strong> (<code>&lt;br&gt;</code> だけ通す)。<code>javascript:</code> 等のリンクは、リンクにしない。ページに JS は含まない</li>
+		<li><strong>画像</strong> (128-A ・ 129-A): <code>../images/…</code> を、出力から見た相対パスに直す。プロジェクトの外 ・ 画像でない拡張子 ・ 無いファイルは、<code>[画像が見つからない: 名前]</code> に置き換え、標準エラーに警告を出す (終了コードは 0)。<strong>明るい版 (<code>#gh-light-mode-only</code>) だけを出し、暗い版 (<code>#gh-dark-mode-only</code>) は出さない</strong>。生成した HTML は、背景が常に淡い色なので、暗い版を出すと浮くため (計画 129-A の <code>&lt;picture&gt;</code> による切り替えではなく、この形にした)</li>
+		<li><strong><code>--out &lt;ファイル&gt;</code></strong>: 指した場所に作る。リンクと画像のパスは、その場所からの相対パス。<strong><code>--standalone</code></strong> (渡す用。<code>--out</code> と一緒に使う。無ければ終了コード 5): 画像を <code>data:</code> URI で埋め込み、戻る ・ 旧 HTML ・ ファイル ・ ほかのファイルへのリンクを外す (ページの中のリンクは残る)</li>
+		<li><strong>書き方</strong>: BOM 付き UTF-8 ・ LF、<code>&lt;meta name="md-skip"&gt;</code> を入れる。末尾に、作った日時 (JST) と件数を出す。<strong>日時の部分を除いて中身が同じなら、書かず「変更なし」と出す</strong> (更新日時と差分が動かない)</li>
+		<li>出力: <code>[OK] &lt;相対パス&gt; を作った</code> ・ <code>を作り直した</code> ・ <code>は変更なし</code> (<code>(課題 N 件)</code> つき)。<code>--json</code> は <code>{ file, issues, written, warnings }</code> (<code>written</code> は <code>created</code> ・ <code>updated</code> ・ <code>unchanged</code>)。出力先が root の外なら、<code>file</code> はファイル名だけ。課題のファイルは書き換えない。メタ情報が読めない課題は、飛ばして警告を出す</li>
+		<li>作った日時は、環境変数 <code>ISSUE_TEST_NOW</code> (<code>yyyy/mm/dd hh:mm:ss</code>) で固定できる (試験用。<a href="環境変数.html">環境変数の仕様</a>)</li>
+	</ul>
 	<h2><code>issue archive &lt;group&gt;</code> ・ <code>issue unarchive &lt;group&gt;</code> (<code>[--root &lt;dir&gt;] [--json]</code>)</h2>
 	<ul>
 		<li><strong><code>archive</code></strong>: グループの全件が済 (<code>done/</code>) なら、その課題を <code>archived/</code> へ動かす (追跡中なら <code>git mv</code>)。<strong>1 件でも満たさなければ (未・着手が残っている ・ 済の条件を満たさない ・ メタ情報を読めない課題がある)、1 件も動かさず終了コード 1</strong> (その id を出す)。課題が 1 件も無いグループは 1。既に全件が <code>archived/</code> なら、終了コード 0 (「既に」と出す)</li>
@@ -408,7 +421,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<h1>まだ無いもの ・ 限界</h1>
 	<ul>
 		<li><strong><code>issue confirm</code> は、自己申告</strong>。報告元から OK が出たことを、道具は確かめない。報告元へ返信し、OK をもらってから呼ぶのは、人か AI の役目 (共通ルール「課題の管理」)</li>
-		<li><strong>HTML の表示</strong> (<code>issue render</code> = 生成だけ ・ <code>issue view</code> = 生成して開く ・ <code>--standalone</code> = 渡す用の自己完結した HTML。<code>notes/40_issues/_issues.html</code> に生成し、commit しない)、<strong>横断</strong>: フェーズ 3 以降。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
+		<li><strong><code>issue view</code></strong> (<code>render</code> して開く)、更新の操作 (<code>new</code> ・ <code>set</code> 等) の最後の自動の作り直し、<code>issue check</code> の <code>.gitignore</code> の検査 (<code>_issues.html</code> が除外されているか)、<code>check-html-rules</code> が <code>_</code> で始まるファイルを飛ばす変更: フェーズ 3b。<strong>横断</strong>: 後続のフェーズ。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
 		<li><strong>番号の予約 (<code>_lock/</code>) は、同じ PC の中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める</li>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>
 		<li><strong><code>refs</code> の参照先は、ファイル名の先頭だけで探す</strong>。移行前の課題 (<code>issues.html</code> の中の番号) は見つけられず、警告になる</li>

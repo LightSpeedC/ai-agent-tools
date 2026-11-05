@@ -72,6 +72,8 @@ $Suites = @(
 	@{ Name = 'issue (操作)'; Script = 'run-issue-ops-tests.ts' },
 	# 課題管理ツール issue のフェーズ 2 の後半: set (git mv と「済」の拒否) ・ todo ・ search ・ archive ・ unarchive
 	@{ Name = 'issue (更新の操作)'; Script = 'run-issue-edit-tests.ts' },
+	# 課題管理ツール issue のフェーズ 3a: render (Markdown → HTML ・ 画像 ・ --standalone ・ 同じ中身なら書かない)
+	@{ Name = 'issue (render)'; Script = 'run-issue-render-tests.ts' },
 	# 一括実行の時間の上限そのもの。止める相手は、このテストが起動する眠るだけの node
 	@{ Name = '試験の時間の上限'; Script = 'run-timeout-tests.ts' },
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },

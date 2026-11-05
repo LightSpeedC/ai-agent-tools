@@ -208,7 +208,7 @@ export function newIssue(root: string, o: NewOptions): { id: string; rel: string
 
 type Loaded = { folder: Folder; rel: string; text: string };
 
-function loadFile(root: string, folder: Folder, name: string): Loaded {
+export function loadFile(root: string, folder: Folder, name: string): Loaded {
 	const rel = `${ItemsRel}/${folder}/${name}`;
 	const raw = fs.readFileSync(path.join(itemsDirOf(root), folder, name), 'utf8');
 	return { folder, rel, text: raw.replace(/^﻿/, '').replace(/\r\n?/g, '\n') };
