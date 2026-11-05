@@ -56,6 +56,8 @@ $Suites = @(
 	# html2md の作成日 ・ 更新日の検査。警告（▲）は golden の期待値に入らないため別に見る
 	@{ Name = 'html2md の日付の検査'; Script = 'run-html2md-date-tests.ts' },
 	@{ Name = 'html2md の書き出し'; Script = 'run-html2md-write-tests.ts' },
+	# html2md の断片の変換 (convertFragment)。issue の移行が課題の本文を変換するための入口 (p261106-01 の 157-A)
+	@{ Name = 'html2md の断片の変換'; Script = 'run-html2md-fragment-tests.ts' },
 	# 「HTML に無い文言」の検査。callout の中の表の区切り行 (> |---|---|) を付け足しとみなさない
 	@{ Name = 'html2md の文言の検査'; Script = 'run-html2md-extra-tests.ts' },
 	@{ Name = 'transcribe'; Script = 'run-transcribe-tests.ts'; TimeoutSec = 300 },

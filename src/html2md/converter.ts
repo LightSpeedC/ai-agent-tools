@@ -76,6 +76,34 @@ export class Converter {
 		ctx.write = write;
 		ctx.cssVars = cssVars;
 
+		const md = this.blocksToMarkdown(body, ctx);
+
+		const mdPath = htmlPath.replace(/\.[^.\\/]*$/, '') + '.md';
+		if (write) { writeIfChanged(mdPath, new TextEncoder().encode(md)); }
+
+		return { htmlPath: htmlPath, mdPath: mdPath, markdown: md, images: ctx.images };
+	}
+
+	/**
+	 * HTML の断片 (body の中身) を Markdown にする。ファイルは読み書きしない。
+	 * 変換の規則は convertFile と同じ (issue の移行が課題の本文を変換するための入口。p261106-01 の 157-A)。
+	 *
+	 * リンクの .html は、対象のページが分からないので、すべて .md に置き換える。
+	 * 呼び出し側が、相対パスの基準が変わるときは、あとで張り替える。
+	 * 末尾の改行は付けない (断片は、別の文書に埋め込まれるため)。
+	 */
+	convertFragment(html: string): string {
+		this.inline.reset();
+		this.inline.setLinkBase(null, null, null);
+		const body = stripNonContent(html);
+		const ctx = newContext();
+		ctx.anchors = buildAnchorMap(body);
+		ctx.write = false;
+		return this.blocksToMarkdown(body, ctx).replace(/\n$/, '');
+	}
+
+	/** 本文 (body の中身) をブロックに分けて変換し、Markdown の体裁を整える。convertFile と convertFragment が共有する */
+	private blocksToMarkdown(body: string, ctx: ConvertContext): string {
 		const blocks = this.convertBlocks(body, ctx);
 		let md = blocks.join('\n\n');
 
@@ -90,11 +118,7 @@ export class Converter {
 		// 改行は LF にする。.editorconfig・.gitattributes が .md を LF と宣言しており、
 		// CRLF で書くと git を通さない配布経路（zip・共有フォルダ）で宣言と実体が食い違う
 		md = md.replace(/\r\n?/g, '\n');
-
-		const mdPath = htmlPath.replace(/\.[^.\\/]*$/, '') + '.md';
-		if (write) { writeIfChanged(mdPath, new TextEncoder().encode(md)); }
-
-		return { htmlPath: htmlPath, mdPath: mdPath, markdown: md, images: ctx.images };
+		return md;
 	}
 
 	/**
