@@ -188,6 +188,7 @@
 			<tr><td class="nowrap">151-B (会話の記録からも拾う)</td><td>資料に残っていない決定を、会話の記録 (JSONL) からも拾う</td><td>―</td></tr>
 			<tr><td class="nowrap">152-A (決定の id は親の番号 + 連番)</td><td>決定の id を <code>&lt;親の番号&gt;-d&lt;連番&gt;</code> にする (例: <code>i261103-01-d1</code>)。親は課題・計画・調査のどれか。親が無い決定は、人が親を決め、本当に無ければ先に課題を立てる</td><td>147-A の id の形 (<code>d</code> + yymmdd-nn の独立した番号)</td></tr>
 			<tr><td class="nowrap">153-A (プロジェクトの id をコロンで囲む)</td><td>プロジェクトをまたぐ参照は <code>:&lt;プロジェクト id&gt;:&lt;記録の id&gt;</code> と書く (例: <code>:ai-agent-manager:i260924-02-d1</code>)</td><td>前の案の <code>&lt;project_id&gt;/&lt;id&gt;</code></td></tr>
+			<tr><td class="nowrap">154-A (参照には読める名前を書く)</td><td>参照に書くプロジェクトの名前は、プロジェクトのフォルダ名 (chat の名乗りと同じ)。<code>project-id.txt</code> に <code>name</code> を足し、乱数の <code>project_id</code> は内部の識別に残す。改名したら旧名を <code>legacy_names</code> に残し、索引が引き当てる</td><td>153-A の例が想定した「読める名前」と、実際の <code>project_id</code> (32 桁の乱数) のずれ</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -217,10 +218,12 @@
 	<h2>決定の記録 (147-A)</h2>
 	<ul>
 		<li><strong>置き場は <code>notes/40_issues/decisions/</code></strong> (1 決定 1 ファイル。名前は <code>&lt;id&gt;-件名.md</code>)。<strong>id は、親の番号 + <code>-d</code> + 連番</strong> (152-A。例: 課題 <code>i261103-01</code> の 1 つ目の決定は <code>i261103-01-d1</code>、計画 <code>p261103-01</code> の 96 番目は <code>p261103-01-d96</code>)。<strong>親は、その決定を採った課題・計画・調査</strong>。いまも、課題に紐づく計画・調査は課題の <code>i</code> 番号を流用しており、それを決定へ広げる</li>
-		<li><strong>この形の利点</strong>: 親の番号がすでに一意なので、決定のための番号の割り当て (<code>_lock/</code>) が要らない。<code>1-A</code> が課題ごとに何度出ても、親が付くので別物になる。<strong>連番は親の中だけで数える</strong>。同じ親に、別の PC が同時に決定を足したときだけ重複しうるので、<code>issue check</code> が見つける</li>
+		<li><strong>この形の利点</strong>: 親の番号がすでに一意なので、プロジェクトの全体で番号を割り当てる必要が無い。<code>1-A</code> が課題ごとに何度出ても、親が付くので別物になる。<strong>連番は親の中だけで数える</strong></li>
+		<li><strong>連番の重複を防ぐ</strong>: <strong>同じ PC で、同じ親へ同時に決定を足す場合は、課題と同じ予約 (<code>_lock/&lt;id&gt;/</code>。<code>mkdir</code> の排他) を使う</strong>。別の PC やクラウドで同じ親に同時に足したときは、予約が届かないので、<code>issue check</code> の <code>duplicate</code> が後から止める (課題と同じ限界)</li>
 		<li><strong>親が無い決定</strong> (会話だけで決めたもの等): 人が親を決める。本当に親が無ければ、先に課題を立てる (判断が要ることは課題に残す、という基準と同じ)。<strong>複数の課題にまたがる決定</strong>は、主になる親を 1 つ選び、残りは関連 (148-A) に書く。<strong>親の課題が割れる・まとまっても、決定の id は変えない</strong></li>
 		<li><strong>ファイル名に <code>:</code> は使えない</strong> (Windows)。<code>-</code> でつなぐ。<strong>プロジェクトをまたぐ参照は、プロジェクトの id をコロンで囲んで書く</strong> (153-A。例: <code>:ai-agent-manager:i260924-02-d1</code>)。chat の名乗り (<code>:ai-agent-tools:</code>) と同じ形で、別のプロジェクトの id の前方一致にならない。<strong>コロンは、本文 ・ <code>refs</code> ・ <code>related</code> ・ <code>legacy_ids</code> ・ 画面の表示にだけ出る</strong>。ファイル名と <code>project-id.txt</code> の中身には出ない</li>
 		<li><strong>課題の先頭の情報 (meta) は、値がコロンで始まっても壊れない</strong>。<code>meta.ts</code> は YAML ではなく <code>キー: 値</code> の行を読む (行頭の <code>キー:</code> のあとの、最初の空白から行末までが値)。コードを読んで確かめた。実際に <code>refs: :ai-agent-manager:i260924-02</code> を通すテストは、実装のときに足す</li>
+		<li><strong>参照に書くプロジェクトの名前 (154-A)</strong>: 現在の <code>items/project-id.txt</code> の <code>project_id</code> は 32 桁の乱数で、人が読めない。<strong>参照には、プロジェクトのフォルダ名を書く</strong>。<code>project-id.txt</code> に <code>name: &lt;フォルダ名&gt;</code> を足し (<code>schema</code> を 2 に上げる案。実装のときに決める)、乱数の <code>project_id</code> は内部の安定した識別に残す。<strong>改名したときは、旧名を <code>legacy_names</code> に残す</strong>。索引が、旧名の参照も新しい名前へ引き当てる</li>
 		<li><strong>持つ項目</strong>: 問い ・ 案 A/B/C (恒久か暫定か、1 行の理由) ・ 選んだ案 ・ 決めた日 ・ 参照する課題と計画 ・ 置き換えた決定 ・ 親の番号 ・ <code>legacy_ids</code></li>
 		<li><strong>チャットでは、id と説明を添えて聞く</strong> (<code>p261106-01-d3 (決定の id の形)-A</code>)</li>
 		<li><strong>過去の番号 (<code>96-A</code> ・ <code>121-C</code> ・ <code>137-A</code> 等) も、全面的に振り直す</strong> (149-A)。旧番号は、決定のファイルの <code>legacy_ids</code> 欄 (<code>:プロジェクト id:旧番号</code> の形。例: <code>:ai-agent-manager:4-A</code>) に残す。チャットや外部の参照を引くため、本文を書き換えたあとも消さない。本文の旧番号の書き換えは、第 3 章</li>
