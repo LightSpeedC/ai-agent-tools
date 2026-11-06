@@ -23,6 +23,8 @@ export type RenderOptions = {
 	group: string | null;
 	ids: string[];
 	warn: (message: string) => void;
+	/** 互いにリンクする相手の HTML (_issues.html と _issues-archive.html。159-A)。ファイルが在るときだけリンクする */
+	peer?: { file: string; label: string; always?: boolean };
 };
 
 export type RenderResult = { html: string; count: number };
@@ -352,6 +354,8 @@ export function renderHtml(o: RenderOptions): RenderResult {
 		if (readme !== null) links.push(`<a class="home" href="${escapeHtml(readme)}" aria-label="戻る" title="README へ戻る">${HomeIcon}</a>`);
 		const legacy = path.join(o.root, 'notes', '40_issues', 'issues-legacy.html');
 		const legacyRel = fs.existsSync(legacy) ? relFromOut(legacy) : null;
+		const peerRel = o.peer !== undefined && (o.peer.always === true || fs.existsSync(o.peer.file)) ? relFromOut(o.peer.file) : null;
+		if (peerRel !== null && o.peer !== undefined) links.push(`<a class="legacy" href="${escapeHtml(peerRel)}">${escapeHtml(o.peer.label)}</a>`);
 		if (legacyRel !== null) links.push(`<a class="legacy" href="${escapeHtml(legacyRel)}">過去の課題 (旧 HTML)</a>`);
 	}
 

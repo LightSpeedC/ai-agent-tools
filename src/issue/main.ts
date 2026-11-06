@@ -309,6 +309,16 @@ function defaultOutFile(root: string): string {
 	return path.join(root, 'notes', '40_issues', '_issues.html');
 }
 
+/** 保管 (archived/) の全件を置く HTML (159-A) */
+function archiveOutFile(root: string): string {
+	return path.join(root, 'notes', '40_issues', '_issues-archive.html');
+}
+
+/** _issues.html から見た、互いにリンクする相手 */
+function peerOfMain(root: string): { file: string; label: string } {
+	return { file: archiveOutFile(root), label: '保管の課題' };
+}
+
 function relShown(root: string, file: string): string {
 	const rel = path.relative(root, file);
 	return rel.startsWith('..') || path.isAbsolute(rel) ? path.basename(file) : rel.split(path.sep).join('/');
@@ -318,10 +328,19 @@ function relShown(root: string, file: string): string {
  * 更新の操作の最後に、_issues.html を既定の範囲で作り直す (131-A)。
  * 失敗しても、主な操作は成功のまま、標準エラーに警告を出すだけ。標準出力は増やさない
  */
-function autoRender(root: string): void {
+function autoRender(root: string, withArchive: boolean = false): void {
 	try {
+		// 保管の HTML を先に作る。_issues.html からのリンクは、相手が在るときだけ張るため
+		if (withArchive) {
+			const archiveFile = archiveOutFile(root);
+			const a = renderHtml({
+				root, outFile: archiveFile, standalone: false, folders: ['archived'], group: null, ids: [], warn: () => {},
+				peer: { file: defaultOutFile(root), label: '未・着手・済の課題', always: true },
+			});
+			writeIfChanged(archiveFile, a.html);
+		}
 		const outFile = defaultOutFile(root);
-		const r = renderHtml({ root, outFile, standalone: false, folders: DefaultRenderFolders, group: null, ids: [], warn: () => {} });
+		const r = renderHtml({ root, outFile, standalone: false, folders: DefaultRenderFolders, group: null, ids: [], warn: () => {}, peer: peerOfMain(root) });
 		writeIfChanged(outFile, r.html);
 	} catch (e) {
 		console.error('[警告] _issues.html を作り直せなかった (主な操作は済んでいる): ' + (e instanceof Error ? e.message : String(e)));
@@ -357,7 +376,7 @@ function runView(rest: string[]): number {
 	let warnings = 0;
 	const r = renderHtml({
 		root, outFile, standalone: false, folders, group: o.values.get('--group') ?? null, ids: [],
-		warn: (m) => { warnings++; console.error(m); },
+		warn: (m) => { warnings++; console.error(m); }, peer: peerOfMain(root),
 	});
 	const written = writeIfChanged(outFile, r.html);
 	const shown = relShown(root, outFile);
@@ -387,6 +406,7 @@ function runRender(rest: string[]): number {
 	const r = renderHtml({
 		root, outFile, standalone, folders, group: o.values.get('--group') ?? null, ids: o.positionals,
 		warn: (m) => { warnings++; console.error(m); },
+		peer: outArg === undefined ? peerOfMain(root) : undefined,
 	});
 	const written = writeIfChanged(outFile, r.html);
 	const relToRoot = path.relative(root, outFile);
@@ -435,7 +455,7 @@ function runGroupMove(rest: string[], kind: 'archive' | 'unarchive'): number {
 	} else {
 		console.log(`[OK] グループ ${group} の ${r.moved.length} 件を done/ へ戻した: ${r.moved.join(' ・ ')}`);
 	}
-	autoRender(root);
+	autoRender(root, true);
 	return ExitOk;
 }
 

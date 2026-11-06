@@ -200,6 +200,27 @@ console.log('--- 自動の作り直し ---');
 	check('unarchive は終了コード 0', r2.code === 0, r2.out + r2.err);
 	check('unarchive の最後に、課題が _issues.html へ戻る', html(dir).includes('済の課題う'));
 }
+// 159-A: 保管 (archived/) の全件は _issues-archive.html に置き、archive ・ unarchive の最後に作り直す。
+// _issues.html の既定の範囲 (158-A) から外した保管の課題を、ブラウザで辿れるようにするため
+{
+	const OutArchive = 'notes/40_issues/_issues-archive.html';
+	const dir = basic('auto-archive-html');
+	const r = run(['archive', 'text'], dir);
+	check('159-A: archive の最後に _issues-archive.html を作る', r.code === 0 && exists(dir, OutArchive), r.out + r.err);
+	check('159-A: _issues-archive.html に、動かした課題がある', exists(dir, OutArchive) && html(dir, OutArchive).includes('済の課題う'));
+	check('159-A: _issues-archive.html に、もとから保管の課題もある (全件)', exists(dir, OutArchive) && html(dir, OutArchive).includes('保管の課題え'));
+	check('159-A: _issues-archive.html に、未・着手の課題は無い', exists(dir, OutArchive) && !html(dir, OutArchive).includes('未の課題あ') && !html(dir, OutArchive).includes('着手の課題い'));
+	check('159-A: _issues.html から _issues-archive.html へリンクする', html(dir).includes('href="_issues-archive.html"'));
+	check('159-A: _issues-archive.html から _issues.html へリンクする', exists(dir, OutArchive) && html(dir, OutArchive).includes('href="_issues.html"'));
+	check('159-A: 自動の作り直しは、archive の標準出力を増やさない', r.out.split('\n').filter((l) => l.trim() !== '').length <= 1, r.out);
+	const r2 = run(['unarchive', 'text'], dir);
+	check('159-A: unarchive の最後に、戻した課題が _issues-archive.html から消える', r2.code === 0 && exists(dir, OutArchive) && !html(dir, OutArchive).includes('済の課題う'), r2.out + r2.err);
+}
+{
+	const dir = basic('no-archive-link');
+	run(['set', 'i261103-01', '--state', '着手'], dir);
+	check('159-A: _issues-archive.html が無ければ、_issues.html からリンクしない', exists(dir, Out) && !html(dir).includes('_issues-archive.html'));
+}
 {
 	const dir = basic('auto-readonly');
 	run(['list'], dir);
