@@ -280,7 +280,12 @@ const Css = `
 		color:#fff; padding:3px 9px; border-radius:6px;
 	}
 	a.home svg{ display:block; }
-	.legacy{ margin-left:12px; }`;
+	.legacy{ margin-left:12px; }
+	.only-dark{ display:none; }
+	@media (prefers-color-scheme: dark) {
+		.only-light{ display:none; }
+		.only-dark{ display:inline; }
+	}`;
 
 const HomeIcon = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg>';
 

@@ -38,14 +38,14 @@ function imageHtml(alt: string, rawHref: string, o: MdOptions): string {
 	const hash = rawHref.indexOf('#');
 	const href = hash >= 0 ? rawHref.slice(0, hash) : rawHref;
 	const fragment = hash >= 0 ? rawHref.slice(hash + 1) : '';
-	// 暗い版は出さない。生成する HTML は、背景が常に淡い色のため (明るい版だけを出す)
-	if (fragment === 'gh-dark-mode-only') return '';
+	// 明るい版 ・ 暗い版は両方を出し、表示の明暗で CSS が切り替える (129-A ・ 160-B)
+	const theme = fragment === 'gh-light-mode-only' ? ' class="only-light"' : fragment === 'gh-dark-mode-only' ? ' class="only-dark"' : '';
 	const src = o.resolveImage(href);
 	if (src === null) {
 		const name = href.split('/').pop() ?? href;
 		return `[画像が見つからない: ${escapeHtml(name)}]`;
 	}
-	return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">`;
+	return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}"${theme}>`;
 }
 
 function linkHtml(text: string, href: string, o: MdOptions): string {

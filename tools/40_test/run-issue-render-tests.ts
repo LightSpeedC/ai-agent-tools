@@ -277,7 +277,18 @@ console.log('--- 画像 (128-A ・ 129-A)');
 	putPng(dir, 'a-light.png');
 	putPng(dir, 'a-dark.png');
 	render(dir);
-	check('明るい版と暗い版は、明るい版だけを出す (ページの背景は常に淡い色のため)', html(dir).includes('a-light.png') && !html(dir).includes('a-dark.png'), html(dir));
+	// 160-B: 129-A のとおり、両方を出して表示の明暗で切り替える (明るい版だけにした実装を戻した)
+	const h = html(dir);
+	check('160-B: 明るい版は class="only-light" で出す', /<img src="[^"]*a-light\.png" alt="x" class="only-light">/.test(h), h);
+	check('160-B: 暗い版も class="only-dark" で出す', /<img src="[^"]*a-dark\.png" alt="x" class="only-dark">/.test(h), h);
+	check('160-B: 明るい表示では暗い版を隠す (CSS)', /\.only-dark\s*\{\s*display:\s*none/.test(h), h);
+	check('160-B: 暗い表示では明るい版を隠し、暗い版を出す (CSS)', /@media \(prefers-color-scheme: dark\)\s*\{[^@]*\.only-light\s*\{\s*display:\s*none[^@]*\.only-dark\s*\{\s*display:\s*inline/.test(h), h);
+}
+{
+	const dir = std('img-plain', { [Todo + A]: issueText({}, '\n![x](../images/p.png)\n') });
+	putPng(dir, 'p.png');
+	render(dir);
+	check('160-B: 印の無い画像には class を付けない', /<img src="[^"]*p\.png" alt="x">/.test(html(dir)), html(dir));
 }
 {
 	const dir = std('standalone', { ...base, [Todo + A]: issueText({ id: 'i261103-01', group: 'html2md' }, '\n![図 1](../images/i261103-01-x.png)\n\n[別の資料](../../../README.md)\n') });
