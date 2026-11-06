@@ -285,6 +285,50 @@ function findItem(dir: string, folder: string, id: string): string | null {
 	check('--apply と --dry-run を両方渡したら、終了コード 5 (何も書かない)', r.code === 5 && findItem(dir, 'done', 'i260101-01') === null, 'code=' + r.code);
 }
 
+// ---- 169-A: 旧の記録の食い違い (済なのに未 ・ 着手のやることがある) は、書く前に止めて利用者に聞く ----
+
+const Conflict = [
+	'<section class="ch01"><h1>甲</h1>',
+	'<details><summary><span class="badge b-ok">済</span><span class="no">i260104-01</span>食い違い</summary>',
+	'<div class="issue-body"><ul><li><span class="badge b-ok">済</span>やった</li><li><span class="badge b-none">未</span>残り</li></ul></div></details>',
+	'<details><summary><span class="badge b-ok">済</span><span class="no">i260104-02</span>ふつう</summary>',
+	'<div class="issue-body"><p>x</p></div></details>',
+	'</section>',
+].join('\n');
+
+{
+	const dir = mkProject('conflict-dry', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: Conflict });
+	const r = run(['migrate', '--dry-run'], dir);
+	check('169-A: --dry-run は、済なのに未のやることがある課題を「確かめが要る」に出し、終了コード 1',
+		r.code === 1 && r.out.includes('確かめが要る: 1 件') && r.out.includes('i260104-01'), 'code=' + r.code + ' ' + r.out);
+	const j = run(['migrate', '--dry-run', '--json'], dir);
+	let parsed: { conflicts?: { id: string }[] } = {};
+	try { parsed = JSON.parse(j.out); } catch { /* 下で落とす */ }
+	check('169-A: --json に conflicts (番号の一覧) を出す', JSON.stringify(parsed.conflicts?.map((c) => c.id)) === JSON.stringify(['i260104-01']), j.out);
+}
+
+{
+	const dir = mkProject('conflict-apply', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: Conflict });
+	const r = run(['migrate', '--apply'], dir);
+	check('169-A: --apply は、確かめが要るものがあれば何も書かずに止まる (終了コード 1)',
+		r.code === 1 && findItem(dir, 'done', 'i260104-02') === null && findItem(dir, 'done', 'i260104-01') === null && r.out.includes('i260104-01'), 'code=' + r.code + ' ' + r.out);
+	check('169-A: 止まったときは、決め方 (--state-override) を案内する', r.out.includes('--state-override'), r.out);
+	const r2 = run(['migrate', '--apply', '--state-override', 'i260104-01=着手'], dir);
+	check('169-A: --state-override で決めた課題は、その状態のフォルダに書く', r2.code === 0 && findItem(dir, 'doing', 'i260104-01') !== null && findItem(dir, 'done', 'i260104-02') !== null, 'code=' + r2.code + ' ' + r2.out);
+	const c = run(['check'], dir);
+	check('169-A: 決めて書いたあと、issue check が問題なし', c.code === 0, c.out + c.err);
+}
+
+{
+	const dir = mkProject('conflict-bad', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: Conflict });
+	check('169-A: --state-override に、移す課題に無い番号を渡したら終了コード 5',
+		run(['migrate', '--apply', '--state-override', 'i269999-01=着手'], dir).code === 5);
+	check('169-A: --state-override の状態が 未 ・ 着手 ・ 済 でなければ終了コード 5',
+		run(['migrate', '--apply', '--state-override', 'i260104-01=完了'], dir).code === 5);
+	const r = run(['migrate', '--apply', '--state-override', 'i260104-01=済'], dir);
+	check('169-A: 食い違いを 済 のままにする指定は通らず、何も書かない (終了コード 1)', r.code === 1 && findItem(dir, 'done', 'i260104-02') === null, 'code=' + r.code + ' ' + r.out);
+}
+
 fs.rmSync(work, { recursive: true, force: true });
 console.log('');
 console.log(fail === 0 ? '=== ' + pass + ' 件すべて成功 ===' : '=== ' + fail + ' 件失敗 (成功 ' + pass + ' 件) ===');

@@ -27,7 +27,7 @@
 		issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]
 		                                                            _issues.html を作り直して、既定のアプリで開く (開けなければパスを出して終了コード 0)
 	更新の操作 (new ・ set ・ todo ・ confirm ・ archive ・ unarchive) の最後に、_issues.html を作り直す (失敗しても警告だけ)。
-		issue migrate [--dry-run | --apply] [--root <dir>] [--json]
+		issue migrate [--dry-run | --apply] [--state-override <番号=状態,...>] [--root <dir>] [--json]
 		                                                            旧 issues.html (と issues-archive.html) の課題を読み、移す計画を出す。いまは読み取りだけ
 	いまはフェーズ 3b まで + migrate (check ・ init ・ new ・ show ・ list ・ search ・ set ・ todo ・ confirm ・ archive ・ unarchive ・ render ・ view ・ migrate)。
 */
@@ -39,7 +39,7 @@ import { renderHtml, writeIfChanged } from './render.ts';
 import {
 	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
-import { applyMigration, planMigration } from './migrate.ts';
+import { applyMigration, applyOverrides, planMigration } from './migrate.ts';
 
 const ExitOk = 0;
 const ExitFailed = 1;
@@ -62,7 +62,7 @@ const Usage = [
 	'                                                                 _issues.html を作り直して、既定のアプリで開く',
 	'  issue archive <group> [--root <dir>] [--json]                  グループの全件が済なら、archived/ へ動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
-	'  issue migrate [--dry-run | --apply] [--root <dir>] [--json]    旧 issues.html の課題を読み、移す計画を出す (既定は --dry-run。--apply で items/ へ書く。すでにある番号は飛ばす)',
+	'  issue migrate [--dry-run | --apply] [--root <dir>] [--json]    旧 issues.html の課題を読み、移す計画を出す (既定は --dry-run。--apply で items/ へ書く。すでにある番号は飛ばす。旧の記録が食い違うものは、--state-override で状態を決めるまで書かない)',
 ].join('\n');
 
 // ---- 引数 ----
@@ -478,12 +478,31 @@ function runList(rest: string[]): number {
 // ---- migrate ----
 
 function runMigrate(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json', '--dry-run', '--apply'], positionals: 0 });
+	const o = parseOptions(rest, { valued: ['--root', '--state-override'], flags: ['--json', '--dry-run', '--apply'], positionals: 0 });
 	if (o.flags.has('--apply') && o.flags.has('--dry-run')) throw new UsageError('--apply と --dry-run は一緒に使えない');
 	const root = existingRoot(o);
 	const plan = planMigration(root);
+	const override = o.values.get('--state-override');
+	if (override !== undefined) applyOverrides(plan, override);
 	const inFolder = (folder: Folder): number => plan.move.filter((m) => m.folder === folder).length;
+	const printConflicts = (): void => {
+		console.log(`  確かめが要る: ${plan.conflicts.length} 件 (旧 HTML の記録が食い違っている)`);
+		for (const c of plan.conflicts) console.log(`    - ${c.id} ${c.where}: ${c.message}`);
+		if (plan.conflicts.length > 0) {
+			console.log('  どの状態で移すかを決めて、--state-override で渡す (例: --state-override ' + plan.conflicts.map((c) => c.id + '=着手').join(',') + ')');
+		}
+	};
 	if (o.flags.has('--apply')) {
+		// 確かめが要るものが残っていれば、1 件も書かない (169-A)
+		if (plan.conflicts.length > 0) {
+			if (o.flags.has('--json')) {
+				console.log(JSON.stringify({ read: plan.read, written: [], exists: plan.exists, unreadable: plan.unreadable, conflicts: plan.conflicts }));
+			} else {
+				console.log(`[apply] 何も書かずに止めた。旧 HTML から課題 ${plan.read} 件を読んだ`);
+				printConflicts();
+			}
+			return ExitFailed;
+		}
 		const r = applyMigration(root, plan);
 		if (o.flags.has('--json')) {
 			console.log(JSON.stringify({ read: plan.read, written: r.written, exists: plan.exists, unreadable: plan.unreadable }));
@@ -504,6 +523,7 @@ function runMigrate(rest: string[]): number {
 			move: plan.move.map((m) => ({ id: m.id, state: m.state, folder: m.folder, group: m.group, title: m.title, source: m.source })),
 			exists: plan.exists,
 			unreadable: plan.unreadable,
+			conflicts: plan.conflicts,
 		}));
 	} else {
 		console.log(`[dry-run] 旧 HTML から課題 ${plan.read} 件を読んだ`);
@@ -512,8 +532,9 @@ function runMigrate(rest: string[]): number {
 		console.log(`  すでに items/ にある (移さない): ${plan.exists.length} 件`);
 		console.log(`  読めなかった: ${plan.unreadable.length} 件`);
 		for (const p of plan.unreadable) console.log(`    - ${p.where}: ${p.message}`);
+		printConflicts();
 	}
-	return plan.unreadable.length > 0 ? ExitFailed : ExitOk;
+	return plan.unreadable.length > 0 || plan.conflicts.length > 0 ? ExitFailed : ExitOk;
 }
 
 // ---- 入口 ----

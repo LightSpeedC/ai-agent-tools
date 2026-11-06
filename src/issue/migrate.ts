@@ -13,7 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getBlock, getPlainText } from '../html2md/htmlutil.ts';
-import { Failure, listIssues, slugFromTitle } from './ops.ts';
+import { Failure, UsageError, listIssues, slugFromTitle } from './ops.ts';
 import { Converter } from '../html2md/converter.ts';
 import { ItemsRel } from './check.ts';
 import { States } from './meta.ts';
@@ -104,6 +104,8 @@ export type MigratePlan = {
 	/** すでに items/ にある番号 (移さない) */
 	exists: string[];
 	unreadable: LegacyProblem[];
+	/** 旧の記録の食い違い (済なのに未 ・ 着手のやることがある)。--apply は、これが残っていれば書かない (169-A) */
+	conflicts: { id: string; where: string; message: string }[];
 };
 
 const LegacyFile = 'issues-legacy.html';
@@ -125,7 +127,7 @@ export function planMigration(root: string): MigratePlan {
 	const existingIds = new Set(
 		listIssues(root, ['todo', 'doing', 'done', 'archived'], null, () => { /* 警告は check の仕事 */ }).map((i) => i.id),
 	);
-	const plan: MigratePlan = { read: 0, sources: [], move: [], exists: [], unreadable: [] };
+	const plan: MigratePlan = { read: 0, sources: [], move: [], exists: [], unreadable: [], conflicts: [] };
 	const seenAcrossFiles = new Set<string>();
 	for (const t of targets) {
 		const text = fs.readFileSync(path.join(dir, t.name), 'utf8').replace(/^﻿/, '');
@@ -149,7 +151,42 @@ export function planMigration(root: string): MigratePlan {
 		plan.sources.push({ file: t.name, count });
 		for (const p of parsed.problems) plan.unreadable.push({ where: p.where, message: p.message });
 	}
+	findConflicts(plan, new Map());
 	return plan;
+}
+
+const OpenTodo = /^\s*- \[(未|着手)\]/gm;
+
+/**
+ * 済 (done/ ・ archived/) に置くのに、未 ・ 着手のやることが残っている課題を conflicts に入れる (169-A)。
+ * overrides (番号 → 未 ・ 着手 ・ 済) で利用者が決めたものは、その状態のフォルダへ移してから見る
+ */
+function findConflicts(plan: MigratePlan, overrides: Map<string, string>): void {
+	const converter = new Converter();
+	plan.conflicts = [];
+	for (const m of plan.move) {
+		const state = overrides.get(m.id);
+		if (state === '未' || state === '着手') m.folder = FolderOfState[state];
+		if (m.folder !== 'done' && m.folder !== 'archived') continue;
+		const open = (bodyToMarkdown(m.bodyHtml, converter).match(OpenTodo) ?? []).length;
+		if (open > 0) {
+			plan.conflicts.push({ id: m.id, where: m.group + ' / ' + m.title, message: `旧 HTML では済なのに、未 ・ 着手のやることが ${open} 件残っている` });
+		}
+	}
+}
+
+/** --state-override (番号=状態 をカンマで区切る) を当てる。誤りは UsageError (終了コード 5) */
+export function applyOverrides(plan: MigratePlan, spec: string): void {
+	const overrides = new Map<string, string>();
+	const ids = new Set(plan.move.map((m) => m.id));
+	for (const part of spec.split(',').map((s) => s.trim()).filter((s) => s !== '')) {
+		const m = /^(i\d{6}-[0-9a-zA-Z]{2})=(.+)$/.exec(part);
+		if (m === null) throw new UsageError(`--state-override の形が違う: ${part} (例: i261101-02=着手)`);
+		if (!(States as readonly string[]).includes(m[2])) throw new UsageError(`--state-override の状態が 未 ・ 着手 ・ 済 のどれでもない: ${part}`);
+		if (!ids.has(m[1])) throw new UsageError(`--state-override の番号が、移す課題に無い: ${m[1]}`);
+		overrides.set(m[1], m[2]);
+	}
+	findConflicts(plan, overrides);
 }
 
 // ---- 書き出す (--apply) ----
