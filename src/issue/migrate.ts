@@ -2,7 +2,7 @@
 	旧 issues.html (1 ファイルに全件) の課題を読み、新しい形 (1 件 1 ファイル) へ移す計画を立てる。
 	計画は p261105-01 (各プロジェクトの課題の移行) と p261106-01 (143-A: 済みも移す)。
 
-	いまは読み取りだけ (issue migrate の --dry-run)。書き出しは、このあとの作業。
+	既定は読み取りだけ (--dry-run)。--apply で items/ へ書く (165-A ・ 166-A)。
 	読めない形は、推測で補わず「読めなかった」に出す。
 
 	旧 HTML の形:
@@ -13,7 +13,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getBlock, getPlainText } from '../html2md/htmlutil.ts';
-import { Failure, listIssues } from './ops.ts';
+import { Failure, listIssues, slugFromTitle } from './ops.ts';
+import { Converter } from '../html2md/converter.ts';
+import { ItemsRel } from './check.ts';
 import { States } from './meta.ts';
 import type { Folder } from './check.ts';
 
@@ -148,4 +150,51 @@ export function planMigration(root: string): MigratePlan {
 		for (const p of parsed.problems) plan.unreadable.push({ where: p.where, message: p.message });
 	}
 	return plan;
+}
+
+// ---- 書き出す (--apply) ----
+
+/** バッジ付きの列挙の目印。Markdown に変換したあとで - [状態] に戻す (165-A) */
+const TodoMark = 'ZZISSUETODO';
+
+/** 旧 HTML の本文を Markdown にする。バッジ付きの列挙だけを - [状態] 文 の行にする (165-A) */
+export function bodyToMarkdown(bodyHtml: string, converter: Converter): string {
+	const marked = bodyHtml.replace(
+		/<li>\s*<span\b[^>]*class="badge[^"]*"[^>]*>\s*(未|着手|済)\s*<\/span>\s*/g,
+		(_m, state: string) => `<li>${TodoMark}${({ 未: 'A', 着手: 'B', 済: 'C' } as Record<string, string>)[state]}${TodoMark} `,
+	);
+	const md = converter.convertFragment(marked).replace(/\r\n?/g, '\n').trim();
+	const back: Record<string, string> = { A: '未', B: '着手', C: '済' };
+	return md.replace(new RegExp(`^(\\s*)[-*] ${TodoMark}([ABC])${TodoMark}\\s*`, 'gm'), (_m, indent: string, s: string) => `${indent}- [${back[s]}] `);
+}
+
+/** 番号 (i + yymmdd-nn) の日付を yyyy-mm-dd にする */
+function createdOf(id: string): string {
+	return `20${id.slice(1, 3)}-${id.slice(3, 5)}-${id.slice(5, 7)}`;
+}
+
+export type ApplyResult = { written: { id: string; rel: string }[] };
+
+/** 計画のとおりに items/ へ書く。すでにある番号は計画の時点で外してある (166-A)。旧 HTML には触らない */
+export function applyMigration(root: string, plan: MigratePlan): ApplyResult {
+	const converter = new Converter();
+	// 先に全部の中身を作り、名前を決めてから書く (途中で例外が出ても、半端に書かない)
+	const files = plan.move.map((m) => {
+		const slug = slugFromTitle(m.title) || 'issue';
+		const rel = `${ItemsRel}/${m.folder}/${m.id}-${slug}.md`;
+		const lines = ['schema: 1', `id: ${m.id}`, `title: ${m.title}`, `group: ${m.group}`, `created: ${createdOf(m.id)}`];
+		const body = bodyToMarkdown(m.bodyHtml, converter);
+		return { id: m.id, rel, text: '---\n' + lines.join('\n') + '\n---\n' + (body === '' ? '\n' : '\n' + body + '\n') };
+	});
+	for (const f of files) {
+		if (fs.existsSync(path.join(root, ...f.rel.split('/')))) throw new Failure(`${f.rel} が既にある (書かない)`);
+	}
+	const written: { id: string; rel: string }[] = [];
+	for (const f of files) {
+		const full = path.join(root, ...f.rel.split('/'));
+		fs.mkdirSync(path.dirname(full), { recursive: true });
+		fs.writeFileSync(full, f.text, { flag: 'wx' });
+		written.push({ id: f.id, rel: f.rel });
+	}
+	return { written };
 }

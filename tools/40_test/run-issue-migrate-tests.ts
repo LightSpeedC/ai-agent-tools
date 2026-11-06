@@ -216,6 +216,75 @@ const existing = '---\nschema: 1\nid: i260101-02\ntitle: 二つ目\ngroup: グ�
 	check('旧 HTML が無ければ、終了コード 1 (見つからないと言う)', r.code === 1 && (r.err + r.out).includes('旧 HTML'), 'code=' + r.code + ' ' + r.err + r.out);
 }
 
+// ---- issue migrate --apply (165-A ・ 166-A) ----
+
+function findItem(dir: string, folder: string, id: string): string | null {
+	const d = path.join(dir, Items, folder);
+	if (!fs.existsSync(d)) return null;
+	const name = fs.readdirSync(d).find((n) => n.startsWith(id + '-') && n.endsWith('.md'));
+	return name === undefined ? null : fs.readFileSync(path.join(d, name), 'utf8');
+}
+
+{
+	const dir = mkProject('apply', {
+		[Items + 'project-id.txt']: ProjectIdText,
+		[Items + 'doing/i260101-02-二つ目.md']: existing,
+		[Legacy]: Good,
+		[ArchiveFile]: Archive,
+	});
+	const legacyBefore = fs.readFileSync(path.join(dir, Legacy), 'utf8');
+	const r = run(['migrate', '--apply'], dir);
+	check('--apply: 終了コード 0', r.code === 0, 'code=' + r.code + ' ' + r.out + r.err);
+	check('--apply: 書いた件数 (3 件) と、すでにある件数 (1 件) を出す', r.out.includes('書いた: 3 件') && r.out.includes('すでに items/ にある (移さない): 1 件'), r.out);
+	const done = findItem(dir, 'done', 'i260101-01');
+	check('済は done/ に、番号 + 件名のファイル名で書く', done !== null);
+	check('メタ情報: schema ・ id ・ title ・ group ・ created (番号の日付)',
+		done !== null && done.startsWith('---\nschema: 1\nid: i260101-01\ntitle: 件名 a です\ngroup: グループ甲\ncreated: 2026-01-01\n---\n'), JSON.stringify(done));
+	check('本文は Markdown にする (タグが残らない)', done !== null && done.includes('本文') && !done.includes('<p>'), JSON.stringify(done));
+	check('未は todo/ に書く', findItem(dir, 'todo', 'i260102-0a') !== null);
+	const arc = findItem(dir, 'archived', 'i250101-01');
+	check('保管 (issues-archive.html) は archived/ に書き、created は 2025-01-01', arc !== null && arc.includes('created: 2025-01-01'), JSON.stringify(arc));
+	check('166-A: すでにある番号は書き換えない', fs.readFileSync(path.join(dir, Items, 'doing/i260101-02-二つ目.md'), 'utf8') === existing);
+	check('166-A: すでにある番号を、別のフォルダに重ねて作らない', findItem(dir, 'todo', 'i260101-02') === null && findItem(dir, 'done', 'i260101-02') === null);
+	check('旧 HTML は書き換えない', fs.readFileSync(path.join(dir, Legacy), 'utf8') === legacyBefore);
+	const c = run(['check'], dir);
+	check('移したあと、issue check が問題なし (終了コード 0)', c.code === 0, c.out + c.err);
+	check('移したあと、_issues.html を作り直す', fs.existsSync(path.join(dir, 'notes/40_issues/_issues.html')));
+	const again = run(['migrate', '--apply'], dir);
+	check('2 回目の --apply は、何も書かない (4 件ともすでにある)', again.code === 0 && again.out.includes('書いた: 0 件') && again.out.includes('すでに items/ にある (移さない): 4 件'), again.out);
+}
+
+{
+	const dir = mkProject('apply-todo', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: Good });
+	run(['migrate', '--apply'], dir);
+	const doing = findItem(dir, 'doing', 'i260101-02');
+	check('165-A: バッジ付きの列挙は - [状態] 文 の行にする', doing !== null && /^- \[済\] やった$/m.test(doing), JSON.stringify(doing));
+}
+
+{
+	const html = '<section class="ch01"><h1>甲</h1>'
+		+ '<details><summary><span class="badge b-warn">着手</span><span class="no">i260103-01</span>番号付き</summary>'
+		+ '<div class="issue-body"><ol><li>手順一</li><li>手順二</li></ol></div></details></section>';
+	const dir = mkProject('apply-ol', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: html });
+	run(['migrate', '--apply'], dir);
+	const doing = findItem(dir, 'doing', 'i260103-01');
+	check('165-A: バッジの無い番号付きの列挙は、やることの行にしない (本文のまま)',
+		doing !== null && doing.includes('手順一') && !/- \[/.test(doing), JSON.stringify(doing));
+}
+
+{
+	const bad = Good.replace('<span class="no">i260102-0a</span>', '');
+	const dir = mkProject('apply-unreadable', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: bad });
+	const r = run(['migrate', '--apply'], dir);
+	check('読めなかった課題があっても、読めたものは書き、終了コード 1', r.code === 1 && findItem(dir, 'done', 'i260101-01') !== null && r.out.includes('三つ目'), 'code=' + r.code + ' ' + r.out);
+}
+
+{
+	const dir = mkProject('apply-both', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: Good });
+	const r = run(['migrate', '--apply', '--dry-run'], dir);
+	check('--apply と --dry-run を両方渡したら、終了コード 5 (何も書かない)', r.code === 5 && findItem(dir, 'done', 'i260101-01') === null, 'code=' + r.code);
+}
+
 fs.rmSync(work, { recursive: true, force: true });
 console.log('');
 console.log(fail === 0 ? '=== ' + pass + ' 件すべて成功 ===' : '=== ' + fail + ' 件失敗 (成功 ' + pass + ' 件) ===');

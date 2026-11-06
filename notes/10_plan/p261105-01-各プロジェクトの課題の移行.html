@@ -339,6 +339,8 @@
 		<li>(2) 試しに移す 2 件 (ai-chat-lite ・ claude-code-proxy) の課題を読むことを<strong>許可</strong></li>
 		<li>(3) 動いていないプロジェクトは、<strong>次に動かすときに移す</strong> (139-A のとおり)</li>
 		<li><strong>165-A</strong> (2026-11-07): <code>--apply</code> は、旧 HTML の「やること」のうち、<strong>バッジ付きの列挙だけ</strong>を <code>- [状態] 文</code> の行にする。番号付きの列挙 ・ 表は、本文の Markdown のまま残す (状態が書かれていないものを推測しない)</li>
+		<li><strong>166-A</strong> (2026-11-07): <code>--apply</code> は、<code>items/</code> にすでにある番号を<strong>飛ばして続ける</strong> (書かずに件数で出す。上書きしない)</li>
+		<li><strong><code>issue migrate --apply</code> は済</strong> (2026-11-07): 本文は html2md の <code>convertFragment</code> で Markdown にし、<code>created</code> は番号の日付。読めなかったものは書かずに一覧で出す (終了コード 1)。最後に <code>_issues.html</code> ・ <code>_issues-archive.html</code> を作り直す。テスト 12 件 (<code>tools/40_test/run-issue-migrate-tests.ts</code>。node ・ bun の両方で通る。先に書いて 12 件が落ちる (❌Red) のを見てから実装した)。このプロジェクトの旧 HTML では、<code>--dry-run</code> で 72 件を読み、移す 69 件 ・ すでにある 3 件 ・ 読めなかった 0 件。<strong>このプロジェクトへの <code>--apply</code> はまだ流していない</strong></li>
 	</ul>
 </section>
 
