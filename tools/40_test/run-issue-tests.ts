@@ -358,6 +358,11 @@ console.log('--- やること ・ 報告元の確認 (済は done/ ・ archived/
 	check('やることの状態が 未 / 着手 / 済 以外ならエラー (todo)', errorWith(checkRun(dir), 'todo'));
 }
 {
+	// 旧 HTML から移した本文には、リンクの列挙 (- [文](先)) がある。やることの行と読み違えない
+	const dir = std('todo-link', { [Name1]: issueText({}, '\n- [第1部 基礎編](docs/01.html)\n- [別の資料](../x.md#a)\n') });
+	check('- [文](先) はリンクの列挙で、やることの行として検査しない', !errorWith(checkRun(dir), 'todo'), JSON.stringify(checkRun(dir)));
+}
+{
 	const dir = std('todo-fine', { [Name1]: issueText({}, '\n## やること\n- [未] a\n- [着手] b\n- [済] c\n') });
 	check('todo/ の課題に、未・着手・済のやることが混ざっていてもよい', checkRun(dir).code === 0);
 }

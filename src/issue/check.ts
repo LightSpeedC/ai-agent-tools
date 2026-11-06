@@ -35,7 +35,8 @@ export const SlugMax = 30;
 export const ProjectIdPattern = /^[0-9a-f]{32}$/;
 /** 番号 (課題 ・ 計画 ・ 調査)。ほかのプロジェクトの番号は「プロジェクト名:番号」 */
 export const RefPattern = /^(?:[A-Za-z0-9_.-]+:)?([a-z]\d{6}-[0-9a-kLm-z]{2})$/;
-export const TodoLine = /^\s*- \[([^\]]*)\]/;
+/** やることの行。直後に ( が続くものは、リンクの列挙 (- [文](先)) なので含めない */
+export const TodoLine = /^\s*- \[([^\]]*)\](?!\()/;
 const Required = ['schema', 'id', 'title', 'group', 'created'] as const;
 /** refs の参照先を探す、notes/ の下のフォルダ（ファイル名の先頭が番号） */
 const RefFolders = ['notes/01_research', 'notes/02_ideas', 'notes/10_plan'];
