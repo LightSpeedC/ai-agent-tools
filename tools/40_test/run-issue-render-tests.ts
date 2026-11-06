@@ -284,6 +284,21 @@ console.log('--- 画像 (128-A ・ 129-A)');
 	check('160-B: 明るい表示では暗い版を隠す (CSS)', /\.only-dark\s*\{\s*display:\s*none/.test(h), h);
 	check('160-B: 暗い表示では明るい版を隠し、暗い版を出す (CSS)', /@media \(prefers-color-scheme: dark\)\s*\{[^@]*\.only-light\s*\{\s*display:\s*none[^@]*\.only-dark\s*\{\s*display:\s*inline/.test(h), h);
 }
+// 162-B ・ 164-A: 暗い表示の環境でだけ、暗い配色にする (明るい表示は淡い背景のまま)
+{
+	const dir = std('dark', { [Todo + A]: issueText({}, '\n本文\n') });
+	render(dir);
+	const h = html(dir);
+	const dark = h.match(/@media \(prefers-color-scheme: dark\)\s*\{[\s\S]*?\n\t\}/g) ?? [];
+	const all = dark.join('\n');
+	check('162-B: 明るい表示の body は白地のまま', /body\{\s*margin:0; background:#fff;/.test(h), h);
+	check('164-A: 暗い表示では body の地を #12161f にする', /body[^{]*\{[^}]*background:#12161f/.test(all), all);
+	check('164-A: 暗い表示の本文の色は #e3e8f0', all.includes('--ink:#e3e8f0'), all);
+	check('164-A: 暗い表示のリンクは #8ab4ff', all.includes('--link:#8ab4ff'), all);
+	check('164-A: 暗い表示の code の地は #1c2230、文字は #cfe0ff', /background:#1c2230;[^}]*color:#cfe0ff/.test(all), all);
+	check('164-A: 暗い表示の表のしまは #171c27', all.includes('#171c27'), all);
+	check('164-A: 章の地 (--soft) は、暗い表示で明度 14% にする', /\.ch01\{\s*--soft:hsl\(280,28%,14%\);/.test(all), all);
+}
 {
 	const dir = std('img-plain', { [Todo + A]: issueText({}, '\n![x](../images/p.png)\n') });
 	putPng(dir, 'p.png');

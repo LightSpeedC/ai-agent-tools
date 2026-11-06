@@ -131,6 +131,13 @@ function chapterCss(n: number): string {
 		const hue = n === 1 ? 280 : Math.round((280 - (i * 280) / (n - 1)) * 10) / 10;
 		lines.push(`.ch${pad2(i + 1)}{ --accent:hsl(${hue},78%,25%); --accent2:hsl(${hue},58%,55%); --soft:hsl(${hue},28%,95%); }`);
 	}
+	// 暗い表示では、章の地 (--soft) だけを暗くする (164-A)
+	const dark: string[] = [];
+	for (let i = 0; i < n; i++) {
+		const hue = n === 1 ? 280 : Math.round((280 - (i * 280) / (n - 1)) * 10) / 10;
+		dark.push(`\t.ch${pad2(i + 1)}{ --soft:hsl(${hue},28%,14%); }`);
+	}
+	if (n > 0) lines.push(`@media (prefers-color-scheme: dark) {\n\t${dark.join('\n\t')}\n\t}`);
 	return lines.join('\n\t');
 }
 
@@ -285,6 +292,17 @@ const Css = `
 	@media (prefers-color-scheme: dark) {
 		.only-light{ display:none; }
 		.only-dark{ display:inline; }
+	}
+	/* 暗い表示の環境でだけ、暗い配色にする (162-B ・ 164-A)。タイトルバー ・ h1 ・ バッジ ・ 表の見出しは濃い色のまま */
+	@media (prefers-color-scheme: dark) {
+		:root{ --ink:#e3e8f0; --ink-soft:#a9b4c4; --line:#2e3746; --code-bg:#1c2230; --link:#8ab4ff; --soft:hsl(220,28%,14%); }
+		body, footer, details{ background:#12161f; color:#e3e8f0; }
+		section, .callout{ background:#12161f; background:linear-gradient(180deg,var(--soft,#1a2130),#12161f); color:#e3e8f0; }
+		h2{ background:#12161f; background:linear-gradient(90deg,var(--soft,#1a2130),#12161f); color:var(--accent2,#2f5fbf); }
+		summary, h3, h4{ color:#e3e8f0; }
+		code, pre, .no{ background:#1c2230; color:#cfe0ff; }
+		blockquote, tr:nth-child(even) td{ background:#171c27; color:#e3e8f0; }
+		.wrap a, footer a{ color:#8ab4ff; }
 	}`;
 
 const HomeIcon = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg>';
