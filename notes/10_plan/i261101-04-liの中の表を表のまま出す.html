@@ -153,6 +153,10 @@
 
 <p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は ai-agent-tools の html2md (<code>src/html2md/table.ts</code> の <code>convertList</code>)。入力は、<code>&lt;li&gt;</code> の中に <code>&lt;table&gt;</code> を持つ HTML。出力は、その li の下に字下げした Markdown の表を持つ <code>.md</code>。</p>
 
+<div class="callout callout-important">
+	<p><strong>実装した (2026-11-07、計画の承認のあと)。</strong>計画どおり。試験 <code>table-in-li</code> を足し、<code>strong-cell-in-li</code> の期待値を表の形に直した。どちらも先に❌Red を見てから、✅Green にした。期待値の <code>.md</code> を GitHub の Markdown API で描かせ、表が 6 つ、箇条が崩れずに描かれることを確かめた。このプロジェクトで html2md を流したところ、変わった <code>.md</code> は 0 件 (li の中に表を持つ資料が無い)。<strong>計画に足した点が 1 つ。</strong>一番外の箇条の末尾にできる空の行は落とす (箇条の後の空の行は、呼び出し側が置くため)。</p>
+</div>
+
 <div class="toc">
 	<h2>目次</h2>
 	<ol>

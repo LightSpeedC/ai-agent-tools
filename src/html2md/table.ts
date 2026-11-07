@@ -141,20 +141,55 @@ export class ListTableConverter {
 				liInner = liInner.substring(0, nm.index) + liInner.substring(nm.index + nBlock.length);
 			}
 
-			let text = this.inline.convert(liInner, anchors, false);
-			text = text.replace(/\s*\r?\n\s*/g, ' ');
-			if (text.length === 0 && nested.length === 0) { continue; }
+			// 表を取り出し、前 ・ 間 ・ 後の文に分ける (i261101-04)。md-skip の表は捨てる
+			const texts: string[] = [];
+			const tables: string[] = [];
+			for (;;) {
+				const tm = /<table\b/.exec(liInner);
+				if (tm == null) { break; }
+				const tBlock = getBlock(liInner, tm.index, 'table').outer;
+				const before = liInner.substring(0, tm.index);
+				liInner = liInner.substring(tm.index + tBlock.length);
+				if (hasClass(getClassList(getOpenTag(tBlock)), 'md-skip')) {
+					liInner = before + liInner;
+					continue;
+				}
+				const md = this.convertTable(tBlock, anchors);
+				if (md.length === 0) {
+					liInner = before + liInner;
+					continue;
+				}
+				texts.push(before);
+				tables.push(md);
+			}
+			texts.push(liInner);
+			const lineOf = (html: string): string =>
+				this.inline.convert(html, anchors, false).replace(/\s*\r?\n\s*/g, ' ');
+
+			const text = lineOf(texts[0]);
+			if (text.length === 0 && nested.length === 0 && tables.length === 0) { continue; }
 			n++;
-			if (tag === 'ol') {
-				outLines.push(indent + n + '. ' + text);
-			} else {
-				outLines.push(indent + '- ' + text);
+			const marker = tag === 'ol' ? n + '. ' : '- ';
+			outLines.push(indent + marker + text);
+
+			// 表は、記号の幅だけ字下げし、前後に空の行を置く
+			const inner2 = indent + ' '.repeat(marker.length);
+			for (let t = 0; t < tables.length; t++) {
+				outLines.push('');
+				for (const line of tables[t].split('\n')) { outLines.push(inner2 + line); }
+				outLines.push('');
+				const after = lineOf(texts[t + 1]);
+				if (after.length > 0) { outLines.push(inner2 + after); }
 			}
 
 			for (const [nTag, nBlock] of nested) {
 				const sub = this.convertList(nBlock, nTag, anchors, depth + 1);
 				if (sub.length > 0) { outLines.push(sub); }
 			}
+		}
+		// 一番外の箇条は、末尾の空の行を落とす (箇条の後の空の行は呼び出し側が置く)
+		if (depth === 0) {
+			while (outLines.length > 0 && outLines[outLines.length - 1] === '') { outLines.pop(); }
 		}
 		return outLines.join('\n');
 	}

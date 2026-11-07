@@ -165,7 +165,7 @@
 	<div class="inner">
 		<h1>html2md タグ対応仕様</h1>
 		<p class="lead">html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-09-11</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-11-07</p>
 	</div>
 </div>
 
@@ -238,7 +238,7 @@
 			<tr><td class="nowrap"><code>div.minibar</code></td><td>—</td><td><code>## テキスト</code></td></tr>
 			<tr><td class="nowrap"><code>div.date</code> <code>div.meta</code></td><td>—</td><td>引用行</td></tr>
 			<tr><td class="nowrap"><code>div</code>（上記以外）</td><td>—</td><td>中身を処理する。<code>div</code> 自体は行にならない</td></tr>
-			<tr><td class="nowrap"><code>ul</code> <code>ol</code></td><td>—</td><td>箇条書き／番号付きリスト。入れ子は 4 空白ずつ字下げ</td></tr>
+			<tr><td class="nowrap"><code>ul</code> <code>ol</code></td><td>—</td><td>箇条書き／番号付きリスト。入れ子は 4 空白ずつ字下げ。項目の中の <code>table</code> は、記号の幅だけ字下げした表にし、前後に空の行を置く (i261101-04)。表の前後の文は、同じ字下げで続ける</td></tr>
 			<tr><td class="nowrap"><code>ol.toc</code></td><td>—</td><td>目次として扱い、アンカーを張り替える</td></tr>
 			<tr><td class="nowrap"><code>table</code></td><td>—</td><td>Markdown テーブル。<code>rowspan</code> / <code>colspan</code> を展開する</td></tr>
 			<tr><td class="nowrap"><code>pre</code></td><td>—</td><td>コードフェンス。言語は <code>code.language-xxx</code> から取る</td></tr>
