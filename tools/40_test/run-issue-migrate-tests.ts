@@ -133,6 +133,19 @@ console.log('=== issue migrate (旧 HTML の読み取り) ===');
 		JSON.stringify(r));
 }
 
+{
+	// ai-agent-rules の旧 HTML は、番号を code に書いている (#1830)。class に別の語が並んでいても読む
+	const html = '<section class="ch01"><h1>甲</h1>'
+		+ '<details><summary><span class="badge b-none">未</span><code class="no">i261108-01</code>code の番号</summary><div class="issue-body"></div></details>'
+		+ '<details><summary><span class="badge b-ok">済</span><span class="x no">i261108-02</span>class に複数の語</summary><div class="issue-body"></div></details>'
+		+ '</section>';
+	const r = parse(html);
+	check('番号は code.no でも、class に複数の語がある span でも読む',
+		r.problems.length === 0 && r.issues.length === 2 && r.issues[0]?.id === 'i261108-01' && r.issues[0]?.title === 'code の番号'
+		&& r.issues[1]?.id === 'i261108-02' && r.issues[1]?.title === 'class に複数の語',
+		JSON.stringify(r));
+}
+
 // ---- issue migrate (既定は --dry-run) ----
 
 const ProjectIdText = 'schema: 1\nproject_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\n';

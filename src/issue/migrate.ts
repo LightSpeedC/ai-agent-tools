@@ -7,7 +7,7 @@
 
 	旧 HTML の形:
 		section > h1 (グループ)
-		  details > summary (状態のバッジ ・ span.no の番号 ・ 件名) + div.issue-body (本文)
+		  details > summary (状態のバッジ ・ span.no か code.no の番号 ・ 件名) + div.issue-body (本文)
 	本文の中に details (入れ子) があってもよい。課題として数えるのは、章の直下の details だけ。
 */
 import fs from 'node:fs';
@@ -24,7 +24,8 @@ export type LegacyProblem = { where: string; message: string };
 
 const IdPattern = /^i\d{6}-[0-9a-zA-Z]{2}$/;
 const BadgePattern = /<span\b[^>]*class="badge[^"]*"[^>]*>([\s\S]*?)<\/span>/;
-const NoPattern = /<span\b[^>]*class="no"[^>]*>([\s\S]*?)<\/span>/;
+/** 番号: span か code で、class に no の語を持つもの (ai-agent-rules は code に書く。#1830)。中身は 2 番目の組 */
+const NoPattern = /<(span|code)\b[^>]*class="(?:[^"]*\s)?no(?:\s[^"]*)?"[^>]*>([\s\S]*?)<\/\1>/;
 
 /** 旧 HTML 全体から、課題を読む。読めなかったものは problems に出す */
 export function parseLegacyIssues(html: string): { issues: LegacyIssue[]; problems: LegacyProblem[] } {
@@ -64,9 +65,9 @@ function readDetails(inner: string, group: string, issues: LegacyIssue[], proble
 	const title = getPlainText(titleHtml).replace(/\s+/g, ' ').trim();
 	const where = group + ' / ' + title;
 
-	const id = no === null ? '' : getPlainText(no[1]).trim();
+	const id = no === null ? '' : getPlainText(no[2]).trim();
 	if (!IdPattern.test(id)) {
-		problems.push({ where, message: '番号 (span.no) が無い、または i + yymmdd-nn の形でない' });
+		problems.push({ where, message: '番号 (span.no か code.no) が無い、または i + yymmdd-nn の形でない' });
 		return;
 	}
 	const state = badge === null ? '' : getPlainText(badge[1]).trim();

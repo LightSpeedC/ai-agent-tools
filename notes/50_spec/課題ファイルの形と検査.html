@@ -457,7 +457,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<ul>
 		<li><strong>旧 <code>issues.html</code> の課題を読み、新しい形へ移す計画を出す</strong> (計画 p261105-01 の ch02 ・ p261106-01 の 143-A: 済みも移す)。<strong>いまは読み取りだけで、何も書かない</strong>。<code>--dry-run</code> を付けても付けなくても同じ (書き出しを足すときは、別の引数にする)</li>
 		<li><strong>読む旧 HTML</strong>: <code>notes/40_issues/issues-legacy.html</code> (無ければ <code>issues.html</code>) と <code>issues-archive.html</code>。どちらも無ければ終了コード 1</li>
-		<li><strong>読む形</strong>: <code>section</code> の <code>h1</code> がグループ、章の直下の <code>details</code> が課題 1 件。<code>summary</code> の状態のバッジ (未 ・ 着手 ・ 済) ・ <code>span.no</code> の番号 ・ 残りが件名 (タグを除いた 1 行)、<code>div.issue-body</code> が本文。本文の中の <code>details</code> (入れ子) は課題として数えない</li>
+		<li><strong>読む形</strong>: <code>section</code> の <code>h1</code> がグループ、章の直下の <code>details</code> が課題 1 件。<code>summary</code> の状態のバッジ (未 ・ 着手 ・ 済) ・ <code>span.no</code> か <code>code.no</code> の番号 (class に別の語が並んでいてもよい) ・ 残りが件名 (タグを除いた 1 行)、<code>div.issue-body</code> が本文。本文の中の <code>details</code> (入れ子) は課題として数えない</li>
 		<li><strong>移し先</strong>: <code>issues-legacy.html</code> の済は <code>done/</code>、着手は <code>doing/</code>、未は <code>todo/</code>。<code>issues-archive.html</code> は <code>archived/</code></li>
 		<li><strong>読めない形は、推測で補わず「読めなかった」に出す</strong>: 番号が無い (新しい番号を勝手に振らない) ・ 状態が 未 ・ 着手 ・ 済 のどれでもない ・ 同じ番号が重複している (2 件目を読まない) ・ <code>issues-archive.html</code> の状態が済でない。<strong>1 件でもあれば終了コード 1</strong></li>
 		<li><strong>すでに <code>items/</code> にある番号は、移さない件数に数える</strong> (作り直さない)</li>
