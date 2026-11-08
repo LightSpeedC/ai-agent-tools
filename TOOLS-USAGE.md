@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-11-01
+> 📅 作成: 2026-09-04 / 更新: 2026-11-08
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -22,6 +22,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 12. [音声の形式を変える（convert-audio）](#12-音声の形式を変えるconvert-audio)
 13. [会話ログから公開用のページを作る（history2html）](#13-会話ログから公開用のページを作るhistory2html)
 14. [リポジトリを壊さずに GitHub と同期する（safe-push）](#14-リポジトリを壊さずに-github-と同期するsafe-push)
+15. [課題を管理する（issue）](#15-課題を管理するissue)
 
 ## 1. 使えるコマンド
 
@@ -42,6 +43,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `convert-audio` | 音声の形式を ffmpeg で**変える**（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」） |
 | `history2html` | 会話ログ（`etc/history/jsonl`）から、**伏せ字を掛けた公開用のページ**を作る（「会話ログから公開用のページを作る（history2html）」） |
 | `safe-push` | 複数のセッション ・ PC ・ クラウドから書き換えられるリポジトリを、**commit → pull --rebase → push の一続きで、壊さずに** GitHub と同期する（「リポジトリを壊さずに GitHub と同期する（safe-push）」） |
+| `issue` | 課題を 1 件 1 ファイルで持ち、**立てる・状態を変える・検査する・旧方式から移す**（「課題を管理する（issue）」） |
 | `cloud-session-start` | クラウドのセッションで、**共通ルールと共有ツールを隣に置き、PATH と git の author を整える**（「クラウドのセッションを準備する（cloud-session-start）」） |
 
 `check-markdown` は<strong>推測せず実物で判定する。</strong>Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。
@@ -756,5 +758,81 @@ safe-push "<リポジトリ>" common-rules.md rules  # 名指しのパスだけ�
 
 > [!IMPORTANT]
 > <strong>終了コードに 2 を使わない。</strong>Stop フックは終了コード 2 を「終わらずに続ける」と読む。ほかのツールは引数の誤りを 2 にしているが、このツールはフックから呼ばれるので変えてある。
+
+## 15. 課題を管理する（issue）
+
+<strong>課題を 1 件 1 ファイルの Markdown で持ち、`issue` コマンドで読み書きする。</strong>これまでの `notes/40_issues/issues.html` (1 ファイルに全件) に代わる方式である。`issue` は、作業フォルダから親をたどって `notes/40_issues/items/` を探す。ほかのプロジェクトは読み書きしない。
+
+> [!IMPORTANT]
+> <strong>新しい方式への移行は、利用者に依頼されたときに始める。</strong>自分の判断では移さない。移したあとは、旧方式の `issues.html` へ戻さない。
+
+### 置き場
+
+```text
+notes/40_issues/
+  items/
+    project-id.txt   プロジェクトの識別子 (issue init が作る。commit する)
+    todo/            未
+    doing/           着手
+    done/            済
+    archived/        グループごと片付いた済
+  _issues.html       一覧 (issue render ・ view が作る。commit しない)
+  issues-legacy.html 旧方式の issues.html (移行したプロジェクトだけ)
+```
+
+<strong>状態を変えると、ファイルが隣のフォルダへ動く。</strong>手でファイルを動かさず、`issue set` を使う。
+
+### 1 件の形
+
+```markdown
+---
+schema: 1
+id: i261101-04
+title: 題
+group: グループ (章)
+created: 2026-11-01
+---
+
+本文。
+
+- [済] やること 1
+- [未] やること 2
+```
+
+ファイル名は `<番号>-<件名>.md`。番号の規則は、共通ルール「課題の管理」のとおり。**ほかのプロジェクトからの報告による課題**は、`issue new --from <報告元>` で立てる。報告元の確認が取れたら `issue confirm` を打ってから済にする。
+
+### 主なコマンド
+
+| コマンド | 何をするか |
+|---|---|
+| `issue new --title <題> --group <グループ>` | 課題を立てる。番号は自動で振る |
+| `issue list` | 未・着手の一覧 (`--state` ・ `--all` で変える) |
+| `issue show <id>` | 1 件を読む |
+| `issue search <語>` | 本文から探す |
+| `issue todo <id> --add <文>` | やることを足す。`--done <n>` ・ `--doing <n>` ・ `--undone <n>` で n 番目の状態を変える |
+| `issue set <id> --state 済` | 課題の状態を変える (フォルダを動かす) |
+| `issue confirm <id>` | 報告元の確認が取れたことを記録する |
+| `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす |
+| `issue check` | 課題ファイルを検査する。commit の前に流す |
+| `issue render` ・ `issue view` | 一覧の HTML を作る (`view` は作って開く) |
+
+引数の全体は `issue` を引数なしで呼ぶと出る。
+
+### 旧方式から移す
+
+<strong>利用者の依頼を受けた、そのプロジェクトのセッションが行う。</strong>移すのは未・着手だけで、済は旧ファイルに残す。
+
+1. **前提を確かめる**: `issue --help` が呼べる。作業ツリーがきれいで、リモートと同じ (`git pull` 済み)。**別の PC に push していない課題の編集が無い**ことを利用者に確かめる
+2. **数える**: `issue migrate --dry-run`。旧 `issues.html` から、未・着手の数と、読めなかったものを出す。書き込まない
+3. **移す**: `issue migrate --apply`。未・着手を `todo/` ・ `doing/` へ書く (番号と作成日は旧のまま)。**読めなかったものは書かない**ので、旧の記録を見て `issue new` ・ `issue todo` で書き写す。旧の記録が食い違う (済なのに未のやることがある等) ものがあると、何も書かずに止まる。どの状態にするかを利用者に聞き、`--state-override <番号>=<状態>,…` を付けて流し直す
+4. **数が合うか確かめる**: 旧の未・着手の数 = `todo/` と `doing/` の数。`issue check` が問題なし
+5. **旧ファイルを残す**: `issues.html` を、書き換えずに `git mv` で `issues-legacy.html` へ改名する
+6. **リンクを直す**: `text find --path . --recurse` で `issues.html` を探し、リンク先の名前だけを直す (README ・ ローカルルール ・ `check-public-allow.txt` 等)。README からは、`notes/40_issues/items/` と旧課題へ案内する
+7. **検査して、利用者の指示で commit と push**: `html2md` ・ `check-markdown` ・ そのプロジェクトのテスト。**移行は 1 commit にする**
+
+> [!WARNING]
+> <strong>複数の PC で使うプロジェクトは、移す PC を 1 台に決める。</strong>移す前に、全 PC で課題の編集を commit して push しておく。ほかの PC は、課題を触る前に、そのプロジェクトと ai-agent-tools ・ ai-agent-rules を pull し、`issue check` を流す。PC ごとに移すと、同じ課題が 2 度立つ。
+
+未・着手が 0 件のプロジェクトは急がない。次に課題を立てるときに、利用者に移行を依頼してもらえばよい。
 
 [^^](README.md)
