@@ -69,6 +69,8 @@ function inlineText(raw: string, o: MdOptions): string {
 	};
 	let t = raw.replace(/[\u0000\u0001]/g, '');
 	t = t.replace(/<br\s*\/?>/gi, () => hold('<br>'));
+	// html2md は日本語の中の太字を <strong> のまま書く。属性の無いものだけを太字として通す
+	t = t.replace(/<(\/?)strong>/gi, (_m, close: string) => hold(`<${close}strong>`));
 	t = t.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, alt: string, href: string) => hold(imageHtml(alt, href, o)));
 	t = t.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, text: string, href: string) => hold(linkHtml(text, href, o)));
 	t = escapeHtml(t).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');

@@ -248,6 +248,12 @@ console.log('--- 本文 (Markdown の変換)');
 	check('<br> だけは、改行として通す', h.includes('a<br>b'));
 }
 {
+	// html2md は日本語の中の太字を <strong> のまま書く。属性の無い <strong> と </strong> は太字として通す
+	const h = renderBody('md-strong', '前<strong>太字</strong>後 と <strong onclick="x">属性付き</strong>');
+	check('属性の無い <strong> は太字として通す (文字のまま出さない)', h.includes('前<strong>太字</strong>後') && !h.includes('&lt;strong&gt;太字'), h);
+	check('属性付きの <strong> は通さずエスケープする', !h.includes('onclick="x"'), h);
+}
+{
 	const h = renderBody('md-js-link', '[x](javascript:alert(1))');
 	check('javascript: のリンクは、リンクにしない', !h.includes('href="javascript:'), h);
 }

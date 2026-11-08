@@ -39,7 +39,7 @@ import { renderHtml, writeIfChanged } from './render.ts';
 import {
 	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
-import { applyMigration, applyOverrides, planMigration } from './migrate.ts';
+import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWritten, verifyWritten } from './migrate.ts';
 import { listDecisions, newDecision, showDecision } from './decide.ts';
 import { DecisionIdPattern, ParentPattern } from './check.ts';
 
@@ -494,9 +494,26 @@ function runList(rest: string[]): number {
 // ---- migrate ----
 
 function runMigrate(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root', '--state-override'], flags: ['--json', '--dry-run', '--apply'], positionals: 0 });
-	if (o.flags.has('--apply') && o.flags.has('--dry-run')) throw new UsageError('--apply と --dry-run は一緒に使えない');
+	const o = parseOptions(rest, { valued: ['--root', '--state-override'], flags: ['--json', '--dry-run', '--apply', '--undo'], positionals: 0 });
+	if ([o.flags.has('--apply'), o.flags.has('--dry-run'), o.flags.has('--undo')].filter((x) => x).length > 1) throw new UsageError('--apply ・ --dry-run ・ --undo は一緒に使えない');
 	const root = existingRoot(o);
+	const listFile = path.join(root, ...WrittenListRel.split('/'));
+
+	// --undo: --apply が書いたファイル (一覧にあるもの) だけを消す (183-A)
+	if (o.flags.has('--undo')) {
+		if (!fs.existsSync(listFile)) throw new Failure(`${WrittenListRel} が無い (--apply で書いた記録が無いので、戻せるものが無い)`);
+		const rels = fs.readFileSync(listFile, 'utf8').split('\n').map((s) => s.trim()).filter((s) => s !== '');
+		const removed = removeWritten(root, rels);
+		fs.rmSync(listFile);
+		autoRender(root, true);
+		if (o.flags.has('--json')) console.log(JSON.stringify({ listed: rels.length, removed }));
+		else {
+			console.log(`[undo] --apply で書いた ${rels.length} 件のうち ${removed} 件を消した (一覧に無いファイルには触らない)`);
+			console.log('  旧 HTML を issues-legacy.html へ改名していたら、git mv で issues.html へ戻す');
+		}
+		return ExitOk;
+	}
+
 	const plan = planMigration(root);
 	const override = o.values.get('--state-override');
 	if (override !== undefined) applyOverrides(plan, override);
@@ -508,20 +525,47 @@ function runMigrate(rest: string[]): number {
 			console.log('  どの状態で移すかを決めて、--state-override で渡す (例: --state-override ' + plan.conflicts.map((c) => c.id + '=着手').join(',') + ')');
 		}
 	};
+	const printSize = (): void => {
+		const s = plan.size;
+		console.log(`  中身の比較: 本文の文字数 ${s.sourceChars} → ${s.convertedChars} ・ やること ${s.sourceTodos} → ${s.convertedTodos} ・ 食い違い ${plan.mismatches.length} 件`);
+		for (const m of plan.mismatches) console.log(`    - ${m.id} ${m.where}: ${m.message}`);
+	};
 	if (o.flags.has('--apply')) {
-		// 確かめが要るものが残っていれば、1 件も書かない (169-A)
-		if (plan.conflicts.length > 0) {
+		// 確かめが要るもの ・ 中身の食い違いが残っていれば、1 件も書かない (169-A ・ 183-A)
+		if (plan.conflicts.length > 0 || plan.mismatches.length > 0) {
 			if (o.flags.has('--json')) {
-				console.log(JSON.stringify({ read: plan.read, written: [], exists: plan.exists, unreadable: plan.unreadable, conflicts: plan.conflicts }));
+				console.log(JSON.stringify({ read: plan.read, written: [], exists: plan.exists, unreadable: plan.unreadable, conflicts: plan.conflicts, mismatches: plan.mismatches, size: plan.size }));
 			} else {
 				console.log(`[apply] 何も書かずに止めた。旧 HTML から課題 ${plan.read} 件を読んだ`);
 				printConflicts();
+				printSize();
 			}
 			return ExitFailed;
 		}
 		const r = applyMigration(root, plan);
+		// 書いたものの一覧を残す (--undo が読む)。既に一覧があれば足す
+		const before = fs.existsSync(listFile) ? fs.readFileSync(listFile, 'utf8') : '';
+		fs.writeFileSync(listFile, before + r.written.map((w) => w.rel + '\n').join(''));
+		// 書いたあとに、読み直して比べ、issue check を流す。だめなら書いたものを全部消して戻す (183-A)
+		const after = verifyWritten(root, plan, r.written);
+		const checked = checkProject(root);
+		const errors = checked.findings.filter((f) => f.level === 'error');
+		if (after.length > 0 || errors.length > 0) {
+			const removed = removeWritten(root, r.written.map((w) => w.rel));
+			if (before === '') fs.rmSync(listFile, { force: true });
+			else fs.writeFileSync(listFile, before);
+			if (o.flags.has('--json')) {
+				console.log(JSON.stringify({ read: plan.read, written: [], rolledBack: removed, mismatches: after, checkErrors: errors }));
+			} else {
+				console.log(`[apply] 書いたあとの確かめで食い違いが出たので、書いた ${removed} 件を消して元に戻した`);
+				for (const a of after) console.log(`    - ${a.id}: ${a.message}`);
+				for (const e of errors) console.log('    - ' + label(e));
+			}
+			autoRender(root, true);
+			return ExitFailed;
+		}
 		if (o.flags.has('--json')) {
-			console.log(JSON.stringify({ read: plan.read, written: r.written, exists: plan.exists, unreadable: plan.unreadable }));
+			console.log(JSON.stringify({ read: plan.read, written: r.written, exists: plan.exists, unreadable: plan.unreadable, size: plan.size }));
 		} else {
 			console.log(`[apply] 旧 HTML から課題 ${plan.read} 件を読んだ`);
 			console.log(`  書いた: ${r.written.length} 件 (済 ${inFolder('done')} ・ 着手 ${inFolder('doing')} ・ 未 ${inFolder('todo')} ・ 保管 ${inFolder('archived')})`);
@@ -536,21 +580,26 @@ function runMigrate(rest: string[]): number {
 		console.log(JSON.stringify({
 			read: plan.read,
 			sources: plan.sources,
-			move: plan.move.map((m) => ({ id: m.id, state: m.state, folder: m.folder, group: m.group, title: m.title, source: m.source })),
+			move: plan.move.map((m) => ({ id: m.id, legacyId: m.legacyId, state: m.state, folder: m.folder, group: m.group, title: m.title, source: m.source })),
 			exists: plan.exists,
 			unreadable: plan.unreadable,
 			conflicts: plan.conflicts,
+			mismatches: plan.mismatches,
+			size: plan.size,
 		}));
 	} else {
 		console.log(`[dry-run] 旧 HTML から課題 ${plan.read} 件を読んだ`);
 		console.log('  ' + plan.sources.map((s) => `${s.file} ${s.count} 件`).join(' ・ '));
 		console.log(`  移す: ${plan.move.length} 件 (済 ${inFolder('done')} ・ 着手 ${inFolder('doing')} ・ 未 ${inFolder('todo')} ・ 保管 ${inFolder('archived')})`);
+		const renamed = plan.move.filter((m) => m.legacyId !== undefined);
+		if (renamed.length > 0) console.log(`  番号を直して書く (連番の l → L): ${renamed.map((m) => `${m.legacyId} → ${m.id}`).join(' ・ ')}`);
 		console.log(`  すでに items/ にある (移さない): ${plan.exists.length} 件`);
 		console.log(`  読めなかった: ${plan.unreadable.length} 件`);
 		for (const p of plan.unreadable) console.log(`    - ${p.where}: ${p.message}`);
 		printConflicts();
+		printSize();
 	}
-	return plan.unreadable.length > 0 || plan.conflicts.length > 0 ? ExitFailed : ExitOk;
+	return plan.unreadable.length > 0 || plan.conflicts.length > 0 || plan.mismatches.length > 0 ? ExitFailed : ExitOk;
 }
 
 // ---- decide (決定の記録。計画 p261108-01) ----
