@@ -1084,12 +1084,12 @@ issue decide show p261108-01-d1</code></pre>
 	<p><code>--option</code> を書いた順に A ・ B ・ C … と振る。旧番号 (<code>171-A</code> 等) を残すときは <code>--legacy :&lt;プロジェクト名&gt;:171-A</code>、前の決定を覆すときは <code>--replaces &lt;id&gt;</code>。<code>issue check</code> が決定のファイルも検査する。<strong>チャットの選択肢の番号は、まだ通し番号のまま</strong> (共通ルール「複数の解決案がある場合の対応」)。</p>
 
 	<h2>旧方式から移す</h2>
-	<p><strong>利用者の依頼を受けた、そのプロジェクトのセッションが行う。</strong>移すのは未・着手だけで、済は旧ファイルに残す。</p>
+	<p><strong>利用者の依頼を受けた、そのプロジェクトのセッションが行う。</strong>済と保管 (<code>issues-archive.html</code>) も含めて、全件を移す。済の課題も、過去の課題を探す材料になるため。</p>
 	<ol>
 		<li><strong>前提を確かめる</strong>: <code>issue --help</code> が呼べる。作業ツリーがきれいで、リモートと同じ (<code>git pull</code> 済み)。<strong>別の PC に push していない課題の編集が無い</strong>ことを利用者に確かめる</li>
-		<li><strong>数える</strong>: <code>issue migrate --dry-run</code>。旧 <code>issues.html</code> から、未・着手の数と、読めなかったものを出す。書き込まない</li>
-		<li><strong>移す</strong>: <code>issue migrate --apply</code>。未・着手を <code>todo/</code> ・ <code>doing/</code> へ書く (番号と作成日は旧のまま)。<strong>読めなかったものは書かない</strong>ので、旧の記録を見て <code>issue new</code> ・ <code>issue todo</code> で書き写す。旧の記録が食い違う (済なのに未のやることがある等) ものがあると、何も書かずに止まる。どの状態にするかを利用者に聞き、<code>--state-override &lt;番号&gt;=&lt;状態&gt;,…</code> を付けて流し直す</li>
-		<li><strong>数が合うか確かめる</strong>: 旧の未・着手の数 = <code>todo/</code> と <code>doing/</code> の数。<code>issue check</code> が問題なし</li>
+		<li><strong>数える</strong>: <code>issue migrate --dry-run</code>。旧 <code>issues.html</code> と <code>issues-archive.html</code> から、状態ごとの数 (未 ・ 着手 ・ 済 ・ 保管) と、読めなかったものを出す。書き込まない</li>
+		<li><strong>移す</strong>: <code>issue migrate --apply</code>。未は <code>todo/</code>、着手は <code>doing/</code>、済は <code>done/</code>、<code>issues-archive.html</code> の課題は <code>archived/</code> へ書く (番号と作成日は旧のまま)。<strong>読めなかったものは書かない</strong>ので、旧の記録を見て <code>issue new</code> ・ <code>issue todo</code> で書き写す。旧の記録が食い違う (済なのに未のやることがある等) ものがあると、何も書かずに止まる。どの状態にするかを利用者に聞き、<code>--state-override &lt;番号&gt;=&lt;状態&gt;,…</code> を付けて流し直す</li>
+		<li><strong>数が合うか確かめる</strong>: <code>--dry-run</code> で出た状態ごとの数 = <code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> ・ <code>archived/</code> のそれぞれの数。<code>issue check</code> が問題なし</li>
 		<li><strong>旧ファイルを残す</strong>: <code>issues.html</code> を、書き換えずに <code>git mv</code> で <code>issues-legacy.html</code> へ改名する</li>
 		<li><strong>リンクを直す</strong>: <code>text find --path . --recurse</code> で <code>issues.html</code> を探し、リンク先の名前だけを直す (README ・ ローカルルール ・ <code>check-public-allow.txt</code> 等)。README からは、<code>notes/40_issues/items/</code> と旧課題へ案内する</li>
 		<li><strong>検査して、利用者の指示で commit と push</strong>: <code>html2md</code> ・ <code>check-markdown</code> ・ そのプロジェクトのテスト。<strong>移行は 1 commit にする</strong></li>
