@@ -18,11 +18,16 @@
 	check-contrast はブラウザを起動するため、既定では回さない。
 
 	-List は、走らせる試験の名前を出して終わる (中身は実行しない)。
+
+	-IfChanged は、前の回に記録した commit (_run-all-times.json の commit) と
+	いまの HEAD が同じなら、流さずに終わる (終了コード 0)。夜のタスクスケジューラ用 (ローカルルール第 7 章)。
+	commit していない変更は、更新に数えない。
 #>
 [CmdletBinding()]
 param(
 	[switch]$Online,
-	[switch]$List
+	[switch]$List,
+	[switch]$IfChanged
 )
 
 # コンソールのコードページは変えない（窓に残り、隣のプロセスを化けさせる）。
@@ -203,6 +208,17 @@ try {
 }
 $ExpectedSec = if ($null -ne $Previous -and $Previous.totalSec -gt 0) { [double]$Previous.totalSec } else { 0 }
 
+# いまの commit。git が無い ・ 読めないときは空 (そのときは -IfChanged でも流す)
+$HeadCommit = ''
+try {
+	$HeadCommit = (& git -C (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) rev-parse HEAD 2>$null | Select-Object -First 1)
+	if ($null -eq $HeadCommit) { $HeadCommit = '' }
+} catch { $HeadCommit = '' }
+if ($IfChanged -and $HeadCommit -ne '' -and $null -ne $Previous -and $Previous.commit -eq $HeadCommit) {
+	Write-Host ('=== ' + (Get-Date).ToString('MM/dd HH:mm') + ' 前の回 (' + $Previous.finished + ') から更新が無いので、流しません ===') -ForegroundColor Cyan
+	exit 0
+}
+
 function Write-Progress-File([string]$current) {
 	$data = [ordered]@{
 		started = $Started.ToString('yyyy-MM-dd HH:mm:ss')
@@ -322,7 +338,7 @@ Write-Host '=== すべてのテスト ===' -ForegroundColor Cyan
 
 # 所要時間を記録する (次の回の見込みに使う)。書けなくても、試験の結果は変えない
 $totalSec = [math]::Round($RunWatch.Elapsed.TotalSeconds, 1)
-$record = [ordered]@{ finished = (Get-Date).ToString('yyyy-MM-dd HH:mm'); totalSec = $totalSec; online = [bool]$Online; suites = $Times }
+$record = [ordered]@{ finished = (Get-Date).ToString('yyyy-MM-dd HH:mm'); commit = $HeadCommit; ok = ($failed.Count -eq 0); failed = @($failed); totalSec = $totalSec; online = [bool]$Online; suites = $Times }
 try {
 	[System.IO.File]::WriteAllText($TimesFile, ($record | ConvertTo-Json), $Utf8NoBom)
 	Remove-Item -LiteralPath $ProgressFile -ErrorAction SilentlyContinue
