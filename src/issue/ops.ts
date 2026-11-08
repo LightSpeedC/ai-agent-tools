@@ -31,7 +31,7 @@ function itemsDirOf(root: string): string {
 }
 
 /** 番号の予約を置くフォルダ。先頭 _ なので Git 管理外 */
-function lockBaseOf(root: string): string {
+export function lockBaseOf(root: string): string {
 	return path.join(root, 'notes', '40_issues', '_lock');
 }
 
@@ -87,7 +87,7 @@ export function slugFromTitle(title: string): string {
 	return [...out].slice(0, SlugMax).join('').replace(/-$/, '');
 }
 
-function singleLine(value: string, name: string): string {
+export function singleLine(value: string, name: string): string {
 	const text = value.trim();
 	if (text === '') throw new UsageError(`${name} が空`);
 	if (text.includes('\n') || text.includes('\r')) throw new UsageError(`${name} に改行は書けない`);
@@ -115,7 +115,7 @@ function maxNumber(root: string, date6: string): number {
 }
 
 /** 番号の予約を取る (mkdir は、既にあれば失敗するので排他になる)。古い予約は消して取り直す */
-function acquire(lock: string): boolean {
+export function acquire(lock: string): boolean {
 	for (let attempt = 0; attempt < 2; attempt++) {
 		try {
 			fs.mkdirSync(lock);
@@ -136,7 +136,7 @@ function acquire(lock: string): boolean {
 	return false;
 }
 
-function release(lock: string): void {
+export function release(lock: string): void {
 	try {
 		fs.rmdirSync(lock);
 	} catch {

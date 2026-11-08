@@ -21,7 +21,29 @@ export type CheckResult = {
 	doing: number;
 	done: number;
 	archived: number;
+	/** decisions/ の決定の件数 (計画 p261108-01) */
+	decisions: number;
 };
+
+/** プロジェクトの root からの、決定の置き場 (計画 p261108-01) */
+export const DecisionsRel = 'notes/40_issues/decisions';
+/** 決定の id: 親の番号 (課題 i ・ 計画 p ・ 調査 r) + -d + 10 進数の連番 (1 から。桁はそろえない) */
+export const DecisionIdPattern = /^([ipr]\d{6}-[0-9a-kLm-z]{2})-d([1-9]\d*)$/;
+export const DecisionNamePattern = /^([ipr]\d{6}-[0-9a-kLm-z]{2}-d[1-9]\d*)-(.+)\.md$/;
+/** 決定の親になれる番号 */
+export const ParentPattern = /^[ipr]\d{6}-[0-9a-kLm-z]{2}$/;
+/** 決定のメタ情報のキーの順 */
+export const DecisionKeyOrder = ['schema', 'id', 'title', 'parent', 'decided', 'chosen', 'refs', 'replaces', 'legacy_ids'] as const;
+const DecisionRequired = ['schema', 'id', 'title', 'parent', 'decided', 'chosen'] as const;
+/**
+ * 決定の refs ・ replaces の 1 つ。別プロジェクトは :名前:番号 (153-A) か 名前:番号。
+ * 番号は、課題 ・ 計画 ・ 調査か、決定 (-dN 付き)
+ */
+export const DecisionRefPattern = /^(?::[A-Za-z0-9_.-]+:|[A-Za-z0-9_.-]+:)?([a-z]\d{6}-[0-9a-kLm-z]{2}(?:-d[1-9]\d*)?)$/;
+/** 旧番号: :プロジェクト名:旧番号 */
+export const LegacyIdPattern = /^:[A-Za-z0-9_.-]+:[^\s,:]+$/;
+/** 案の行: - X: 文 (X は英大文字 1 字) */
+export const OptionLine = /^- ([A-Z]): (.*)$/;
 
 /** プロジェクトの root からの、課題の置き場 */
 export const ItemsRel = 'notes/40_issues/items';
@@ -286,6 +308,124 @@ function refExists(root: string, ref: string, ids: Set<string>): boolean {
 	return false;
 }
 
+/** decisions/ の決定を検査し、件数を返す。issueIds は、課題の id (親 ・ refs の参照先を探す) */
+function checkDecisions(root: string, issueIds: Set<string>, add: Add): number {
+	const dir = path.join(root, ...DecisionsRel.split('/'));
+	let entries: fs.Dirent[];
+	try {
+		entries = fs.readdirSync(dir, { withFileTypes: true });
+	} catch {
+		return 0;
+	}
+	// 下のフォルダに置いた .md は、置き場の誤り
+	for (const sub of entries.filter((e) => e.isDirectory()).map((e) => e.name).sort()) {
+		for (const name of listMdNames(path.join(dir, sub))) {
+			add('error', 'place', `${DecisionsRel}/${sub}/${name}`, '決定は decisions/ の直下に置く');
+		}
+	}
+	const names = listMdNames(dir);
+	type Info = { rel: string; id: string | null; parent: string | null; refs: string[]; replaces: string[] };
+	const infos: Info[] = [];
+	for (const name of names) {
+		const rel = `${DecisionsRel}/${name}`;
+		const info: Info = { rel, id: null, parent: null, refs: [], replaces: [] };
+		infos.push(info);
+		const nameMatch = DecisionNamePattern.exec(name);
+		if (nameMatch === null) {
+			add('error', 'name', rel, 'ファイル名が <親の番号>-d<連番>-<件名>.md の形でない');
+			continue;
+		}
+		info.id = nameMatch[1];
+		const slug = nameMatch[2];
+		if (!SlugPattern.test(slug)) add('error', 'name', rel, '件名に使えない文字がある (英数字 ・ - ・ _ ・ . ・ 日本語だけ。空白は不可)');
+		else if ([...slug].length > SlugMax) add('warning', 'slug-long', rel, `件名が ${SlugMax} 文字を超えている`);
+
+		let text: string;
+		try {
+			text = fs.readFileSync(path.join(dir, name), 'utf8');
+		} catch {
+			add('error', 'meta', rel, 'ファイルを読めない');
+			continue;
+		}
+		text = normalize(text, rel, add);
+		const parts = splitIssue(text);
+		if (parts.broken) {
+			for (const p of parts.problems) add('error', 'meta', rel, p);
+			continue;
+		}
+		for (const p of parts.parsed.problems) add('error', 'meta', rel, p);
+		const pairs = parts.parsed.pairs;
+		const get = (k: string): string | undefined => pairs.find((p) => p.key === k)?.value;
+		for (const key of DecisionRequired) {
+			if (get(key) === undefined && !parts.parsed.brokenKeys.has(key)) add('error', 'key', rel, `必須の ${key} が無い`);
+		}
+		const schema = get('schema');
+		if (schema !== undefined && schema !== '1') add('error', 'value', rel, `schema が 1 でない: ${schema}`);
+		const id = get('id');
+		if (id !== undefined) {
+			if (!DecisionIdPattern.test(id)) add('error', 'value', rel, `id の形が違う: ${id}`);
+			else if (id !== info.id) add('error', 'value', rel, `id がファイル名の先頭と違う: ${id}`);
+		}
+		const parent = get('parent');
+		if (parent !== undefined) {
+			const ownParent = DecisionIdPattern.exec(info.id ?? '')?.[1];
+			if (!ParentPattern.test(parent)) add('error', 'value', rel, `parent の形が違う: ${parent}`);
+			else if (parent !== ownParent) add('error', 'value', rel, `parent が id の -d より前と違う: ${parent}`);
+			else info.parent = parent;
+		}
+		const decided = get('decided');
+		if (decided !== undefined && !isRealDate(decided)) add('error', 'value', rel, `decided が実在する yyyy-mm-dd でない: ${decided}`);
+		const chosen = get('chosen');
+		if (chosen !== undefined) {
+			if (!/^[A-Z]$/.test(chosen)) add('error', 'value', rel, `chosen が英大文字 1 字でない: ${chosen}`);
+			else if (!parts.body.split('\n').some((line) => OptionLine.exec(line)?.[1] === chosen)) {
+				add('error', 'chosen', rel, `chosen の案 (- ${chosen}: …) が本文に無い`);
+			}
+		}
+		const list = (key: string, pattern: RegExp): string[] => {
+			const value = get(key);
+			if (value === undefined) return [];
+			const items = value.split(',').map((s) => s.trim());
+			if (items.some((s) => !pattern.test(s))) {
+				add('error', 'value', rel, `${key} の形が違う: ${value}`);
+				return [];
+			}
+			return items.filter((s) => !s.includes(':'));
+		};
+		info.refs = list('refs', DecisionRefPattern);
+		info.replaces = list('replaces', DecisionRefPattern);
+		list('legacy_ids', LegacyIdPattern);
+
+		const order = DecisionKeyOrder as readonly string[];
+		const known = pairs.map((p) => p.key).filter((k) => order.includes(k));
+		const expected = [...known].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+		if (known.join(',') !== expected.join(',')) add('warning', 'key-order', rel, `キーの順が決まりと違う (決まり: ${DecisionKeyOrder.join(' ・ ')})`);
+		for (const p of pairs) {
+			if (!order.includes(p.key)) add('warning', 'unknown-key', rel, `知らないキー: ${p.key}`);
+		}
+	}
+
+	// 同じ id のファイルが複数ある (別の PC で、同じ親へ同時に足したとき)
+	const byId = new Map<string, string[]>();
+	for (const info of infos) {
+		if (info.id === null) continue;
+		byId.set(info.id, [...(byId.get(info.id) ?? []), info.rel]);
+	}
+	for (const [id, files] of byId) {
+		if (files.length > 1) add('error', 'duplicate', files[0], `同じ id ${id} のファイルが ${files.length} 個ある: ${files.map((f) => path.basename(f)).join(' ・ ')}`);
+	}
+
+	// 親 ・ refs ・ replaces の参照先 (同じプロジェクトの中だけ)
+	const decisionIds = new Set(byId.keys());
+	const found = (ref: string): boolean => (DecisionIdPattern.test(ref) ? decisionIds.has(ref) : refExists(root, ref, issueIds));
+	for (const info of infos) {
+		if (info.parent !== null && !found(info.parent)) add('warning', 'refs', info.rel, `親が見つからない: ${info.parent}`);
+		for (const ref of info.refs) if (!found(ref)) add('warning', 'refs', info.rel, `refs の参照先が見つからない: ${ref}`);
+		for (const ref of info.replaces) if (!found(ref)) add('warning', 'refs', info.rel, `replaces の参照先が見つからない: ${ref}`);
+	}
+	return names.length;
+}
+
 /** Git の管理外であってほしいもの (root からの相対パス)。_lock/ は中の予約フォルダで調べる */
 const GitIgnoreTargets = ['notes/40_issues/_issues.html', 'notes/40_issues/_lock/'];
 
@@ -346,6 +486,8 @@ export function checkProject(root: string): CheckResult {
 		}
 	}
 
+	const decisions = checkDecisions(root, ids, add);
+
 	// 生成物 (_issues.html) と番号の予約 (_lock/) は、先頭 _ の決まりで Git から外れている前提
 	const notIgnored = notIgnoredByGit(root, GitIgnoreTargets);
 	if (notIgnored.length > 0) {
@@ -366,5 +508,6 @@ export function checkProject(root: string): CheckResult {
 		doing: count('doing'),
 		done: count('done'),
 		archived: count('archived'),
+		decisions,
 	};
 }

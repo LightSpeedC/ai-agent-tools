@@ -1,0 +1,282 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>決定の記録 計画 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+﻿<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>決定の記録 計画 (ai-agent-tools)</h1>
+		<p class="lead">選択肢で決めたことを、課題と同じく 1 件 1 ファイルで残す。<code>issue decide</code> で作り、一覧し、<code>issue check</code> で検査する。</p>
+		<p class="date">📅 作成: 2026-11-08 / 更新: 2026-11-08</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は、このプロジェクトの <code>issue</code> ツール (<code>src/issue/</code>)。入力は、利用者が選択肢で決めたこと。出力は、<code>notes/40_issues/decisions/</code> の決定のファイルと、<code>issue decide</code> の操作、<code>issue check</code> の検査。親の計画は <a href="p261106-01-過去課題の検索と類似課題の連携.html">過去課題の検索と類似課題の連携 計画</a> の「決定の記録 (147-A)」とフェーズ 5。</p>
+
+<div class="callout callout-important">
+	<p><strong>範囲</strong>: 今回作るのは道具 (作る ・ 一覧 ・ 表示 ・ 検査) まで (174-A)。<strong>過去の決定を資料から移すこと</strong>、<strong>索引からの検索</strong>、<strong>共通ルールの番号の書き方の書き換え</strong>は、今回は入れない。それまでは、チャットの選択肢の番号は、これまでの通し番号 (171〜) のまま。</p>
+</div>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">決めたこと</a></li>
+		<li class="ch02"><a href="#ch02">ファイルの形</a></li>
+		<li class="ch03"><a href="#ch03">操作と検査</a></li>
+		<li class="ch04"><a href="#ch04">進め方と後に回すもの</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>決めたこと</h1>
+	<p>2026-11-08 に、利用者がすべて A を選んだ。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>問い</th><th>選んだ案</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">171-A</td><td>進める順</td><td>p261106-01 のフェーズ 5 (決定の記録) を、フェーズ 1〜4 より先に作る。決定の記録は、ファイルの形と <code>issue</code> のサブコマンドだけで作れ、索引にも移行にも頼らないため</td></tr>
+			<tr><td class="nowrap">172-A</td><td>操作の名前</td><td><code>issue decide</code> の下にまとめる (<code>new</code> ・ <code>list</code> ・ <code>show</code>)。課題と同じ予約 (<code>_lock</code>) と検査 (<code>issue check</code>) を使い回す</td></tr>
+			<tr><td class="nowrap">173-A</td><td>ファイルの形</td><td>先頭は課題と同じ <code>キー: 値</code> の行。問いの説明と案 A/B/C は本文の Markdown</td></tr>
+			<tr><td class="nowrap">174-A</td><td>今回の範囲</td><td>道具 (作る ・ 一覧 ・ 表示 ・ 検査) まで。過去の決定の移行は次の段</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>ファイルの形</h1>
+	<h2>置き場と名前</h2>
+	<ul>
+		<li><strong>置き場は <code>notes/40_issues/decisions/</code></strong>。状態のフォルダは持たない (決定は、決めた時点で確定している。覆すときは、新しい決定を立てて <code>replaces</code> で指す)</li>
+		<li><strong>名前は <code>&lt;id&gt;-&lt;件名&gt;.md</code></strong>。件名の文字と長さは、課題と同じ決まり</li>
+		<li><strong>id は、親の番号 + <code>-d</code> + 連番</strong> (152-A)。連番は 10 進数で 1 から数え、桁をそろえない (<code>p261103-01-d96</code>)。<strong>親は、課題 (<code>i</code>) ・ 計画 (<code>p</code>) ・ 調査 (<code>r</code>) の番号</strong></li>
+	</ul>
+	<h2>中身</h2>
+<pre><code class="language-markdown">---
+schema: 1
+id: p261108-01-d1
+title: 進める順
+parent: p261108-01
+decided: 2026-11-08
+chosen: A
+refs: p261106-01
+legacy_ids: :ai-agent-tools:171-A
+---
+
+## 案
+
+- A: フェーズ 5 を先に作る (恒久)。索引にも移行にも頼らないため
+- B: 計画どおり、フェーズ 1 から順に進める (恒久)
+</code></pre>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>キー</th><th>必須</th><th>値</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>schema</code></td><td>必須</td><td><code>1</code></td></tr>
+			<tr><td class="nowrap"><code>id</code></td><td>必須</td><td>ファイル名の先頭と同じ</td></tr>
+			<tr><td class="nowrap"><code>title</code></td><td>必須</td><td>問い (1 行)</td></tr>
+			<tr><td class="nowrap"><code>parent</code></td><td>必須</td><td>親の番号。id の <code>-d</code> より前と同じ</td></tr>
+			<tr><td class="nowrap"><code>decided</code></td><td>必須</td><td>決めた日 (実在する yyyy-mm-dd)</td></tr>
+			<tr><td class="nowrap"><code>chosen</code></td><td>必須</td><td>選んだ案の英大文字 1 字。本文の案の行に、その字がある</td></tr>
+			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>参照する課題 ・ 計画 ・ 調査の番号 (カンマ区切り。課題と同じ形)</td></tr>
+			<tr><td class="nowrap"><code>replaces</code></td><td>任意</td><td>この決定が置き換えた決定の id (カンマ区切り)</td></tr>
+			<tr><td class="nowrap"><code>legacy_ids</code></td><td>任意</td><td>旧番号。<code>:プロジェクト名:旧番号</code> をカンマで区切る (153-A)</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<ul>
+		<li><strong>案の行は <code>- X: 文</code></strong> (X は英大文字 1 字)。本文のどこに置いてもよい。<code>## 案</code> の見出しは、<code>issue decide new</code> が書く形で、検査はしない</li>
+		<li>文字コードは課題と同じく、UTF-8 の BOM 無し ・ LF</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>操作と検査</h1>
+	<h2>操作</h2>
+<pre><code class="language-text">issue decide new --parent &lt;番号&gt; --title &lt;問い&gt; --option &lt;文&gt; [--option &lt;文&gt; …] --chosen &lt;A|B|…&gt;
+                 [--slug &lt;件名&gt;] [--refs &lt;番号,…&gt;] [--replaces &lt;id,…&gt;] [--legacy &lt;旧番号,…&gt;] [--body &lt;本文&gt;] [--root &lt;dir&gt;] [--json]
+issue decide list [--parent &lt;番号&gt;] [--root &lt;dir&gt;] [--json]
+issue decide show &lt;id&gt; [--root &lt;dir&gt;] [--json]
+</code></pre>
+	<ul>
+		<li><strong><code>new</code></strong>: <code>--option</code> を書いた順に A ・ B ・ C … と振り、本文の <code>## 案</code> に書く。<code>--chosen</code> は、振った字のどれか。連番は、親の決定の最大 + 1。<strong>同じ PC で同時に足しても重ならないよう、課題と同じ予約 (<code>_lock/&lt;id&gt;/</code>) を使う</strong>。決めた日は JST の今日 (試験は <code>ISSUE_TEST_TODAY</code>)。何かを書く前に、引数をすべて確かめる</li>
+		<li><strong><code>list</code></strong>: id の順 (親の番号 → 連番の数の順)。<code>--parent</code> で絞る</li>
+		<li><strong><code>show</code></strong>: 1 件を出す。<code>--json</code> では、メタ情報と案の一覧</li>
+		<li>課題と同じく、ファイルを作るだけで commit しない。出力に絶対パスを出さない</li>
+	</ul>
+	<h2>検査 (<code>issue check</code> に足す)</h2>
+	<ul>
+		<li><strong>エラー</strong>: 名前の形 (<code>name</code>) ・ 必須キーの不足と値の形 (<code>key</code> ・ <code>value</code>) ・ id と名前の先頭の食い違い ・ <code>parent</code> と id の食い違い ・ <code>chosen</code> の字の案が本文に無い (<code>chosen</code>) ・ 同じ id のファイルが複数 (<code>duplicate</code>。別の PC で同じ親へ同時に足したとき) ・ BOM と CR (<code>encoding</code>) ・ <code>decisions/</code> の下のフォルダに置いた <code>.md</code> (<code>place</code>)</li>
+		<li><strong>警告</strong>: 親が見つからない ・ <code>refs</code> と <code>replaces</code> の参照先が見つからない (<code>refs</code>)。別プロジェクトの参照は検査しない ・ キーの順 ・ 知らないキー</li>
+		<li>集計の行に、決定の件数を足す。<code>decisions/</code> が無いプロジェクトは、これまでと同じ (警告にしない)</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>進め方と後に回すもの</h1>
+	<h2>進め方</h2>
+	<ol>
+		<li>試験 (<code>tools/40_test/run-issue-decide-tests.ts</code>) を先に書き、❌Red を見る</li>
+		<li><code>src/issue/decide.ts</code> と <code>main.ts</code> ・ <code>check.ts</code> を直し、✅Green にする</li>
+		<li>一括の試験に足し、node と bun の両方で全件を通す</li>
+		<li>詳細仕様 (<code>notes/50_spec/課題ファイルの形と検査.html</code>) と TOOLS-USAGE の第 15 章を、実装した姿に直す</li>
+	</ol>
+	<h2>後に回すもの</h2>
+	<ul>
+		<li>過去の決定 (このプロジェクトの 96〜174 等) を、資料と会話の記録から移す (p261106-01 のフェーズ 5 の残りとフェーズ 6)</li>
+		<li>決定を索引に入れ、似た過去の決定を引く (同フェーズ 2 ・ 3)</li>
+		<li><code>issue render</code> の HTML に決定を出す</li>
+		<li>共通ルール「複数の解決案がある場合の対応」の番号の形を、<code>&lt;親&gt;-d&lt;n&gt;</code> へ書き換える (ツールの公開後に、差分を出して指示を待つ)</li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

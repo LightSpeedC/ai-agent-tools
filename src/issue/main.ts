@@ -40,6 +40,8 @@ import {
 	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
 import { applyMigration, applyOverrides, planMigration } from './migrate.ts';
+import { listDecisions, newDecision, showDecision } from './decide.ts';
+import { DecisionIdPattern, ParentPattern } from './check.ts';
 
 const ExitOk = 0;
 const ExitFailed = 1;
@@ -62,22 +64,34 @@ const Usage = [
 	'                                                                 _issues.html を作り直して、既定のアプリで開く',
 	'  issue archive <group> [--root <dir>] [--json]                  グループの全件が済なら、archived/ へ動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
+	'  issue decide new --parent <番号> --title <問い> --option <文> [--option <文> …] --chosen <A|B|…>',
+	'                  [--slug <件名>] [--refs <番号,…>] [--replaces <id,…>] [--legacy <:名前:旧番号,…>] [--body <本文>] [--root <dir>] [--json]',
+	'                                                                 決定を decisions/ に記録する (id は <親>-d<連番>)',
+	'  issue decide list [--parent <番号>] [--root <dir>] [--json]    決定の一覧',
+	'  issue decide show <id> [--root <dir>] [--json]                 決定を 1 件読む',
 	'  issue migrate [--dry-run | --apply] [--root <dir>] [--json]    旧 issues.html の課題を読み、移す計画を出す (既定は --dry-run。--apply で items/ へ書く。すでにある番号は飛ばす。旧の記録が食い違うものは、--state-override で状態を決めるまで書かない)',
 ].join('\n');
 
 // ---- 引数 ----
 
-type Spec = { valued: string[]; flags: string[]; positionals: number };
-type Options = { values: Map<string, string>; flags: Set<string>; positionals: string[] };
+/** repeated: 何度でも書ける、値を取る引数 (decide new の --option) */
+type Spec = { valued: string[]; flags: string[]; positionals: number; repeated?: string[] };
+type Options = { values: Map<string, string>; flags: Set<string>; positionals: string[]; repeated: Map<string, string[]> };
 
 function parseOptions(rest: string[], spec: Spec): Options {
 	const values = new Map<string, string>();
 	const flags = new Set<string>();
 	const positionals: string[] = [];
+	const repeated = new Map<string, string[]>();
 	for (let i = 0; i < rest.length; i++) {
 		const a = rest[i];
 		if (spec.flags.includes(a)) {
 			flags.add(a);
+		} else if (spec.repeated?.includes(a)) {
+			const value = rest[i + 1];
+			if (value === undefined) throw new UsageError(`${a} に値を渡してください`);
+			repeated.set(a, [...(repeated.get(a) ?? []), value]);
+			i++;
 		} else if (spec.valued.includes(a)) {
 			const value = rest[i + 1];
 			if (value === undefined) throw new UsageError(`${a} に値を渡してください`);
@@ -89,7 +103,7 @@ function parseOptions(rest: string[], spec: Spec): Options {
 			throw new UsageError('知らない引数: ' + a);
 		}
 	}
-	return { values, flags, positionals };
+	return { values, flags, positionals, repeated };
 }
 
 /** 既にある items/ を持つプロジェクトの root。--root があればそれ、無ければ作業フォルダから親をたどる */
@@ -128,11 +142,13 @@ function runCheck(rest: string[]): number {
 			doing: result.doing,
 			done: result.done,
 			archived: result.archived,
+			decisions: result.decisions,
 			findings: result.findings,
 		}));
 	} else {
 		for (const f of result.findings) console.log(label(f));
-		const count = `課題 ${result.issues} 件 (未 ${result.todo} 件 ・ 着手 ${result.doing} 件 ・ 済 ${result.done} 件 ・ archived ${result.archived} 件)`;
+		const count = `課題 ${result.issues} 件 (未 ${result.todo} 件 ・ 着手 ${result.doing} 件 ・ 済 ${result.done} 件 ・ archived ${result.archived} 件)`
+			+ (result.decisions > 0 ? ` ・ 決定 ${result.decisions} 件` : '');
 		if (errors > 0) console.log(`[NG] ${count}。エラー ${errors} 件 ・ 警告 ${warnings} 件`);
 		else if (warnings > 0) console.log(`[OK] ${count}。エラー 0 件 ・ 警告 ${warnings} 件`);
 		else console.log(`[OK] ${count}。問題なし`);
@@ -537,6 +553,60 @@ function runMigrate(rest: string[]): number {
 	return plan.unreadable.length > 0 || plan.conflicts.length > 0 ? ExitFailed : ExitOk;
 }
 
+// ---- decide (決定の記録。計画 p261108-01) ----
+
+function runDecide(rest: string[]): number {
+	const sub = rest[0];
+	const args = rest.slice(1);
+	if (sub === 'new') {
+		const o = parseOptions(args, {
+			valued: ['--root', '--parent', '--title', '--chosen', '--slug', '--refs', '--replaces', '--legacy', '--body'], flags: ['--json'], positionals: 0, repeated: ['--option'],
+		});
+		const parent = o.values.get('--parent');
+		const title = o.values.get('--title');
+		const chosen = o.values.get('--chosen');
+		if (parent === undefined) throw new UsageError('--parent (親の番号) が要る');
+		if (title === undefined) throw new UsageError('--title (問い) が要る');
+		if (chosen === undefined) throw new UsageError('--chosen (選んだ案の字) が要る');
+		const root = existingRoot(o);
+		const r = newDecision(root, {
+			parent, title, chosen, options: o.repeated.get('--option') ?? [], slug: o.values.get('--slug'),
+			refs: o.values.get('--refs'), replaces: o.values.get('--replaces'), legacy: o.values.get('--legacy'), body: o.values.get('--body'),
+		});
+		if (o.flags.has('--json')) console.log(JSON.stringify({ id: r.id, file: r.rel }));
+		else console.log(`[OK] ${r.rel} を作った (${r.id})`);
+		return ExitOk;
+	}
+	if (sub === 'list') {
+		const o = parseOptions(args, { valued: ['--root', '--parent'], flags: ['--json'], positionals: 0 });
+		const parent = o.values.get('--parent') ?? null;
+		if (parent !== null && !ParentPattern.test(parent)) throw new UsageError(`--parent の形が違う: ${parent}`);
+		const root = existingRoot(o);
+		const items = listDecisions(root, parent, (m) => console.error(m));
+		if (o.flags.has('--json')) console.log(JSON.stringify(items));
+		else {
+			for (const d of items) console.log(`${d.id}  ${d.chosen}  ${d.decided}  ${d.title}`);
+			console.log(`${items.length} 件`);
+		}
+		return ExitOk;
+	}
+	if (sub === 'show') {
+		const o = parseOptions(args, { valued: ['--root'], flags: ['--json'], positionals: 1 });
+		const id = o.positionals[0];
+		if (id === undefined) throw new UsageError('id が要る (issue decide show <id>)');
+		if (!DecisionIdPattern.test(id)) throw new UsageError(`決定の id の形が違う: ${id} (例: i261103-01-d1)`);
+		const root = existingRoot(o);
+		const v = showDecision(root, id);
+		if (o.flags.has('--json')) console.log(JSON.stringify({ id: v.id, file: v.file, meta: v.meta, options: v.options, body: v.body }));
+		else {
+			console.log(`${v.id}  ${v.file}`);
+			console.log(v.text.replace(/\n+$/, ''));
+		}
+		return ExitOk;
+	}
+	throw new UsageError(sub === undefined ? 'decide の操作が要る (new ・ list ・ show)' : '知らない decide の操作: ' + sub);
+}
+
 // ---- 入口 ----
 
 const commands: Record<string, (rest: string[]) => number> = {
@@ -554,6 +624,7 @@ const commands: Record<string, (rest: string[]) => number> = {
 	archive: (rest) => runGroupMove(rest, 'archive'),
 	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
 	migrate: runMigrate,
+	decide: runDecide,
 };
 
 function mainEntry(): number {

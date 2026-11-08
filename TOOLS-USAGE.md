@@ -818,6 +818,18 @@ created: 2026-11-01
 
 引数の全体は `issue` を引数なしで呼ぶと出る。
 
+### 決定を記録する
+
+選択肢で決めたことは、`issue decide` で `notes/40_issues/decisions/` に 1 件 1 ファイルで残せる。id は、親 (その決定を採った課題 ・ 計画 ・ 調査) の番号に `-d` と連番を付けたもの (`p261108-01-d1`)。
+
+```shell
+issue decide new --parent p261108-01 --title 進める順 --option "先に作る" --option "順に進める" --chosen A
+issue decide list --parent p261108-01
+issue decide show p261108-01-d1
+```
+
+`--option` を書いた順に A ・ B ・ C … と振る。旧番号 (`171-A` 等) を残すときは `--legacy :<プロジェクト名>:171-A`、前の決定を覆すときは `--replaces <id>`。`issue check` が決定のファイルも検査する。**チャットの選択肢の番号は、まだ通し番号のまま** (共通ルール「複数の解決案がある場合の対応」)。
+
 ### 旧方式から移す
 
 <strong>利用者の依頼を受けた、そのプロジェクトのセッションが行う。</strong>移すのは未・着手だけで、済は旧ファイルに残す。

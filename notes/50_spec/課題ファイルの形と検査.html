@@ -144,7 +144,7 @@
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
 		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> まで。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-05</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-08</p>
 	</div>
 </div>
 
@@ -270,6 +270,45 @@ project_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7</code></pre>
 	</ul>
 	<h2><code>groups.txt</code></h2>
 	<p>グループ (章) の名前を、表示順に 1 行ずつ。空行は無視する。同じ名前を 2 度書くと誤り。課題の <code>group</code> がここに無ければ警告する。</p>
+	<h2>決定のファイル (<code>decisions/</code>)</h2>
+	<p>選択肢で決めたことを、1 件 1 ファイルで <code>notes/40_issues/decisions/</code> の直下に置く (計画 <a href="../10_plan/p261108-01-決定の記録.html">p261108-01</a>)。状態のフォルダは持たない。覆すときは、新しい決定を立てて <code>replaces</code> で指す。<code>decisions/</code> が無いプロジェクトもある (無くても誤りにしない)。</p>
+	<ul>
+		<li><strong>名前は <code>&lt;id&gt;-&lt;件名&gt;.md</code></strong>。件名の決まりは課題と同じ</li>
+		<li><strong>id は、親の番号 + <code>-d</code> + 連番</strong> (<code>i261103-01-d1</code> ・ <code>p261103-01-d96</code>)。親は課題 (<code>i</code>) ・ 計画 (<code>p</code>) ・ 調査 (<code>r</code>) の番号。連番は 10 進数で 1 から数え、桁をそろえない。親の中だけで数える</li>
+		<li>文字コードは課題と同じ (UTF-8 の BOM 無し ・ LF)</li>
+	</ul>
+<pre><code class="language-markdown">---
+schema: 1
+id: p261108-01-d1
+title: 進める順
+parent: p261108-01
+decided: 2026-11-08
+chosen: A
+refs: p261106-01
+legacy_ids: :ai-agent-tools:171-A
+---
+
+## 案
+
+- A: フェーズ 5 を先に作る
+- B: 計画どおり、フェーズ 1 から順に進める</code></pre>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>キー</th><th>必須</th><th>値</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>schema</code></td><td>必須</td><td><code>1</code></td></tr>
+			<tr><td class="nowrap"><code>id</code></td><td>必須</td><td>ファイル名の先頭と同じ</td></tr>
+			<tr><td class="nowrap"><code>title</code></td><td>必須</td><td>問い (1 行)</td></tr>
+			<tr><td class="nowrap"><code>parent</code></td><td>必須</td><td>親の番号。id の <code>-d</code> より前と同じ</td></tr>
+			<tr><td class="nowrap"><code>decided</code></td><td>必須</td><td>決めた日 (実在する yyyy-mm-dd)</td></tr>
+			<tr><td class="nowrap"><code>chosen</code></td><td>必須</td><td>選んだ案の英大文字 1 字。本文に、その字の案の行がある</td></tr>
+			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>参照する課題 ・ 計画 ・ 調査 ・ 決定の番号 (カンマ区切り)。別プロジェクトは <code>:名前:番号</code> か <code>名前:番号</code></td></tr>
+			<tr><td class="nowrap"><code>replaces</code></td><td>任意</td><td>この決定が置き換えた決定の id (カンマ区切り。形は <code>refs</code> と同じ)</td></tr>
+			<tr><td class="nowrap"><code>legacy_ids</code></td><td>任意</td><td>旧番号。<code>:プロジェクト名:旧番号</code> をカンマで区切る</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p><strong>案の行は <code>- X: 文</code></strong> (X は英大文字 1 字)。本文のどこに置いてもよい。<code>## 案</code> の見出しは <code>issue decide new</code> が書く形で、検査はしない。</p>
 </section>
 
 <section class="ch02" id="ch02">
@@ -286,7 +325,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 <pre><code class="language-text">[NG] notes/40_issues/items/todo/i261103-01-li内の表.md [state-key] state キーは持たない (状態はフォルダで持つ)
 [警告] notes/40_issues/items/todo/i261103-02-x.md [key-order] キーの順が決まりと違う (決まり: schema ・ id ・ title ・ …)
 [NG] 課題 2 件 (未 2 件 ・ 着手 0 件 ・ 済 0 件 ・ archived 0 件)。エラー 1 件 ・ 警告 1 件</code></pre>
-	<p>最後の 1 行は、エラーがあれば <code>[NG] 課題 N 件 (未 a 件 ・ 着手 b 件 ・ 済 c 件 ・ archived d 件)。エラー E 件 ・ 警告 W 件</code>。エラーが無く警告があれば <code>[OK] …。エラー 0 件 ・ 警告 W 件</code>。どちらも無ければ <code>[OK] …。問題なし</code>。<code>--json</code> では <code>ok</code> ・ <code>errors</code> ・ <code>warnings</code> ・ <code>issues</code> (全件) ・ <code>todo</code> ・ <code>doing</code> ・ <code>done</code> ・ <code>archived</code> (フォルダごとの件数) ・ <code>findings</code> (<code>level</code> ・ <code>code</code> ・ <code>file</code> ・ <code>message</code>) を持つ。</p>
+	<p>最後の 1 行は、エラーがあれば <code>[NG] 課題 N 件 (未 a 件 ・ 着手 b 件 ・ 済 c 件 ・ archived d 件)。エラー E 件 ・ 警告 W 件</code>。エラーが無く警告があれば <code>[OK] …。エラー 0 件 ・ 警告 W 件</code>。どちらも無ければ <code>[OK] …。問題なし</code>。<code>--json</code> では <code>ok</code> ・ <code>errors</code> ・ <code>warnings</code> ・ <code>issues</code> (全件) ・ <code>todo</code> ・ <code>doing</code> ・ <code>done</code> ・ <code>archived</code> (フォルダごとの件数) ・ <code>decisions</code> (決定の件数) ・ <code>findings</code> (<code>level</code> ・ <code>code</code> ・ <code>file</code> ・ <code>message</code>) を持つ。決定が 1 件以上あれば、文字の出力の件数の括弧の後ろに <code> ・ 決定 N 件</code> を足す。</p>
 	<h2>終了コード</h2>
 	<div class="tablewrap">
 	<table>
@@ -324,6 +363,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		</tbody>
 	</table>
 	</div>
+	<p><strong>決定のファイル (<code>decisions/</code>) にも、同じ種別で次を見る</strong>。<code>name</code> (名前が <code>&lt;親の番号&gt;-d&lt;連番&gt;-&lt;件名&gt;.md</code> の形でない) ・ <code>place</code> (<code>decisions/</code> の下のフォルダに置いた) ・ <code>encoding</code> ・ <code>meta</code> ・ <code>key</code> (必須の 6 つ) ・ <code>value</code> (値の形 ・ id と名前の食い違い ・ <code>parent</code> が id の <code>-d</code> より前と違う ・ <code>decided</code> が実在しない日) ・ <code>chosen</code> (エラー。<code>chosen</code> の字の案の行が本文に無い) ・ <code>duplicate</code> (同じ id のファイルが複数。別の PC で同じ親へ同時に足したとき) ・ <code>refs</code> (警告。親 ・ <code>refs</code> ・ <code>replaces</code> の参照先が見つからない。決定の id は <code>decisions/</code> から、ほかは課題と同じく探す。別プロジェクトは確かめない) ・ <code>key-order</code> ・ <code>unknown-key</code> ・ <code>slug-long</code>。</p>
 </section>
 
 <section class="ch03" id="ch03">
@@ -439,6 +479,17 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<ul>
 		<li>この小節の操作は、すべて<strong>作業ツリーのファイルを変えるだけで、commit しない</strong></li>
 	</ul>
+	<h2><code>issue decide new ・ list ・ show</code> (決定の記録)</h2>
+<pre><code class="language-text">issue decide new --parent &lt;番号&gt; --title &lt;問い&gt; --option &lt;文&gt; [--option &lt;文&gt; …] --chosen &lt;A|B|…&gt;
+                 [--slug &lt;件名&gt;] [--refs &lt;番号,…&gt;] [--replaces &lt;id,…&gt;] [--legacy &lt;:名前:旧番号,…&gt;] [--body &lt;本文&gt;] [--root &lt;dir&gt;] [--json]
+issue decide list [--parent &lt;番号&gt;] [--root &lt;dir&gt;] [--json]
+issue decide show &lt;id&gt; [--root &lt;dir&gt;] [--json]</code></pre>
+	<ul>
+		<li><strong><code>new</code></strong>: <code>decisions/</code> に決定を作る。<code>--option</code> を書いた順に A ・ B ・ C … と振り、本文の <code>## 案</code> に <code>- X: 文</code> で書く。<code>--chosen</code> は振った字のどれか。連番は、親の決定の最大 + 1。同じ PC で同時に足しても重ならないよう、課題と同じ予約 (<code>_lock/&lt;id&gt;/</code>) を取る。<code>decided</code> は JST の今日。<code>--body</code> は案の後ろに足す。<strong>何かを書く前に、引数をすべて確かめる</strong> (誤りは終了コード 5 で、何も作らない)。出力は <code>[OK] &lt;相対パス&gt; を作った (&lt;id&gt;)</code>、<code>--json</code> は <code>{ id, file }</code></li>
+		<li><strong><code>list</code></strong>: 親の番号 (種類 → 日付 → 連番) → 決定の連番の数の順。<code>--parent</code> で絞る。文字の出力は <code>&lt;id&gt;  &lt;選んだ案&gt;  &lt;決めた日&gt;  &lt;問い&gt;</code> と <code>N 件</code>。<code>--json</code> は <code>[{ id, parent, title, chosen, decided, file }]</code>。読めないファイルは飛ばし、標準エラーに <code>[警告]</code></li>
+		<li><strong><code>show</code></strong>: 1 件を出す。無ければ終了コード 1、決定の id の形でなければ 5。<code>--json</code> は <code>{ id, file, meta, options: [{ key, text }], body }</code></li>
+		<li><code>_issues.html</code> は作り直さない (決定は、まだ HTML に出さない)</li>
+	</ul>
 </section>
 
 <section class="ch04" id="ch04">
@@ -450,6 +501,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>
 		<li><strong><code>refs</code> の参照先は、ファイル名の先頭だけで探す</strong>。移行前の課題 (<code>issues.html</code> の中の番号) は見つけられず、警告になる</li>
 		<li>他のプロジェクトのファイルは読まない。検査するのは、見つけた 1 つのプロジェクトだけ</li>
+		<li><strong>決定</strong>: 過去の決定の移行 ・ 索引からの検索 ・ <code>issue render</code> の HTML への表示は、まだ無い (計画 p261108-01 の「後に回すもの」)。<code>issue decide</code> にも、<code>items/</code> を持つプロジェクトが要る</li>
 	</ul>
 </section>
 
