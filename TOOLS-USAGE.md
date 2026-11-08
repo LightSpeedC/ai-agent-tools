@@ -782,6 +782,12 @@ notes/40_issues/
 
 <strong>状態を変えると、ファイルが隣のフォルダへ動く。</strong>手でファイルを動かさず、`issue set` を使う。
 
+### README から案内する
+
+<strong>root の README には、`notes/40_issues/items/` の場所を文で書く。</strong>リンクにはしない (フォルダはページにならず、`_issues.html` は commit しないため)。見るときは `issue view` を使う、と添える。旧課題が無いプロジェクトは、ここまで。
+
+**旧方式から移して、旧課題が 1 件以上あるときだけ**、`issues-legacy.html` へのリンクを足す。`issues-archive.html` へは張らない (`issues-legacy.html` からたどれる)。
+
 ### 1 件の形
 
 ```markdown
@@ -839,7 +845,7 @@ issue decide show p261108-01-d1
 3. **移す**: `issue migrate --apply`。未は `todo/`、着手は `doing/`、済は `done/`、`issues-archive.html` の課題は `archived/` へ書く (番号と作成日は旧のまま)。**読めなかったものは書かない**ので、旧の記録を見て `issue new` ・ `issue todo` で書き写す。旧の記録が食い違う (済なのに未のやることがある等) ものがあると、何も書かずに止まる。どの状態にするかを利用者に聞き、`--state-override <番号>=<状態>,…` を付けて流し直す。**書いたあとに、読み直して旧 HTML と比べ、`issue check` を流す。だめなら、書いたものを全部消して元に戻し、終了コード 1 で止まる**。手で戻したいときは `issue migrate --undo` (`--apply` が書いたファイルだけを消す)
 4. **数が合うか確かめる**: `--dry-run` で出た状態ごとの数 = `todo/` ・ `doing/` ・ `done/` ・ `archived/` のそれぞれの数。`issue check` が問題なし
 5. **旧ファイルを残す**: `issues.html` を、書き換えずに `git mv` で `issues-legacy.html` へ改名する
-6. **リンクを直す**: `text find --path . --recurse` で `issues.html` を探し、リンク先の名前だけを直す (README ・ ローカルルール ・ `check-public-allow.txt` 等)。README からは、`notes/40_issues/items/` と旧課題へ案内する
+6. **リンクを直す**: `text find --path . --recurse` で `issues.html` を探し、リンク先の名前だけを直す (README ・ ローカルルール ・ `check-public-allow.txt` 等)。README の案内は「README から案内する」のとおりにする
 7. **検査して、利用者の指示で commit と push**: `html2md` ・ `check-markdown` ・ そのプロジェクトのテスト。**移行は 1 commit にする**
 
 > [!WARNING]
