@@ -183,11 +183,53 @@ function Quote([string]$s) {
 	return $s
 }
 
+<#
+	所要時間の記録と、進み具合 (共通ルール「長い試験は、進み具合を報告する」)。
+	_run-all-times.json: 前の回の 1 本ごとの時間と全体の時間。終わるたびに書き直す。始めに読んで、終わりの見込みを出す
+	_run-all-progress.json: いまの回の進み具合 (開始 ・ 見込み ・ 終わった本数 ・ いま流している試験)。背面で流すときの報告に使う
+	どちらも先頭 _ で Git の管理外
+#>
+$TimesFile = Join-Path $PSScriptRoot '_run-all-times.json'
+$ProgressFile = Join-Path $PSScriptRoot '_run-all-progress.json'
+$Utf8NoBom = New-Object System.Text.UTF8Encoding $false
+$Started = Get-Date
+$RunWatch = [System.Diagnostics.Stopwatch]::StartNew()
+$Times = [ordered]@{}
+$Previous = $null
+try {
+	if (Test-Path -LiteralPath $TimesFile) { $Previous = [System.IO.File]::ReadAllText($TimesFile, $Utf8NoBom) | ConvertFrom-Json }
+} catch {
+	Write-Host ('前の回の所要時間を読めませんでした (記録なしとして続けます): ' + $_.Exception.Message) -ForegroundColor Yellow
+}
+$ExpectedSec = if ($null -ne $Previous -and $Previous.totalSec -gt 0) { [double]$Previous.totalSec } else { 0 }
+
+function Write-Progress-File([string]$current) {
+	$data = [ordered]@{
+		started = $Started.ToString('yyyy-MM-dd HH:mm:ss')
+		expectedSec = $ExpectedSec
+		elapsedSec = [math]::Round($RunWatch.Elapsed.TotalSeconds, 1)
+		done = $Times.Count
+		current = $current
+	}
+	try { [System.IO.File]::WriteAllText($ProgressFile, ($data | ConvertTo-Json), $Utf8NoBom) } catch { }
+}
+
+Write-Host ('=== 開始 ' + $Started.ToString('MM/dd HH:mm') + ' ===') -ForegroundColor Cyan
+if ($ExpectedSec -gt 0) {
+	$minutes = [math]::Ceiling($ExpectedSec / 60)
+	Write-Host ('  見込み: 約 ' + $minutes + ' 分 → ' + $Started.AddSeconds($ExpectedSec).ToString('HH:mm') + ' ごろに終わる (前の回 ' + $Previous.finished + ' の記録から)') -ForegroundColor Cyan
+} else {
+	Write-Host '  見込み: 前の回の所要時間の記録なし (この回の分を記録する)' -ForegroundColor Cyan
+}
+
 # 1 本を上限付きで走らせ、失敗なら一覧に足す。時間切れ（124）は ⏱️ を付ける
 function Invoke-Suite($suite, [string]$file, [string]$argLine, [string]$label) {
 	$limit = if ($suite.ContainsKey('TimeoutSec')) { $suite.TimeoutSec } else { $DefaultTimeoutSec }
+	Write-Progress-File $label
+	$sw = [System.Diagnostics.Stopwatch]::StartNew()
 	& $Invoke -FilePath $file -ArgumentLine $argLine -TimeoutSec $limit -Name $label
 	$code = $LASTEXITCODE
+	$script:Times[$label] = [math]::Round($sw.Elapsed.TotalSeconds, 1)
 	if ($code -eq 124) { $script:failed += ('⏱️ ' + $label) }
 	elseif ($code -ne 0) { $script:failed += $label }
 }
@@ -277,6 +319,17 @@ if ($LASTEXITCODE -ne 0) { $failed += '文字コードと改行' }
 
 Write-Host ''
 Write-Host '=== すべてのテスト ===' -ForegroundColor Cyan
+
+# 所要時間を記録する (次の回の見込みに使う)。書けなくても、試験の結果は変えない
+$totalSec = [math]::Round($RunWatch.Elapsed.TotalSeconds, 1)
+$record = [ordered]@{ finished = (Get-Date).ToString('yyyy-MM-dd HH:mm'); totalSec = $totalSec; online = [bool]$Online; suites = $Times }
+try {
+	[System.IO.File]::WriteAllText($TimesFile, ($record | ConvertTo-Json), $Utf8NoBom)
+	Remove-Item -LiteralPath $ProgressFile -ErrorAction SilentlyContinue
+} catch {
+	Write-Host ('所要時間を記録できませんでした: ' + $_.Exception.Message) -ForegroundColor Yellow
+}
+Write-Host ('  所要時間: ' + [math]::Floor($totalSec / 60) + ' 分 ' + [math]::Round($totalSec % 60) + ' 秒 (' + $Started.ToString('HH:mm') + ' 〜 ' + (Get-Date).ToString('HH:mm') + ')') -ForegroundColor Cyan
 
 if ($failed.Count -eq 0) {
 	Write-Host ('  ' + $Suites.Count + ' 本すべて成功 ＋ 文字コードと改行は規約どおり') -ForegroundColor Green
