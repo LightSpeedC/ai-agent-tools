@@ -376,6 +376,56 @@ console.log('--- 同じ中身なら書かない');
 	check('render は、課題のファイルを書き換えない', fs.readFileSync(path.join(dir, Todo + A), 'utf8') === base[Todo + A]);
 }
 
+// ---- 決定 (p261108-02。185-A ・ 186-A ・ 187-A) ----
+
+console.log('--- 決定');
+const Dec = 'notes/40_issues/decisions/';
+function decisionText(id: string, parent: string, title: string, chosen: string, extra: string = '', body: string = ''): string {
+	return `---\nschema: 1\nid: ${id}\ntitle: ${title}\nparent: ${parent}\ndecided: 2026-11-08\nchosen: ${chosen}\n${extra}---\n\n## 案\n\n- A: 案 A の文\n- B: 案 B の文\n${body}`;
+}
+const decFiles: Record<string, string> = {
+	...base,
+	[Dec + 'i261103-01-d1-出し方.md']: decisionText('i261103-01-d1', 'i261103-01', '出し方 <x>', 'A'),
+	[Dec + 'i261103-01-d2-覆す.md']: decisionText('i261103-01-d2', 'i261103-01', '覆した決定', 'B', 'replaces: i261103-01-d1\n'),
+	[Dec + 'p261108-02-d1-計画.md']: decisionText('p261108-02-d1', 'p261108-02', '計画の問い', 'A', '', '\n本文の補足\n'),
+};
+{
+	const dir = std('decisions', decFiles);
+	const r = render(dir);
+	const h = html(dir);
+	const issueA = h.slice(h.indexOf('<details id="i261103-01"'), h.indexOf('<details id="i261103-03"'));
+	check('親が課題の決定は、その課題の details の中に出る (185-A)', issueA.includes('id="i261103-01-d1"') && issueA.includes('id="i261103-01-d2"'), issueA.slice(0, 300));
+	check('課題の中に「決定」の見出しを置く', issueA.includes('<h4>決定</h4>'));
+	check('決定の無い課題には、決定の見出しを足さない', !h.slice(h.indexOf('<details id="i261103-03"')).split('</details>')[0].includes('<h4>決定</h4>'));
+	check('決定は details.decision で、既定で閉じる (186-A)', /<details class="decision[^"]*" id="i261103-01-d1">/.test(h));
+	check('summary は番号 ・ 問い (エスケープ) ・ 選んだ字と案の文', /<summary><span class="dno">i261103-01-d1<\/span>出し方 &lt;x&gt; → A: 案 A の文/.test(h), h.slice(h.indexOf('i261103-01-d1'), h.indexOf('i261103-01-d1') + 200));
+	check('中に全部の案が出る', issueA.includes('案 B の文'));
+	check('summary の番号は span.no にしない (課題の数え方を変えない)', (h.match(/<span class="no">/g) ?? []).length === 3);
+	check('覆された決定は superseded で、→ 新しい番号のリンクが付く (187-A)', /<details class="decision superseded" id="i261103-01-d1">/.test(h) && h.includes('→ <a href="#i261103-01-d2">i261103-01-d2</a> で覆した'));
+	check('覆した側には ← 古い番号が付く', h.includes('← <a href="#i261103-01-d1">i261103-01-d1</a> を覆した'));
+	check('superseded の灰色の CSS がある', html2cssHas(h, 'details.decision.superseded'));
+	check('親が課題でない決定は、最後の「計画の決定」の章に出る (185-A)', /<h1>計画の決定 \(1 件\)<\/h1>/.test(h) && h.indexOf('<h1>計画の決定') > h.indexOf('id="i261103-01-d1"'));
+	check('計画の決定の章は、親の番号ごとの h2 で分ける', h.includes('<h2>p261108-02</h2>') && h.includes('本文の補足'));
+	check('計画の決定の章も目次に入る', /<li class="ch03"><a href="#ch03">計画の決定<\/a><\/li>/.test(h));
+	check('件数に決定を混ぜず、「・ 決定 n 件」を足す', h.includes('課題 3 件 (未 1 件 ・ 着手 1 件 ・ 済 1 件) ・ 決定 3 件'), r.out);
+}
+{
+	const dir = std('decisions-filter', decFiles);
+	render(dir, ['--group', 'html2md']);
+	const h = html(dir);
+	check('--group で絞ったときは、計画の決定の章を出さない', !h.includes('計画の決定') && h.includes('id="i261103-01-d1"'));
+	render(dir, ['i261103-03']);
+	check('番号で絞ったときも、計画の決定の章を出さない', !html(dir).includes('計画の決定'));
+}
+{
+	const a = std('decisions-none-a', base);
+	const b = std('decisions-none-b', { ...base, [Dec + '.keep']: '' });
+	render(a);
+	render(b);
+	check('決定が無いときは、決定の部品を何も出さない', !html(a).includes('class="decision') && !html(a).includes('計画の決定') && !html(a).includes('<h4>決定</h4>') && !html(a).includes('・ 決定'));
+	check('decisions/ が空でも、無いときと同じ出力', html(a).replace(/decisions-none-a/g, 'X') === html(b).replace(/decisions-none-b/g, 'X'));
+}
+
 console.log('');
 console.log(`=== issue (render): ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 fs.rmSync(work, { recursive: true, force: true });

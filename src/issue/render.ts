@@ -8,7 +8,8 @@
 */
 import fs from 'node:fs';
 import path from 'node:path';
-import { Folders, ItemsRel, NamePattern, listMdNames, type Folder } from './check.ts';
+import { DecisionIdPattern, Folders, ItemsRel, NamePattern, listMdNames, type Folder } from './check.ts';
+import { loadDecisions, type DecisionView } from './decide.ts';
 import { splitIssue } from './meta.ts';
 import { Failure, StateOf, compareId, loadFile, todayJst } from './ops.ts';
 import { BadgeOfState, escapeHtml, markdownToHtml } from './markdown.ts';
@@ -305,7 +306,23 @@ const Css = `
 		.wrap a, footer a{ color:#8ab4ff; }
 	}`;
 
-const HomeIcon = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg>';
+/** 決定の CSS (p261108-02)。決定があるときだけ足す (無いプロジェクトの出力を変えないため) */
+const DecisionCss = `
+	details.decision{ margin:8px 0; padding:0 14px 6px; box-shadow:none; }
+	details.decision summary{ font-weight:500; padding:6px 0; }
+	.dno{
+		display:inline-block; margin-right:10px; padding:0 8px; border-radius:6px;
+		background:#f4f6fa; color:#17335f; border:1px solid var(--line,#d9dfe8);
+		font-family:Consolas,"Courier New",monospace; font-size:.88em; font-weight:400;
+	}
+	details.decision.superseded{ background:#f1f3f6; color:#5a6472; }
+	details.decision.superseded summary{ color:#5a6472; background:transparent; }
+	@media (prefers-color-scheme: dark) {
+		.dno{ background:#1c2230; color:#cfe0ff; }
+		details.decision.superseded, details.decision.superseded summary{ background:#1a1e26; color:#97a1ae; }
+	}`;
+
+const HomeIcon ='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg>';
 
 /** 日時の部分 (span.gen) を除いた文字列。「中身が同じか」を比べるのに使う */
 function withoutGenerated(html: string): string {
@@ -353,6 +370,43 @@ export function renderHtml(o: RenderOptions): RenderResult {
 		},
 	});
 
+	// 決定 (p261108-02)。親の番号ごとに束ね、覆した ・ 覆された の対応を引けるようにする
+	const decisions = loadDecisions(o.root, o.warn);
+	const parentOf = (d: DecisionView): string => DecisionIdPattern.exec(d.id)?.[1] ?? '';
+	const decisionsOf = new Map<string, DecisionView[]>();
+	for (const d of decisions) {
+		const list = decisionsOf.get(parentOf(d)) ?? [];
+		list.push(d);
+		decisionsOf.set(parentOf(d), list);
+	}
+	const splitIds = (s: string | undefined): string[] => (s ?? '').split(',').map((x) => x.trim()).filter((x) => x !== '');
+	const replacedBy = new Map<string, string[]>();
+	for (const d of decisions) {
+		for (const old of splitIds(d.meta.replaces)) replacedBy.set(old, [...(replacedBy.get(old) ?? []), d.id]);
+	}
+	const idLink = (id: string): string => `<a href="#${escapeHtml(id)}">${escapeHtml(id)}</a>`;
+	const decisionHtml = (d: DecisionView): string => {
+		const chosen = d.meta.chosen ?? '';
+		const option = d.options.find((x) => x.key === chosen);
+		const newer = replacedBy.get(d.id) ?? [];
+		const older = splitIds(d.meta.replaces);
+		const notes: string[] = [];
+		if (newer.length > 0) notes.push(`→ ${newer.map(idLink).join(', ')} で覆した`);
+		if (older.length > 0) notes.push(`← ${older.map(idLink).join(', ')} を覆した`);
+		const summary = `<span class="dno">${escapeHtml(d.id)}</span>${escapeHtml(d.meta.title ?? '')} → ${escapeHtml(chosen)}${option !== undefined ? ': ' + escapeHtml(option.text) : ''}`
+			+ (notes.length > 0 ? ` (${notes.join(' ・ ')})` : '');
+		const meta: string[] = [`決めた日 ${escapeHtml(d.meta.decided ?? '')}`];
+		const refs = splitIds(d.meta.refs);
+		if (refs.length > 0) meta.push('参照 ' + refs.map((r) => (ids.has(r) ? idLink(r) : escapeHtml(r))).join(', '));
+		if (!o.standalone) {
+			const rel = relFromOut(path.join(o.root, ...d.file.split('/')));
+			if (rel !== null) meta.push(`<a href="${escapeHtml(rel)}">ファイル</a>`);
+		}
+		const bodyHtml = markdownToHtml(d.body, { warn: o.warn, resolveImage: () => null, resolveLink: () => null });
+		return `<details class="decision${newer.length > 0 ? ' superseded' : ''}" id="${escapeHtml(d.id)}"><summary>${summary}</summary>\n`
+			+ `<p class="meta">${meta.join(' ・ ')}</p>\n${bodyHtml}\n</details>`;
+	};
+
 	const detailsHtml = (row: Row): string => {
 		const open = row.folder === 'todo' || row.folder === 'doing' ? ' open' : '';
 		const stateText = row.folder === 'archived' ? '済 ・ archived' : row.state;
@@ -363,11 +417,19 @@ export function renderHtml(o: RenderOptions): RenderResult {
 			const rel = relFromOut(path.join(o.root, ...row.rel.split('/')));
 			if (rel !== null) meta.push(`<a href="${escapeHtml(rel)}">ファイル</a>`);
 		}
+		const mineDecisions = decisionsOf.get(row.id) ?? [];
+		const decisionPart = mineDecisions.length > 0 ? `\n<h4>決定</h4>\n${mineDecisions.map(decisionHtml).join('\n')}` : '';
 		return `<details id="${row.id}"${open}><summary><span class="no">${row.id}</span><span class="badge ${BadgeOfState[row.state]}">${stateText}</span>${escapeHtml(row.title)}</summary>\n`
-			+ `<p class="meta">${meta.join(' ・ ')}</p>\n${body(row)}\n</details>`;
+			+ `<p class="meta">${meta.join(' ・ ')}</p>\n${body(row)}${decisionPart}\n</details>`;
 	};
 
-	const counts = countsText(rows);
+	// 計画 ・ 調査を親に持つ決定は、絞らずに出すときだけ、最後の章にまとめる (185-A)
+	const filtered = o.ids.length > 0 || o.group !== null;
+	const planDecisions = filtered ? [] : decisions.filter((d) => !/^i/.test(parentOf(d)));
+	const chapterNames = planDecisions.length > 0 ? [...groups, '計画の決定'] : groups;
+	const shownDecisions = rows.reduce((n, r) => n + (decisionsOf.get(r.id)?.length ?? 0), 0) + planDecisions.length;
+
+	const counts = countsText(rows) + (shownDecisions > 0 ? ` ・ 決定 ${shownDecisions} 件` : '');
 	const now = nowJst();
 	const today = todayJst();
 	const project = escapeHtml(path.basename(o.root));
@@ -382,12 +444,18 @@ export function renderHtml(o: RenderOptions): RenderResult {
 		if (legacyRel !== null) links.push(`<a class="legacy" href="${escapeHtml(legacyRel)}">過去の課題 (旧 HTML)</a>`);
 	}
 
-	const toc = groups.map((g, i) => `<li class="ch${pad2(i + 1)}"><a href="#ch${pad2(i + 1)}">${escapeHtml(g)}</a></li>`).join('\n\t\t');
+	const toc = chapterNames.map((g, i) => `<li class="ch${pad2(i + 1)}"><a href="#ch${pad2(i + 1)}">${escapeHtml(g)}</a></li>`).join('\n\t\t');
 	const sections = groups.map((g, i) => {
 		const mine = rows.filter((r) => r.group === g);
 		const n = pad2(i + 1);
 		return `<section class="ch${n}" id="ch${n}">\n\t<h1>${escapeHtml(g)} (${mine.length} 件)</h1>\n${mine.map(detailsHtml).join('\n')}\n</section>`;
-	}).join('\n\n');
+	});
+	if (planDecisions.length > 0) {
+		const n = pad2(chapterNames.length);
+		const parents = [...new Set(planDecisions.map(parentOf))];
+		const parts = parents.map((p) => `\t<h2>${escapeHtml(p)}</h2>\n${planDecisions.filter((d) => parentOf(d) === p).map(decisionHtml).join('\n')}`);
+		sections.push(`<section class="ch${n}" id="ch${n}">\n\t<h1>計画の決定 (${planDecisions.length} 件)</h1>\n${parts.join('\n')}\n</section>`);
+	}
 
 	const html = `<!DOCTYPE html>
 <html lang="ja">
@@ -398,7 +466,7 @@ export function renderHtml(o: RenderOptions): RenderResult {
 <meta name="md-skip">
 <title>課題 (${project})</title>
 <style>${Css}
-	${chapterCss(groups.length)}
+	${chapterCss(chapterNames.length)}${decisions.length > 0 ? DecisionCss : ''}
 </style>
 </head>
 <body>
@@ -420,7 +488,7 @@ ${links.length > 0 ? `<p class="backlink">${links.join('')}</p>\n` : ''}
 	</ol>
 </div>
 
-${sections}
+${sections.join('\n\n')}
 
 </div>
 

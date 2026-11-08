@@ -1,0 +1,235 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>render に決定を出す 計画 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch03{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>render に決定を出す 計画 (ai-agent-tools)</h1>
+		<p class="lead"><code>issue decide</code> で記録した決定を、<code>issue render</code> ・ <code>issue view</code> の HTML で読めるようにする。</p>
+		<p class="date">📅 作成: 2026-11-08 / 更新: 2026-11-08</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は、このプロジェクトの <code>src/issue/render.ts</code>。入力は、<code>notes/40_issues/decisions/</code> の決定のファイル。出力は、<code>issue render</code> が作る HTML (既定は <code>_issues.html</code>)。親の計画は <a href="p261108-01-決定の記録.html">決定の記録 計画</a> の「後に回すもの」の 3。</p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">決めたこと</a></li>
+		<li class="ch02"><a href="#ch02">出し方</a></li>
+		<li class="ch03"><a href="#ch03">進め方</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>決めたこと</h1>
+	<p>2026-11-08 に、利用者がすべて A を選んだ。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>問い</th><th>選んだ案</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">185-A</td><td>決定をどこに出すか</td><td>親が課題の決定は、その課題の本文の下に「決定」として出す。親が計画 (<code>p</code>) ・ 調査 (<code>r</code>) の決定は、最後の「計画の決定」の章にまとめる。課題を読むときに、その場で決まったことも読めるため</td></tr>
+			<tr><td class="nowrap">186-A</td><td>1 件の見せ方</td><td><code>details</code> で畳む。<code>summary</code> は番号 ・ 問い ・ 選んだ案、中は全部の案と本文。課題と同じ作りで、選んだ答えは開かずに読めるため</td></tr>
+			<tr><td class="nowrap">187-A</td><td>覆された決定</td><td>出す。灰色にし、「→ &lt;新しい番号&gt; で覆した」と添える。なぜ変えたかを、あとから追えるため</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>出し方</h1>
+	<h2>課題の下</h2>
+	<ul>
+		<li>課題の <code>details</code> の中、本文の後ろに <code>&lt;h4&gt;決定&lt;/h4&gt;</code> を置き、その課題を親に持つ決定を、id の順 (連番の数の順) に並べる。決定が無い課題には何も足さない</li>
+		<li>1 件は <code>&lt;details class="decision" id="&lt;決定の id&gt;"&gt;</code>。<code>summary</code> は <code>&lt;span class="dno"&gt;&lt;id&gt;&lt;/span&gt; 問い → 選んだ字: 選んだ案の文</code>。中は、決めた日 ・ 参照 ・ ファイルへのリンクの行と、本文 (案の一覧を含む Markdown)</li>
+		<li>決定の <code>details</code> は既定で閉じる (選んだ答えは <code>summary</code> で読める)</li>
+	</ul>
+	<h2>計画の決定の章</h2>
+	<ul>
+		<li>親が課題でない決定があるときだけ、最後に「計画の決定 (n 件)」の章を足し、目次にも入れる。章の中は、親の番号ごとに <code>h2</code> で分ける</li>
+		<li>章の色は、章数に入れて振り直す (色相 280 → 0)</li>
+		<li><code>render</code> を課題の番号 (<code>&lt;id&gt;…</code>) ・ <code>--group</code> で絞ったときは、この章を出さない (絞った課題の下の決定だけを出す)</li>
+	</ul>
+	<h2>覆された決定</h2>
+	<ul>
+		<li>ほかの決定の <code>replaces</code> に挙がった決定は、<code>details</code> に <code>superseded</code> の class を付け、灰色 (<code>#5a6472</code> の字、<code>#f1f3f6</code> の地) にする。<code>summary</code> の末尾に「→ <a>新しい id</a> で覆した」を添える (同じページにあればリンク)</li>
+		<li>新しい決定の側には「← 古い id を覆した」を添える</li>
+	</ul>
+	<h2>壊さないもの</h2>
+	<ul>
+		<li><strong>課題の数え方を変えない</strong>。<code>summary</code> の番号は <code>span.no</code> ではなく <code>span.dno</code> にする。<code>span.no</code> にすると、<code>_issues.html</code> を課題ごとに読む <code>compare-migration</code> (<code>parseLegacyIssues</code>) が、決定を課題と数える</li>
+		<li>タイトルバーと足の件数 (<code>課題 n 件 …</code>) には決定を混ぜない。決定があれば、件数の後ろに「・ 決定 n 件」を足す</li>
+		<li><code>decisions/</code> が無いプロジェクトの出力は、今と 1 字も変えない</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>進め方</h1>
+	<p><strong>今ある動き:</strong> <code>render</code> は、章 ・ 目次 ・ 件数 ・ 状態のバッジ ・ 既定の開閉 ・ 戻るリンクと旧 HTML へのリンク ・ 画像とリンクの付け替え ・ 中身が同じなら書かない、を受け持つ。これらは <code>run-issue-render-tests.ts</code> の 71 件で守る。決定が無いときに出力が変わらないことは、試験を 1 件足して守る。</p>
+	<ol>
+		<li>試験 (<code>tools/40_test/run-issue-render-tests.ts</code>) を先に書き、❌Red を見る。課題の下に出る (185-A) ・ 計画の決定の章 (185-A) ・ 絞ったときは章が出ない ・ <code>summary</code> と中身 (186-A) ・ 覆された決定の灰色と矢印 (187-A) ・ <code>span.no</code> が増えない ・ <code>decisions/</code> が無いときは出力が変わらない</li>
+		<li><code>src/issue/render.ts</code> を直し、✅Green にする。決定の読み込みは <code>decide.ts</code> の読み方を使い回す</li>
+		<li>関係する試験 (render ・ decide ・ migrate) を、node と bun の両方で流す</li>
+		<li>詳細仕様 (<code>notes/50_spec/課題ファイルの形と検査.html</code>) と TOOLS-USAGE の第 15 章を、作った姿に直す</li>
+		<li>185〜187 を <code>issue decide new --parent p261108-02</code> で記録し、<code>issue view</code> で、このプロジェクトの画面を見て確かめる</li>
+		<li><a href="p261108-01-決定の記録.html">決定の記録 計画</a> の「後に回すもの」の 3 を済にする</li>
+		<li>commit と push (ローカルルール第 6 章)</li>
+	</ol>
+	<h2>結果 (2026-11-08)</h2>
+	<ul>
+		<li>試験を先に書き、❌Red は 13 件 (決定が無いとき ・ 絞ったときの 5 件は、前から通る)。直したあとは ✅Green: render 89 件 ・ decide 36 件 ・ migrate 72 件が、node と bun の両方で通った</li>
+		<li>決定の CSS は、決定があるときだけ足す。決定が無いプロジェクトの出力は変わらない</li>
+		<li>185〜187 は <code>p261108-02-d1</code>〜<code>d3</code> として記録した。このプロジェクトの <code>_issues.html</code> で「計画の決定 (3 件)」の章を見て確かめ、<code>check-contrast</code> も問題なし</li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

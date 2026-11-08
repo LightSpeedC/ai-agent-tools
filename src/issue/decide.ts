@@ -160,6 +160,20 @@ export function listDecisions(root: string, parent: string | null, warn: (messag
 	return items.sort((a, b) => compareDecision(a.id, b.id));
 }
 
+/** 決定を全部読む (id の順)。読めないものは飛ばし、warn で知らせる。render が使う */
+export function loadDecisions(root: string, warn: (message: string) => void): DecisionView[] {
+	const views: DecisionView[] = [];
+	for (const name of listMdNames(decisionsDirOf(root))) {
+		const v = readDecision(root, name);
+		if (v === null) {
+			warn(`[警告] ${DecisionsRel}/${name} を読めない (issue check で確かめる)`);
+			continue;
+		}
+		views.push(v);
+	}
+	return views.sort((a, b) => compareDecision(a.id, b.id));
+}
+
 /** 決定を 1 件読む */
 export function showDecision(root: string, id: string): DecisionView {
 	const found = listMdNames(decisionsDirOf(root)).filter((n) => n.startsWith(id + '-') && DecisionNamePattern.exec(n)?.[1] === id);
