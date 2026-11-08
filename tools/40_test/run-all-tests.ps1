@@ -5,7 +5,7 @@
 	個別に実行しないと通らないテストを残さないためのもので、
 	それぞれのランチャーは単独でも実行できる。
 
-	1 本でも失敗したら終了コード 1 を返す。
+	1 本でも失敗したら終了コード 1 を返す。知らない引数を受けたら、使える引数を出して終了コード 2 を返す。
 
 	ps1 のテストは直接、ts のテストは bun（無ければ node）で走らせる。
 
@@ -27,8 +27,16 @@
 param(
 	[switch]$Online,
 	[switch]$List,
-	[switch]$IfChanged
+	[switch]$IfChanged,
+	# 知らない引数を受け止めて、使える引数を出して止める (r261109-01 の 199-A)
+	[Parameter(ValueFromRemainingArguments = $true)]
+	[string[]]$Unknown
 )
+if ($Unknown) {
+	[Console]::Error.WriteLine("知らない引数: $($Unknown -join ' ')")
+	[Console]::Error.WriteLine('使える引数: -Online ・ -List ・ -IfChanged (どれも省ける)')
+	exit 2
+}
 
 # コンソールのコードページは変えない（窓に残り、隣のプロセスを化けさせる）。
 # リダイレクトされている分だけ、UTF-8 で読み書きするよう個別に差し替える
