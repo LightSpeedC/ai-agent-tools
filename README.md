@@ -56,6 +56,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | [PowerShell 学習資料からの要求 (2026-08-29)](notes/01_research/r260829-01-PowerShell学習資料からの要求.md) | PowerShell 学習資料の変換器を html2md に置き換えるために、足りなかった機能と、図の扱いの論点 |
 | [レビュー #649 全文](notes/01_research/i260908-04-review649.md) | html2md 全体のレビュー（2026-09-08）の原資料 |
 | [失敗の振り返り (2026-10-14 〜 10-25)](notes/01_research/r261025-01-失敗の振り返り.md) | 会話の記録から AI の作業の失敗を拾い、共通ルールとフックに突き合わせて、ルール化の候補を挙げる |
+| [失敗の振り返り (2026-11-06 〜 11-09)](notes/01_research/r261109-01-失敗の振り返り.md) | 前回の後の会話の記録から失敗を拾い、空回りの cron ・ 全件試験の引数 ・ git add -A の 3 件を候補に挙げる |
 | [html2md の処理系比較](tools/90_misc/bench-html2md/処理系比較-html2md.html) | 実際の HTML → Markdown 変換で、C# の exe と TypeScript 版の時間とメモリを測った |
 | [check-public の処理系比較](tools/90_misc/bench-check-public/処理系比較-check-public.html) | 同じ検査を 6 つの処理系で書き、速さ ・ 事前の段 ・ 行数を測った |
 

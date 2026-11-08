@@ -1,0 +1,251 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>失敗の振り返り (2026-11-06 〜 11-09)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色 (4 章 / 色相 280 → 0 を 93.3 度刻み) */
+	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	h3{
+		display:inline-block; border-bottom:2px dotted var(--accent2,#2f5fbf);
+		padding-bottom:3px; margin:20px 0 8px; font-size:1.03em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+	td.num{ text-align:right; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius: 6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	/* ホームへ戻るリンク。⌂ のアイコンだけの紺のバッジ (共通ルール「root の README.html と資料の html は相互リンクする」) */
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>失敗の振り返り (2026-11-06 〜 11-09)</h1>
+		<p class="lead">会話の記録から、AI の作業の失敗を拾い、共通ルールとフックに突き合わせて、ルール化の候補を挙げる。</p>
+		<p class="date">📅 作成: 2026-11-09 / 更新: 2026-11-09</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">範囲と方法</a></li>
+		<li class="ch02"><a href="#ch02">拾った失敗</a></li>
+		<li class="ch03"><a href="#ch03">ルール ・ フックとの突き合わせ</a></li>
+		<li class="ch04"><a href="#ch04">ルール化の候補</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>範囲と方法</h1>
+	<ul>
+		<li><strong>範囲</strong>: 2026-11-06 08:49 (JST) から 11-09 00:18 まで。前の振り返り <a href="r261025-01-失敗の振り返り.html">r261025-01</a> の後から今まで</li>
+		<li><strong>10-25 〜 11-06 の記録は無い</strong>。ホームの会話の記録の置き場に、このプロジェクトの記録は今のセッションの 1 本しか残っていなかった。この期間は振り返っていない</li>
+		<li><strong>方法</strong>: 会話の記録 (JSONL) を、人の発言 ・ AI の本文 ・ 道具の呼び出し ・ 道具の失敗だけの短い形に直し、4 つに分けた (2,000 行)。<strong>サブエージェント 4 本が、1 本に 1 つずつ、全部を読んで</strong>失敗を拾った。読めなかった範囲は、4 本とも無し</li>
+		<li><strong>拾った基準</strong>: 利用者に指摘 ・ 訂正された / AI が自分で誤りに気づいて直した / 利用者が止めた道具の呼び出し / フックに止められた / 同じ種類の失敗が 2 回以上。道具が 1 回エラーを返して、そのまま直ったものは拾わない</li>
+	</ul>
+	<div class="callout">
+		<strong>限界</strong>: AI の本文は短く切ってあり、長い応答の後半は見えていない。件数は 4 本の報告を足したもので、厳密な数ではない。
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>拾った失敗</h1>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>失敗の種類</th><th>件数</th><th>利用者の指摘</th><th>おもな例 (JST)</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">英語の混入</td><td class="num">約 24 回</td><td class="num">0 回</td><td>ツールを呼ぶ間の短い文 (「Now the render logic.」等)。<strong>すべてフック (PreToolUse ・ Stop) が止め</strong>、訳を書いて通った。11/06 16:12 の 1 文だけ、止まらず訳も出なかった</td></tr>
+			<tr><td class="nowrap">Bash の素の使用</td><td class="num">9 回</td><td class="num">0 回</td><td><code>sed -n</code> 7 回 ・ <code>awk</code> 2 回。<strong>すべてフックが止め</strong>、Read ・ Grep に切り替えた</td></tr>
+			<tr><td class="nowrap">空回りの cron を消さない</td><td class="num">約 100 回</td><td class="num">0 回</td><td>11/06 20:04 〜 11/07 05:21、判断待ちのまま同じ文面の報告を繰り返した。共通ルール「空回りが続いたら消す」は 3 回で消す。20:23 に「止めてほしければ言ってください」と利用者に委ねただけ</td></tr>
+			<tr><td class="nowrap">試験の穴 ・ 根拠の弱い ✅</td><td class="num">6 回</td><td class="num">3 回</td><td>issue migrate の試験が自プロジェクトの HTML の作り 1 種類だけで、ai-agent-rules の <code>code.no</code> を読めなかった (#1830)。11/08 14:02 他プロジェクトの 31 件を、番号と状態が読めただけで「すべて読める」と ✅ にした (本文は全部壊れていた)。ほかに、リンクの列挙をやることと読み違えた (11/07 07:22)、旧番号を 1 件にまとめた (11/08 21:14、194-A)、「課題の外の決定」が 117 件重なった (21:40、197-A)</td></tr>
+			<tr><td class="nowrap">前提の取り違え</td><td class="num">4 回</td><td class="num">3 回</td><td>11/08 14:31 ローカルルールの生成物 .md に書いて html2md で消した (2 度目)。11/06 19:33 全件試験に <code>nopause</code> を付けて 1 本も流れなかった (<strong>10/17 にも同じ</strong>)。TOOLS-USAGE 第 15 章が実装と食い違った。全件試験の開始時刻を答えられなかった</td></tr>
+			<tr><td class="nowrap">記録の反映漏れ</td><td class="num">6 回</td><td class="num">0 回</td><td>Vault の日誌の行が無い (2 回)、計画の更新日、TOOLS-USAGE.md の作り直し、仕様の migrate の節が古い、やること行に発言番号を書けないまま commit。どれも自分で気づいた</td></tr>
+			<tr><td class="nowrap">確認の取り方</td><td class="num">3 回</td><td class="num">2 回</td><td>11/06 12:51 決めることをまとめて出した (1 つずつ聞く)。11/08 09:15 選択肢の番号を件ごとに 1 から振った。14:43 他プロジェクトへの返信 #1839 に、相手の進め方の判断を含めた (自分で気づいた)</td></tr>
+			<tr><td class="nowrap">利用者が止めた試験</td><td class="num">1 回</td><td class="num">1 回</td><td>11/08 13:48 軽い直しのあとに全件試験 (約 17 分) を流し、止められた</td></tr>
+			<tr><td class="nowrap">git の使い方</td><td class="num">1 回</td><td class="num">0 回</td><td>11/07 14:12 <code>git add -A &lt;パス&gt;</code> の形を使った。パスは名指しだが、共通ルールは <code>-A</code> を禁じている</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>ルール ・ フックとの突き合わせ</h1>
+	<p>✅ 防ぐルールまたはフックがある ・ ⚠️ 一部 (あるが破られた ・ 一部しか止められない) ・ ❌ 無い。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>失敗</th><th>防ぐルール</th><th>防ぐフック</th><th>判定</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">英語の混入</td><td>「AIエージェント応答の言語」</td><td>PreToolUse ・ Stop の両方が働き、ほぼ全件を止めた</td><td class="nowrap">✅ (書くのは止まらないが、残らない)</td></tr>
+			<tr><td class="nowrap">Bash の素の使用</td><td>「Bash に手が伸びる操作は、道具に置き換える」</td><td><code>sed</code> ・ <code>awk</code> を止める。9 回とも止めた</td><td class="nowrap">✅</td></tr>
+			<tr><td class="nowrap">空回りの cron</td><td>「空回りが続いたら消す」</td><td>無し</td><td class="nowrap">⚠️ 破られた</td></tr>
+			<tr><td class="nowrap">試験の穴 ・ 根拠の弱い ✅</td><td>「未検証の技術的挙動を、確認済みであるかのように断定しない」</td><td>無し。道具として、写しで往復させて中身を比べる <code>compare-migration</code> を作った</td><td class="nowrap">✅ (道具で対策済み)</td></tr>
+			<tr><td class="nowrap">生成物 .md への書き込み</td><td>「HTML→Markdown 変換ルール」</td><td>11/08 18:12 に ai-agent-rules が PreToolUse フックを入れた</td><td class="nowrap">✅</td></tr>
+			<tr><td class="nowrap"><code>nopause</code> の誤り</td><td>無し</td><td>無し。全件試験の入口が、知らない引数を受けて何も流さず終わる</td><td class="nowrap">❌</td></tr>
+			<tr><td class="nowrap">記録の反映漏れ</td><td>「実装のあとに何をするか」「いつ書くか」</td><td>Stop フックが日誌を促す</td><td class="nowrap">⚠️ 一部 (自分で気づけている)</td></tr>
+			<tr><td class="nowrap">確認の取り方</td><td>「複数の解決案がある場合の対応」(通し番号) ・ 「判断を含む返信は案を提示」</td><td>無し</td><td class="nowrap">⚠️ 破られた (各 1 回)</td></tr>
+			<tr><td class="nowrap">昼の全件試験</td><td>ローカルルール第 7 章 (11/08 に足した)</td><td>―</td><td class="nowrap">✅</td></tr>
+			<tr><td class="nowrap"><code>git add -A</code></td><td>「修正は1点ずつ、確認を重視」</td><td>無し</td><td class="nowrap">⚠️ 破られた</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>ルール化の候補</h1>
+	<p>フックで止まっている英語 ・ Bash と、道具や新しいルールで対策が済んだものは、候補にしない。<strong>ルールがあるのに破られたもの</strong>と、<strong>前の振り返りの期間にも起きたもの</strong>から 3 件。番号は通し番号 (198 から)。</p>
+
+	<h2>198. 空回りの cron を消さない (約 100 回)</h2>
+	<p>判断待ちの回を「空回り」と数えず、待つのを作業と見なしていた。</p>
+	<ul>
+		<li><strong>198-A (推奨。恒久)</strong>: 残作業の cron の prompt に、共通ルールの見出し「空回りが続いたら消す」を入れる。発火のたびに読む場所に置けば、数え忘れない (手順は写さず、見出しで指す)</li>
+		<li><strong>198-B (恒久)</strong>: Stop フックで、同じ文面の応答が 3 回続いたら、CronDelete を促す。機械で止まるが、文面の比べ方の作りが要る</li>
+	</ul>
+
+	<h2>199. 全件試験に <code>nopause</code> を付けて何も流れない (10/17 ・ 11/06 の 2 回)</h2>
+	<ul>
+		<li><strong>199-A (推奨。恒久)</strong>: 全件試験の入口で、知らない引数を受けたら、エラーで止めて使える引数を出す。黙って終わらないので、すぐ気づける</li>
+		<li><strong>199-B (恒久)</strong>: <code>nopause</code> を受け付けて、何もしない引数として通す。ほかの道具と書き方が揃うが、知らない引数を黙って受ける作りは残る</li>
+	</ul>
+
+	<h2>200. <code>git add -A &lt;パス&gt;</code> を使った (1 回。ルールがあるのに破られた)</h2>
+	<ul>
+		<li><strong>200-A (推奨。恒久)</strong>: ai-agent-rules に、PreToolUse で <code>git add</code> の <code>-A</code> ・ <code>.</code> ・ <code>--all</code> と <code>git commit -a</code> を止めるフックを依頼する。英語 ・ Bash と同じく、フックで止まっている失敗は再発していない</li>
+	</ul>
+	<p>ほかの恒久対策は無い (ルールの文はすでにある)。</p>
+</section>
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>
