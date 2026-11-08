@@ -12,13 +12,14 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（6 章 / 色相 280 → 0 を 56 度刻み） */
+	/* 章のアクセント色（7 章 / 色相 280 → 0 を 46.7 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%);   --accent2:hsl(280,58%,55%);   --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(224,78%,25%);   --accent2:hsl(224,58%,55%);   --soft:hsl(224,28%,95%); }
-	.ch03{ --accent:hsl(168,78%,25%);   --accent2:hsl(168,58%,55%);   --soft:hsl(168,28%,95%); }
-	.ch04{ --accent:hsl(112,78%,25%);   --accent2:hsl(112,58%,55%);   --soft:hsl(112,28%,95%); }
-	.ch05{ --accent:hsl(56,78%,25%);    --accent2:hsl(56,58%,55%);    --soft:hsl(56,28%,95%); }
-	.ch06{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(233.3,78%,25%); --accent2:hsl(233.3,58%,55%); --soft:hsl(233.3,28%,95%); }
+	.ch03{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch04{ --accent:hsl(140,78%,25%);   --accent2:hsl(140,58%,55%);   --soft:hsl(140,28%,95%); }
+	.ch05{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
+	.ch06{ --accent:hsl(46.7,78%,25%);  --accent2:hsl(46.7,58%,55%);  --soft:hsl(46.7,28%,95%); }
+	.ch07{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -153,7 +154,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools のローカルルール</h1>
 		<p class="lead">このプロジェクトでだけ通る決めごと。全プロジェクトに通ることは共通ルールにあり、ここには書かない。</p>
-		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-11-03</p>
+		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-11-08</p>
 	</div>
 </div>
 
@@ -170,6 +171,7 @@
 		<li class="ch04"><a href="#ch04">chat の待受けは、無ければ自分で張る</a></li>
 		<li class="ch05"><a href="#ch05">書き出す道具は、中身が同じなら書かない</a></li>
 		<li class="ch06"><a href="#ch06">作業の区切りで commit と push をする</a></li>
+		<li class="ch07"><a href="#ch07">昼は関係する試験だけ、全件は夜 1 時に流す</a></li>
 	</ol>
 </div>
 
@@ -203,6 +205,16 @@
 				<td class="nowrap">プロジェクトフォルダ外へのアクセス（確認なしで参照してよいのは <code>~/.claude</code> 配下のみ）</td>
 				<td><code>~/.gemini</code> と <code>~/.codex</code> 配下、および <strong>file-manager のプロジェクト</strong>も、<strong>読み取りに限り</strong>確認なしで参照してよい。書き込みは確認を取る。<strong>認証情報のファイル（トークン等）と、会話の中身は読まない</strong>。<code>.gitignore</code> で除外されたものも読まない</td>
 				<td><code>cc</code> ・ <code>cx</code> ・ <code>ag</code> が起こすエージェントの履歴と設定の置き場を調べる必要があるため（<code>i261101-02</code>）。履歴の有無の判定は、置き場の構造だけで足りる。file-manager は、課題が大きいプロジェクトで、課題管理ツール（<code>p261103-01</code> の 121-A）の実測の場所にするため（<code>2026-11-03</code>、利用者の許可）</td>
+			</tr>
+			<tr>
+				<td class="nowrap">修正は1点ずつ、確認を重視（テストは全件実行してから報告する）</td>
+				<td>昼は関係する試験だけで報告する。全件は夜 1 時（第 7 章）</td>
+				<td>全件は約 17 分かかり、その大半（transcribe ・ ビューア ・ safe-push）は直した道具と関係ない</td>
+			</tr>
+			<tr>
+				<td class="nowrap">長い試験は、進み具合を報告する</td>
+				<td>夜 1 時の全件の試験には、報告を張らない（第 7 章）</td>
+				<td>見る人がいない。結果は記録のファイルで朝に見る</td>
 			</tr>
 		</tbody>
 	</table>
@@ -358,7 +370,7 @@
 	<h2>待受けの生死を cron でも確認する</h2>
 
 	<ul>
-		<li><strong>3 時間毎に cron を張り、待受け（<code>aichat wait</code>）の生死を確認する</strong>。<code>aichat waiters</code> で数え、0 本なら張り直す</li>
+		<li><strong>6 時間毎に cron を張り、待受け（<code>aichat wait</code>）の生死を確認する</strong>。<code>aichat waiters</code> で数え、0 本なら張り直す</li>
 		<li><strong>新着の有無にかかわらず、毎回「月/日 時:分」の見出しを付けて報告する</strong>。新着があれば概要を添え、無ければ「新着なし」と書く</li>
 		<li><strong>共通ルール「終わったら親が、数えてから黙って張り直す（報告は要らない）」の例外</strong>。ここでは生死確認そのものを定期的に可視化する目的があるため、新着の有無によらず毎回報告する</li>
 		<li><strong>cron は共通ルール「cron はセッションの中だけで生きる」に従い 7 日で失効し、ディスクに残らない</strong>。セッションを開き直したときは「セッションを開き直したとき」に従い張り直す</li>
@@ -397,6 +409,20 @@
 	<div class="callout callout-warning">
 		<p><strong>push は公開に相当する。</strong>自動にすると、点検の漏れがそのまま外へ出る。点検は、新しく追跡対象に入るファイルだけを見れば足りる。</p>
 	</div>
+</section>
+
+<section class="ch07" id="ch07">
+	<h1>昼は関係する試験だけ、全件は夜 1 時に流す</h1>
+	<p>適用条件: このプロジェクトで道具を直したあと、試験を流すとき。</p>
+	<ul>
+		<li><strong>昼の試験は、直した道具に関係する試験だけにする</strong>。<code>run-all-tests.ps1</code> の一覧から、直した道具の名前の試験を選んで流す（bun と node の両方）。資料だけの変更は、<code>html2md</code> ・ <code>check-markdown</code> で足りる</li>
+		<li><strong>全件の試験は、毎日 1:00 にタスクスケジューラが流す。ただし、前の回の全件の試験から更新が無ければ流さない</strong>。更新の有無は、前の回に記録した commit（<code>_run-all-times.json</code> の <code>commit</code>）と、いまの <code>HEAD</code> を比べて決める。commit していない変更は、更新に数えない</li>
+		<li><strong>セッションの cron は使わない</strong>（セッションを閉じると消え、7 日で失効するため）</li>
+		<li><strong>夜の全件の試験には、進み具合の報告（共通ルール「長い試験は、進み具合を報告する」）を張らない</strong>。見る人がいないため。結果は <code>tools/40_test/_run-all-times.json</code> と記録のファイルに残る</li>
+		<li><strong>昼の試験も 1 分を超えるときは、共通ルールのとおり進み具合を報告する</strong>。報告の cron は、試験が終わったら消す</li>
+		<li><strong>朝（その日の最初の作業の前）に、夜の結果を読んで報告する</strong>。流さなかった夜は、そう報告する。失敗があれば、その日の最初の作業にする</li>
+		<li><strong>commit と push は、関係する試験が通れば行う</strong>（第 6 章）。全件の結果を待たない</li>
+	</ul>
 </section>
 
 </div>
