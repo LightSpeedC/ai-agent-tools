@@ -1097,8 +1097,13 @@ issue decide show p261108-01-d1</code></pre>
 		<li><strong>数が合うか確かめる</strong>: <code>--dry-run</code> で出た状態ごとの数 = <code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> ・ <code>archived/</code> のそれぞれの数。<code>issue check</code> が問題なし</li>
 		<li><strong>旧ファイルを残す</strong>: <code>issues.html</code> を、書き換えずに <code>git mv</code> で <code>issues-legacy.html</code> へ改名する</li>
 		<li><strong>リンクを直す</strong>: <code>text find --path . --recurse</code> で <code>issues.html</code> を探し、リンク先の名前だけを直す (README ・ ローカルルール ・ <code>check-public-allow.txt</code> 等)。README の案内は「README から案内する」のとおりにする</li>
-		<li><strong>検査して、利用者の指示で commit と push</strong>: <code>html2md</code> ・ <code>check-markdown</code> ・ そのプロジェクトのテスト。<strong>移行は 1 commit にする</strong></li>
+		<li><strong>検査して、利用者の指示で commit と push</strong>: <code>html2md</code> ・ <code>check-markdown</code> ・ そのプロジェクトのテスト。<strong>課題の移行は 1 commit にする</strong></li>
+		<li><strong>決定を数える</strong> (課題の移行の commit の後): <code>issue decide migrate --dry-run</code>。資料 (<code>notes/</code> の HTML) の決定の表と、資料 ・ 課題の本文に出てくる <code>番号-字</code> (<code>96-A</code> 等) から、移す数を出す。書き込まない。<strong>課題の移行が済んでいないと止まる</strong></li>
+		<li><strong>一覧を利用者に見せる</strong>: 出た一覧のうち、「A とみなした」(案の表で、選んだ字が本文に無かった番号) と「字が割れた」(同じ番号に別の字が出てくる) を利用者に見せ、そのまま移してよいかを聞く。古い資料が番号を資料ごとに 1 から振っていたものは、<code>資料の番号/番号</code> の形で、資料ごとに別の決定になる</li>
+		<li><strong>決定を移す</strong>: <code>issue decide migrate --apply</code>。<code>decisions/</code> へ書き、書いたあとに読み直しと <code>issue check</code> を流す。だめなら書いたものを全部消して、終了コード 1 で止まる。手で戻したいときは <code>issue decide migrate --undo</code>。何度流しても、既に移した旧番号は飛ばす</li>
+		<li><strong>画面と検索で確かめて、利用者の指示で commit と push</strong>: <code>issue view</code> で、決定が課題の下と「課題の外の決定」の章に出ること、<code>issue search &lt;語&gt;</code> で決定も見つかることを見る。<strong>決定の移行は、課題の移行とは別の 1 commit にする</strong> (片方だけを戻せるため)</li>
 	</ol>
+	<p>移す前に、元のプロジェクトに書かずに試すときは、ai-agent-tools の <code>tools/50_run/compare-migration/compare-decisions.ts &lt;プロジェクトのフォルダ&gt;</code> を使う。<code>notes/</code> を写し、写しで課題 → 決定の順に移して、読み直し ・ 検査 ・ 画面に出た数 ・ <code>--undo</code> までを確かめる。</p>
 	<div class="callout callout-warning">
 		<p><strong>複数の PC で使うプロジェクトは、移す PC を 1 台に決める。</strong>移す前に、全 PC で課題の編集を commit して push しておく。ほかの PC は、課題を触る前に、そのプロジェクトと ai-agent-tools ・ ai-agent-rules を pull し、<code>issue check</code> を流す。PC ごとに移すと、同じ課題が 2 度立つ。</p>
 	</div>

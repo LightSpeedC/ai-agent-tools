@@ -847,7 +847,13 @@ issue decide show p261108-01-d1
 4. **数が合うか確かめる**: `--dry-run` で出た状態ごとの数 = `todo/` ・ `doing/` ・ `done/` ・ `archived/` のそれぞれの数。`issue check` が問題なし
 5. **旧ファイルを残す**: `issues.html` を、書き換えずに `git mv` で `issues-legacy.html` へ改名する
 6. **リンクを直す**: `text find --path . --recurse` で `issues.html` を探し、リンク先の名前だけを直す (README ・ ローカルルール ・ `check-public-allow.txt` 等)。README の案内は「README から案内する」のとおりにする
-7. **検査して、利用者の指示で commit と push**: `html2md` ・ `check-markdown` ・ そのプロジェクトのテスト。**移行は 1 commit にする**
+7. **検査して、利用者の指示で commit と push**: `html2md` ・ `check-markdown` ・ そのプロジェクトのテスト。**課題の移行は 1 commit にする**
+8. **決定を数える** (課題の移行の commit の後): `issue decide migrate --dry-run`。資料 (`notes/` の HTML) の決定の表と、資料 ・ 課題の本文に出てくる `番号-字` (`96-A` 等) から、移す数を出す。書き込まない。**課題の移行が済んでいないと止まる**
+9. **一覧を利用者に見せる**: 出た一覧のうち、「A とみなした」(案の表で、選んだ字が本文に無かった番号) と「字が割れた」(同じ番号に別の字が出てくる) を利用者に見せ、そのまま移してよいかを聞く。古い資料が番号を資料ごとに 1 から振っていたものは、`資料の番号/番号` の形で、資料ごとに別の決定になる
+10. **決定を移す**: `issue decide migrate --apply`。`decisions/` へ書き、書いたあとに読み直しと `issue check` を流す。だめなら書いたものを全部消して、終了コード 1 で止まる。手で戻したいときは `issue decide migrate --undo`。何度流しても、既に移した旧番号は飛ばす
+11. **画面と検索で確かめて、利用者の指示で commit と push**: `issue view` で、決定が課題の下と「課題の外の決定」の章に出ること、`issue search <語>` で決定も見つかることを見る。**決定の移行は、課題の移行とは別の 1 commit にする** (片方だけを戻せるため)
+
+移す前に、元のプロジェクトに書かずに試すときは、ai-agent-tools の `tools/50_run/compare-migration/compare-decisions.ts <プロジェクトのフォルダ>` を使う。`notes/` を写し、写しで課題 → 決定の順に移して、読み直し ・ 検査 ・ 画面に出た数 ・ `--undo` までを確かめる。
 
 > [!WARNING]
 > <strong>複数の PC で使うプロジェクトは、移す PC を 1 台に決める。</strong>移す前に、全 PC で課題の編集を commit して push しておく。ほかの PC は、課題を触る前に、そのプロジェクトと ai-agent-tools ・ ai-agent-rules を pull し、`issue check` を流す。PC ごとに移すと、同じ課題が 2 度立つ。
