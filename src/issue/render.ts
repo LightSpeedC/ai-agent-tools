@@ -68,6 +68,18 @@ function toPosix(p: string): string {
 	return p.split(path.sep).join('/');
 }
 
+/** items/ の 4 つのフォルダにある課題の番号 (ページに出すかどうかによらない。195-A) */
+function allIssueIds(root: string): Set<string> {
+	const ids = new Set<string>();
+	for (const folder of Folders) {
+		for (const name of listMdNames(path.join(root, ...ItemsRel.split('/'), folder))) {
+			const m = NamePattern.exec(name);
+			if (m !== null) ids.add(m[1]);
+		}
+	}
+	return ids;
+}
+
 function loadRows(o: RenderOptions): Row[] {
 	const rows: Row[] = [];
 	const folders = o.ids.length > 0 ? [...Folders] : o.folders;
@@ -423,10 +435,13 @@ export function renderHtml(o: RenderOptions): RenderResult {
 			+ `<p class="meta">${meta.join(' ・ ')}</p>\n${body(row)}${decisionPart}\n</details>`;
 	};
 
-	// 計画 ・ 調査を親に持つ決定は、絞らずに出すときだけ、最後の章にまとめる (185-A)
+	// 親が課題でない決定 (計画 ・ 調査) と、親の課題が items/ に無い決定は、絞らずに出すときだけ、最後の章にまとめる (185-A ・ 195-A)
 	const filtered = o.ids.length > 0 || o.group !== null;
-	const planDecisions = filtered ? [] : decisions.filter((d) => !/^i/.test(parentOf(d)));
-	const chapterNames = planDecisions.length > 0 ? [...groups, '計画の決定'] : groups;
+	const issueIds = allIssueIds(o.root);
+	// archived だけのページ (_issues-archive.html ・ --state archived) には出さない (197-A。_issues.html と重ならないため)
+	const archivedOnly = o.folders.every((f) => f === 'archived');
+	const planDecisions = filtered || archivedOnly ? [] : decisions.filter((d) => !issueIds.has(parentOf(d)));
+	const chapterNames = planDecisions.length > 0 ? [...groups, '課題の外の決定'] : groups;
 	const shownDecisions = rows.reduce((n, r) => n + (decisionsOf.get(r.id)?.length ?? 0), 0) + planDecisions.length;
 
 	const counts = countsText(rows) + (shownDecisions > 0 ? ` ・ 決定 ${shownDecisions} 件` : '');
@@ -454,7 +469,7 @@ export function renderHtml(o: RenderOptions): RenderResult {
 		const n = pad2(chapterNames.length);
 		const parents = [...new Set(planDecisions.map(parentOf))];
 		const parts = parents.map((p) => `\t<h2>${escapeHtml(p)}</h2>\n${planDecisions.filter((d) => parentOf(d) === p).map(decisionHtml).join('\n')}`);
-		sections.push(`<section class="ch${n}" id="ch${n}">\n\t<h1>計画の決定 (${planDecisions.length} 件)</h1>\n${parts.join('\n')}\n</section>`);
+		sections.push(`<section class="ch${n}" id="ch${n}">\n\t<h1>課題の外の決定 (${planDecisions.length} 件)</h1>\n${parts.join('\n')}\n</section>`);
 	}
 
 	const html = `<!DOCTYPE html>

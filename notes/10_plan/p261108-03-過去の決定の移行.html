@@ -1,0 +1,264 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>過去の決定の移行 計画 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%); --accent2:hsl(93.3,58%,55%); --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%); --accent2:hsl(0,58%,55%); --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:var(--ink,#1c2330);
+		border-left:5px solid var(--accent2,#2f5fbf);
+		border-radius:0 6px 6px 0; padding:13px 16px; overflow-x:auto;
+		font-size:.92em; line-height:1.7;
+		font-family:Consolas,"Courier New",monospace;
+	}
+	pre code{ background:transparent; color:inherit; border:none; padding:0; font-size:1em; }
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.callout{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0;
+	}
+	.callout strong{ color:var(--accent,#12224d); background:transparent; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 0;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>過去の決定の移行 計画 (ai-agent-tools)</h1>
+		<p class="lead">資料と課題に散っている過去の決定 (<code>96-A</code> 等) を、<code>issue decide migrate</code> で <code>decisions/</code> へ移す。失敗したら自分で戻し、<code>--undo</code> でも戻せる。</p>
+		<p class="date">📅 作成: 2026-11-08 / 更新: 2026-11-08</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は、このプロジェクトの <code>issue</code> ツール (<code>src/issue/</code>)。入力は、<code>--root</code> のプロジェクトの <code>notes/</code> の計画 ・ 調査の HTML、課題の Markdown (<code>items/</code>)、旧課題の HTML (<code>issues-legacy.html</code> ・ <code>issues-archive.html</code>)。出力は、<code>notes/40_issues/decisions/</code> の決定のファイル。親の計画は <a href="p261108-01-決定の記録.html">決定の記録 計画</a> の「後に回すもの」の 1。</p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">決めたこと</a></li>
+		<li class="ch02"><a href="#ch02">拾い方</a></li>
+		<li class="ch03"><a href="#ch03">戻す仕組みと試し方</a></li>
+		<li class="ch04"><a href="#ch04">進め方</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>決めたこと</h1>
+	<p>2026-11-08 に、利用者がすべて A を選んだ。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>問い</th><th>選んだ案</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">188-A</td><td>何から拾うか</td><td>計画 ・ 調査の決定の表から拾う。選ばなかった案が書いていなければ「記録なし」。機械で確実に読め、元と比べられるため</td></tr>
+			<tr><td class="nowrap">189-A</td><td>親と番号の振り方</td><td>親は表がある資料の番号。連番は <code>d1</code> から、旧番号は <code>legacy_ids</code> (<code>:ai-agent-tools:96-A</code>)。同じ旧番号の決定がすでにあれば飛ばす</td></tr>
+			<tr><td class="nowrap">190-A</td><td>失敗したときに戻す仕組み</td><td><code>issue migrate</code> と同じ形 (<code>--dry-run</code> ・ <code>--apply</code> の後の自己検査と自動の巻き戻し ・ <code>--undo</code>)</td></tr>
+			<tr><td class="nowrap">191-A</td><td>コマンドの名前と範囲</td><td><code>issue decide migrate</code>。どのプロジェクトでも流せる形に作り、まずこのプロジェクトで流す</td></tr>
+			<tr><td class="nowrap">192-A</td><td>案の表で、選んだ案をどう決めるか</td><td>同じ資料の表の外に出てくる <code>番号-字</code> から決める。出てこなければ A とみなし、そう本文に書く。<code>--dry-run</code> で一覧を出す</td></tr>
+			<tr><td class="nowrap">194-A</td><td>計画ごとに振り直した番号</td><td>本文から拾った番号が 2 つ以上の資料 ・ 課題に出てくれば、資料ごとに別の決定にし、旧番号を <code>資料の番号/番号-字</code> にする (古い計画は番号を 1 から振り直していた)</td></tr>
+			<tr><td class="nowrap">195-A</td><td>親の課題が items/ に無い決定</td><td><code>render</code> の最後の章 (名前を「課題の外の決定」に変えた) に出す</td></tr>
+			<tr><td class="nowrap">196-A</td><td>決定を探せるようにする</td><td><code>issue search</code> で決定も探す。<code>--state</code> は課題だけに効く (利用者の指摘: archived の決定が探せない)</td></tr>
+			<tr><td class="nowrap">197-A</td><td>保管のページの重なり</td><td>課題の外の決定の章は <code>_issues.html</code> だけに出す</td></tr>
+			<tr><td class="nowrap">193-A</td><td>表に無い決定</td><td>資料と課題の本文に出てくる <code>番号-字</code> から拾い、問いと案は「記録なし」、本文に出てきた箇所を並べる。<code>--dry-run</code> で一覧を出す</td></tr>
+		</tbody>
+	</table>
+	</div>
+	<p>いまの資料で、表にある番号は 66 ・ 73〜77 ・ 80〜90 ・ 93〜98 ・ 100〜103 ・ 105 ・ 107〜131 ・ 134〜156 ・ 171〜174 ・ 185〜187 (10 ファイル)。表に無い番号 (1〜65 ・ 157〜170 ・ 175〜184 等) は、193-A で本文から拾う。</p>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>拾い方</h1>
+	<h2>決定の表 (2 つの形)</h2>
+	<ul>
+		<li><strong>「決めたこと」の表</strong> (見出しの 2 列目が「決めたこと」・「問い」等で、1 行が 1 件): 1 列目の <code>番号-字</code> の行を 1 件にする。問いは「問い」の列があればその文、無ければ「記録なし」。選んだ案は、その字の案として表の文を書く。ほかの案は「記録なし」(188-A)</li>
+		<li><strong>「決めること / 案」の表</strong> (同じ番号の A ・ B ・ C が行ごとに並ぶ): 同じ番号の行をまとめて 1 件にし、問いは「決めること」の列 (<code>rowspan</code> を含む)、案はそれぞれの行の文、推す理由は案の文に添える。選んだ字は、同じ資料の表の外に出てくる <code>番号-字</code>。出てこなければ A とみなし、「本文に記録なし、推奨の A とみなした」と書く。2 つ以上の字が出てくれば、一覧に出し、先に出てきた字にする (192-A)</li>
+		<li><strong>同じ資料に表が 2 つあれば</strong> (i261101-02 の 85〜87 等)、同じ番号を 1 件にまとめる</li>
+		<li>表は、<code>&lt;td class="nowrap"&gt;</code> の決まりに頼らず、行の最初のセルが <code>^\d+-[A-Z]$</code> かで見分ける (作りに頼らない読み方。179-A と同じ考え)</li>
+	</ul>
+	<h2>表に無い番号 (193-A)</h2>
+	<ul>
+		<li>資料 (<code>notes/</code> の HTML) と課題 (<code>items/</code> の Markdown と旧課題の HTML) の本文から、<code>(\d+)-([A-Z])</code> を拾う。表にある番号は除く</li>
+		<li>1 件の問いと案は「記録なし」。選んだ字は、出てきた字 (複数あれば一覧に出し、最も多く出てきた字)。本文の <code>## 出てきた箇所</code> に、資料か課題の番号と、その前後の文 (前後 40 字) を並べる</li>
+		<li><strong>誤って拾わない</strong>: コードの中 (<code>code</code> ・ <code>pre</code>) ・ 日付 ・ 番号の一部 (<code>i261108-03</code> の <code>08-0</code> 等) は除く。前後が英数字やハイフンなら番号とみなさない</li>
+	</ul>
+	<h2>親と番号 (189-A)</h2>
+	<ul>
+		<li>親は、表がある資料の番号。表に無い番号は、出てきた資料 ・ 課題の番号の小さい順で、最初に当たったもの。番号の無い資料 (README ・ USAGE 等) は親にしない</li>
+		<li>連番は、親ごとに旧番号の順で <code>d1</code> から振る。すでに決定があれば、その続きから</li>
+		<li><code>legacy_ids</code> は <code>:&lt;プロジェクトのフォルダ名&gt;:&lt;番号&gt;-&lt;字&gt;</code>。同じ旧番号 (字は問わない) の決定がすでにあれば、飛ばす (185〜187 は記録済み)</li>
+		<li>ほかのプロジェクトの番号の規則 (資料の番号の形) が違うときは、<code>--dry-run</code> の「読めない」に出す</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>戻す仕組みと試し方</h1>
+	<h2>コマンド (190-A ・ 191-A)</h2>
+<pre><code class="language-text">issue decide migrate [--dry-run | --apply | --undo] [--root &lt;dir&gt;] [--json]
+</code></pre>
+	<ul>
+		<li><strong><code>--dry-run</code></strong> (既定): 何も書かない。件数 (表から ・ 本文から ・ 飛ばしたもの)、「A とみなした」一覧、「表に無く本文から拾った」一覧、字が割れた一覧、読めないもの、を出す</li>
+		<li><strong><code>--apply</code></strong>: 書いたファイルの一覧を <code>notes/40_issues/decisions/_decide-migrate-written.txt</code> に残す。書いたあとに読み直し、元から拾った件数 ・ 選んだ字 ・ 旧番号が一致するかを比べ、<code>issue check</code> を流す。だめなら書いたものを全部消し、終了コード 1</li>
+		<li><strong><code>--undo</code></strong>: 一覧にあるファイルだけを消し、一覧も消す。一覧が無ければ何もせず終了コード 1</li>
+		<li>予約 (<code>_lock</code>) は <code>issue decide new</code> と同じものを使う。commit はしない</li>
+	</ul>
+	<h2>試し方 (元のプロジェクトに書かない)</h2>
+	<ul>
+		<li><strong>1. <code>--dry-run</code> を、元に <code>--root</code> で流す</strong>。書かないので安全。件数と一覧を見る</li>
+		<li><strong>2. 写しで <code>--apply</code> ・ <code>--undo</code></strong>: 元の <code>notes/</code> を、このプロジェクトの <code>tmp/compare-decisions/&lt;名前&gt;/</code> へ写し、そこへ <code>--root</code> を向けて流す</li>
+		<li><strong>3. 写しで往復を機械で比べる</strong>: <code>tools/50_run/compare-migration/</code> に決定の比べ方を足す。元から拾った決定と、書いた決定を読み直したものを、旧番号ごとに比べる (親 ・ 選んだ字 ・ 問い ・ 案の数)。<code>render</code> の HTML に決定が出ることも見る</li>
+		<li><strong>試すプロジェクト</strong>: このプロジェクトと、利用者が許可したプロジェクト。ほかのプロジェクトは、読む前に名前を出して許可をもらう (ローカルルールで確認なしに読めるのは file-manager だけ)。相手のプロジェクトには何も書かない</li>
+	</ul>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>進め方</h1>
+	<p><strong>今ある動き:</strong> <code>issue decide new</code> ・ <code>list</code> ・ <code>show</code> と決定の検査 (<code>run-issue-decide-tests.ts</code> 36 件)、課題の移行 (<code>run-issue-migrate-tests.ts</code> 72 件)、決定の表示 (<code>run-issue-render-tests.ts</code> 89 件)。どれも変えない。</p>
+	<ol>
+		<li>試験 (<code>tools/40_test/run-issue-decide-migrate-tests.ts</code>) を先に書き、❌Red を見る。2 つの表の形 ・ 表が 2 つ ・ A とみなす ・ 字が割れる ・ 表に無い番号 ・ 誤って拾わないもの ・ 親と連番 ・ 既にある旧番号を飛ばす ・ <code>--apply</code> の自己検査と巻き戻し ・ <code>--undo</code> ・ <code>--root</code></li>
+		<li><code>src/issue/</code> に実装し、✅Green にする。一括の試験の一覧に足す</li>
+		<li>関係する試験 (decide ・ decide-migrate ・ migrate ・ render) を、node と bun の両方で流す</li>
+		<li>比べる道具に決定の比べ方を足し、このプロジェクトと、許可をもらったプロジェクトの写しで、食い違い 0 を確かめる</li>
+		<li>このプロジェクトで <code>--dry-run</code> を流し、「A とみなした」一覧と「本文から拾った」一覧を利用者に見せる。確認をもらってから <code>--apply</code> し、<code>issue view</code> で画面を見る</li>
+		<li>詳細仕様と TOOLS-USAGE の第 15 章を直し、188〜193 を決定として記録する (188〜193 は、この計画の表から移行でも入るので、<code>--apply</code> の後なら記録は要らない)</li>
+		<li><a href="p261108-01-決定の記録.html">決定の記録 計画</a> の「後に回すもの」の 1 を済にし、commit と push (ローカルルール第 6 章)</li>
+	</ol>
+	<h2>結果 (2026-11-08)</h2>
+	<ul>
+		<li><strong>前提を足した</strong> (利用者の指示): 決定の移行は課題の移行が前提。済んでいなければ止める。写しで試す道具も、課題 → 決定の順に流す</li>
+		<li>試験は先に書き、❌Red を見てから直した。✅Green: decide-migrate 45 件 ・ render 91 件 ・ decide 36 件 ・ migrate 72 件 (node と bun)。途中で、表の 1 列目に説明が続く行 (<code>147-A (…)</code>) を読めない不具合と、計画ごとに振り直した番号 (194-A) を見つけ、試験を足して直した</li>
+		<li>写しでの往復: ai-agent-tools 167 件 ・ ai-agent-rules 28 件 ・ file-manager 657 件 (課題 436 件を先に移した) は、読み直しの食い違い 0 ・ check のエラー 0 ・ 画面に出た数が一致 ・ <code>--undo</code> で全部消えた。ai-chat-lite は、課題の移行で、旧の記録が食い違う課題 3 件のために止まった (<code>--state-override</code> で状態を決める必要がある)</li>
+		<li>このプロジェクトに <code>--apply</code>: 167 件 (表から 81 ・ 本文から 86)、既にある 3 件は飛ばした。A とみなした 21 件、字が割れた 31 件。194 ・ 195 は <code>issue decide new</code> で記録した (<code>p261108-03-d8</code> ・ <code>d9</code>)。<code>issue view</code> の画面で「課題の外の決定 (117 件)」を確かめた</li>
+		<li>196-A ・ 197-A を足した (試験を先に書き、❌Red を見てから直した)。<code>issue search</code> は決定も探し、保管のページから課題の外の決定の章を外した (保管のページの決定は、archived の課題の 1 件だけ)。196 ・ 197 は <code>p261108-03-d10</code> ・ <code>d11</code></li>
+	</ul>
+</section>
+
+</div>
+
+<footer>
+	<p><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+</footer>
+
+</body>
+</html>

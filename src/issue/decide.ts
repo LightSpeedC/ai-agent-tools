@@ -54,6 +54,8 @@ export type DecideOptions = {
 	replaces?: string;
 	legacy?: string;
 	body?: string;
+	/** 決めた日 (yyyy-mm-dd)。省けば JST の今日。過去の決定の移行 (p261108-03) が、資料の作成日を渡す */
+	decided?: string;
 };
 
 /** decisions/ に決定を作る。何かを作る前に、引数をすべて確かめる */
@@ -74,7 +76,8 @@ export function newDecision(root: string, o: DecideOptions): { id: string; rel: 
 	if (!SlugPattern.test(slug)) throw new UsageError(`--slug に使えない文字がある: ${slug} (英数字 ・ - ・ _ ・ . ・ 日本語だけ。空白は不可)`);
 	if ([...slug].length > SlugMax) throw new UsageError(`--slug が ${SlugMax} 文字を超えている: ${slug}`);
 
-	const today = todayJst();
+	if (o.decided !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(o.decided)) throw new UsageError(`決めた日の形が違う: ${o.decided}`);
+	const today = o.decided ?? todayJst();
 	const dir = decisionsDirOf(root);
 	const lockBase = lockBaseOf(root);
 	fs.mkdirSync(lockBase, { recursive: true });
@@ -172,6 +175,20 @@ export function loadDecisions(root: string, warn: (message: string) => void): De
 		views.push(v);
 	}
 	return views.sort((a, b) => compareDecision(a.id, b.id));
+}
+
+/** 決定の本文から語を探す (196-A)。大小を区別しない。親の課題の状態によらず全部を探す */
+export function searchDecisions(root: string, term: string): { kind: 'decision'; id: string; parent: string; title: string; file: string; matches: { line: number; text: string }[] }[] {
+	const needle = term.toLowerCase();
+	const hits: { kind: 'decision'; id: string; parent: string; title: string; file: string; matches: { line: number; text: string }[] }[] = [];
+	for (const d of loadDecisions(root, () => {})) {
+		const matches: { line: number; text: string }[] = [];
+		d.text.split('\n').forEach((line, index) => {
+			if (line.toLowerCase().includes(needle)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, 120).join('') });
+		});
+		if (matches.length > 0) hits.push({ kind: 'decision', id: d.id, parent: DecisionIdPattern.exec(d.id)?.[1] ?? '', title: d.meta.title ?? '', file: d.file, matches });
+	}
+	return hits;
 }
 
 /** 決定を 1 件読む */

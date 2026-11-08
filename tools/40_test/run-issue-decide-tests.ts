@@ -222,6 +222,26 @@ async function mainTests(): Promise<void> {
 }
 
 await mainTests();
+
+// ---- search が決定も探す (196-A) ----
+console.log('--- search (決定)');
+{
+	const dir = mkProject('search', {
+		[Items + 'archived/i261102-01-保管.md']: issueText('i261102-01'),
+		[Decisions + 'i261102-01-d1-保管の決定.md']: decisionText({ id: 'i261102-01-d1', parent: 'i261102-01', title: '保管の課題の問い' }, '\n## 案\n\n- A: 探す語ふくろう\n'),
+		[Decisions + 'i261103-01-d1-問い.md']: decisionText({}, '\n## 案\n\n- A: ほかの語\n'),
+	});
+	const r = run(['search', 'ふくろう', '--root', dir], dir);
+	check('issue search は、決定の本文も探す (親の課題が archived でも)', r.code === 0 && r.out.includes('i261102-01-d1') && r.out.includes('決定'), r.out + r.err);
+	check('探した語が無い決定は出さない', !r.out.includes('i261103-01-d1'), r.out);
+	check('件数に決定も数える', r.out.includes('1 件'), r.out);
+	const j = parseJson(run(['search', 'ふくろう', '--root', dir, '--json'], dir).out);
+	check('--json では、決定は kind: decision と親の番号を持つ', Array.isArray(j) && j.some((h: any) => h.kind === 'decision' && h.id === 'i261102-01-d1' && h.parent === 'i261102-01'), JSON.stringify(j));
+	const t = run(['search', '保管の課題の問い', '--state', '未', '--root', dir], dir);
+	check('--state は課題だけに効き、決定は探す', t.out.includes('i261102-01-d1'), t.out);
+	const g = run(['search', 'ふくろう', '--group', 'g', '--root', dir], dir);
+	check('--group を付けたときは、決定を探さない (グループは課題の持ち物)', !g.out.includes('i261102-01-d1'), g.out);
+}
 console.log('');
 console.log(`=== issue (決定): ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 fs.rmSync(work, { recursive: true, force: true });

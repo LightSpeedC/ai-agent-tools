@@ -40,7 +40,8 @@ import {
 	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
 import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWritten, verifyWritten } from './migrate.ts';
-import { listDecisions, newDecision, showDecision } from './decide.ts';
+import { listDecisions, newDecision, searchDecisions, showDecision } from './decide.ts';
+import { DecideWrittenListRel, applyDecideMigration, planDecideMigration, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
 import { DecisionIdPattern, ParentPattern } from './check.ts';
 
 const ExitOk = 0;
@@ -69,6 +70,8 @@ const Usage = [
 	'                                                                 決定を decisions/ に記録する (id は <親>-d<連番>)',
 	'  issue decide list [--parent <番号>] [--root <dir>] [--json]    決定の一覧',
 	'  issue decide show <id> [--root <dir>] [--json]                 決定を 1 件読む',
+	'  issue decide migrate [--dry-run | --apply | --undo] [--root <dir>] [--json]',
+	'                                                                 資料と課題の過去の決定 (96-A 等) を decisions/ へ移す (既定は --dry-run。--apply は書いたあとに確かめ、だめなら戻す)',
 	'  issue migrate [--dry-run | --apply] [--root <dir>] [--json]    旧 issues.html の課題を読み、移す計画を出す (既定は --dry-run。--apply で items/ へ書く。すでにある番号は飛ばす。旧の記録が食い違うものは、--state-override で状態を決めるまで書かない)',
 ].join('\n');
 
@@ -241,15 +244,22 @@ function runSearch(rest: string[]): number {
 	if (term === undefined || term === '') throw new UsageError('探す語が要る (issue search <語>)');
 	const folders = foldersFrom(o);
 	const root = existingRoot(o);
-	const hits = searchIssues(root, term, folders, o.values.get('--group') ?? null, (m) => console.error(m));
+	const group = o.values.get('--group') ?? null;
+	const hits = searchIssues(root, term, folders, group, (m) => console.error(m));
+	// 決定も探す (196-A)。--state は課題だけに効く。--group はグループが課題の持ち物なので、付けたら決定は探さない
+	const decisionHits = group !== null ? [] : searchDecisions(root, term);
 	if (o.flags.has('--json')) {
-		console.log(JSON.stringify(hits));
+		console.log(JSON.stringify([...hits, ...decisionHits]));
 	} else {
 		for (const h of hits) {
 			console.log(`${h.id}  ${stateLabel(h.folder)}  ${h.group}  ${h.title}`);
 			for (const m of h.matches.slice(0, 3)) console.log(`    L${m.line}: ${m.text}`);
 		}
-		console.log(`${hits.length} 件`);
+		for (const d of decisionHits) {
+			console.log(`${d.id}  決定 (親 ${d.parent})  ${d.title}`);
+			for (const m of d.matches.slice(0, 3)) console.log(`    L${m.line}: ${m.text}`);
+		}
+		console.log(`${hits.length + decisionHits.length} 件`);
 	}
 	return ExitOk;
 }
@@ -653,7 +663,88 @@ function runDecide(rest: string[]): number {
 		}
 		return ExitOk;
 	}
-	throw new UsageError(sub === undefined ? 'decide の操作が要る (new ・ list ・ show)' : '知らない decide の操作: ' + sub);
+	if (sub === 'migrate') return runDecideMigrate(args);
+	throw new UsageError(sub === undefined ? 'decide の操作が要る (new ・ list ・ show ・ migrate)' : '知らない decide の操作: ' + sub);
+}
+
+// ---- decide migrate (過去の決定の移行。計画 p261108-03) ----
+
+function runDecideMigrate(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json', '--dry-run', '--apply', '--undo'], positionals: 0 });
+	if ([o.flags.has('--apply'), o.flags.has('--dry-run'), o.flags.has('--undo')].filter((x) => x).length > 1) throw new UsageError('--apply ・ --dry-run ・ --undo は一緒に使えない');
+	const root = existingRoot(o);
+	const json = o.flags.has('--json');
+	const listFile = path.join(root, ...DecideWrittenListRel.split('/'));
+
+	// --undo: --apply が書いたファイル (一覧にあるもの) だけを消す (190-A)
+	if (o.flags.has('--undo')) {
+		if (!fs.existsSync(listFile)) throw new Failure(`${DecideWrittenListRel} が無い (--apply で書いた記録が無いので、戻せるものが無い)`);
+		const rels = fs.readFileSync(listFile, 'utf8').split('\n').map((s) => s.trim()).filter((s) => s !== '');
+		const removed = removeDecideWritten(root, rels);
+		fs.rmSync(listFile);
+		autoRender(root, true);
+		if (json) console.log(JSON.stringify({ listed: rels.length, removed }));
+		else console.log(`[undo] --apply で書いた ${rels.length} 件のうち ${removed} 件を消した (一覧に無いファイルには触らない)`);
+		return ExitOk;
+	}
+
+	const plan = planDecideMigration(root);
+	const fromTable = plan.move.filter((m) => m.from === 'table').length;
+	const printLists = (): void => {
+		console.log(`  表から: ${fromTable} 件 ・ 本文から拾った: ${plan.fromText.length} 件 ・ 既にある (飛ばした): ${plan.skipped.length} 件`);
+		console.log(`  A とみなした (本文に記録なし。192-A): ${plan.assumedA.length > 0 ? plan.assumedA.join(' ・ ') : 'なし'}`);
+		console.log(`  本文から拾った番号 (問いと案は記録なし。193-A): ${plan.fromText.length > 0 ? plan.fromText.join(' ・ ') : 'なし'}`);
+		if (plan.split.length > 0) console.log(`  字が割れた: ${plan.split.map((x) => `${x.number} (${x.letters})`).join(' ・ ')}`);
+		console.log(`  読めなかった: ${plan.unreadable.length} 件`);
+		for (const u of plan.unreadable) console.log(`    - ${u.where}: ${u.message}`);
+	};
+	if (o.flags.has('--apply')) {
+		let written: { id: string; rel: string; legacy: string }[] = [];
+		const before = fs.existsSync(listFile) ? fs.readFileSync(listFile, 'utf8') : '';
+		let problems: { id: string; message: string }[] = [];
+		let errors: ReturnType<typeof checkProject>['findings'] = [];
+		try {
+			written = applyDecideMigration(root, plan).written;
+		} catch (e) {
+			problems.push({ id: '-', message: e instanceof Error ? e.message : String(e) });
+		}
+		if (written.length > 0) {
+			fs.mkdirSync(path.dirname(listFile), { recursive: true });
+			fs.writeFileSync(listFile, before + written.map((w) => w.rel + '\n').join(''));
+		}
+		// 書いたあとに読み直して比べ、issue check を流す。だめなら書いたものを全部消して戻す (190-A)
+		if (problems.length === 0) problems = verifyDecideWritten(root, plan, written);
+		errors = checkProject(root).findings.filter((f) => f.level === 'error');
+		if (problems.length > 0 || errors.length > 0) {
+			const removed = removeDecideWritten(root, written.map((w) => w.rel));
+			if (before === '') fs.rmSync(listFile, { force: true });
+			else fs.writeFileSync(listFile, before);
+			if (json) console.log(JSON.stringify({ written: [], rolledBack: removed, mismatches: problems, checkErrors: errors }));
+			else {
+				console.log(`[apply] 書いたあとの確かめで食い違いが出たので、書いた ${removed} 件を消して元に戻した`);
+				for (const p of problems) console.log(`    - ${p.id}: ${p.message}`);
+				for (const e of errors) console.log('    - ' + label(e));
+			}
+			return ExitFailed;
+		}
+		if (json) console.log(JSON.stringify({ written, skipped: plan.skipped, assumedA: plan.assumedA, fromText: plan.fromText, split: plan.split, unreadable: plan.unreadable }));
+		else {
+			console.log(`[apply] 決定を ${written.length} 件書いた (一覧: ${DecideWrittenListRel}。戻すときは --undo)`);
+			printLists();
+		}
+		autoRender(root, true);
+		return ExitOk;
+	}
+	if (json) {
+		console.log(JSON.stringify({
+			move: plan.move.map((m) => ({ parent: m.parent, legacy: m.legacy, title: m.title, chosen: m.chosen, options: m.options.length, from: m.from, source: m.source })),
+			skipped: plan.skipped, assumedA: plan.assumedA, fromText: plan.fromText, split: plan.split, unreadable: plan.unreadable,
+		}));
+	} else {
+		console.log(`[dry-run] 移す: ${plan.move.length} 件 (何も書いていない)`);
+		printLists();
+	}
+	return ExitOk;
 }
 
 // ---- 入口 ----

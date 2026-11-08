@@ -1068,13 +1068,14 @@ created: 2026-11-01
 			<tr><td class="nowrap"><code>issue new --title &lt;題&gt; --group &lt;グループ&gt;</code></td><td>課題を立てる。番号は自動で振る</td></tr>
 			<tr><td class="nowrap"><code>issue list</code></td><td>未・着手の一覧 (<code>--state</code> ・ <code>--all</code> で変える)</td></tr>
 			<tr><td class="nowrap"><code>issue show &lt;id&gt;</code></td><td>1 件を読む</td></tr>
-			<tr><td class="nowrap"><code>issue search &lt;語&gt;</code></td><td>本文から探す</td></tr>
+			<tr><td class="nowrap"><code>issue search &lt;語&gt;</code></td><td>本文から探す。決定も探す (親の課題が archived でも。<code>--group</code> を付けたら課題だけ)</td></tr>
 			<tr><td class="nowrap"><code>issue todo &lt;id&gt; --add &lt;文&gt;</code></td><td>やることを足す。<code>--done &lt;n&gt;</code> ・ <code>--doing &lt;n&gt;</code> ・ <code>--undone &lt;n&gt;</code> で n 番目の状態を変える</td></tr>
 			<tr><td class="nowrap"><code>issue set &lt;id&gt; --state 済</code></td><td>課題の状態を変える (フォルダを動かす)</td></tr>
 			<tr><td class="nowrap"><code>issue confirm &lt;id&gt;</code></td><td>報告元の確認が取れたことを記録する</td></tr>
 			<tr><td class="nowrap"><code>issue archive &lt;グループ&gt;</code></td><td>全件が済のグループを <code>archived/</code> へ動かす</td></tr>
 			<tr><td class="nowrap"><code>issue check</code></td><td>課題ファイルを検査する。commit の前に流す</td></tr>
-			<tr><td class="nowrap"><code>issue render</code> ・ <code>issue view</code></td><td>一覧の HTML を作る (<code>view</code> は作って開く)。決定は、親の課題の下と、最後の「計画の決定」の章に出る</td></tr>
+			<tr><td class="nowrap"><code>issue render</code> ・ <code>issue view</code></td><td>一覧の HTML を作る (<code>view</code> は作って開く)。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る</td></tr>
+			<tr><td class="nowrap"><code>issue decide migrate</code></td><td>資料と課題に散っている過去の決定を <code>decisions/</code> へ移す (既定は <code>--dry-run</code>。<code>--apply</code> は書いたあとに確かめ、だめなら戻す。<code>--undo</code> で戻せる)。<strong>先に課題を <code>issue migrate</code> で移しておく</strong></td></tr>
 		</tbody>
 	</table>
 	</div>
