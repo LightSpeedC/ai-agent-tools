@@ -5,7 +5,7 @@ title: migrate が code.no の番号を読めない
 group: issue
 created: 2026-11-08
 from: ai-agent-rules
-confirmed: false
+confirmed: true
 refs: p261106-01
 ---
 
@@ -13,4 +13,4 @@ ai-agent-rules から報告 (#1830)。旧 HTML の番号を <code class="no"> �
 
 - [済] 試験を足して ❌Red を見る
 - [済] span と code の両方、class に複数の語があっても読む
-- [未] 報告元 (ai-agent-rules) の確認
+- [済] 報告元 (ai-agent-rules) の確認
