@@ -464,6 +464,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 				<li><strong>題</strong>: <code>summary</code> から、バッジと番号を除いた 1 行 (<code>summary</code> の中の <code>h1</code> でもよい)</li>
 				<li><strong>状態</strong>: バッジの字が 未 ・ 着手 ・ 済 なら字。そうでなければ class で決める (181-A。<code>b-done</code> ・ <code>b-ok</code> は済、<code>b-wip</code> ・ <code>b-warn</code> ・ <code>b-doing</code> は着手、<code>b-todo</code> ・ <code>b-none</code> は未)。本文のやること (バッジで始まる <code>li</code>) も同じ</li>
 				<li><strong>番号の連番の小文字の <code>l</code> は <code>L</code> に直して書く</strong> (182-A)。<code>--dry-run</code> に「番号を直して書く」として出す</li>
+				<li><strong>1 列目がバッジだけの 2 列の表 (状態と内容) は、<code>- [状態] 内容</code> の行にする</strong> (184-A)。見出しの行は捨てる。3 列以上の表と、1 列目にバッジでない行が混ざる表は、情報が落ちるので表のまま残す</li>
 			</ul>
 		</li>
 		<li><strong>移し先</strong>: <code>issues-legacy.html</code> の済は <code>done/</code>、着手は <code>doing/</code>、未は <code>todo/</code>。<code>issues-archive.html</code> は <code>archived/</code></li>

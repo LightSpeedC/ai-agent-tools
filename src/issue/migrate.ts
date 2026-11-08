@@ -215,9 +215,11 @@ function textLength(html: string): number {
 /** 旧 HTML のやることの数: 状態を読めるバッジで始まる li */
 function sourceTodoCount(html: string): number {
 	let n = 0;
+	// 表のやること (184-A) も、列挙にしてから数える
 	const re = /<li\b[^>]*>\s*<span\b([^>]*class="badge[^"]*"[^>]*)>([\s\S]*?)<\/span>/g;
+	const listed = tableTodosToList(html);
 	let m: RegExpExecArray | null;
-	while ((m = re.exec(html)) !== null) if (stateOfBadge(m[1], m[2]) !== '') n++;
+	while ((m = re.exec(listed)) !== null) if (stateOfBadge(m[1], m[2]) !== '') n++;
 	return n;
 }
 
@@ -377,10 +379,32 @@ export function applyOverrides(plan: MigratePlan, spec: string): void {
 /** バッジ付きの列挙の目印。Markdown に変換したあとで - [状態] に戻す (165-A) */
 const TodoMark = 'ZZISSUETODO';
 
+/**
+ * 1 列目がバッジだけの 2 列の表 (状態と内容) を、バッジ付きの列挙 (ul > li) にする (184-A。ai-agent-rules の i260910-02)。
+ * 見出しの行 (th だけの行) は捨てる。3 列以上の表 ・ 1 列目にバッジでない行が混ざる表は、情報が落ちるので変えない
+ */
+export function tableTodosToList(html: string): string {
+	return html.replace(/<table\b[^>]*>[\s\S]*?<\/table>/g, (table) => {
+		if (/<table\b/.test(table.slice(1))) return table; // 入れ子の表は扱わない
+		const rows = table.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/g) ?? [];
+		const items: string[] = [];
+		for (const row of rows) {
+			const cells = row.match(/<t([dh])\b[^>]*>([\s\S]*?)<\/t\1>/g) ?? [];
+			if (cells.every((c) => c.startsWith('<th'))) continue;
+			if (cells.length !== 2) return table;
+			const first = /^<td\b[^>]*>\s*(<span\b([^>]*class="badge[^"]*"[^>]*)>([\s\S]*?)<\/span>)\s*<\/td>$/.exec(cells[0]);
+			if (first === null || stateOfBadge(first[2], first[3]) === '') return table;
+			const content = /^<td\b[^>]*>([\s\S]*)<\/td>$/.exec(cells[1])?.[1] ?? '';
+			items.push(`<li>${first[1]} ${content.trim()}</li>`);
+		}
+		return items.length === 0 ? table : `<ul>${items.join('')}</ul>`;
+	});
+}
+
 /** 旧 HTML の本文を Markdown にする。バッジ付きの列挙だけを - [状態] 文 の行にする (165-A) */
 export function bodyToMarkdown(bodyHtml: string, converter: Converter): string {
 	// やることのバッジも、字か class で状態を決める (181-A)。li の属性 (class="done" 等) があってもよい
-	const marked = bodyHtml.replace(
+	const marked = tableTodosToList(bodyHtml).replace(
 		/<li\b[^>]*>\s*<span\b([^>]*class="badge[^"]*"[^>]*)>([\s\S]*?)<\/span>\s*/g,
 		(all, attrs: string, inner: string) => {
 			const state = stateOfBadge(attrs, inner);

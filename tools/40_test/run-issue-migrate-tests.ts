@@ -230,6 +230,31 @@ console.log('=== issue migrate (旧 HTML の読み取り) ===');
 }
 
 {
+	// 184-A: 1 列目がバッジだけの 2 列の表は、- [状態] 内容 の行にする (ai-agent-rules の i260910-02 ・ #1838)
+	const md = bodyToMarkdownOf('<p>やること</p><table><thead><tr><th>状態</th><th>内容</th></tr></thead><tbody>'
+		+ '<tr><td><span class="badge b-ok">済</span></td><td><strong>一つ目</strong> を直した</td></tr>'
+		+ '<tr><td class="nowrap"><span class="badge b-done">☑</span></td><td>二つ目</td></tr>'
+		+ '<tr><td><span class="badge b-none">未</span></td><td>三つ目</td></tr>'
+		+ '</tbody></table>');
+	check('184-A: 1 列目がバッジだけの 2 列の表は、- [状態] 内容 の行にする',
+		md.includes('- [済] **一つ目** を直した') && md.includes('- [済] 二つ目') && md.includes('- [未] 三つ目') && !md.includes('|'), JSON.stringify(md));
+	const md3 = bodyToMarkdownOf('<table><tbody><tr><td><span class="badge b-ok">済</span></td><td>内容</td><td>備考</td></tr></tbody></table>');
+	check('184-A: 3 列以上の表は、情報が落ちるので表のまま残す', md3.includes('|') && !md3.includes('- [済]'), JSON.stringify(md3));
+	const mdMixed = bodyToMarkdownOf('<table><tbody><tr><td><span class="badge b-ok">済</span></td><td>a</td></tr><tr><td>バッジでない</td><td>b</td></tr></tbody></table>');
+	check('184-A: 1 列目にバッジでない行が混ざる表は、表のまま残す', mdMixed.includes('|') && !mdMixed.includes('- [済]'), JSON.stringify(mdMixed));
+}
+
+{
+	// 184-A: 表のやることも、--dry-run の中身の比較で、やることとして数える (食い違いにしない)
+	const html = '<section class="ch01"><h1>甲</h1>'
+		+ '<details><summary><span class="badge b-ok">済</span><span class="no">i260910-02</span>表のやること</summary>'
+		+ '<div class="issue-body"><table><tbody><tr><td><span class="badge b-ok">済</span></td><td>直した</td></tr></tbody></table></div></details>'
+		+ '</section>';
+	const r = parse(html);
+	check('184-A: 表のやることの課題も読める', r.issues.length === 1 && r.problems.length === 0, JSON.stringify(r));
+}
+
+{
 	// 182-A: 番号の l (小文字) は L に直して書き、直したことを残す
 	const html = '<section class="ch01"><h1>甲</h1>'
 		+ '<details><summary><span class="badge b-ok">済</span><span class="no">i261020-0l</span>小文字の l</summary><p>x</p></details>'

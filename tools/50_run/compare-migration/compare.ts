@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { applyMigration, parseLegacyIssues, planMigration, type LegacyIssue } from '../../../src/issue/migrate.ts';
+import { applyMigration, parseLegacyIssues, planMigration, tableTodosToList, type LegacyIssue } from '../../../src/issue/migrate.ts';
 import { initProject } from '../../../src/issue/ops.ts';
 import { renderHtml } from '../../../src/issue/render.ts';
 import { getPlainText } from '../../../src/html2md/htmlutil.ts';
@@ -84,7 +84,8 @@ function compareProject(src: string): void {
 	for (const [id, o] of original) {
 		const m = rendered.get(id);
 		const oc = textLength(o.bodyHtml);
-		const ot = todoCount(o.bodyHtml);
+		// 表のやること (184-A) は、移すと列挙になる。元の側も、列挙にしてから数える
+		const ot = todoCount(tableTodosToList(o.bodyHtml));
 		srcChars += oc;
 		srcTodos += ot;
 		if (m === undefined) { diffs.push(`${id}: 移した結果に無い`); continue; }
