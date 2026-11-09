@@ -15,7 +15,7 @@ import path from 'node:path';
 import { DecisionsRel, ItemsRel, ParentPattern } from './check.ts';
 import { splitIssue } from './meta.ts';
 import { loadDecisions, newDecision } from './decide.ts';
-import { Failure } from './ops.ts';
+import { Failure, compareId } from './ops.ts';
 import { UuidFileName, readProjectFile } from './numbers.ts';
 import { parseLegacyIssues } from './migrate.ts';
 import { getPlainText } from '../html2md/htmlutil.ts';
@@ -324,6 +324,66 @@ export function planDecideMigration(root: string): DecideMigratePlan {
 	// 親ごとに旧番号の順で書く
 	plan.move.sort((a, b) => (a.parent < b.parent ? -1 : a.parent > b.parent ? 1 : a.number - b.number));
 	return plan;
+}
+
+/** 字と字の間の、並べる語 (と ・ , 、 / および)。これだけを挟んで続く字は、まとめて選んだとみなす (219-A) */
+const Joiner = String.raw`\s*(?:と|・|,|、|/|および|及び)\s*`;
+
+/**
+ * 本文の中で、その番号に 2 つ以上の字を並べて書いた所 (「5-A と 5-B」「8-A・B」) から字を返す (219-A)。
+ * 案の一覧 (7-A: … 7-B: …) のように、字と字の間に文が挟まるものは拾わない
+ */
+function jointLetters(text: string, n: number): string[] {
+	const out: string[] = [];
+	// 「8-A・B」: 番号 1 つに字を並べる
+	for (const m of text.matchAll(new RegExp(String.raw`(?<![\d-])${n}-([A-Z])((?:${Joiner}[A-Z](?![A-Za-z0-9]))+)`, 'g'))) {
+		out.push(m[1], ...(m[2].match(/[A-Z]/g) ?? []));
+	}
+	// 「5-A と 5-B」: 番号ごと並べる
+	for (const m of text.matchAll(new RegExp(String.raw`(?<![\d-])${n}-([A-Z])((?:${Joiner}${n}-[A-Z](?![A-Za-z0-9]))+)`, 'g'))) {
+		out.push(m[1], ...[...m[2].matchAll(new RegExp(String.raw`${n}-([A-Z])`, 'g'))].map((x) => x[1]));
+	}
+	return out;
+}
+
+export type RecheckHit ={ id: string; legacy: string; chosen: string; letters: string };
+
+/**
+ * 移し済みの決定を数え直す (218-A)。旧番号ごとに、資料 ・ 課題に出てくる字 (表の行と本文) を集め、
+ * 決定の chosen に無い字が出てくるものを返す。移すときは 1 字しか選べなかったため、両方を選んでいた決定が片方だけで残っているおそれがある
+ */
+export function recheckDecisions(root: string): RecheckHit[] {
+	assertIssuesMigrated(root);
+	const project = path.basename(root);
+	const sources = readSources(root);
+	const lettersOf = (n: number, docId: string | null): string[] => {
+		const out: string[] = [];
+		for (const s of sources) {
+			if (docId !== null && s.id !== docId) continue;
+			out.push(...jointLetters(s.text, n));
+			if (s.html !== null) for (const t of s.html.matchAll(/<table\b[\s\S]*?<\/table>/gi)) {
+				for (const r of readTable(t[0])) {
+					// 案の表 (案の列がある) は、選んだ字ではないので数えない
+					if (r.number === n && !r.headers.some((h) => /^案$/.test(h))) out.push(r.letter);
+				}
+			}
+		}
+		return [...new Set(out)].sort();
+	};
+	const hits: RecheckHit[] = [];
+	const esc = project.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	for (const d of loadDecisions(root, () => {})) {
+		const chosen = (d.meta.chosen ?? '').split(',').filter((c) => c !== '');
+		for (const l of (d.meta.legacy_ids ?? '').split(',')) {
+			const m = new RegExp(`^:${esc}:(?:([ipr]\\d{6}-[0-9a-kLm-z]{2})/)?(\\d+)-[A-Z]$`).exec(l.trim());
+			if (m === null) continue;
+			const letters = lettersOf(Number(m[2]), m[1] ?? null);
+			if (letters.some((x) => !chosen.includes(x))) {
+				hits.push({ id: d.id, legacy: (m[1] !== undefined ? m[1] + '/' : '') + m[2], chosen: chosen.join(','), letters: letters.join(' ・ ') });
+			}
+		}
+	}
+	return hits.sort((a, b) => compareId(a.id, b.id));
 }
 
 /** 計画どおりに書く。書いたものを返す (途中で失敗したら、それまでに書いた分を返して投げる) */

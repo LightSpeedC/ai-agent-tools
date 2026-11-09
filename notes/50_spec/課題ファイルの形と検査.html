@@ -520,7 +520,7 @@ issue decide show &lt;id&gt; [--root &lt;dir&gt;] [--json]</code></pre>
 		<li><strong><code>show</code></strong>: 1 件を出す。無ければ終了コード 1、決定の id の形でなければ 5。<code>--json</code> は <code>{ id, file, meta, options: [{ key, text }], body }</code></li>
 		<li><code>_issues.html</code> は作り直さない (決定は <code>issue render</code> ・ <code>view</code> が出す)</li>
 	</ul>
-	<h2><code>issue decide migrate [--dry-run | --apply | --undo] [--root &lt;dir&gt;] [--json]</code> (過去の決定の移行)</h2>
+	<h2><code>issue decide migrate [--dry-run [--recheck] | --apply | --undo] [--root &lt;dir&gt;] [--json]</code> (過去の決定の移行)</h2>
 	<ul>
 		<li>資料と課題に散っている過去の決定 (<code>96-A</code> 等) を <code>decisions/</code> へ移す (計画 p261108-03)。<strong>課題の移行が前提</strong>: <code>items/project-uuid.txt</code> (古い <code>project-id.txt</code> も可) が無いか、<code>notes/40_issues/issues.html</code> が残っていれば、終了コード 1 で止め、先に <code>issue migrate</code> を流すよう出す</li>
 		<li><strong>表から</strong> (188-A ・ 192-A): <code>notes/</code> の HTML (<code>40_issues</code> を除く) の表で、行の最初のセルが <code>番号-字</code> (後ろに空白とかっこの説明が続いてもよい) の行を読む。見出しに「案」の列がある表は、同じ番号の行を 1 件にまとめ、問いは「決めること」の列 (<code>rowspan</code> を含む)、案は各行の文に「(推す理由: …)」を添える。選んだ字は、同じ資料の表の外に出てくる <code>番号-字</code>。出てこなければ A とみなし、本文にそう書く。それ以外の表 (決めたこと) は、その行の字が選んだ案で、ほかの案は「記録なし」、ほかの列は本文に残す。同じ資料の 2 つの表の同じ番号は 1 件にまとめる。番号の無い資料の表は「読めない」に出す</li>
@@ -528,6 +528,7 @@ issue decide show &lt;id&gt; [--root &lt;dir&gt;] [--json]</code></pre>
 		<li><strong>親と番号</strong> (189-A): 親は表がある資料、本文から拾ったものは最初に出てくる資料 ・ 課題 (番号の小さい順)。連番は親ごとに旧番号の順で続きから振る。<code>legacy_ids</code> は <code>:&lt;フォルダ名&gt;:&lt;旧番号&gt;</code>。同じ旧番号の決定が既にあれば飛ばす (何度流してもよい)。決めた日は資料の作成日 (無ければ番号の日付)</li>
 		<li><strong><code>--dry-run</code></strong> (既定): 何も書かない。件数 (表から ・ 本文から ・ 飛ばした)、A とみなした番号、本文から拾った番号、字が割れた番号、読めないものを出す。<code>--json</code> は <code>{ move: [{ parent, legacy, title, chosen, options, from, source }], skipped, assumedA, fromText, split, unreadable }</code></li>
 		<li><strong><code>--apply</code></strong> (190-A): <code>issue decide new</code> と同じ書き方 (予約つき) で書き、書いたファイルを <code>notes/40_issues/decisions/_decide-migrate-written.txt</code> に足す。書いたあとに読み直し (旧番号 ・ 選んだ字 ・ 親 ・ 案の数) と <code>issue check</code> を流し、だめなら書いたものを全部消して一覧も戻し、終了コード 1。<strong><code>--undo</code></strong>: 一覧にある <code>decisions/</code> 直下の <code>.md</code> だけを消し、一覧も消す。一覧が無ければ終了コード 1</li>
+		<li><strong><code>--dry-run --recheck</code></strong> (218-A ・ 219-A): 移し済みの決定を数え直す。移すときは 1 字しか選べなかったため、両方を選んでいた決定が片方だけで残っているおそれがある。旧番号ごとに、資料 ・ 課題の本文で <strong>2 つ以上の字を並べて書いた所</strong> (<code>5-A と 5-B</code> ・ <code>8-A・B</code>。間に挟むのは と ・ <code>,</code> 、 <code>/</code> および だけ) と、決めたことの表の行の字を集め、決定の <code>chosen</code> に無い字があれば「見直しが要る」に出す。案の一覧 (<code>7-A: … 7-B: …</code>) のように、字と字の間に文が挟まるものは拾わない。<strong>一覧は候補</strong>で、案を「・」で並べた文や、決める前の文も拾うことがある。両方を選んでいたなら <code>issue decide new --chosen A,B --replaces &lt;id&gt;</code> で置き換える。<code>--json</code> では <code>recheck: [{ id, legacy, chosen, letters }]</code> を足す。<code>--apply</code> ・ <code>--undo</code> とは使えない (終了コード 5)</li>
 		<li>写しで試す道具は <code>tools/50_run/compare-migration/compare-decisions.ts</code> (課題がまだ移っていなければ、写しで先に課題を移す)</li>
 	</ul>
 	<h2><code>issue choice next [--root &lt;dir&gt;] [--json]</code> (選択肢の番号)</h2>

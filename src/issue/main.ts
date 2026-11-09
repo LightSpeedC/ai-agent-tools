@@ -44,7 +44,7 @@ import {
 } from './ops.ts';
 import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWritten, verifyWritten } from './migrate.ts';
 import { listDecisions, newDecision, searchDecisions, showDecision } from './decide.ts';
-import { DecideWrittenListRel, applyDecideMigration, planDecideMigration, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
+import { DecideWrittenListRel, applyDecideMigration, planDecideMigration, recheckDecisions, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
 import { DecisionIdPattern, ParentPattern } from './check.ts';
 import { todayJst } from './ops.ts';
 import { nextChoice } from './numbers.ts';
@@ -76,7 +76,7 @@ const Usage = [
 	'                                                                 決定を decisions/ に記録する (id は <親>-d<連番>)',
 	'  issue decide list [--parent <番号>] [--root <dir>] [--json]    決定の一覧',
 	'  issue decide show <id> [--root <dir>] [--json]                 決定を 1 件読む',
-	'  issue decide migrate [--dry-run | --apply | --undo] [--root <dir>] [--json]',
+	'  issue decide migrate [--dry-run [--recheck] | --apply | --undo] [--root <dir>] [--json]',
 	'                                                                 資料と課題の過去の決定 (96-A 等) を decisions/ へ移す (既定は --dry-run。--apply は書いたあとに確かめ、だめなら戻す)',
 	'  issue choice next [--root <dir>] [--json]                      選択肢の通し番号を 1 つ予約して出す (worktree の間でも重ならない)',
 	'  issue migrate [--dry-run | --apply] [--root <dir>] [--json]    旧 issues.html の課題を読み、移す計画を出す (既定は --dry-run。--apply で items/ へ書く。すでにある番号は飛ばす。旧の記録が食い違うものは、--state-override で状態を決めるまで書かない)',
@@ -711,8 +711,9 @@ function runDecide(rest: string[]): number {
 // ---- decide migrate (過去の決定の移行。計画 p261108-03) ----
 
 function runDecideMigrate(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json', '--dry-run', '--apply', '--undo'], positionals: 0 });
+	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json', '--dry-run', '--apply', '--undo', '--recheck'], positionals: 0 });
 	if ([o.flags.has('--apply'), o.flags.has('--dry-run'), o.flags.has('--undo')].filter((x) => x).length > 1) throw new UsageError('--apply ・ --dry-run ・ --undo は一緒に使えない');
+	if (o.flags.has('--recheck') && (o.flags.has('--apply') || o.flags.has('--undo'))) throw new UsageError('--recheck は --dry-run とだけ使える (何も書かない)');
 	const root = existingRoot(o);
 	const json = o.flags.has('--json');
 	const listFile = path.join(root, ...DecideWrittenListRel.split('/'));
@@ -776,14 +777,22 @@ function runDecideMigrate(rest: string[]): number {
 		autoRender(root, true);
 		return ExitOk;
 	}
+	// --recheck (218-A): 移し済みの決定で、chosen と違う字が資料に出てくるものを出す
+	const recheck = o.flags.has('--recheck') ? recheckDecisions(root) : undefined;
 	if (json) {
 		console.log(JSON.stringify({
 			move: plan.move.map((m) => ({ parent: m.parent, legacy: m.legacy, title: m.title, chosen: m.chosen, options: m.options.length, from: m.from, source: m.source })),
 			skipped: plan.skipped, assumedA: plan.assumedA, fromText: plan.fromText, split: plan.split, unreadable: plan.unreadable,
+			...(recheck !== undefined ? { recheck } : {}),
 		}));
 	} else {
 		console.log(`[dry-run] 移す: ${plan.move.length} 件 (何も書いていない)`);
 		printLists();
+		if (recheck !== undefined) {
+			console.log(`  見直しが要る (移し済みで、選んだ字と違う字が資料に出てくる。218-A): ${recheck.length} 件`);
+			for (const h of recheck) console.log(`    - ${h.id} (旧 ${h.legacy}): 選んだ字 ${h.chosen} ・ 資料に出てくる字 ${h.letters}`);
+			if (recheck.length > 0) console.log('  両方を選んでいたなら、issue decide new --parent <親> --chosen A,B --replaces <id> … で置き換える');
+		}
 	}
 	return ExitOk;
 }

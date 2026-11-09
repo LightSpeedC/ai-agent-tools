@@ -203,6 +203,29 @@ console.log('--- apply');
 	check('一覧が無いときの --undo は終了コード 1', run(['--undo'], dir).code === 1);
 }
 
+// ---- 218-A: 移し済みの決定を数え直す (--recheck) ----
+
+console.log('--- recheck');
+{
+	const dir = mkProject('recheck', {
+		[Plan + 'i261012-01-両方.html']: page('両方', '<p>決めたこと: 5-A と 5-B の両方 ・ 6-A。</p><ul><li>7-A: 先に作る</li><li>7-B: 後で作る</li></ul><p>7-A に決めた。8-A・B を採る。</p>', '2026-10-12'),
+	});
+	run(['--apply'], dir);
+	const j = json(run(['--dry-run', '--recheck', '--json'], dir));
+	const list = j?.recheck ?? [];
+	check('218-A: --recheck は、移し済みの決定で、両方を選んだと読める字 (5-A と 5-B の両方) を出す',
+		list.length >= 1 && list[0].legacy === '5' && list[0].letters === 'A ・ B' && typeof list[0].id === 'string' && list[0].chosen === 'A', JSON.stringify(j));
+	check('219-A: 「8-A・B」の並べ方も拾う', list.some((h: any) => h.legacy === '8' && h.letters === 'A ・ B'), JSON.stringify(list));
+	check('219-A: 案の一覧 (7-A: … 7-B: …) のように別々に出てくる字は拾わない', !list.some((h: any) => h.legacy === '7'), JSON.stringify(list));
+	check('219-A: 拾うのは 5 と 8 の 2 件だけ', list.length === 2, JSON.stringify(list));
+	const t = run(['--dry-run', '--recheck'], dir);
+	check('218-A: 文字の出力に、決定の id と出てきた字、直し方 (--chosen ・ --replaces) を出す',
+		t.out.includes(list[0]?.id ?? '???') && t.out.includes('A ・ B') && t.out.includes('--replaces'), t.out);
+	check('218-A: --recheck は何も書かない (移すものは 0 件のまま)', (j?.move ?? [1]).length === 0);
+	const k = json(run(['--dry-run', '--json'], dir));
+	check('218-A: --recheck を付けなければ、recheck を出さない', k !== null && k.recheck === undefined, JSON.stringify(k));
+}
+
 // ---- 資料ごとに振り直した番号 (194-A) ----
 
 console.log('--- 資料ごとの番号');
