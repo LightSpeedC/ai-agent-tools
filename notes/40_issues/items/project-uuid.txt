@@ -1,0 +1,3 @@
+schema: 2
+project_uuid: 3a721c98db184135994b73ff76efca95
+project_id: ai-agent-tools

@@ -25,7 +25,8 @@ function check(name: string, ok: boolean, detail: string = ''): void {
 
 // ---- 材料 ----
 
-const ProjectIdText = 'schema: 1\nproject_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\n';
+/** project-uuid.txt (schema 2)。project_id はプロジェクトのフォルダ名 (計画 p261109-01 の 207-A ・ 208-A) */
+const uuidText = (name: string): string => `schema: 2\nproject_uuid: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\nproject_id: ${name}\n`;
 const Items = 'notes/40_issues/items/';
 const Decisions = 'notes/40_issues/decisions/';
 const Today = '2026-11-08';
@@ -47,7 +48,7 @@ function mkProject(name: string, files: Record<string, string>): string {
 	const dir = path.join(work, name);
 	fs.rmSync(dir, { recursive: true, force: true });
 	fs.mkdirSync(dir, { recursive: true });
-	const all: Record<string, string> = { [Items + 'project-id.txt']: ProjectIdText, [Items + 'todo/i261103-01-題.md']: issueText('i261103-01'), ...files };
+	const all: Record<string, string> = { [Items + 'project-uuid.txt']: uuidText(name), [Items + 'todo/i261103-01-題.md']: issueText('i261103-01'), ...files };
 	for (const [rel, text] of Object.entries(all)) {
 		const full = path.join(dir, rel);
 		fs.mkdirSync(path.dirname(full), { recursive: true });

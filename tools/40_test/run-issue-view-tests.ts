@@ -2,7 +2,7 @@
 	issue（課題管理ツール）のフェーズ 3b のテスト:
 	  ・issue view (render して開く。開けなければパスを出して終了コード 0)
 	  ・更新の操作 (new ・ set ・ todo ・ confirm ・ archive ・ unarchive) の最後の、_issues.html の自動の作り直し
-	  ・issue check の、.gitignore が _issues.html と _lock/ を除外しているかの検査
+	  ・issue check の、.gitignore が _issues.html を除外しているかの検査
 	計画は p261103-01 (131-A ・ 134-A)、仕様は notes/50_spec/課題ファイルの形と検査.html。
 
 	期待値は、計画の決定から先に手で書いた（実装の出力から作っていない）。
@@ -31,6 +31,8 @@ function check(name: string, ok: boolean, detail: string = ''): void {
 // ---- 材料 ----
 
 const ProjectIdText = 'schema: 1\nproject_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\n';
+/** project-uuid.txt (schema 2)。project_id はプロジェクトのフォルダ名 (計画 p261109-01 の 207-A ・ 208-A) */
+const uuidText = (name: string): string => `schema: 2\nproject_uuid: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\nproject_id: ${name}\n`;
 const Items = 'notes/40_issues/items/';
 const Todo = Items + 'todo/';
 const Doing = Items + 'doing/';
@@ -63,7 +65,7 @@ function mkProject(name: string, files: Record<string, string>): string {
 }
 
 function std(name: string, files: Record<string, string> = {}): string {
-	return mkProject(name, { [Items + 'project-id.txt']: ProjectIdText, ...files });
+	return mkProject(name, { [Items + 'project-uuid.txt']: uuidText(name), ...files });
 }
 
 type Result = { code: number; out: string; err: string };
@@ -270,7 +272,7 @@ function codes(out: string): string[] {
 	const r = run(['check'], dir);
 	check('除外が無ければ、警告 [gitignore] を出す', codes(r.out).length === 1, r.out);
 	check('警告は終了コードを変えない (0)', r.code === 0, r.out + r.err);
-	check('警告に _issues.html と _lock/ を挙げる', /_issues\.html/.test(r.out) && /_lock/.test(r.out), r.out);
+	check('警告に _issues.html を挙げ、_lock/ は挙げない (番号の予約はホームの下に移した。p261109-01)', /_issues\.html/.test(r.out) && !/_lock/.test(r.out), r.out);
 	const j = run(['check', '--json'], dir);
 	let hasFinding = false;
 	let level = '';
@@ -294,7 +296,7 @@ function codes(out: string): string[] {
 	gitInit(dir);
 	fs.writeFileSync(path.join(dir, '.gitignore'), '_issues.html\n');
 	const r = run(['check'], dir);
-	check('_issues.html だけの除外では、_lock/ について警告する', codes(r.out).length === 1 && /_lock/.test(r.out), r.out);
+	check('_issues.html だけの除外で足りる (_lock/ は使わなくなった。p261109-01)', codes(r.out).length === 0, r.out);
 }
 {
 	// git 管理の外 (OS の一時フォルダ) では、見られないので警告しない

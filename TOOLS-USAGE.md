@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-11-08
+> 📅 作成: 2026-09-04 / 更新: 2026-11-09
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -771,7 +771,7 @@ safe-push "<リポジトリ>" common-rules.md rules  # 名指しのパスだけ�
 ```text
 notes/40_issues/
   items/
-    project-id.txt   プロジェクトの識別子 (issue init が作る。commit する)
+    project-uuid.txt プロジェクトの識別子と、フォルダ名 (issue init が作る。commit する)
     todo/            未
     doing/           着手
     done/            済
@@ -781,6 +781,10 @@ notes/40_issues/
 ```
 
 <strong>状態を変えると、ファイルが隣のフォルダへ動く。</strong>手でファイルを動かさず、`issue set` を使う。
+
+<strong>古い `project-id.txt` があるプロジェクトは、`issue init` を 1 回流す。</strong>乱数を変えずに `project-uuid.txt` へ移し、フォルダ名を `project_id` として書く。移したら commit する。移すまでは `issue check` が警告を出す (動きは変わらない)。
+
+**課題 ・ 決定 ・ 選択肢の番号は、`~/.ai-agent-tools/numbers/` に予約してから使う** (道具が自動で行う)。同じ PC の同じユーザなら、worktree や別の clone の間でも重ならない。別の PC ・ クラウドとは共有しない。
 
 ### README から案内する
 
@@ -821,6 +825,7 @@ created: 2026-11-01
 | `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす |
 | `issue check` | 課題ファイルを検査する。commit の前に流す |
 | `issue render` ・ `issue view` | 一覧の HTML を作る (`view` は作って開く)。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る |
+| `issue choice next` | 選択肢の通し番号 (`202-A` の `202`) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない) |
 | `issue decide migrate` | 資料と課題に散っている過去の決定を `decisions/` へ移す (既定は `--dry-run`。`--apply` は書いたあとに確かめ、だめなら戻す。`--undo` で戻せる)。**先に課題を `issue migrate` で移しておく** |
 
 引数の全体は `issue` を引数なしで呼ぶと出る。
@@ -835,7 +840,7 @@ issue decide list --parent p261108-01
 issue decide show p261108-01-d1
 ```
 
-`--option` を書いた順に A ・ B ・ C … と振る。旧番号 (`171-A` 等) を残すときは `--legacy :<プロジェクト名>:171-A`、前の決定を覆すときは `--replaces <id>`。`issue check` が決定のファイルも検査する。**チャットの選択肢の番号は、まだ通し番号のまま** (共通ルール「複数の解決案がある場合の対応」)。
+`--option` を書いた順に A ・ B ・ C … と振る。旧番号 (`171-A` 等) を残すときは `--legacy :<プロジェクト名>:171-A`、前の決定を覆すときは `--replaces <id>`。`issue check` が決定のファイルも検査する。チャットの選択肢の番号は、`issue choice next` で取る。
 
 ### 旧方式から移す
 

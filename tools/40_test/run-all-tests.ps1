@@ -96,6 +96,8 @@ $Suites = @(
 	# 課題管理ツール issue の決定の記録 (p261108-01): decide new ・ list ・ show と、check の decisions/ の検査
 	@{ Name = 'issue (決定)'; Script = 'run-issue-decide-tests.ts' },
 	@{ Name = 'issue (決定の移行)'; Script = 'run-issue-decide-migrate-tests.ts' },
+	# 課題管理ツール issue の番号の予約の共有 (p261109-01): project-uuid.txt ・ worktree の間の予約 ・ choice next ・ 古い予約の削除
+	@{ Name = 'issue (番号の予約)'; Script = 'run-issue-numbers-tests.ts' },
 	# 一括実行の時間の上限そのもの。止める相手は、このテストが起動する眠るだけの node
 	@{ Name = '試験の時間の上限'; Script = 'run-timeout-tests.ts' },
 	@{ Name = 'convert-encoding'; Script = 'run-convert-encoding-tests.ps1'; NodeTarget = 'runners\convert-encoding-node.cmd' },

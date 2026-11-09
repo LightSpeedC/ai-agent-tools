@@ -1,8 +1,10 @@
 /*
 	issue: 課題管理ツール。計画は p261103-01、仕様は notes/50_spec/課題ファイルの形と検査.html。
 
-		issue check [--root <dir>] [--json]                    課題ファイルと project-id.txt を検査する (読み取り専用)
-		issue init [--root <dir>] [--new-id]                   project-id.txt を作る (あれば変えない。--new-id で振り直す)
+		issue check [--root <dir>] [--json]                    課題ファイルと project-uuid.txt を検査する (読み取り専用)
+		issue init [--root <dir>] [--new-id]                   project-uuid.txt を作る (あれば変えない。古い project-id.txt は移す。--new-id で振り直す)
+		issue choice next [--root <dir>] [--json]              選択肢の通し番号を 1 つ予約して出す (計画 p261109-01)
+	番号の予約は ~/.ai-agent-tools/numbers/<キー>/ に置き、worktree ・ 別の clone の間でも重ならない (計画 p261109-01)。
 		issue new --title <題> --group <グループ> [--slug <件名>] [--from <報告元>] [--refs <番号,…>]
 		          [--body <本文>] [--root <dir>] [--json]       todo/ に課題を立てる
 		issue show <id> [--root <dir>] [--json]                課題を 1 件読む
@@ -43,6 +45,8 @@ import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWr
 import { listDecisions, newDecision, searchDecisions, showDecision } from './decide.ts';
 import { DecideWrittenListRel, applyDecideMigration, planDecideMigration, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
 import { DecisionIdPattern, ParentPattern } from './check.ts';
+import { todayJst } from './ops.ts';
+import { nextChoice } from './numbers.ts';
 
 const ExitOk = 0;
 const ExitFailed = 1;
@@ -50,8 +54,8 @@ const ExitBadArgs = 5;
 
 const Usage = [
 	'使い方:',
-	'  issue check [--root <dir>] [--json]                   課題ファイルと project-id.txt を検査する',
-	'  issue init [--root <dir>] [--new-id]                  project-id.txt を作る',
+	'  issue check [--root <dir>] [--json]                   課題ファイルと project-uuid.txt を検査する',
+	'  issue init [--root <dir>] [--new-id]                  project-uuid.txt を作る (古い project-id.txt があれば移す)',
 	'  issue new --title <題> --group <グループ> [--slug <件名>] [--from <報告元>] [--refs <番号,…>] [--body <本文>] [--root <dir>] [--json]',
 	'  issue show <id> [--root <dir>] [--json]               課題を 1 件読む',
 	'  issue list [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
@@ -72,6 +76,7 @@ const Usage = [
 	'  issue decide show <id> [--root <dir>] [--json]                 決定を 1 件読む',
 	'  issue decide migrate [--dry-run | --apply | --undo] [--root <dir>] [--json]',
 	'                                                                 資料と課題の過去の決定 (96-A 等) を decisions/ へ移す (既定は --dry-run。--apply は書いたあとに確かめ、だめなら戻す)',
+	'  issue choice next [--root <dir>] [--json]                      選択肢の通し番号を 1 つ予約して出す (worktree の間でも重ならない)',
 	'  issue migrate [--dry-run | --apply] [--root <dir>] [--json]    旧 issues.html の課題を読み、移す計画を出す (既定は --dry-run。--apply で items/ へ書く。すでにある番号は飛ばす。旧の記録が食い違うものは、--state-override で状態を決めるまで書かない)',
 ].join('\n');
 
@@ -167,7 +172,8 @@ function runInit(rest: string[]): number {
 	const root = rootArg !== undefined ? path.resolve(rootArg) : (findProjectRoot(process.cwd()) ?? process.cwd());
 	const r = initProject(root, o.flags.has('--new-id'));
 	if (r.result === 'created') console.log(`[OK] ${r.rel} を作った`);
-	else if (r.result === 'replaced') console.log(`[OK] ${r.rel} の project_id を振り直した`);
+	else if (r.result === 'moved') console.log(`[OK] 古い project-id.txt を ${r.rel} に移した (project_uuid は同じ値。project_id にフォルダ名を書いた)`);
+	else if (r.result === 'replaced') console.log(`[OK] ${r.rel} の project_uuid を振り直した`);
 	else console.log(`[OK] ${r.rel} は既にある (変えない。振り直すなら --new-id)`);
 	return ExitOk;
 }
@@ -193,7 +199,7 @@ function runNew(rest: string[]): number {
 	if (o.flags.has('--json')) console.log(JSON.stringify({ id: r.id, file: r.rel }));
 	else {
 		console.log(`[OK] ${r.rel} を作った (${r.id})`);
-		if (r.createdProjectId) console.log('     project-id.txt も作った');
+		if (r.createdProjectId) console.log('     project-uuid.txt も作った');
 	}
 	autoRender(root);
 	return ExitOk;
@@ -765,7 +771,22 @@ const commands: Record<string, (rest: string[]) => number> = {
 	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
 	migrate: runMigrate,
 	decide: runDecide,
+	choice: runChoice,
 };
+
+// ---- choice (選択肢の番号。計画 p261109-01 の 201-A) ----
+
+function runChoice(rest: string[]): number {
+	const sub = rest[0];
+	if (sub !== 'next') throw new UsageError(sub === undefined ? 'choice の操作が要る (next)' : '知らない choice の操作: ' + sub);
+	const o = parseOptions(rest.slice(1), { valued: ['--root'], flags: ['--json'], positionals: 0 });
+	const root = existingRoot(o);
+	const n = nextChoice(root, todayJst());
+	if (n === null) throw new Failure('選択肢の番号を取れなかった (project-uuid.txt が無いなら issue init で作る)');
+	if (o.flags.has('--json')) console.log(JSON.stringify({ number: n }));
+	else console.log(String(n));
+	return ExitOk;
+}
 
 function mainEntry(): number {
 	const args = process.argv.slice(2);

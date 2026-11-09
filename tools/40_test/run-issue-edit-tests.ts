@@ -28,7 +28,8 @@ function check(name: string, ok: boolean, detail: string = ''): void {
 
 // ---- 材料 ----
 
-const ProjectIdText = 'schema: 1\nproject_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\n';
+/** project-uuid.txt (schema 2)。project_id はプロジェクトのフォルダ名 (計画 p261109-01 の 207-A ・ 208-A) */
+const uuidText = (name: string): string => `schema: 2\nproject_uuid: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\nproject_id: ${name}\n`;
 const Items = 'notes/40_issues/items/';
 const Todo = Items + 'todo/';
 const Doing = Items + 'doing/';
@@ -61,7 +62,7 @@ function mkProject(name: string, files: Record<string, string>): string {
 }
 
 function std(name: string, files: Record<string, string> = {}): string {
-	return mkProject(name, { [Items + 'project-id.txt']: ProjectIdText, ...files });
+	return mkProject(name, { [Items + 'project-uuid.txt']: uuidText(name), ...files });
 }
 
 type Result = { code: number; out: string; err: string };

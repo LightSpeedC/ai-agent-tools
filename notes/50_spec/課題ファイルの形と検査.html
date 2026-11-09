@@ -143,8 +143,8 @@
 <div class="titlebar">
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
-		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-id.txt</code> の形。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> まで。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-08</p>
+		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-uuid.txt</code> の形と、番号の予約。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> ・ <code>decide</code> ・ <code>choice</code> まで。</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-09</p>
 	</div>
 </div>
 
@@ -155,7 +155,7 @@
 <p>課題を 1 件 1 ファイルで持つ形と、その検査 (<code>issue check</code>) の<strong>いまの姿</strong>。決めた経緯と、番号付きの決定は <a href="../10_plan/p261103-01-課題管理ツール.html">課題管理ツール 計画</a> にある。実装と食い違ったら、実装が正しい。</p>
 
 <div class="callout">
-	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-id.txt</code> ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> ・ <code>view</code> と、更新の操作の最後の自動の作り直し。横断は、まだ実装していない (第 4 章)。</p>
+	<p><strong>この仕様が扱う範囲</strong>: 課題ファイルの形 ・ <code>project-uuid.txt</code> ・ 番号の予約 ・ <code>groups.txt</code> ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> ・ <code>view</code> と、更新の操作の最後の自動の作り直し。横断は、まだ実装していない (第 4 章)。</p>
 </div>
 
 <div class="toc">
@@ -179,7 +179,7 @@
 			<tr><td class="nowrap"><code>notes/40_issues/items/doing/</code></td><td>状態が着手の課題</td></tr>
 			<tr><td class="nowrap"><code>notes/40_issues/items/done/</code></td><td>状態が済の課題。グループが片付くまで、ここに残す</td></tr>
 			<tr><td class="nowrap"><code>notes/40_issues/items/archived/</code></td><td>グループの全件が済になって、退避した課題 (済のまま)。<code>done/</code> と同じ条件を満たす</td></tr>
-			<tr><td class="nowrap"><code>notes/40_issues/items/project-id.txt</code></td><td>プロジェクトを見分ける UUID。リポジトリに commit する</td></tr>
+			<tr><td class="nowrap"><code>notes/40_issues/items/project-uuid.txt</code></td><td>プロジェクトを見分ける UUID と、フォルダ名 (<code>project_id</code>)。リポジトリに commit する (古い形は <code>project-id.txt</code>)</td></tr>
 			<tr><td class="nowrap"><code>notes/40_issues/items/groups.txt</code></td><td>グループ (章) の名前を、表示順に 1 行ずつ並べる。<strong>任意</strong></td></tr>
 		</tbody>
 	</table>
@@ -260,13 +260,23 @@ refs: p261103-01
 		<li>本文の中の、行頭が <code>- [未]</code> ・ <code>- [着手]</code> ・ <code>- [済]</code> の行。状態の語は 3 つだけで、これ以外は誤り</li>
 		<li>課題が <code>done/</code> か <code>archived/</code> にあるのに、<code>未</code> か <code>着手</code> のやることが残っていれば誤り</li>
 	</ul>
-	<h2><code>project-id.txt</code></h2>
-	<p>課題ファイルと同じ <code>キー: 値</code> の行だけで、<code>---</code> の区切りは付けない。</p>
-<pre><code class="language-text">schema: 1
-project_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7</code></pre>
+	<h2><code>project-uuid.txt</code></h2>
+	<p>課題ファイルと同じ <code>キー: 値</code> の行だけで、<code>---</code> の区切りは付けない (計画 <a href="../10_plan/p261109-01-番号の予約の共有.html">p261109-01</a> の 207-A ・ 208-A)。</p>
+<pre><code class="language-text">schema: 2
+project_uuid: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7
+project_id: ai-agent-tools</code></pre>
 	<ul>
-		<li><code>project_id</code> は小文字 32 桁の 16 進数 (UUID のハイフン無し)</li>
-		<li><code>project_name</code> は持たない (フォルダ名から読む。リネームで古くならないため)</li>
+		<li><code>project_uuid</code> は小文字 32 桁の 16 進数 (UUID のハイフン無し)。プロジェクトを見分ける内部の値</li>
+		<li><code>project_id</code> はプロジェクトのフォルダ名 (chat の名乗り ・ <code>:&lt;id&gt;:</code> の参照 ・ Vault のノートの <code>id</code> と同じ値)。worktree から作ったときも、元の作業フォルダの名前を入れる。改名したら旧名を <code>legacy_names</code> に残す</li>
+		<li><strong>古い形の <code>project-id.txt</code></strong> (<code>schema: 1</code> と、乱数の <code>project_id</code>) も読む。<code>issue init</code> が、乱数を変えずに <code>project-uuid.txt</code> へ移し、古いほうを消す。<code>issue check</code> は、古い形を警告にして移すよう促す</li>
+	</ul>
+	<h2>番号の予約</h2>
+	<p>課題 ・ 決定 ・ 選択肢の番号は、<code>~/.ai-agent-tools/numbers/&lt;キー&gt;/</code> に予約してから使う (計画 <a href="../10_plan/p261109-01-番号の予約の共有.html">p261109-01</a>)。同じ PC の同じユーザなら、worktree でも別の clone でも重ならない。</p>
+	<ul>
+		<li><strong>キー</strong>: プロジェクトが git の作業フォルダの根で、<code>origin</code> が GitHub なら <code>github_&lt;所有者&gt;_&lt;名前&gt;</code>。無ければ <code>uuid_&lt;project_uuid&gt;</code>。<code>key.json</code> にキーの元を書く</li>
+		<li><strong>置き場</strong>: <code>ids/&lt;番号&gt;/</code> (課題 ・ 決定) と <code>choices/&lt;番号&gt;/</code> (選択肢)。中に <code>info.json</code> (いつ ・ どの作業フォルダから ・ 何のために)。置き場の根は環境変数 <code>AI_AGENT_TOOLS_NUMBERS_DIR</code> で差し替えられる。<code>ISSUE_TEST_TODAY</code> があって、この環境変数が無いとき (試験) は、プロジェクトの <code>_numbers/</code></li>
+		<li><strong>取り方</strong>: 次の番号は、予約と手元のファイルの両方の最大 + 1。<code>mkdir</code> で予約し (既にあれば次の番号)、予約のあとにも同じ id のファイルが無いかをもう一度見る。空いた番号を後から埋めない</li>
+		<li><strong>残し方</strong> (205-A): 書き終えても予約を残す。予約するついでに、3 日より前の予約を消す。系列 (日付の番号は日付ごと、決定は親ごと、選択肢は 1 つ) の最大の 1 つは残す。ただし今日より前の日の日付の番号は、最大も消す</li>
 	</ul>
 	<h2><code>groups.txt</code></h2>
 	<p>グループ (章) の名前を、表示順に 1 行ずつ。空行は無視する。同じ名前を 2 度書くと誤り。課題の <code>group</code> がここに無ければ警告する。</p>
@@ -343,7 +353,8 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<table>
 		<thead><tr><th>種別 (<code>code</code>)</th><th>重さ</th><th>見ること</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>project-id</code></td><td>エラー</td><td><code>project-id.txt</code> が無い ・ 読めない ・ <code>schema</code> が 1 でない ・ <code>project_id</code> が小文字 32 桁の 16 進数でない</td></tr>
+			<tr><td class="nowrap"><code>project-uuid</code></td><td>エラー / 警告</td><td><code>project-uuid.txt</code> も <code>project-id.txt</code> も無い ・ <code>schema</code> が 2 でない ・ <code>project_uuid</code> が小文字 32 桁の 16 進数でない ・ <code>project_id</code> が無い (エラー)。<code>project_id</code> がフォルダ名と違う ・ 古い <code>project-id.txt</code> だけがある (<code>issue init</code> で移す) ・ 両方がある (古いほうを消す) (警告)</td></tr>
+			<tr><td class="nowrap"><code>project-id</code></td><td>エラー</td><td>古い <code>project-id.txt</code> だけがあり、<code>schema</code> が 1 でない ・ <code>project_id</code> が小文字 32 桁の 16 進数でない</td></tr>
 			<tr><td class="nowrap"><code>name</code></td><td>エラー</td><td>ファイル名が <code>&lt;id&gt;-&lt;件名&gt;.md</code> の形でない (<code>i</code> で始まらない <code>.md</code> を含む) ・ 件名に使えない文字がある</td></tr>
 			<tr><td class="nowrap"><code>place</code></td><td>エラー</td><td><code>items/</code> 直下や、<code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code> ・ <code>archived/</code> 以外のフォルダに、<code>.md</code> がある</td></tr>
 			<tr><td class="nowrap"><code>state-key</code></td><td>エラー</td><td><code>state</code> キーが残っている (状態はフォルダで持つ)</td></tr>
@@ -358,7 +369,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 			<tr><td class="nowrap"><code>unknown-key</code></td><td>警告</td><td>知らないキーがある</td></tr>
 			<tr><td class="nowrap"><code>refs</code></td><td>警告</td><td><code>refs</code> の参照先が見つからない (課題は 4 つのフォルダのどれか、計画 ・ 調査 ・ アイデアは <code>notes/</code> のファイル名の先頭)。<code>プロジェクト名:番号</code> の形は、外を読まないので確かめない</td></tr>
 			<tr><td class="nowrap"><code>slug-long</code></td><td>警告</td><td>件名が 30 文字を超える</td></tr>
-			<tr><td class="nowrap"><code>gitignore</code></td><td>警告</td><td><code>git check-ignore</code> で見て、<code>notes/40_issues/_issues.html</code> か <code>_lock/</code> が Git の管理外になっていない (<code>.gitignore</code> に <code>_*</code> を足す)。git の管理の外 ・ git が無いときは、見られないので警告しない</td></tr>
+			<tr><td class="nowrap"><code>gitignore</code></td><td>警告</td><td><code>git check-ignore</code> で見て、<code>notes/40_issues/_issues.html</code> が Git の管理外になっていない (<code>.gitignore</code> に <code>_*</code> を足す)。git の管理の外 ・ git が無いときは、見られないので警告しない</td></tr>
 			<tr><td class="nowrap"><code>group</code></td><td>エラー / 警告</td><td><code>groups.txt</code> で同じ名前が重複している (エラー) ・ 課題の <code>group</code> が <code>groups.txt</code> に無い (警告)</td></tr>
 		</tbody>
 	</table>
@@ -371,8 +382,9 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<p>共通の決まり: 出力に絶対パスを出さない (相対パス ・ <code>/</code> 区切り)。終了コードは、成功 0 ・ 失敗 1 (見つからない ・ 重複 ・ 番号を使い切った) ・ 引数の誤り 5 (2 は使わない)。プロジェクトは、<code>--root</code> か、作業フォルダから親をたどって探す。</p>
 	<h2><code>issue init [--root &lt;dir&gt;] [--new-id]</code></h2>
 	<ul>
-		<li><code>project-id.txt</code> を作る (<code>schema: 1</code> ＋ 乱数の <code>project_id</code>)。<code>items/</code> が無ければ作るが、<strong>状態のフォルダは作らない</strong> (空フォルダを作らない)</li>
-		<li>既にあれば変えず、「既にある」と出す。<code>--new-id</code> は <code>project_id</code> を振り直す (フォルダごとコピーして別のプロジェクトにしたとき)</li>
+		<li><code>project-uuid.txt</code> を作る (<code>schema: 2</code> ＋ 乱数の <code>project_uuid</code> ＋ フォルダ名の <code>project_id</code>)。<code>items/</code> が無ければ作るが、<strong>状態のフォルダは作らない</strong> (空フォルダを作らない)</li>
+		<li>既にあれば変えず、「既にある」と出す。<code>--new-id</code> は <code>project_uuid</code> を振り直す (フォルダごとコピーして別のプロジェクトにしたとき)</li>
+		<li><strong>古い <code>project-id.txt</code> があれば</strong>、乱数を変えずに <code>project-uuid.txt</code> へ移し、古いほうを消して「移した」と出す。<code>issue new</code> は移さない (同時に動いた new が移し合わないため)</li>
 		<li>プロジェクトは、<code>--root</code>、無ければ作業フォルダから親をたどって見つけたもの、それも無ければ作業フォルダ</li>
 	</ul>
 	<h2><code>issue new --title &lt;題&gt; --group &lt;グループ&gt; [--slug &lt;件名&gt;] [--from &lt;報告元&gt;] [--refs &lt;番号,…&gt;] [--body &lt;本文&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
@@ -383,9 +395,9 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><strong><code>groups.txt</code> があれば</strong>、<code>--group</code> がそこに並んでいる名前であること (誤字を防ぐため)。無ければ何でもよい</li>
 		<li><code>--from</code> があれば、<code>from</code> と <code>confirmed: false</code> を書く。<code>--refs</code> は番号をカンマで区切り、カンマのあとに空白 1 つで書く。形が違えば終了コード 5</li>
 		<li>メタ情報は、決まりの順で書く。本文は、閉じの <code>---</code> の次の空行のあと。<code>--body</code> が無ければ空行だけ。UTF-8 (BOM 無し) ・ LF</li>
-		<li><code>project-id.txt</code> が無ければ、<code>issue init</code> と同じに作る。<code>--root</code> で指したプロジェクトに <code>items/</code> が無くても作れる。<code>--root</code> が無く、プロジェクトが見つからなければ終了コード 5 (<code>issue init</code> を促す)</li>
-		<li><strong>番号の予約</strong>: 作る前に <code>notes/40_issues/_lock/&lt;id&gt;/</code> を <code>mkdir</code> で作る (<code>mkdir</code> は既にあれば失敗するので、排他になる)。先頭 <code>_</code> のフォルダなので Git 管理外。取れなければ次の番号を試し、作り終えたら消す。<strong>60 秒より古い予約は、持ち主が居ないとみなして消し、取り直す</strong>。予約を取ったあとにも、同じ id のファイルが無いかをもう一度見る</li>
-		<li>予約が効くのは<strong>同じ PC の中だけ</strong>。別の PC やクラウドで、件名違いに同じ番号が立つと、<code>issue check</code> の <code>duplicate</code> が後から止める</li>
+		<li><code>project-uuid.txt</code> も古い <code>project-id.txt</code> も無ければ、<code>issue init</code> と同じに作る。<code>--root</code> で指したプロジェクトに <code>items/</code> が無くても作れる。<code>--root</code> が無く、プロジェクトが見つからなければ終了コード 5 (<code>issue init</code> を促す)</li>
+		<li><strong>番号の予約</strong>: 第 2 章「番号の予約」のとおり、<code>~/.ai-agent-tools/numbers/&lt;キー&gt;/ids/&lt;id&gt;/</code> に取る</li>
+		<li>予約が効くのは<strong>同じ PC の同じユーザの中だけ</strong>。別の PC やクラウドで、件名違いに同じ番号が立つと、<code>issue check</code> の <code>duplicate</code> が後から止める</li>
 		<li>出力: <code>[OK] &lt;相対パス&gt; を作った (&lt;id&gt;)</code>。<code>--json</code> は <code>{ id, file }</code></li>
 		<li>今日の日付は、環境変数 <code>ISSUE_TEST_TODAY</code> (<code>yyyy-mm-dd</code>) で固定できる (試験用。<a href="環境変数.html">環境変数の仕様</a>)</li>
 	</ul>
@@ -499,20 +511,26 @@ issue check --json           # 結果を JSON で出す</code></pre>
 issue decide list [--parent &lt;番号&gt;] [--root &lt;dir&gt;] [--json]
 issue decide show &lt;id&gt; [--root &lt;dir&gt;] [--json]</code></pre>
 	<ul>
-		<li><strong><code>new</code></strong>: <code>decisions/</code> に決定を作る。<code>--option</code> を書いた順に A ・ B ・ C … と振り、本文の <code>## 案</code> に <code>- X: 文</code> で書く。<code>--chosen</code> は振った字のどれか。連番は、親の決定の最大 + 1。同じ PC で同時に足しても重ならないよう、課題と同じ予約 (<code>_lock/&lt;id&gt;/</code>) を取る。<code>decided</code> は JST の今日。<code>--body</code> は案の後ろに足す。<strong>何かを書く前に、引数をすべて確かめる</strong> (誤りは終了コード 5 で、何も作らない)。出力は <code>[OK] &lt;相対パス&gt; を作った (&lt;id&gt;)</code>、<code>--json</code> は <code>{ id, file }</code></li>
+		<li><strong><code>new</code></strong>: <code>decisions/</code> に決定を作る。<code>--option</code> を書いた順に A ・ B ・ C … と振り、本文の <code>## 案</code> に <code>- X: 文</code> で書く。<code>--chosen</code> は振った字のどれか。連番は、親の決定の最大 + 1。同時に足しても、別の worktree から足しても重ならないよう、課題と同じ予約 (第 2 章「番号の予約」) を取る。<code>decided</code> は JST の今日。<code>--body</code> は案の後ろに足す。<strong>何かを書く前に、引数をすべて確かめる</strong> (誤りは終了コード 5 で、何も作らない)。出力は <code>[OK] &lt;相対パス&gt; を作った (&lt;id&gt;)</code>、<code>--json</code> は <code>{ id, file }</code></li>
 		<li><strong><code>list</code></strong>: 親の番号 (種類 → 日付 → 連番) → 決定の連番の数の順。<code>--parent</code> で絞る。文字の出力は <code>&lt;id&gt;  &lt;選んだ案&gt;  &lt;決めた日&gt;  &lt;問い&gt;</code> と <code>N 件</code>。<code>--json</code> は <code>[{ id, parent, title, chosen, decided, file }]</code>。読めないファイルは飛ばし、標準エラーに <code>[警告]</code></li>
 		<li><strong><code>show</code></strong>: 1 件を出す。無ければ終了コード 1、決定の id の形でなければ 5。<code>--json</code> は <code>{ id, file, meta, options: [{ key, text }], body }</code></li>
 		<li><code>_issues.html</code> は作り直さない (決定は <code>issue render</code> ・ <code>view</code> が出す)</li>
 	</ul>
 	<h2><code>issue decide migrate [--dry-run | --apply | --undo] [--root &lt;dir&gt;] [--json]</code> (過去の決定の移行)</h2>
 	<ul>
-		<li>資料と課題に散っている過去の決定 (<code>96-A</code> 等) を <code>decisions/</code> へ移す (計画 p261108-03)。<strong>課題の移行が前提</strong>: <code>items/project-id.txt</code> が無いか、<code>notes/40_issues/issues.html</code> が残っていれば、終了コード 1 で止め、先に <code>issue migrate</code> を流すよう出す</li>
+		<li>資料と課題に散っている過去の決定 (<code>96-A</code> 等) を <code>decisions/</code> へ移す (計画 p261108-03)。<strong>課題の移行が前提</strong>: <code>items/project-uuid.txt</code> (古い <code>project-id.txt</code> も可) が無いか、<code>notes/40_issues/issues.html</code> が残っていれば、終了コード 1 で止め、先に <code>issue migrate</code> を流すよう出す</li>
 		<li><strong>表から</strong> (188-A ・ 192-A): <code>notes/</code> の HTML (<code>40_issues</code> を除く) の表で、行の最初のセルが <code>番号-字</code> (後ろに空白とかっこの説明が続いてもよい) の行を読む。見出しに「案」の列がある表は、同じ番号の行を 1 件にまとめ、問いは「決めること」の列 (<code>rowspan</code> を含む)、案は各行の文に「(推す理由: …)」を添える。選んだ字は、同じ資料の表の外に出てくる <code>番号-字</code>。出てこなければ A とみなし、本文にそう書く。それ以外の表 (決めたこと) は、その行の字が選んだ案で、ほかの案は「記録なし」、ほかの列は本文に残す。同じ資料の 2 つの表の同じ番号は 1 件にまとめる。番号の無い資料の表は「読めない」に出す</li>
 		<li><strong>本文から</strong> (193-A ・ 194-A): 表に無い番号を、資料と課題 (<code>items/</code> の Markdown ・ 旧課題の HTML) の本文から拾う。コード ・ 番号や日付の一部 (前後が英数字 ・ ハイフン ・ ピリオド) は拾わない。問いと案は「記録なし」、本文の <code>## 出てきた箇所</code> に前後の文を並べ、選んだ字はいちばん多く出てきた字。<strong>2 つ以上の資料 ・ 課題に出てくる番号は、資料ごとに振り直した番号とみなし、資料ごとに 1 件</strong>にして、旧番号を <code>&lt;資料の番号&gt;/&lt;番号&gt;-&lt;字&gt;</code> にする</li>
 		<li><strong>親と番号</strong> (189-A): 親は表がある資料、本文から拾ったものは最初に出てくる資料 ・ 課題 (番号の小さい順)。連番は親ごとに旧番号の順で続きから振る。<code>legacy_ids</code> は <code>:&lt;フォルダ名&gt;:&lt;旧番号&gt;</code>。同じ旧番号の決定が既にあれば飛ばす (何度流してもよい)。決めた日は資料の作成日 (無ければ番号の日付)</li>
 		<li><strong><code>--dry-run</code></strong> (既定): 何も書かない。件数 (表から ・ 本文から ・ 飛ばした)、A とみなした番号、本文から拾った番号、字が割れた番号、読めないものを出す。<code>--json</code> は <code>{ move: [{ parent, legacy, title, chosen, options, from, source }], skipped, assumedA, fromText, split, unreadable }</code></li>
 		<li><strong><code>--apply</code></strong> (190-A): <code>issue decide new</code> と同じ書き方 (予約つき) で書き、書いたファイルを <code>notes/40_issues/decisions/_decide-migrate-written.txt</code> に足す。書いたあとに読み直し (旧番号 ・ 選んだ字 ・ 親 ・ 案の数) と <code>issue check</code> を流し、だめなら書いたものを全部消して一覧も戻し、終了コード 1。<strong><code>--undo</code></strong>: 一覧にある <code>decisions/</code> 直下の <code>.md</code> だけを消し、一覧も消す。一覧が無ければ終了コード 1</li>
 		<li>写しで試す道具は <code>tools/50_run/compare-migration/compare-decisions.ts</code> (課題がまだ移っていなければ、写しで先に課題を移す)</li>
+	</ul>
+	<h2><code>issue choice next [--root &lt;dir&gt;] [--json]</code> (選択肢の番号)</h2>
+	<ul>
+		<li>選択肢の通し番号 (<code>202-A</code> の <code>202</code>) を 1 つ予約して出す (計画 p261109-01 の 201-A)。出力は番号だけ、<code>--json</code> は <code>{ number }</code></li>
+		<li>次の番号は、予約 (<code>choices/</code>) の最大と、手元の決定の <code>legacy_ids</code> のうち自分のプロジェクト (<code>:&lt;project_id&gt;:</code>) の番号の最大の、大きいほう + 1</li>
+		<li>案を出す前に呼び、出た番号を使う。子セッションでも同じ</li>
 	</ul>
 </section>
 
@@ -521,7 +539,7 @@ issue decide show &lt;id&gt; [--root &lt;dir&gt;] [--json]</code></pre>
 	<ul>
 		<li><strong><code>issue confirm</code> は、自己申告</strong>。報告元から OK が出たことを、道具は確かめない。報告元へ返信し、OK をもらってから呼ぶのは、人か AI の役目 (共通ルール「課題の管理」)</li>
 		<li><strong>横断</strong> (ほかのプロジェクトの課題をまとめて見る): 後続のフェーズ。<strong>旧 HTML の課題</strong>は、このプロジェクトでは <code>notes/40_issues/issues-legacy.html</code> と <code>issues-archive.html</code> に、書き換えずに残してある (未・着手だった 3 件だけを新しい形へ移した)。<code>issue list</code> ・ <code>issue search</code> は、旧 HTML を読まない。<strong>索引 DB</strong> は持たない (計画 p261103-01 の 121-C)</li>
-		<li><strong>番号の予約 (<code>_lock/</code>) は、同じ PC の中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める</li>
+		<li><strong>番号の予約は、同じ PC の同じユーザの中だけ</strong>。別の PC ・ クラウドでの重複は、<code>issue check</code> が後から止める (選択肢の番号は検査しない)</li>
 		<li><strong>本文の Markdown の検査はしない</strong>。やること行だけを見る。コードブロックの中の <code>- [x]</code> のような行も、やること行として読むので、誤りになる</li>
 		<li><strong><code>refs</code> の参照先は、ファイル名の先頭だけで探す</strong>。移行前の課題 (<code>issues.html</code> の中の番号) は見つけられず、警告になる</li>
 		<li>他のプロジェクトのファイルは読まない。検査するのは、見つけた 1 つのプロジェクトだけ</li>

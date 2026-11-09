@@ -11,6 +11,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Folders, ItemsRel, NamePattern, RefPattern, SlugMax, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
 import { splitIssue } from './meta.ts';
+import { OldIdFileName, UuidFileName, mainFolderName, maxReserved, numbersBaseOf, prune, readProjectFile, reserve, uuidFileText } from './numbers.ts';
 
 /** 引数の誤り。終了コード 5 */
 export class UsageError extends Error {}
@@ -23,16 +24,9 @@ export const StateOf: Record<Folder, string> = { todo: '未', doing: '着手', d
 /** 連番の 36 進数の桁 (英字は小文字。l は読み間違えるので大文字の L) */
 const Digits = '0123456789abcdefghijkLmnopqrstuvwxyz';
 const NumberMax = 36 * 36 - 1;
-/** 番号の予約を古いとみなす長さ。持ち主の new は数ミリ秒で終わるので、これより古ければ持ち主は居ない */
-const LockStaleMs = 60 * 1000;
 
 function itemsDirOf(root: string): string {
 	return path.join(root, ...ItemsRel.split('/'));
-}
-
-/** 番号の予約を置くフォルダ。先頭 _ なので Git 管理外 */
-export function lockBaseOf(root: string): string {
-	return path.join(root, 'notes', '40_issues', '_lock');
 }
 
 // ---- 日付と連番 ----
@@ -66,15 +60,35 @@ export function compareId(a: string, b: string): number {
 
 // ---- init ----
 
-/** project-id.txt を作る。既にあれば変えない (newId なら振り直す) */
-export function initProject(root: string, newId: boolean): { rel: string; result: 'created' | 'exists' | 'replaced' } {
-	const rel = ItemsRel + '/project-id.txt';
-	const file = path.join(itemsDirOf(root), 'project-id.txt');
-	const exists = fs.existsSync(file);
-	if (exists && !newId) return { rel, result: 'exists' };
+/**
+ * project-uuid.txt を作る (207-A ・ 208-A)。既にあれば変えない (newId なら project_uuid を振り直す)。
+ * 古い project-id.txt があれば、乱数を変えずに project-uuid.txt へ移し、古いほうを消す (moved)
+ */
+export function initProject(root: string, newId: boolean): { rel: string; result: 'created' | 'exists' | 'replaced' | 'moved' } {
+	const rel = ItemsRel + '/' + UuidFileName;
+	const file = path.join(itemsDirOf(root), UuidFileName);
+	const oldFile = path.join(itemsDirOf(root), OldIdFileName);
+	const current = readProjectFile(root);
+	if (current !== null && !newId) {
+		if (current.kind === 'uuid') return { rel, result: 'exists' };
+		if (current.uuid === null || !/^[0-9a-f]{32}$/.test(current.uuid)) throw new Failure(`${ItemsRel}/${OldIdFileName} の project_id が読めない (直してから issue init)`);
+		fs.writeFileSync(file, uuidFileText(current.uuid, mainFolderName(root)), { flag: 'wx' });
+		fs.rmSync(oldFile);
+		return { rel, result: 'moved' };
+	}
+	const projectId = current?.projectId ?? mainFolderName(root);
 	fs.mkdirSync(path.dirname(file), { recursive: true });
-	fs.writeFileSync(file, 'schema: 1\nproject_id: ' + crypto.randomUUID().replace(/-/g, '') + '\n');
-	return { rel, result: exists ? 'replaced' : 'created' };
+	fs.writeFileSync(file, uuidFileText(crypto.randomUUID().replace(/-/g, ''), projectId));
+	fs.rmSync(oldFile, { force: true });
+	return { rel, result: current !== null ? 'replaced' : 'created' };
+}
+
+/** 番号の予約の置き場。キーを決められなければ (project-uuid.txt を作ったあとなので、ふつうは起きない) 失敗にする */
+export function numbersBaseFor(root: string): string {
+	const base = numbersBaseOf(root);
+	if (base === null) throw new Failure(`番号の予約の置き場を決められない (${ItemsRel}/${UuidFileName} が無い。issue init で作る)`);
+	prune(base, todayJst());
+	return base;
 }
 
 // ---- new ----
@@ -114,36 +128,6 @@ function maxNumber(root: string, date6: string): number {
 	return max;
 }
 
-/** 番号の予約を取る (mkdir は、既にあれば失敗するので排他になる)。古い予約は消して取り直す */
-export function acquire(lock: string): boolean {
-	for (let attempt = 0; attempt < 2; attempt++) {
-		try {
-			fs.mkdirSync(lock);
-			return true;
-		} catch (e) {
-			if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
-			try {
-				if (Date.now() - fs.statSync(lock).mtimeMs > LockStaleMs) {
-					fs.rmdirSync(lock);
-					continue;
-				}
-			} catch {
-				continue; // 調べている間に、持ち主が消した
-			}
-			return false;
-		}
-	}
-	return false;
-}
-
-export function release(lock: string): void {
-	try {
-		fs.rmdirSync(lock);
-	} catch {
-		// 既に無ければよい
-	}
-}
-
 export type NewOptions = { title: string; group: string; slug?: string; from?: string; refs?: string; body?: string };
 
 /** todo/ に課題を作る。何かを作る前に、引数をすべて確かめる */
@@ -173,20 +157,21 @@ export function newIssue(root: string, o: NewOptions): { id: string; rel: string
 		throw new UsageError(`グループ ${group} は archived/ に退避済み。issue unarchive ${group} で戻してから立てる`);
 	}
 
-	const createdProjectId = initProject(root, false).result === 'created';
+	// 無いときだけ作る。古い project-id.txt を移すのは issue init の役目 (同時の new で移し合わないため)
+	const createdProjectId = readProjectFile(root) === null && initProject(root, false).result === 'created';
 
 	const today = todayJst();
 	const date6 = today.slice(2, 4) + today.slice(5, 7) + today.slice(8, 10);
-	const lockBase = lockBaseOf(root);
-	fs.mkdirSync(lockBase, { recursive: true });
+	// 予約は、ホームの下の共有の置き場に取り、書き終えても残す (p261109-01 の 202-A ・ 205-A)
+	const base = numbersBaseFor(root);
 	const todoDir = path.join(itemsDirOf(root), 'todo');
+	const reservedMax = maxReserved(base, 'ids', new RegExp(`^i${date6}-([0-9a-kLm-z]{2})$`), numberOf);
 
-	for (let n = Math.max(1, maxNumber(root, date6) + 1); n <= NumberMax; n++) {
+	for (let n = Math.max(1, maxNumber(root, date6) + 1, reservedMax + 1); n <= NumberMax; n++) {
 		const id = `i${date6}-${nnOf(n)}`;
 		if (hasFileWithId(root, id)) continue;
-		const lock = path.join(lockBase, id);
-		if (!acquire(lock)) continue;
-		try {
+		if (!reserve(base, 'ids', id, { kind: 'issue', title })) continue;
+		{
 			// 予約を取る間に、別の new が作り終えていないかを、もう一度見る
 			if (hasFileWithId(root, id)) continue;
 			const lines = ['schema: 1', `id: ${id}`, `title: ${title}`, `group: ${group}`, `created: ${today}`];
@@ -197,8 +182,6 @@ export function newIssue(root: string, o: NewOptions): { id: string; rel: string
 			fs.mkdirSync(todoDir, { recursive: true });
 			fs.writeFileSync(path.join(todoDir, name), '---\n' + lines.join('\n') + '\n---\n' + body, { flag: 'wx' });
 			return { id, rel: `${ItemsRel}/todo/${name}`, createdProjectId };
-		} finally {
-			release(lock);
 		}
 	}
 	throw new Failure(`${date6} の番号 (01 〜 ${nnOf(NumberMax)}) を使い切った`);

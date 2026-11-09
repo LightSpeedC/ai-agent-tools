@@ -11,7 +11,8 @@ import {
 	DecisionIdPattern, DecisionNamePattern, DecisionRefPattern, DecisionsRel, LegacyIdPattern, OptionLine, ParentPattern, SlugMax, SlugPattern, listMdNames,
 } from './check.ts';
 import { splitIssue } from './meta.ts';
-import { Failure, UsageError, acquire, compareId, lockBaseOf, release, singleLine, slugFromTitle, todayJst } from './ops.ts';
+import { Failure, UsageError, compareId, numbersBaseFor, singleLine, slugFromTitle, todayJst } from './ops.ts';
+import { maxReserved, reserve } from './numbers.ts';
 
 /** 案の字。--option を書いた順に振る */
 const Letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -79,16 +80,15 @@ export function newDecision(root: string, o: DecideOptions): { id: string; rel: 
 	if (o.decided !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(o.decided)) throw new UsageError(`決めた日の形が違う: ${o.decided}`);
 	const today = o.decided ?? todayJst();
 	const dir = decisionsDirOf(root);
-	const lockBase = lockBaseOf(root);
-	fs.mkdirSync(lockBase, { recursive: true });
-
-	// 同時に足されても重ならないよう、課題と同じ予約 (_lock/<id>/) を取る
-	for (let n = maxNumber(root, o.parent) + 1, tries = 0; tries < 1000; n++, tries++) {
+	// 同時に足されても、別の worktree から足されても重ならないよう、課題と同じ共有の置き場に予約を取る (p261109-01)
+	const base = numbersBaseFor(root);
+	const escaped = o.parent.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	const reservedMax = maxReserved(base, 'ids', new RegExp(`^${escaped}-d(\\d+)$`), Number);
+	for (let n = Math.max(maxNumber(root, o.parent), reservedMax) + 1, tries = 0; tries < 1000; n++, tries++) {
 		const id = `${o.parent}-d${n}`;
 		if (hasFileWithId(root, id)) continue;
-		const lock = path.join(lockBase, id);
-		if (!acquire(lock)) continue;
-		try {
+		if (!reserve(base, 'ids', id, { kind: 'decision', title })) continue;
+		{
 			if (hasFileWithId(root, id)) continue;
 			const lines = ['schema: 1', `id: ${id}`, `title: ${title}`, `parent: ${o.parent}`, `decided: ${today}`, `chosen: ${o.chosen}`];
 			if (refs !== undefined) lines.push(`refs: ${refs}`);
@@ -100,8 +100,6 @@ export function newDecision(root: string, o: DecideOptions): { id: string; rel: 
 			fs.mkdirSync(dir, { recursive: true });
 			fs.writeFileSync(path.join(dir, name), '---\n' + lines.join('\n') + '\n---\n' + body, { flag: 'wx' });
 			return { id, rel: `${DecisionsRel}/${name}` };
-		} finally {
-			release(lock);
 		}
 	}
 	throw new Failure(`${o.parent} の決定の番号を取れなかった`);

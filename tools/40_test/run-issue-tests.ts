@@ -33,6 +33,8 @@ function fwd(p: string): string {
 // ---- 材料 ----
 
 const ProjectIdText = 'schema: 1\nproject_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\n';
+/** project-uuid.txt (schema 2)。project_id はプロジェクトのフォルダ名 (計画 p261109-01 の 207-A ・ 208-A) */
+const uuidText = (name: string): string => `schema: 2\nproject_uuid: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\nproject_id: ${name}\n`;
 const Items = 'notes/40_issues/items/';
 const Todo = Items + 'todo/';
 const Doing = Items + 'doing/';
@@ -71,9 +73,9 @@ function mkProject(name: string, files: Record<string, string>): string {
 	return dir;
 }
 
-/** project-id.txt を持つ標準のプロジェクト。files が上書き・追加される */
+/** project-uuid.txt を持つ標準のプロジェクト。files が上書き・追加される */
 function std(name: string, files: Record<string, string> = {}): string {
-	return mkProject(name, { [Items + 'project-id.txt']: ProjectIdText, ...files });
+	return mkProject(name, { [Items + 'project-uuid.txt']: uuidText(name), ...files });
 }
 
 type Result = { code: number; out: string; err: string };
@@ -109,7 +111,7 @@ console.log('--- 正しいプロジェクト');
 {
 	const dir = std('ok-empty');
 	const r = checkRun(dir);
-	check('課題が 0 件でも、project-id.txt があれば終了コード 0', r.code === 0 && r.out.includes('課題 0 件'), r.out);
+	check('課題が 0 件でも、project-uuid.txt があれば終了コード 0', r.code === 0 && r.out.includes('課題 0 件'), r.out);
 }
 {
 	const dir = std('ok-colon', { [Name1]: issueText({ title: '直す: 表の中の # と : の扱い #1737' }) });
@@ -151,7 +153,24 @@ console.log('--- 正しいプロジェクト');
 console.log('--- project-id.txt');
 {
 	const dir = mkProject('pid-missing', { [Name1]: issueText() });
-	check('project-id.txt が無ければエラー (project-id)', errorWith(checkRun(dir), 'project-id', 'project-id.txt'));
+	check('project-uuid.txt も project-id.txt も無ければエラー (project-uuid)', errorWith(checkRun(dir), 'project-uuid', 'project-uuid.txt'));
+}
+{
+	const dir = mkProject('puid-bad', { [Items + 'project-uuid.txt']: 'schema: 2\nproject_uuid: ZZZ\nproject_id: puid-bad\n' });
+	check('project_uuid が小文字 32 桁の 16 進数でなければエラー', errorWith(checkRun(dir), 'project-uuid'));
+}
+{
+	const dir = mkProject('puid-schema', { [Items + 'project-uuid.txt']: 'schema: 1\nproject_uuid: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\nproject_id: puid-schema\n' });
+	check('project-uuid.txt の schema が 2 でなければエラー', errorWith(checkRun(dir), 'project-uuid'));
+}
+{
+	const dir = mkProject('puid-noid', { [Items + 'project-uuid.txt']: 'schema: 2\nproject_uuid: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\n' });
+	check('project_id (フォルダ名) が無ければエラー', errorWith(checkRun(dir), 'project-uuid'));
+}
+{
+	const dir = mkProject('puid-both', { [Items + 'project-uuid.txt']: uuidText('puid-both'), [Items + 'project-id.txt']: ProjectIdText });
+	const r = checkRun(dir);
+	check('project-uuid.txt があるのに古い project-id.txt も残っていれば、警告 (エラーにしない)', r.code === 0 && r.out.includes('[警告]') && r.out.includes('project-id.txt'), r.out);
 }
 {
 	const dir = mkProject('pid-bad', { [Items + 'project-id.txt']: 'schema: 1\nproject_id: ZZZ\n' });

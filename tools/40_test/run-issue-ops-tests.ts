@@ -33,7 +33,8 @@ function fwd(p: string): string {
 
 // ---- 材料 ----
 
-const ProjectIdText = 'schema: 1\nproject_id: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\n';
+/** project-uuid.txt (schema 2)。project_id はプロジェクトのフォルダ名 (計画 p261109-01 の 207-A ・ 208-A) */
+const uuidText = (name: string): string => `schema: 2\nproject_uuid: 7b0c4e1a9f3d4a62b8d51c2e6f90a3b7\nproject_id: ${name}\n`;
 const Items = 'notes/40_issues/items/';
 const Todo = Items + 'todo/';
 const Doing = Items + 'doing/';
@@ -66,7 +67,7 @@ function mkProject(name: string, files: Record<string, string>): string {
 }
 
 function std(name: string, files: Record<string, string> = {}): string {
-	return mkProject(name, { [Items + 'project-id.txt']: ProjectIdText, ...files });
+	return mkProject(name, { [Items + 'project-uuid.txt']: uuidText(name), ...files });
 }
 
 type Result = { code: number; out: string; err: string };
@@ -116,28 +117,28 @@ console.log('--- init');
 {
 	const dir = mkProject('init-new', { 'README.md': '# x\n' });
 	const r = run(['init', '--root', dir], dir);
-	const text = read(dir, Items + 'project-id.txt');
-	check('init は project-id.txt を作る (schema と、小文字 32 桁の project_id)', r.code === 0 && /^schema: 1\nproject_id: [0-9a-f]{32}\n$/.test(text), r.out + ' / ' + text);
+	const text = read(dir, Items + 'project-uuid.txt');
+	check('init は project-uuid.txt を作る (schema 2 ・ 小文字 32 桁の project_uuid ・ フォルダ名の project_id)', r.code === 0 && /^schema: 2\nproject_uuid: [0-9a-f]{32}\nproject_id: init-new\n$/.test(text), r.out + ' / ' + text);
 	check('init したプロジェクトは、issue check が通る', run(['check', '--root', dir], dir).code === 0);
-	check('init は状態のフォルダを作らない (空フォルダを作らない)', listDir(dir, Items).join(',') === 'project-id.txt');
+	check('init は状態のフォルダを作らない (空フォルダを作らない)', listDir(dir, Items).join(',') === 'project-uuid.txt');
 	check('init の出力に絶対パスを出さない', !r.out.includes(dir) && !r.out.includes(fwd(dir)), r.out);
 }
 {
 	const dir = std('init-exists');
 	const r = run(['init', '--root', dir], dir);
-	check('project-id.txt が既にあれば、変えずに終了コード 0 (「既にある」と出す)', r.code === 0 && r.out.includes('既にある') && read(dir, Items + 'project-id.txt') === ProjectIdText, r.out);
+	check('project-uuid.txt が既にあれば、変えずに終了コード 0 (「既にある」と出す)', r.code === 0 && r.out.includes('既にある') && read(dir, Items + 'project-uuid.txt') === uuidText('init-exists'), r.out);
 }
 {
 	const dir = std('init-newid');
 	const r = run(['init', '--root', dir, '--new-id'], dir);
-	const text = read(dir, Items + 'project-id.txt');
-	check('--new-id は project_id を振り直す (形は同じで、値が変わる)', r.code === 0 && /^schema: 1\nproject_id: [0-9a-f]{32}\n$/.test(text) && text !== ProjectIdText, r.out + ' / ' + text);
+	const text = read(dir, Items + 'project-uuid.txt');
+	check('--new-id は project_uuid を振り直す (形と project_id は同じで、乱数が変わる)', r.code === 0 && /^schema: 2\nproject_uuid: [0-9a-f]{32}\nproject_id: init-newid\n$/.test(text) && text !== uuidText('init-newid'), r.out + ' / ' + text);
 }
 {
 	const lonely = fs.mkdtempSync(path.join(os.tmpdir(), 'issue-ops-'));
 	try {
 		const r = run(['init'], lonely);
-		check('--root が無く、プロジェクトが見つからなければ、作業フォルダに作る', r.code === 0 && exists(lonely, Items + 'project-id.txt'), r.out + r.err);
+		check('--root が無く、プロジェクトが見つからなければ、作業フォルダに作る', r.code === 0 && exists(lonely, Items + 'project-uuid.txt'), r.out + r.err);
 	} finally {
 		fs.rmSync(lonely, { recursive: true, force: true });
 	}
@@ -240,7 +241,7 @@ console.log('--- new');
 {
 	const dir = mkProject('new-bootstrap', { 'README.md': '# x\n' });
 	const r = newIssue(dir, Basic);
-	check('--root で指したプロジェクトに items/ が無くても、new が project-id.txt と課題を作る', r.code === 0 && exists(dir, Items + 'project-id.txt') && exists(dir, Todo + 'i261105-01-li-の中の表.md'), r.out + r.err);
+	check('--root で指したプロジェクトに items/ が無くても、new が project-uuid.txt と課題を作る', r.code === 0 && exists(dir, Items + 'project-uuid.txt') &&exists(dir, Todo + 'i261105-01-li-の中の表.md'), r.out + r.err);
 	check('new で作ったプロジェクトは、issue check が通る', run(['check', '--root', dir], dir).code === 0);
 }
 {
@@ -260,25 +261,18 @@ console.log('--- new');
 	check('--json は { id, file } を出す', parsed.id === 'i261105-01' && parsed.file === Todo + 'i261105-01-li-の中の表.md', r.out);
 }
 {
+	// 試験では、予約の置き場はプロジェクトの _numbers/ (ISSUE_TEST_TODAY があり、AI_AGENT_TOOLS_NUMBERS_DIR が無いとき。p261109-01)
 	const dir = std('new-locked');
-	fs.mkdirSync(path.join(dir, 'notes', '40_issues', '_lock', 'i261105-01'), { recursive: true });
+	const reserved = path.join(dir, '_numbers', 'uuid_7b0c4e1a9f3d4a62b8d51c2e6f90a3b7', 'ids', 'i261105-01');
+	fs.mkdirSync(reserved, { recursive: true });
 	const r = newIssue(dir, Basic);
-	check('番号が別の持ち主に予約されていれば (_lock/<id>)、次の番号を取る', r.code === 0 && r.out.includes('i261105-02') && fs.existsSync(path.join(dir, 'notes', '40_issues', '_lock', 'i261105-01')), r.out);
+	check('番号が別の持ち主に予約されていれば、次の番号を取る', r.code === 0 && r.out.includes('i261105-02') && fs.existsSync(reserved), r.out);
 }
 {
-	const dir = std('new-stale');
-	const lock = path.join(dir, 'notes', '40_issues', '_lock', 'i261105-01');
-	fs.mkdirSync(lock, { recursive: true });
-	const past = new Date(Date.now() - 10 * 60 * 1000);
-	fs.utimesSync(lock, past, past);
-	const r = newIssue(dir, Basic);
-	check('古い予約 (持ち主が居ないもの) は無視して、その番号を取れる (10 分前の 01 を、01 として使う)', r.code === 0 && r.out.includes('i261105-01'), r.out);
-}
-{
-	const dir = std('new-lock-released');
+	const dir = std('new-lock-kept');
 	newIssue(dir, Basic);
-	const lockDir = path.join(dir, 'notes', '40_issues', '_lock');
-	check('new が終わったら、自分の予約を消す', !fs.existsSync(lockDir) || fs.readdirSync(lockDir).length === 0);
+	check('new が終わっても、自分の予約を残す (p261109-01 の 205-A)', fs.existsSync(path.join(dir, '_numbers', 'uuid_7b0c4e1a9f3d4a62b8d51c2e6f90a3b7', 'ids', 'i261105-01', 'info.json')));
+	check('_lock/ は作らない', !fs.existsSync(path.join(dir, 'notes', '40_issues', '_lock')));
 }
 {
 	const dir = std('new-concurrent');

@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { KeyOrder, States, parsePairs, splitIssue } from './meta.ts';
+import { OldIdFileName, UuidFileName, mainFolderName } from './numbers.ts';
 
 export type Level = 'error' | 'warning';
 export type Finding = { level: Level; code: string; file: string; message: string };
@@ -139,15 +140,51 @@ function findMisplaced(itemsDir: string): string[] {
 	return rels;
 }
 
-function checkProjectId(itemsDir: string, add: Add): void {
-	const rel = ItemsRel + '/project-id.txt';
-	let text: string;
+/** project-uuid.txt (schema 2) を検査する (p261109-01 の 207-A ・ 208-A)。無ければ古い project-id.txt を検査し、移すよう促す */
+function checkProjectId(root: string, itemsDir: string, add: Add): void {
+	const newRel = ItemsRel + '/' + UuidFileName;
+	let newText: string | null = null;
 	try {
-		text = fs.readFileSync(path.join(itemsDir, 'project-id.txt'), 'utf8');
+		newText = fs.readFileSync(path.join(itemsDir, UuidFileName), 'utf8');
 	} catch {
-		add('error', 'project-id', rel, 'project-id.txt が無い (issue init で作る)');
+		// 無ければ古いほうを見る
+	}
+	if (newText !== null) {
+		const text = normalize(newText, newRel, add).replace(/\n+$/, '');
+		const parsed = parsePairs(text.split('\n'), 1);
+		for (const p of parsed.problems) add('error', 'project-uuid', newRel, p);
+		const get = (k: string): string | undefined => parsed.pairs.find((p) => p.key === k)?.value;
+		const schema = get('schema');
+		if (schema !== '2') add('error', 'project-uuid', newRel, schema === undefined ? 'schema が無い' : `schema が 2 でない: ${schema}`);
+		const uuid = get('project_uuid');
+		if (uuid === undefined) {
+			if (!parsed.brokenKeys.has('project_uuid')) add('error', 'project-uuid', newRel, 'project_uuid が無い');
+		} else if (!ProjectIdPattern.test(uuid)) {
+			add('error', 'project-uuid', newRel, 'project_uuid が小文字 32 桁の 16 進数でない');
+		}
+		const id = get('project_id');
+		if (id === undefined) {
+			if (!parsed.brokenKeys.has('project_id')) add('error', 'project-uuid', newRel, 'project_id (フォルダ名) が無い');
+		} else {
+			const folder = mainFolderName(root);
+			if (id !== folder) add('warning', 'project-uuid', newRel, `project_id (${id}) がフォルダ名 (${folder}) と違う (改名したなら、旧名を legacy_names に残して直す)`);
+		}
+		for (const p of parsed.pairs) {
+			if (!['schema', 'project_uuid', 'project_id', 'legacy_names'].includes(p.key)) add('warning', 'unknown-key', newRel, `知らないキー: ${p.key}`);
+		}
+		if (fs.existsSync(path.join(itemsDir, OldIdFileName))) add('warning', 'project-uuid', ItemsRel + '/' + OldIdFileName, `${UuidFileName} があるので、古い ${OldIdFileName} は消す`);
 		return;
 	}
+
+	const rel = ItemsRel + '/' + OldIdFileName;
+	let text: string;
+	try {
+		text = fs.readFileSync(path.join(itemsDir, OldIdFileName), 'utf8');
+	} catch {
+		add('error', 'project-uuid', newRel, `${UuidFileName} が無い (issue init で作る)`);
+		return;
+	}
+	add('warning', 'project-uuid', rel, `古い形の ${OldIdFileName}。issue init で ${UuidFileName} に移す`);
 	text = normalize(text, rel, add).replace(/\n+$/, '');
 	const parsed = parsePairs(text.split('\n'), 1);
 	for (const p of parsed.problems) add('error', 'project-id', rel, p);
@@ -426,8 +463,8 @@ function checkDecisions(root: string, issueIds: Set<string>, add: Add): number {
 	return names.length;
 }
 
-/** Git の管理外であってほしいもの (root からの相対パス)。_lock/ は中の予約フォルダで調べる */
-const GitIgnoreTargets = ['notes/40_issues/_issues.html', 'notes/40_issues/_lock/'];
+/** Git の管理外であってほしいもの (root からの相対パス)。末尾が / のものは、中に作られるもののパスで調べる */
+const GitIgnoreTargets = ['notes/40_issues/_issues.html'];
 
 /**
  * `git check-ignore` で、管理外になっていないものを返す (表示は、末尾の / を除いた名前)。
@@ -436,7 +473,7 @@ const GitIgnoreTargets = ['notes/40_issues/_issues.html', 'notes/40_issues/_lock
 function notIgnoredByGit(root: string, targets: string[]): string[] {
 	const result: string[] = [];
 	for (const target of targets) {
-		// _lock/ は、中に作られる予約フォルダのパスで調べる (フォルダ自体の除外と、中身の除外は同じ _* で決まる)
+		// フォルダは、中に作られるもののパスで調べる (フォルダ自体の除外と、中身の除外は同じ _* で決まる)
 		const probe = target.endsWith('/') ? target + 'i000000-00' : target;
 		const r = spawnSync('git', ['check-ignore', '-q', '--', probe], { cwd: root, timeout: 15000 });
 		if (r.error !== undefined || r.status === null) return [];
@@ -452,7 +489,7 @@ export function checkProject(root: string): CheckResult {
 	const add: Add = (level, code, file, message) => { findings.push({ level, code, file, message }); };
 
 	const itemsDir = path.join(root, ...ItemsRel.split('/'));
-	checkProjectId(itemsDir, add);
+	checkProjectId(root, itemsDir, add);
 	const groups = readGroups(itemsDir, add);
 
 	// 置き場の誤り: items/ 直下と、4 つ以外のフォルダの .md
@@ -488,7 +525,7 @@ export function checkProject(root: string): CheckResult {
 
 	const decisions = checkDecisions(root, ids, add);
 
-	// 生成物 (_issues.html) と番号の予約 (_lock/) は、先頭 _ の決まりで Git から外れている前提
+	// 生成物 (_issues.html) は、先頭 _ の決まりで Git から外れている前提 (番号の予約は、ホームの下に置く。p261109-01)
 	const notIgnored = notIgnoredByGit(root, GitIgnoreTargets);
 	if (notIgnored.length > 0) {
 		add('warning', 'gitignore', '.gitignore', `${notIgnored.join(' ・ ')} が Git の管理外になっていない (.gitignore に _* を足す)`);

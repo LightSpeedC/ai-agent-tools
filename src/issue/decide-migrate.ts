@@ -16,6 +16,7 @@ import { DecisionsRel, ItemsRel, ParentPattern } from './check.ts';
 import { splitIssue } from './meta.ts';
 import { loadDecisions, newDecision } from './decide.ts';
 import { Failure } from './ops.ts';
+import { UuidFileName, readProjectFile } from './numbers.ts';
 import { parseLegacyIssues } from './migrate.ts';
 import { getPlainText } from '../html2md/htmlutil.ts';
 
@@ -192,10 +193,10 @@ function optionsUpTo(map: Map<string, string>, chosen: string): string[] {
 	return list;
 }
 
-/** 決定の移行は、課題の移行が済んでいることが前提 (items/project-id.txt があり、旧 issues.html が残っていない) */
+/** 決定の移行は、課題の移行が済んでいることが前提 (items/project-uuid.txt か古い project-id.txt があり、旧 issues.html が残っていない) */
 function assertIssuesMigrated(root: string): void {
 	const hint = '先に issue migrate で課題を移す (決定の親になる課題が items/ に要るため)';
-	if (!fs.existsSync(path.join(root, ...ItemsRel.split('/'), 'project-id.txt'))) throw new Failure(`${ItemsRel}/project-id.txt が無い。${hint}`);
+	if (readProjectFile(root) === null) throw new Failure(`${ItemsRel}/${UuidFileName} が無い。${hint}`);
 	if (fs.existsSync(path.join(root, 'notes', '40_issues', 'issues.html'))) throw new Failure(`notes/40_issues/issues.html が残っている (課題の移行が済んでいない)。${hint}`);
 }
 

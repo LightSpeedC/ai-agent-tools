@@ -259,6 +259,18 @@ project_id: ai-agent-tools</code></pre>
 		<li><code>project-id.txt</code> を commit した他のプロジェクトへ、移行を頼む (どのプロジェクトかは、p261105-01 の名簿で確かめる)</li>
 	</ol>
 	<p>後に回すもの: p261103-01 の索引の表の列 <code>project_name</code> を <code>project_id</code> に揃える (索引を作るときに)。</p>
+
+	<h2>結果 (2026-11-09)</h2>
+	<ul>
+		<li>手順 1: 今ある動きは、<code>run-issue-ops-tests</code> ・ <code>run-issue-decide-tests</code> ・ <code>run-issue-tests</code> が守っていた (直す前に ✅ 全件)。<strong>番号を使い切ったときのエラーだけは試験が無い</strong> (1,295 件のファイルが要る)。足していない</li>
+		<li>手順 2: <code>tools/40_test/run-issue-numbers-tests.ts</code> (29 件) を先に書き、実装の前に ❌Red (24 件失敗) を見た。実装のあと ✅Green</li>
+		<li>手順 3〜5: <code>src/issue/numbers.ts</code> を足し、<code>ops.ts</code> ・ <code>decide.ts</code> ・ <code>check.ts</code> ・ <code>decide-migrate.ts</code> ・ <code>main.ts</code> を直した。<code>_lock/</code> の処理と、その <code>.gitignore</code> の検査を消した</li>
+		<li>途中で見つけた不具合: <code>issue new</code> が古い <code>project-id.txt</code> を移そうとすると、同時に走った new が移し合って落ちた。<strong>移すのは <code>issue init</code> だけ</strong>にした</li>
+		<li>試験の置き場: <code>ISSUE_TEST_TODAY</code> があり <code>AI_AGENT_TOOLS_NUMBERS_DIR</code> が無いときは、プロジェクトの <code>_numbers/</code> に予約する (本物のホームを汚さない)。既存の試験の材料は <code>project-uuid.txt</code> に変えた。古い形でも動くことは、<code>migrate</code> ・ <code>decide migrate</code> の試験が古い材料のまま確かめる</li>
+		<li>手順 7: issue の試験 9 本を bun と node で流し、✅ すべて成功。<code>tsc --noEmit</code> も ✅</li>
+		<li>このプロジェクトの <code>project-id.txt</code> を <code>issue init</code> で移した。<code>issue choice next</code> は 209 を返した (決定の旧番号の最大 208 の次)</li>
+		<li>残り: 手順 6 の共通ルールの文言の案、手順 8 の他のプロジェクトへの依頼</li>
+	</ul>
 </section>
 
 </div>
