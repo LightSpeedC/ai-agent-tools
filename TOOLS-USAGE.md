@@ -846,7 +846,7 @@ issue decide show p261108-01-d1
 
 <strong>利用者の依頼を受けた、そのプロジェクトのセッションが行う。</strong>済と保管 (`issues-archive.html`) も含めて、全件を移す。済の課題も、過去の課題を探す材料になるため。
 
-1. **前提を確かめる**: `issue --help` が呼べる。作業ツリーがきれいで、リモートと同じ (`git pull` 済み)。**別の PC に push していない課題の編集が無い**ことを利用者に確かめる
+1. **前提を確かめる**: `issue --help` が呼べる。作業ツリーがきれいで、リモートと同じ (`git pull` 済み)。**別の PC に push していない課題の編集が無い**ことを利用者に確かめる。`items/` が無ければ `issue init` を流す (無いと、次の `issue migrate --dry-run` が終了コード 5 で止まる)
 2. **数える**: `issue migrate --dry-run`。旧 `issues.html` と `issues-archive.html` から、状態ごとの数 (未 ・ 着手 ・ 済 ・ 保管) と、読めなかったものを出す。**本文を Markdown にして旧 HTML と比べ、本文の文字数とやることの数が食い違う課題も出す**。書き込まない。終了コード 1 なら、出た一覧を ai-agent-tools へ報告する (旧 HTML の作りが読めていない)
 3. **移す**: `issue migrate --apply`。未は `todo/`、着手は `doing/`、済は `done/`、`issues-archive.html` の課題は `archived/` へ書く (番号と作成日は旧のまま)。**読めなかったものは書かない**ので、旧の記録を見て `issue new` ・ `issue todo` で書き写す。旧の記録が食い違う (済なのに未のやることがある等) ものがあると、何も書かずに止まる。どの状態にするかを利用者に聞き、`--state-override <番号>=<状態>,…` を付けて流し直す。**書いたあとに、読み直して旧 HTML と比べ、`issue check` を流す。だめなら、書いたものを全部消して元に戻し、終了コード 1 で止まる**。手で戻したいときは `issue migrate --undo` (`--apply` が書いたファイルだけを消す)
 4. **数が合うか確かめる**: `--dry-run` で出た状態ごとの数 = `todo/` ・ `doing/` ・ `done/` ・ `archived/` のそれぞれの数。`issue check` が問題なし
