@@ -497,8 +497,26 @@ export type SearchHit = ListItem & { matches: { line: number; text: string }[] }
 const SnippetMax = 120;
 
 /** 指定のフォルダの課題から、題と本文 (ファイルの全文) に語を含む行を探す。英字は大小を区別しない */
-export function searchIssues(root: string, term: string, folders: Folder[], group: string | null, warn: (message: string) => void): SearchHit[] {
-	const needle = term.toLowerCase();
+/**
+ * 探す語から、1 行が当たるかを返す関数を作る。regex が真なら正規表現として (213-A)、偽なら部分一致で探す。
+ * どちらも英字の大小を区別しない。壊れた式は UsageError (終了コード 5)
+ */
+export function lineMatcher(term: string, regex: boolean): (line: string) => boolean {
+	if (!regex) {
+		const needle = term.toLowerCase();
+		return (line) => line.toLowerCase().includes(needle);
+	}
+	let re: RegExp;
+	try {
+		re = new RegExp(term, 'i');
+	} catch (e) {
+		throw new UsageError(`--regex の式が読めない: ${term} (${(e as Error).message})`);
+	}
+	return (line) => re.test(line);
+}
+
+export function searchIssues(root: string, term: string, folders: Folder[], group: string | null, warn: (message: string) => void, regex = false): SearchHit[] {
+	const hit = lineMatcher(term, regex);
 	const hits: SearchHit[] = [];
 	for (const folder of folders) {
 		for (const name of listMdNames(path.join(itemsDirOf(root), folder))) {
@@ -520,7 +538,7 @@ export function searchIssues(root: string, term: string, folders: Folder[], grou
 			if (group !== null && get('group') !== group) continue;
 			const matches: { line: number; text: string }[] = [];
 			loaded.text.split('\n').forEach((line, index) => {
-				if (line.toLowerCase().includes(needle)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, SnippetMax).join('') });
+				if (hit(line)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, SnippetMax).join('') });
 			});
 			if (matches.length === 0) continue;
 			hits.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), file: loaded.rel, matches });

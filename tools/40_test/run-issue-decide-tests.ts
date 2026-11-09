@@ -242,6 +242,8 @@ console.log('--- search (決定)');
 	check('--state は課題だけに効き、決定は探す', t.out.includes('i261102-01-d1'), t.out);
 	const g = run(['search', 'ふくろう', '--group', 'g', '--root', dir], dir);
 	check('--group を付けたときは、決定を探さない (グループは課題の持ち物)', !g.out.includes('i261102-01-d1'), g.out);
+	const x = run(['search', 'ふく.う|存在しない', '--regex', '--root', dir], dir);
+	check('213-A: --regex は決定の本文にも効く', x.out.includes('i261102-01-d1'), x.out + x.err);
 }
 console.log('');
 console.log(`=== issue (決定): ${pass} 件成功 ・ ${fail} 件失敗 ===`);

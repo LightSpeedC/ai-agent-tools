@@ -11,7 +11,7 @@ import {
 	DecisionIdPattern, DecisionNamePattern, DecisionRefPattern, DecisionsRel, LegacyIdPattern, OptionLine, ParentPattern, SlugMax, SlugPattern, listMdNames,
 } from './check.ts';
 import { splitIssue } from './meta.ts';
-import { Failure, UsageError, compareId, numbersBaseFor, singleLine, slugFromTitle, todayJst } from './ops.ts';
+import { Failure, UsageError, compareId, lineMatcher, numbersBaseFor, singleLine, slugFromTitle, todayJst } from './ops.ts';
 import { maxReserved, reserve } from './numbers.ts';
 
 /** 案の字。--option を書いた順に振る */
@@ -176,13 +176,13 @@ export function loadDecisions(root: string, warn: (message: string) => void): De
 }
 
 /** 決定の本文から語を探す (196-A)。大小を区別しない。親の課題の状態によらず全部を探す */
-export function searchDecisions(root: string, term: string): { kind: 'decision'; id: string; parent: string; title: string; file: string; matches: { line: number; text: string }[] }[] {
-	const needle = term.toLowerCase();
+export function searchDecisions(root: string, term: string, regex = false): { kind: 'decision'; id: string; parent: string; title: string; file: string; matches: { line: number; text: string }[] }[] {
+	const hit = lineMatcher(term, regex);
 	const hits: { kind: 'decision'; id: string; parent: string; title: string; file: string; matches: { line: number; text: string }[] }[] = [];
 	for (const d of loadDecisions(root, () => {})) {
 		const matches: { line: number; text: string }[] = [];
 		d.text.split('\n').forEach((line, index) => {
-			if (line.toLowerCase().includes(needle)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, 120).join('') });
+			if (hit(line)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, 120).join('') });
 		});
 		if (matches.length > 0) hits.push({ kind: 'decision', id: d.id, parent: DecisionIdPattern.exec(d.id)?.[1] ?? '', title: d.meta.title ?? '', file: d.file, matches });
 	}

@@ -269,6 +269,15 @@ const searchFiles: Record<string, string> = {
 	const r = run(['search', '表'], dir);
 	check('一致した行は、1 件の課題につき 3 行までを出す', (r.out.match(/L\d+:/g) ?? []).length === 3, r.out);
 }
+{
+	// 213-A: --regex を付けたときだけ、正規表現として探す
+	const dir = std('search-regex', searchFiles);
+	check('213-A: --regex なしでは、| も文字として探す (0 件)', run(['search', '表のまま|折り返し'], dir).out === '0 件');
+	check('213-A: --regex で A|B を探せる', idsOf(run(['search', '表のまま|折り返し', '--regex'], dir).out).join(',') === 'i261103-01,i261103-02');
+	check('213-A: --regex でも英字の大小を区別しない', idsOf(run(['search', 'html2md\\s*の話', '--regex'], dir).out).includes('i261103-01'));
+	check('213-A: --regex に壊れた式を渡したら終了コード 5', run(['search', '表(', '--regex'], dir).code === 5);
+	check('213-A: --regex なしなら、記号を含む語もそのまま探せる (表( は 0 件で終了コード 0)', (() => { const x = run(['search', '表('], dir); return x.code === 0 && x.out === '0 件'; })());
+}
 
 // ---- archive ・ unarchive ----
 

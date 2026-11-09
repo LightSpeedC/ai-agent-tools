@@ -416,9 +416,10 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li>メタ情報が読めない課題は、飛ばして標準エラーに警告を出す (終了コードは 0)。理由は <code>issue check</code> で確かめる</li>
 		<li>費用は、読むフォルダの件数で決まる。済 ・ <code>archived/</code> は、既定では読まない</li>
 	</ul>
-	<h2><code>issue search &lt;語&gt; [--state 未,着手,済,archived | --all] [--group &lt;g&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
+	<h2><code>issue search &lt;語&gt; [--regex] [--state 未,着手,済,archived | --all] [--group &lt;g&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
 	<ul>
 		<li>題と本文 (ファイルの全文) から、語を含む行を探す。<strong>英字は大小を区別しない</strong>。語は 1 つの文字列で、空白を含めて一致させる。語が無ければ終了コード 5</li>
+			<li><strong><code>--regex</code> を付けたときだけ、語を正規表現として探す</strong> (213-A。<code>"表|幅"</code> 等)。英字の大小は区別しない。式が読めなければ終了コード 5。付けなければ、<code>|</code> ・ <code>(</code> 等の記号も文字として探す</li>
 		<li>読むフォルダ (既定は未・着手。<code>--state</code> ・ <code>--all</code>) と <code>--group</code> の絞り方は、<code>list</code> と同じ</li>
 		<li>出力: <code>list</code> と同じ 1 行 ＋ 一致した行 (<code>    L&lt;行番号&gt;: &lt;行&gt;</code>。<strong>1 件の課題につき 3 行まで、1 行は 120 文字まで</strong>) ＋ 最後の行が <code>N 件</code>。<code>--json</code> は、課題の配列に <code>matches</code> (<code>{ line, text }</code> の配列。全件) を足したもの</li>
 		<li>メタ情報が読めない課題は、飛ばして標準エラーに警告を出す。見つからなければ <code>0 件</code> で終了コード 0</li>

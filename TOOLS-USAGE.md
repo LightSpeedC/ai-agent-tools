@@ -818,7 +818,7 @@ created: 2026-11-01
 | `issue new --title <題> --group <グループ>` | 課題を立てる。番号は自動で振る |
 | `issue list` | 未・着手の一覧 (`--state` ・ `--all` で変える) |
 | `issue show <id>` | 1 件を読む |
-| `issue search <語>` | 本文から探す。決定も探す (親の課題が archived でも。`--group` を付けたら課題だけ) |
+| `issue search <語>` | 本文から探す。決定も探す (親の課題が archived でも。`--group` を付けたら課題だけ)。既定は語の部分一致。`--regex` を付けると正規表現で探す (`"表\|幅"` 等)。どちらも英字の大小を区別しない |
 | `issue todo <id> --add <文>` | やることを足す。`--done <n>` ・ `--doing <n>` ・ `--undone <n>` で n 番目の状態を変える |
 | `issue set <id> --state 済` | 課題の状態を変える (フォルダを動かす) |
 | `issue confirm <id>` | 報告元の確認が取れたことを記録する |

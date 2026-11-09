@@ -21,7 +21,7 @@
 	更新の操作 (new ・ set ・ todo ・ archive ・ unarchive) は、作業ツリーのファイルを変えるだけで、commit しない。
 		issue set <id> --state 未|着手|済 [--root <dir>] [--json]   状態を変える (隣のフォルダへ動かす。追跡中なら git mv)
 		issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]
-		issue search <語> [--state … | --all] [--group <g>] [--root <dir>] [--json]
+		issue search <語> [--regex] [--state … | --all] [--group <g>] [--root <dir>] [--json]
 		issue confirm <id> [--undo] [--root <dir>] [--json]         報告元の確認 (confirmed) を直す (その行だけ。フォルダは動かさない)
 		issue archive <group> ・ issue unarchive <group> [--root <dir>] [--json]
 		issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]
@@ -59,7 +59,7 @@ const Usage = [
 	'  issue new --title <題> --group <グループ> [--slug <件名>] [--from <報告元>] [--refs <番号,…>] [--body <本文>] [--root <dir>] [--json]',
 	'  issue show <id> [--root <dir>] [--json]               課題を 1 件読む',
 	'  issue list [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
-	'  issue search <語> [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
+	'  issue search <語> [--regex] [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
 	'  issue set <id> --state 未|着手|済 [--root <dir>] [--json]       状態を変える (隣のフォルダへ動かす)',
 	'  issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]',
 	'  issue confirm <id> [--undo] [--root <dir>] [--json]            報告元の確認 (confirmed) を true にする (--undo で false)',
@@ -245,15 +245,16 @@ function stateLabel(folder: Folder): string {
 }
 
 function runSearch(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root', '--state', '--group'], flags: ['--json', '--all'], positionals: 1 });
+	const o = parseOptions(rest, { valued: ['--root', '--state', '--group'], flags: ['--json', '--all', '--regex'], positionals: 1 });
 	const term = o.positionals[0];
+	const regex = o.flags.has('--regex');
 	if (term === undefined || term === '') throw new UsageError('探す語が要る (issue search <語>)');
 	const folders = foldersFrom(o);
 	const root = existingRoot(o);
 	const group = o.values.get('--group') ?? null;
-	const hits = searchIssues(root, term, folders, group, (m) => console.error(m));
+	const hits = searchIssues(root, term, folders, group, (m) => console.error(m), regex);
 	// 決定も探す (196-A)。--state は課題だけに効く。--group はグループが課題の持ち物なので、付けたら決定は探さない
-	const decisionHits = group !== null ? [] : searchDecisions(root, term);
+	const decisionHits = group !== null ? [] : searchDecisions(root, term, regex);
 	if (o.flags.has('--json')) {
 		console.log(JSON.stringify([...hits, ...decisionHits]));
 	} else {
