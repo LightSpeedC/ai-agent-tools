@@ -399,13 +399,15 @@ export function renderHtml(o: RenderOptions): RenderResult {
 	const idLink = (id: string): string => `<a href="#${escapeHtml(id)}">${escapeHtml(id)}</a>`;
 	const decisionHtml = (d: DecisionView): string => {
 		const chosen = d.meta.chosen ?? '';
-		const option = d.options.find((x) => x.key === chosen);
+		// 複数の案を選んだ決定は、選んだ字ごとに案の文を並べる (217-A)
+		const picked = chosen.split(',').filter((c) => c !== '');
+		const chosenText = picked.map((c) => { const x = d.options.find((y) => y.key === c); return escapeHtml(c) + (x !== undefined ? ': ' + escapeHtml(x.text) : ''); }).join(' ・ ');
 		const newer = replacedBy.get(d.id) ?? [];
 		const older = splitIds(d.meta.replaces);
 		const notes: string[] = [];
 		if (newer.length > 0) notes.push(`→ ${newer.map(idLink).join(', ')} で覆した`);
 		if (older.length > 0) notes.push(`← ${older.map(idLink).join(', ')} を覆した`);
-		const summary = `<span class="dno">${escapeHtml(d.id)}</span>${escapeHtml(d.meta.title ?? '')} → ${escapeHtml(chosen)}${option !== undefined ? ': ' + escapeHtml(option.text) : ''}`
+		const summary = `<span class="dno">${escapeHtml(d.id)}</span>${escapeHtml(d.meta.title ?? '')} → ${chosenText}`
 			+ (notes.length > 0 ? ` (${notes.join(' ・ ')})` : '');
 		const meta: string[] = [`決めた日 ${escapeHtml(d.meta.decided ?? '')}`];
 		const refs = splitIds(d.meta.refs);

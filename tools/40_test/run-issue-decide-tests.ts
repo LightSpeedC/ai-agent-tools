@@ -128,6 +128,22 @@ async function mainTests(): Promise<void> {
 		check('親に計画の番号 (p) を使える', r.code === 0 && listDir(dir, Decisions).includes('p261108-01-d1-計画の決定.md'), r.out + r.err);
 	}
 	{
+		// 217-A: 複数の案を選べる
+		const dir = mkProject('new-multi', {});
+		const r = decide(dir, ['new', '--parent', 'i261103-01', '--title', '両方', '--option', 'a', '--option', 'b', '--option', 'c', '--chosen', 'A,C']);
+		const t = read(dir, Decisions + 'i261103-01-d1-両方.md');
+		check('217-A: --chosen A,C は、決定ファイルに chosen: A,C と書く', r.code === 0 && t.includes('\nchosen: A,C\n'), r.out + r.err + JSON.stringify(t));
+		check('217-A: 複数を選んだ決定も、issue check が通る', run(['check', '--root', dir], dir).code === 0, run(['check', '--root', dir], dir).out);
+		const bad = decide(dir, ['new', '--parent', 'i261103-01', '--title', 't', '--option', 'a', '--option', 'b', '--chosen', 'A,C']);
+		check('217-A: 選んだ字の 1 つでも案に無ければ終了コード 5', bad.code === 5, bad.out + bad.err);
+		check('217-A: 同じ字を 2 度選べば終了コード 5', decide(dir, ['new', '--parent', 'i261103-01', '--title', 't', '--option', 'a', '--option', 'b', '--chosen', 'A,A']).code === 5);
+	}
+	{
+		const dir = mkProject('check-multi', { [Decisions + 'i261103-01-d1-x.md']: decisionText({ chosen: 'A,C' }) });
+		const c = run(['check', '--root', dir], dir);
+		check('217-A: chosen の字の 1 つが本文の案に無ければ、issue check が指摘する', c.code !== 0 && (c.out + c.err).includes('C'), c.out + c.err);
+	}
+	{
 		const dir = mkProject('new-bad', {});
 		const cases: [string, string[]][] = [
 			['--chosen が案の字に無い', ['new', '--parent', 'i261103-01', '--title', 't', '--option', 'a', '--option', 'b', '--chosen', 'C']],

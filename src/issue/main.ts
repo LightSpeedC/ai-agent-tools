@@ -71,7 +71,7 @@ const Usage = [
 	'  issue archive <group|番号> [--root <dir>] [--json]             グループの全件が済なら、archived/ へ動かす。番号なら済の課題 1 件だけを動かす',
 	'  issue archive --done-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]   その日より前に立てた済の課題を、グループを問わずまとめて動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
-	'  issue decide new --parent <番号> --title <問い> --option <文> [--option <文> …] --chosen <A|B|…>',
+	'  issue decide new --parent <番号> --title <問い> --option <文> [--option <文> …] --chosen <A|B|…|A,C>',
 	'                  [--slug <件名>] [--refs <番号,…>] [--replaces <id,…>] [--legacy <:名前:旧番号,…>] [--body <本文>] [--root <dir>] [--json]',
 	'                                                                 決定を decisions/ に記録する (id は <親>-d<連番>)',
 	'  issue decide list [--parent <番号>] [--root <dir>] [--json]    決定の一覧',

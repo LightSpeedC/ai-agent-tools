@@ -389,6 +389,7 @@ const decFiles: Record<string, string> = {
 	[Dec + 'i261103-01-d1-出し方.md']: decisionText('i261103-01-d1', 'i261103-01', '出し方 <x>', 'A'),
 	[Dec + 'i261103-01-d2-覆す.md']: decisionText('i261103-01-d2', 'i261103-01', '覆した決定', 'B', 'replaces: i261103-01-d1\n'),
 	[Dec + 'p261108-02-d1-計画.md']: decisionText('p261108-02-d1', 'p261108-02', '計画の問い', 'A', '', '\n本文の補足\n'),
+	[Dec + 'p261108-02-d2-両方.md']: decisionText('p261108-02-d2', 'p261108-02', '両方の問い', 'A,B'),
 	// 195-A: 親の課題が items/ に無い決定は、課題の外の決定の章へ。archived の課題 (既定では出さない) の決定は、どこにも出さない
 	[Dec + 'i261103-09-d1-無い課題.md']: decisionText('i261103-09-d1', 'i261103-09', '親の無い問い', 'A'),
 	[Dec + 'i261103-04-d1-退避.md']: decisionText('i261103-04-d1', 'i261103-04', '退避の課題の問い', 'A'),
@@ -404,16 +405,17 @@ const decFiles: Record<string, string> = {
 	check('決定は details.decision で、既定で閉じる (186-A)', /<details class="decision[^"]*" id="i261103-01-d1">/.test(h));
 	check('summary は番号 ・ 問い (エスケープ) ・ 選んだ字と案の文', /<summary><span class="dno">i261103-01-d1<\/span>出し方 &lt;x&gt; → A: 案 A の文/.test(h), h.slice(h.indexOf('i261103-01-d1'), h.indexOf('i261103-01-d1') + 200));
 	check('中に全部の案が出る', issueA.includes('案 B の文'));
+	check('217-A: 複数を選んだ決定の summary は、選んだ字ごとに案の文を出す', /→ A: 案 A の文 ・ B: 案 B の文/.test(h), h.slice(h.indexOf('p261108-02-d2'), h.indexOf('p261108-02-d2') + 200));
 	check('summary の番号は span.no にしない (課題の数え方を変えない)', (h.match(/<span class="no">/g) ?? []).length === 3);
 	check('覆された決定は superseded で、→ 新しい番号のリンクが付く (187-A)', /<details class="decision superseded" id="i261103-01-d1">/.test(h) && h.includes('→ <a href="#i261103-01-d2">i261103-01-d2</a> で覆した'));
 	check('覆した側には ← 古い番号が付く', h.includes('← <a href="#i261103-01-d1">i261103-01-d1</a> を覆した'));
 	check('superseded の灰色の CSS がある', html2cssHas(h, 'details.decision.superseded'));
-	check('親が課題でない決定は、最後の「課題の外の決定」の章に出る (185-A ・ 195-A)', /<h1>課題の外の決定 \(2 件\)<\/h1>/.test(h) && h.indexOf('<h1>課題の外の決定') > h.indexOf('id="i261103-01-d1"'), h.slice(h.indexOf('課題の外'), h.indexOf('課題の外') + 80));
+	check('親が課題でない決定は、最後の「課題の外の決定」の章に出る (185-A ・ 195-A)', /<h1>課題の外の決定 \(3 件\)<\/h1>/.test(h) && h.indexOf('<h1>課題の外の決定') > h.indexOf('id="i261103-01-d1"'), h.slice(h.indexOf('課題の外'), h.indexOf('課題の外') + 80));
 	check('課題の外の決定の章は、親の番号ごとの h2 で分ける', h.includes('<h2>p261108-02</h2>') && h.includes('本文の補足'));
 	check('親の課題が items/ に無い決定も、課題の外の決定の章に出る (195-A)', h.includes('<h2>i261103-09</h2>') && h.indexOf('id="i261103-09-d1"') > h.indexOf('<h1>課題の外の決定'));
 	check('親の課題が items/ にあるが、ページに出していない (archived) 決定は、どこにも出さない', !h.includes('id="i261103-04-d1"'));
 	check('課題の外の決定の章も目次に入る', /<li class="ch03"><a href="#ch03">課題の外の決定<\/a><\/li>/.test(h));
-	check('件数に決定を混ぜず、「・ 決定 n 件」(出した数) を足す', h.includes('課題 3 件 (未 1 件 ・ 着手 1 件 ・ 済 1 件) ・ 決定 4 件'), r.out);
+	check('件数に決定を混ぜず、「・ 決定 n 件」(出した数) を足す', h.includes('課題 3 件 (未 1 件 ・ 着手 1 件 ・ 済 1 件) ・ 決定 5 件'), r.out);
 }
 {
 	const dir = std('decisions-filter', decFiles);

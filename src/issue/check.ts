@@ -414,9 +414,12 @@ function checkDecisions(root: string, issueIds: Set<string>, add: Add): number {
 		if (decided !== undefined && !isRealDate(decided)) add('error', 'value', rel, `decided が実在する yyyy-mm-dd でない: ${decided}`);
 		const chosen = get('chosen');
 		if (chosen !== undefined) {
-			if (!/^[A-Z]$/.test(chosen)) add('error', 'value', rel, `chosen が英大文字 1 字でない: ${chosen}`);
-			else if (!parts.body.split('\n').some((line) => OptionLine.exec(line)?.[1] === chosen)) {
-				add('error', 'chosen', rel, `chosen の案 (- ${chosen}: …) が本文に無い`);
+			// 複数の案を選べる (217-A。A,C)
+			const picked = chosen.split(',');
+			const keys = new Set(parts.body.split('\n').map((line) => OptionLine.exec(line)?.[1]).filter((k) => k !== undefined));
+			if (picked.some((c) => !/^[A-Z]$/.test(c)) || new Set(picked).size !== picked.length) add('error', 'value', rel, `chosen が英大文字 1 字 (複数はカンマで区切る) でない: ${chosen}`);
+			else for (const c of picked.filter((c) => !keys.has(c))) {
+				add('error', 'chosen', rel, `chosen の案 (- ${c}: …) が本文に無い`);
 			}
 		}
 		const list = (key: string, pattern: RegExp): string[] => {

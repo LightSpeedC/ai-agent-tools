@@ -66,9 +66,12 @@ export function newDecision(root: string, o: DecideOptions): { id: string; rel: 
 	if (o.options.length === 0) throw new UsageError('--option (案) が 1 つも無い');
 	if (o.options.length > Letters.length) throw new UsageError(`--option が ${Letters.length} を超えている`);
 	const options = o.options.map((text) => singleLine(text, '--option'));
-	if (!/^[A-Z]$/.test(o.chosen) || Letters.indexOf(o.chosen) >= options.length) {
-		throw new UsageError(`--chosen は、案の字 (${Letters.slice(0, options.length).split('').join(' ・ ')}) のどれか: ${o.chosen}`);
+	// 複数の案を選べる (217-A。A,C)。どの字も案にあり、同じ字を重ねない
+	const picked = o.chosen.split(',').map((s) => s.trim());
+	if (picked.some((c) => !/^[A-Z]$/.test(c) || Letters.indexOf(c) >= options.length) || new Set(picked).size !== picked.length) {
+		throw new UsageError(`--chosen は、案の字 (${Letters.slice(0, options.length).split('').join(' ・ ')}) のどれか。複数はカンマで区切る (A,C): ${o.chosen}`);
 	}
+	o = { ...o, chosen: picked.join(',') };
 	const refs = listValue(o.refs, '--refs', DecisionRefPattern);
 	const replaces = listValue(o.replaces, '--replaces', DecisionRefPattern);
 	const legacy = listValue(o.legacy, '--legacy', LegacyIdPattern);
