@@ -497,11 +497,12 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><code>new</code> ・ <code>set</code> ・ <code>todo</code> (変える操作) ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> が成功したあと、<code>_issues.html</code> を既定の範囲 (未・着手・済) で作り直す (131-A)。<code>init</code> ・ <code>check</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>todo</code> の一覧と、失敗した操作は、作らない</li>
 		<li><strong>失敗しても、主な操作は成功のまま、標準エラーに <code>[警告]</code> を出すだけ</strong> (終了コード 0)。標準出力は増やさない (<code>--json</code> も JSON のまま)</li>
 	</ul>
-	<h2><code>issue archive &lt;group&gt;</code> ・ <code>issue unarchive &lt;group&gt;</code> (<code>[--root &lt;dir&gt;] [--json]</code>)</h2>
+	<h2><code>issue archive &lt;group|番号&gt;</code> ・ <code>issue unarchive &lt;group&gt;</code> (<code>[--root &lt;dir&gt;] [--json]</code>)</h2>
 	<ul>
 		<li><strong><code>archive</code></strong>: グループの全件が済 (<code>done/</code>) なら、その課題を <code>archived/</code> へ動かす (追跡中なら <code>git mv</code>)。<strong>1 件でも満たさなければ (未・着手が残っている ・ 済の条件を満たさない ・ メタ情報を読めない課題がある)、1 件も動かさず終了コード 1</strong> (その id を出す)。課題が 1 件も無いグループは 1。既に全件が <code>archived/</code> なら、終了コード 0 (「既に」と出す)</li>
+		<li><strong><code>archive &lt;番号&gt;</code></strong> (214-A): 済 (<code>done/</code>) の課題 1 件だけを <code>archived/</code> へ動かす。グループの残りは待たない。未・着手 ・ 済の条件を満たさない ・ 無い番号は、動かさず終了コード 1。既に <code>archived/</code> なら終了コード 0 (「既に」と出す)。<code>--json</code> は <code>{ id, group, moved, count }</code>。番号 (<code>i</code> ＋ <code>yymmdd-nn</code>) の形かどうかで、グループ名と分ける</li>
 		<li><strong><code>unarchive</code></strong>: <code>archived/</code> のグループの課題を、<code>done/</code> へ戻す。無ければ終了コード 1</li>
-		<li><strong><code>issue new</code> は、<code>archived/</code> に退避済みのグループには立てない</strong> (終了コード 5。<code>issue unarchive</code> を促す。何も作らない。計画 p261103-01 の 112-A)</li>
+		<li><strong><code>issue new</code> は、全件が <code>archived/</code> に退避済みのグループには立てない</strong> (終了コード 5。<code>issue unarchive</code> を促す。何も作らない。計画 p261103-01 の 112-A)。<strong>未・着手 ・ 済の課題が 1 件でも残るグループには立てられる</strong> (215-A。1 件ずつの保管や migrate で、同じグループが <code>archived/</code> と分かれるため)</li>
 		<li>出力: <code>[OK] グループ &lt;g&gt; の N 件を archived/ へ動かした: &lt;id&gt; ・ …</code>。<code>--json</code> は <code>{ group, moved, count }</code></li>
 	</ul>
 	<ul>

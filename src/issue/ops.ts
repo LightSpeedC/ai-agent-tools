@@ -152,8 +152,9 @@ export function newIssue(root: string, o: NewOptions): { id: string; rel: string
 		if (!names.includes(group)) throw new UsageError(`--group ${group} が groups.txt に無い (あるのは: ${names.join(' ・ ')})`);
 	}
 
-	// 片付いて archived/ に退避したグループには立てない (112-A)。戻してから立てる
-	if (listIssues(root, ['archived'], group, () => {}).length > 0) {
+	// 全件が archived/ に退避したグループには立てない (112-A)。戻してから立てる。
+	// 一部だけが保管されている (1 件ずつの archive ・ migrate) グループには立てられる (215-A)
+	if (listIssues(root, ['archived'], group, () => {}).length > 0 && listIssues(root, ['todo', 'doing', 'done'], group, () => {}).length === 0) {
 		throw new UsageError(`グループ ${group} は archived/ に退避済み。issue unarchive ${group} で戻してから立てる`);
 	}
 
@@ -376,6 +377,23 @@ export function archiveGroup(root: string, group: string): GroupMoveResult {
 	const sorted = [...mine].sort((a, b) => compareId(a.id, b.id));
 	for (const m of sorted) moveIssueFile(root, `${ItemsRel}/done/${m.name}`, `${ItemsRel}/archived/${m.name}`);
 	return { group, moved: sorted.map((m) => m.id), already: archivedCount };
+}
+
+/** 済の課題を 1 件だけ archived/ へ動かす (214-A)。既に archived/ にあれば moved は空 */
+export function archiveOne(root: string, id: string): GroupMoveResult {
+	const { members, unreadable } = loadAll(root, ['todo', 'doing', 'done', 'archived']);
+	const me = members.find((m) => m.id === id);
+	if (me === undefined) {
+		if (unreadable.length > 0) throw new Failure(`課題 ${id} が見つからない (メタ情報を読めない課題がある: ${unreadable.join(' ・ ')})`);
+		throw new Failure(`課題 ${id} が無い`);
+	}
+	if (me.folder === 'archived') return { group: me.group, moved: [], already: 1 };
+	if (me.folder !== 'done') throw new Failure(`課題 ${id} は ${StateOf[me.folder]}。済 (done/) の課題だけを archived/ へ動かせる`);
+	const reasons = doneBlockers(me.text);
+	if (reasons.length > 0) throw new Failure(`課題 ${id} は済の条件を満たさない: ${reasons.join(' ・ ')}`);
+	if (fs.existsSync(path.join(itemsDirOf(root), 'archived', me.name))) throw new Failure(`${ItemsRel}/archived/${me.name} が既にある (動かさない)`);
+	moveIssueFile(root, `${ItemsRel}/done/${me.name}`, `${ItemsRel}/archived/${me.name}`);
+	return { group: me.group, moved: [id], already: 0 };
 }
 
 /** archived/ のグループの課題を、done/ へ戻す */

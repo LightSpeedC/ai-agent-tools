@@ -23,7 +23,7 @@
 		issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]
 		issue search <語> [--regex] [--state … | --all] [--group <g>] [--root <dir>] [--json]
 		issue confirm <id> [--undo] [--root <dir>] [--json]         報告元の確認 (confirmed) を直す (その行だけ。フォルダは動かさない)
-		issue archive <group> ・ issue unarchive <group> [--root <dir>] [--json]
+		issue archive <group|番号> ・ issue unarchive <group> [--root <dir>] [--json]
 		issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]
 		                                                            HTML を作る (開かない。既定は _issues.html。渡す用は --standalone --out)
 		issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]
@@ -39,7 +39,7 @@ import { spawnSync } from 'node:child_process';
 import { Folders, checkProject, findProjectRoot, hasItems, type Finding, type Folder } from './check.ts';
 import { renderHtml, writeIfChanged } from './render.ts';
 import {
-	Failure, StateOf, UsageError, archiveGroup, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
+	Failure, StateOf, UsageError, archiveGroup, archiveOne, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
 import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWritten, verifyWritten } from './migrate.ts';
 import { listDecisions, newDecision, searchDecisions, showDecision } from './decide.ts';
@@ -67,7 +67,7 @@ const Usage = [
 	'                                                                 HTML を作る (開かない)。既定は notes/40_issues/_issues.html',
 	'  issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]',
 	'                                                                 _issues.html を作り直して、既定のアプリで開く',
-	'  issue archive <group> [--root <dir>] [--json]                  グループの全件が済なら、archived/ へ動かす',
+	'  issue archive <group|番号> [--root <dir>] [--json]             グループの全件が済なら、archived/ へ動かす。番号なら済の課題 1 件だけを動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 	'  issue decide new --parent <番号> --title <問い> --option <文> [--option <文> …] --chosen <A|B|…>',
 	'                  [--slug <件名>] [--refs <番号,…>] [--replaces <id,…>] [--legacy <:名前:旧番号,…>] [--body <本文>] [--root <dir>] [--json]',
@@ -473,11 +473,23 @@ function runConfirm(rest: string[]): number {
 	return ExitOk;
 }
 
+/** 課題の番号 (i + yymmdd-nn)。archive に渡されたのが番号かグループ名かを分ける */
+const IdArgPattern = /^i\d{6}-[0-9a-zA-Z]{2}$/;
+
 function runGroupMove(rest: string[], kind: 'archive' | 'unarchive'): number {
 	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json'], positionals: 1 });
 	const group = o.positionals[0];
 	if (group === undefined || group === '') throw new UsageError(`グループが要る (issue ${kind} <group>)`);
 	const root = existingRoot(o);
+	// 番号を渡したときは、その課題 1 件だけを保管する (214-A)
+	if (kind === 'archive' && IdArgPattern.test(group)) {
+		const one = archiveOne(root, group);
+		if (o.flags.has('--json')) console.log(JSON.stringify({ id: group, group: one.group, moved: one.moved, count: one.moved.length }));
+		else if (one.moved.length === 0) console.log(`[OK] ${group} は既に archived/ にある。動かさない`);
+		else console.log(`[OK] ${group} を archived/ へ動かした (グループ ${one.group})`);
+		autoRender(root, true);
+		return ExitOk;
+	}
 	const r = kind === 'archive' ? archiveGroup(root, group) : unarchiveGroup(root, group);
 	if (o.flags.has('--json')) {
 		console.log(JSON.stringify({ group: r.group, moved: r.moved, count: r.moved.length }));

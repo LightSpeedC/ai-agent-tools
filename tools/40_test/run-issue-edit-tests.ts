@@ -348,6 +348,27 @@ const groupFiles: Record<string, string> = {
 	check('unarchive で戻せば、new できる', run(['new', '--title', '新しい件', '--group', 'less'], dir).code === 0);
 }
 
+// ---- 214-A: archive <番号> で、済の課題を 1 件だけ保管する ・ 215-A: 一部が保管されていても new を止めない ----
+{
+	const dir = std('archive-one', groupFiles);
+	const r = run(['archive', 'i261103-01'], dir);
+	check('214-A: archive <番号> は、済の課題 1 件だけを archived/ へ動かす', r.code === 0 && exists(dir, Archived + A) && !exists(dir, Done + A) && exists(dir, Done + B), r.out + r.err);
+	check('214-A: 1 件の archive の出力に、番号と archived/ が出る', r.out.includes('i261103-01') && r.out.includes('archived/'), r.out);
+	check('214-A: 1 件の archive のあと、issue check が通る', run(['check'], dir).code === 0, run(['check'], dir).out);
+	check('214-A: 既に archived/ にある番号は、終了コード 0 (「既に」と出す)', (() => { const x = run(['archive', 'i261103-01'], dir); return x.code === 0 && x.out.includes('既に'); })());
+	check('215-A: 同じグループに済の課題が残っていれば、new はそのグループに立てられる', run(['new', '--title', '新しい件', '--group', 'less'], dir).code === 0);
+}
+{
+	const dir = std('archive-one-open', { ...groupFiles, [Todo + 'i261103-04-d.md']: issueText({ id: 'i261103-04', group: 'less' }) });
+	const r = run(['archive', 'i261103-04'], dir);
+	check('214-A: 未・着手の課題は、1 件の archive でも動かさず終了コード 1', r.code === 1 && exists(dir, Todo + 'i261103-04-d.md'), r.out + r.err);
+	const bad = run(['archive', 'i261103-02'], std('archive-one-bad', { ...groupFiles, [Done + B]: issueText({ id: 'i261103-02', group: 'less' }, '\n## やること\n- [未] x\n') }));
+	check('214-A: 済の条件を満たさない課題は、1 件の archive でも動かさず終了コード 1', bad.code === 1, bad.out + bad.err);
+	check('214-A: 無い番号の archive は終了コード 1', run(['archive', 'i269999-01'], dir).code === 1);
+	check('215-A: 同じグループに未の課題が残っていれば、archived/ に同じグループがあっても new は通る',
+		(() => { const d = std('new-split-group', { [Archived + A]: issueText({ id: 'i261103-01', group: 'less' }), [Doing + B]: issueText({ id: 'i261103-02', group: 'less' }) }); return run(['new', '--title', '新しい件', '--group', 'less'], d).code === 0; })());
+}
+
 // ---- confirm ----
 
 console.log('--- confirm');
