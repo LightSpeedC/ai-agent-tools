@@ -23,6 +23,7 @@
 		issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]
 		issue search <語> [--regex] [--state … | --all] [--group <g>] [--root <dir>] [--json]
 		issue confirm <id> [--undo] [--root <dir>] [--json]         報告元の確認 (confirmed) を直す (その行だけ。フォルダは動かさない)
+		issue archive --done-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]
 		issue archive <group|番号> ・ issue unarchive <group> [--root <dir>] [--json]
 		issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]
 		                                                            HTML を作る (開かない。既定は _issues.html。渡す用は --standalone --out)
@@ -39,7 +40,7 @@ import { spawnSync } from 'node:child_process';
 import { Folders, checkProject, findProjectRoot, hasItems, type Finding, type Folder } from './check.ts';
 import { renderHtml, writeIfChanged } from './render.ts';
 import {
-	Failure, StateOf, UsageError, archiveGroup, archiveOne, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
+	Failure, StateOf, UsageError, archiveDoneBefore, archiveGroup, archiveOne, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
 import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWritten, verifyWritten } from './migrate.ts';
 import { listDecisions, newDecision, searchDecisions, showDecision } from './decide.ts';
@@ -68,6 +69,7 @@ const Usage = [
 	'  issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]',
 	'                                                                 _issues.html を作り直して、既定のアプリで開く',
 	'  issue archive <group|番号> [--root <dir>] [--json]             グループの全件が済なら、archived/ へ動かす。番号なら済の課題 1 件だけを動かす',
+	'  issue archive --done-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]   その日より前に立てた済の課題を、グループを問わずまとめて動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 	'  issue decide new --parent <番号> --title <問い> --option <文> [--option <文> …] --chosen <A|B|…>',
 	'                  [--slug <件名>] [--refs <番号,…>] [--replaces <id,…>] [--legacy <:名前:旧番号,…>] [--body <本文>] [--root <dir>] [--json]',
@@ -473,10 +475,30 @@ function runConfirm(rest: string[]): number {
 	return ExitOk;
 }
 
+/** archive --done-before <yyyy-mm-dd> [--dry-run] (216-A) */
+function runArchiveBefore(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--done-before'], flags: ['--json', '--dry-run'], positionals: 0 });
+	const before = o.values.get('--done-before') ?? '';
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(before)) throw new UsageError(`--done-before の日付は yyyy-mm-dd で渡す: ${before}`);
+	const root = existingRoot(o);
+	const dryRun = o.flags.has('--dry-run');
+	const r = archiveDoneBefore(root, before, dryRun);
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify({ before, dryRun, moved: r.moved, count: r.moved.length, skipped: r.skipped }));
+	} else {
+		const verb = dryRun ? '動かす (--dry-run。まだ動かしていない)' : 'archived/ へ動かした';
+		console.log(`[OK] ${before} より前に立てた済の課題 ${r.moved.length} 件を${verb}${r.moved.length > 0 ? ': ' + r.moved.join(' ・ ') : ''}`);
+		for (const s of r.skipped) console.log(`[飛ばした] ${s.id}: ${s.reason}`);
+	}
+	if (!dryRun && r.moved.length > 0) autoRender(root, true);
+	return ExitOk;
+}
+
 /** 課題の番号 (i + yymmdd-nn)。archive に渡されたのが番号かグループ名かを分ける */
 const IdArgPattern = /^i\d{6}-[0-9a-zA-Z]{2}$/;
 
 function runGroupMove(rest: string[], kind: 'archive' | 'unarchive'): number {
+	if (kind === 'archive' && rest.includes('--done-before')) return runArchiveBefore(rest);
 	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json'], positionals: 1 });
 	const group = o.positionals[0];
 	if (group === undefined || group === '') throw new UsageError(`グループが要る (issue ${kind} <group>)`);

@@ -1074,7 +1074,7 @@ created: 2026-11-01
 			<tr><td class="nowrap"><code>issue todo &lt;id&gt; --add &lt;文&gt;</code></td><td>やることを足す。<code>--done &lt;n&gt;</code> ・ <code>--doing &lt;n&gt;</code> ・ <code>--undone &lt;n&gt;</code> で n 番目の状態を変える</td></tr>
 			<tr><td class="nowrap"><code>issue set &lt;id&gt; --state 済</code></td><td>課題の状態を変える (フォルダを動かす)</td></tr>
 			<tr><td class="nowrap"><code>issue confirm &lt;id&gt;</code></td><td>報告元の確認が取れたことを記録する</td></tr>
-			<tr><td class="nowrap"><code>issue archive &lt;グループ&gt;</code></td><td>全件が済のグループを <code>archived/</code> へ動かす。<code>issue archive &lt;番号&gt;</code> なら、済の課題 1 件だけを動かす。一部が保管されたグループにも、<code>issue new</code> で立てられる</td></tr>
+			<tr><td class="nowrap"><code>issue archive &lt;グループ&gt;</code></td><td>全件が済のグループを <code>archived/</code> へ動かす。<code>issue archive &lt;番号&gt;</code> なら、済の課題 1 件だけを動かす。<code>issue archive --done-before &lt;yyyy-mm-dd&gt;</code> なら、その日より前に立てた済の課題をまとめて動かす (<code>--dry-run</code> で先に一覧を見る)。一部が保管されたグループにも、<code>issue new</code> で立てられる</td></tr>
 			<tr><td class="nowrap"><code>issue check</code></td><td>課題ファイルを検査する。commit の前に流す</td></tr>
 			<tr><td class="nowrap"><code>issue render</code> ・ <code>issue view</code></td><td>一覧の HTML を作る (<code>view</code> は作って開く)。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る</td></tr>
 			<tr><td class="nowrap"><code>issue choice next</code></td><td>選択肢の通し番号 (<code>202-A</code> の <code>202</code>) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない)</td></tr>

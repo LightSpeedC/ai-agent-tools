@@ -348,6 +348,32 @@ const groupFiles: Record<string, string> = {
 	check('unarchive で戻せば、new できる', run(['new', '--title', '新しい件', '--group', 'less'], dir).code === 0);
 }
 
+// ---- 216-A: archive --done-before <日付> で、その日より前に立てた済の課題をまとめて保管する ----
+{
+	const old1 = 'i261001-01-a.md', old2 = 'i261002-01-b.md', oldBad = 'i261003-01-c.md', oldOpen = 'i261004-01-d.md', recent = 'i261105-01-e.md';
+	const files: Record<string, string> = {
+		[Done + old1]: issueText({ id: 'i261001-01', group: 'g1', created: '2026-10-01' }),
+		[Done + old2]: issueText({ id: 'i261002-01', group: 'g2', created: '2026-10-02' }),
+		[Done + oldBad]: issueText({ id: 'i261003-01', group: 'g1', created: '2026-10-03' }, '\n## やること\n- [未] x\n'),
+		[Todo + oldOpen]: issueText({ id: 'i261004-01', group: 'g1', created: '2026-10-04' }),
+		[Done + recent]: issueText({ id: 'i261105-01', group: 'g1', created: '2026-11-05' }),
+	};
+	const dir = std('archive-before', files);
+	const d = run(['archive', '--done-before', '2026-11-01', '--dry-run'], dir);
+	check('216-A: --dry-run は、動かす課題を出すだけで動かさない', d.code === 0 && d.out.includes('i261001-01') && d.out.includes('i261002-01') && exists(dir, Done + old1), d.out + d.err);
+	check('216-A: --dry-run に、済の条件を満たさず飛ばす課題も出す', d.out.includes('i261003-01'), d.out);
+	const r = run(['archive', '--done-before', '2026-11-01'], dir);
+	check('216-A: その日より前に立てた済の課題を、グループを問わず archived/ へ動かす',
+		r.code === 0 && exists(dir, Archived + old1) && exists(dir, Archived + old2), r.out + r.err);
+	check('216-A: 済の条件を満たさない課題は動かさず、飛ばしたことを出す', exists(dir, Done + oldBad) && r.out.includes('i261003-01'), r.out);
+	check('216-A: 未・着手の課題と、その日以後の課題は動かさない', exists(dir, Todo + oldOpen) && exists(dir, Done + recent));
+	const c = run(['check'], dir);
+	const ngLines = (c.out + c.err).split('\n').filter((l) => l.includes('[NG]') && l.includes('notes/'));
+	check('216-A: まとめて保管したあと、issue check の指摘は材料の不備 (i261003-01) だけ', ngLines.length === 1 && ngLines[0].includes('i261003-01'), c.out + c.err);
+	check('216-A: 日付の形が違えば終了コード 5', run(['archive', '--done-before', '11/01'], dir).code === 5);
+	check('216-A: --done-before とグループ ・ 番号を一緒に渡せば終了コード 5', run(['archive', 'g1', '--done-before', '2026-11-01'], dir).code === 5);
+}
+
 // ---- 214-A: archive <番号> で、済の課題を 1 件だけ保管する ・ 215-A: 一部が保管されていても new を止めない ----
 {
 	const dir = std('archive-one', groupFiles);

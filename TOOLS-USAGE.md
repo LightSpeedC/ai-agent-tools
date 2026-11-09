@@ -822,7 +822,7 @@ created: 2026-11-01
 | `issue todo <id> --add <文>` | やることを足す。`--done <n>` ・ `--doing <n>` ・ `--undone <n>` で n 番目の状態を変える |
 | `issue set <id> --state 済` | 課題の状態を変える (フォルダを動かす) |
 | `issue confirm <id>` | 報告元の確認が取れたことを記録する |
-| `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす。`issue archive <番号>` なら、済の課題 1 件だけを動かす。一部が保管されたグループにも、`issue new` で立てられる |
+| `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす。`issue archive <番号>` なら、済の課題 1 件だけを動かす。`issue archive --done-before <yyyy-mm-dd>` なら、その日より前に立てた済の課題をまとめて動かす (`--dry-run` で先に一覧を見る)。一部が保管されたグループにも、`issue new` で立てられる |
 | `issue check` | 課題ファイルを検査する。commit の前に流す |
 | `issue render` ・ `issue view` | 一覧の HTML を作る (`view` は作って開く)。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る |
 | `issue choice next` | 選択肢の通し番号 (`202-A` の `202`) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない) |

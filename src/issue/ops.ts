@@ -396,6 +396,26 @@ export function archiveOne(root: string, id: string): GroupMoveResult {
 	return { group: me.group, moved: [id], already: 0 };
 }
 
+/**
+ * その日より前に立てた (created < before) 済の課題を、グループを問わず archived/ へ動かす (216-A)。
+ * 済になった日は課題ファイルに残らないため、立てた日 (created) で選ぶ。済の条件を満たさない課題は飛ばす。dryRun なら動かさない
+ */
+export function archiveDoneBefore(root: string, before: string, dryRun: boolean): { moved: string[]; skipped: { id: string; reason: string }[] } {
+	const { members } = loadAll(root, ['done']);
+	const get = (text: string, k: string): string => new RegExp(`^${k}:[ \\t]*(.*)$`, 'm').exec(text.replace(/\r/g, ''))?.[1].trim() ?? '';
+	const targets = members.filter((m) => { const c = get(m.text, 'created'); return c !== '' && c < before; }).sort((a, b) => compareId(a.id, b.id));
+	const moved: string[] = [];
+	const skipped: { id: string; reason: string }[] = [];
+	for (const m of targets) {
+		const reasons = doneBlockers(m.text);
+		if (reasons.length > 0) { skipped.push({ id: m.id, reason: reasons.join(' ・ ') }); continue; }
+		if (fs.existsSync(path.join(itemsDirOf(root), 'archived', m.name))) { skipped.push({ id: m.id, reason: `${ItemsRel}/archived/${m.name} が既にある` }); continue; }
+		if (!dryRun) moveIssueFile(root, `${ItemsRel}/done/${m.name}`, `${ItemsRel}/archived/${m.name}`);
+		moved.push(m.id);
+	}
+	return { moved, skipped };
+}
+
 /** archived/ のグループの課題を、done/ へ戻す */
 export function unarchiveGroup(root: string, group: string): GroupMoveResult {
 	const { members, unreadable } = loadAll(root, ['archived']);
