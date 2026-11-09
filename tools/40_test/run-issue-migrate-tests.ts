@@ -467,6 +467,36 @@ const Conflict = [
 	check('169-A: 食い違いを 済 のままにする指定は通らず、何も書かない (終了コード 1)', r.code === 1 && findItem(dir, 'done', 'i260104-02') === null, 'code=' + r.code + ' ' + r.out);
 }
 
+// ---- 210-A: 字で書いた状態 (<li>済 - 内容</li>) も、やることとして読む。読めずに残った状態語の行は確かめに出す ----
+
+const PlainTodos = '<section class="ch01"><h1>甲</h1>'
+	+ '<details><summary><span class="badge b-none">未</span><span class="no">i260106-01</span>字の状態</summary>'
+	+ '<div class="issue-body"><ul><li>済 - 一つ目</li><li>未 - 二つ目</li><li>着手 - 三つ目</li><li>済みの話は、やることではない</li></ul></div></details>'
+	+ '</section>';
+
+{
+	const dir = mkProject('plain-todos', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: PlainTodos });
+	const d = run(['migrate', '--dry-run'], dir);
+	check('210-A: --dry-run は、字の状態の行をやることとして数える (3 → 3)', d.out.includes('やること 3 → 3'), d.out);
+	const r = run(['migrate', '--apply'], dir);
+	const body = findItem(dir, 'todo', 'i260106-01') ?? '';
+	check('210-A: --apply は、字の状態の行を - [状態] 内容 にする',
+		r.code === 0 && body.includes('- [済] 一つ目') && body.includes('- [未] 二つ目') && body.includes('- [着手] 三つ目'), 'code=' + r.code + ' ' + r.out + '\n' + body);
+	check('210-A: 状態語で始まらない行 (済みの話) は、やることにしない', body.includes('- 済みの話は、やることではない'), body);
+}
+
+const LeftWords = '<section class="ch01"><h1>甲</h1>'
+	+ '<details><summary><span class="badge b-none">未</span><span class="no">i260106-02</span>読めない形</summary>'
+	+ '<div class="issue-body"><ul><li>済: 一つ目</li><li>未: 二つ目</li></ul></div></details>'
+	+ '</section>';
+
+{
+	const dir = mkProject('left-words', { [Items + 'project-id.txt']: ProjectIdText, [Legacy]: LeftWords });
+	const d = run(['migrate', '--dry-run'], dir);
+	check('210-A: 読めずに残った状態語の行は、中身の食い違いに出す (終了コード 1)',
+		d.code === 1 && d.out.includes('i260106-02') && d.out.includes('状態語'), 'code=' + d.code + ' ' + d.out);
+}
+
 // ---- 183-A: 中身の事前の比較 ・ 書いたあとの確かめと自動の戻し ・ --undo (実装と同時に書いた試験) ----
 
 const Lossy = '<section class="ch01"><h1>甲</h1>'

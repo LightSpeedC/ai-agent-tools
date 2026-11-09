@@ -217,7 +217,7 @@ function sourceTodoCount(html: string): number {
 	let n = 0;
 	// 表のやること (184-A) も、列挙にしてから数える
 	const re = /<li\b[^>]*>\s*<span\b([^>]*class="badge[^"]*"[^>]*)>([\s\S]*?)<\/span>/g;
-	const listed = tableTodosToList(html);
+	const listed = normalizeTodos(html);
 	let m: RegExpExecArray | null;
 	while ((m = re.exec(listed)) !== null) if (stateOfBadge(m[1], m[2]) !== '') n++;
 	return n;
@@ -238,6 +238,8 @@ function compareBody(bodyHtml: string, md: string): { message: string; sourceCha
 	const convertedTodos = markdownTodoCount(md);
 	const why: string[] = [];
 	if (sourceTodos !== convertedTodos) why.push(`やることの数 ${sourceTodos} → ${convertedTodos}`);
+	const left = (md.match(LeftStateWord) ?? []).length;
+	if (left > 0) why.push(`状態語で始まる行 ${left} 件を、やることとして読めなかった (書き直してから移す)`);
 	// バッジの字が - [状態] に変わる等で少しずれうる。1 割 (少なくとも 10 字) を超えたら食い違いとみなす
 	if (Math.abs(sourceChars - convertedChars) > Math.max(10, sourceChars * 0.1)) why.push(`本文の文字数 ${sourceChars} → ${convertedChars}`);
 	return { message: why.join(' ・ '), sourceChars, convertedChars, sourceTodos, convertedTodos };
@@ -401,10 +403,26 @@ export function tableTodosToList(html: string): string {
 	});
 }
 
+/**
+ * 字で書いた状態 (<li>済 - 内容</li>) を、バッジ付きの列挙にする (210-A。20260917-oracle-cloud の旧 HTML)。
+ * 状態語の後ろに「 - 」が続くものだけ。「済み」のように語の続くものは変えない
+ */
+export function plainTodosToBadge(html: string): string {
+	return html.replace(/<li\b([^>]*)>\s*(未|着手|済)\s+-\s+/g, (_all, attrs: string, state: string) => `<li${attrs}><span class="badge">${state}</span> `);
+}
+
+/** やることを読む前の正規化: 表 (184-A) と字の状態 (210-A) を、バッジ付きの列挙にする */
+function normalizeTodos(html: string): string {
+	return plainTodosToBadge(tableTodosToList(html));
+}
+
+/** Markdown に残った、状態語で始まる箇条書き (やることとして読めなかったもの。210-A) */
+const LeftStateWord = /^(?:\s*>)*\s*[-*] (?:未|着手|済)(?=[\s:：\-－ー・)）\]】])/gm;
+
 /** 旧 HTML の本文を Markdown にする。バッジ付きの列挙だけを - [状態] 文 の行にする (165-A) */
 export function bodyToMarkdown(bodyHtml: string, converter: Converter): string {
 	// やることのバッジも、字か class で状態を決める (181-A)。li の属性 (class="done" 等) があってもよい
-	const marked = tableTodosToList(bodyHtml).replace(
+	const marked = normalizeTodos(bodyHtml).replace(
 		/<li\b[^>]*>\s*<span\b([^>]*class="badge[^"]*"[^>]*)>([\s\S]*?)<\/span>\s*/g,
 		(all, attrs: string, inner: string) => {
 			const state = stateOfBadge(attrs, inner);
