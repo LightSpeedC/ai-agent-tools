@@ -152,11 +152,7 @@ export function newIssue(root: string, o: NewOptions): { id: string; rel: string
 		if (!names.includes(group)) throw new UsageError(`--group ${group} が groups.txt に無い (あるのは: ${names.join(' ・ ')})`);
 	}
 
-	// 全件が archived/ に退避したグループには立てない (112-A)。戻してから立てる。
-	// 一部だけが保管されている (1 件ずつの archive ・ migrate) グループには立てられる (215-A)
-	if (listIssues(root, ['archived'], group, () => {}).length > 0 && listIssues(root, ['todo', 'doing', 'done'], group, () => {}).length === 0) {
-		throw new UsageError(`グループ ${group} は archived/ に退避済み。issue unarchive ${group} で戻してから立てる`);
-	}
+	// 保管 (archived/) は、グループに課題を立てる妨げにしない (i261109-04-d4。112-A ・ 215-A を改めた)
 
 	// 無いときだけ作る。古い project-id.txt を移すのは issue init の役目 (同時の new で移し合わないため)
 	const createdProjectId = readProjectFile(root) === null && initProject(root, false).result === 'created';

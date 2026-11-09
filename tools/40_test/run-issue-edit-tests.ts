@@ -343,9 +343,7 @@ const groupFiles: Record<string, string> = {
 {
 	const dir = std('new-archived-group', { [Archived + A]: issueText({ id: 'i261103-01', group: 'less' }) });
 	const r = run(['new', '--title', '新しい件', '--group', 'less'], dir);
-	check('グループが archived/ に退避済みなら、new は終了コード 5 (112-A。unarchive を促す。何も作らない)', r.code === 5 && (r.out + r.err).includes('unarchive') && !exists(dir, Todo), r.out + r.err);
-	run(['unarchive', 'less'], dir);
-	check('unarchive で戻せば、new できる', run(['new', '--title', '新しい件', '--group', 'less'], dir).code === 0);
+	check('全件が archived/ に保管されたグループにも、new で立てられる (112-A を改めた。保管は課題を立てる妨げにしない)', r.code === 0 && exists(dir, Archived + A), r.out + r.err);
 }
 
 // ---- 216-A: archive --done-before <日付> で、その日より前に立てた済の課題をまとめて保管する ----

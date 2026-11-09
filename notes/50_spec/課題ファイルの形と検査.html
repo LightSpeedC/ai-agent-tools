@@ -503,7 +503,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><strong><code>archive &lt;番号&gt;</code></strong> (214-A): 済 (<code>done/</code>) の課題 1 件だけを <code>archived/</code> へ動かす。グループの残りは待たない。未・着手 ・ 済の条件を満たさない ・ 無い番号は、動かさず終了コード 1。既に <code>archived/</code> なら終了コード 0 (「既に」と出す)。<code>--json</code> は <code>{ id, group, moved, count }</code>。番号 (<code>i</code> ＋ <code>yymmdd-nn</code>) の形かどうかで、グループ名と分ける</li>
 		<li><strong><code>archive --done-before &lt;yyyy-mm-dd&gt; [--dry-run]</code></strong> (216-A): その日より前に立てた (<code>created</code> がその日より前の) 済 (<code>done/</code>) の課題を、グループを問わずまとめて <code>archived/</code> へ動かす。<strong>済になった日は課題ファイルに残らないため、立てた日で選ぶ</strong>。済の条件を満たさない課題は動かさず <code>[飛ばした] &lt;id&gt;: &lt;理由&gt;</code> と出す (終了コード 0)。<code>--dry-run</code> は動かさずに一覧だけを出す。日付の形が違う ・ グループや番号と一緒に渡す、は終了コード 5。<code>--json</code> は <code>{ before, dryRun, moved, count, skipped }</code></li>
 		<li><strong><code>unarchive</code></strong>: <code>archived/</code> のグループの課題を、<code>done/</code> へ戻す。無ければ終了コード 1</li>
-		<li><strong><code>issue new</code> は、全件が <code>archived/</code> に退避済みのグループには立てない</strong> (終了コード 5。<code>issue unarchive</code> を促す。何も作らない。計画 p261103-01 の 112-A)。<strong>未・着手 ・ 済の課題が 1 件でも残るグループには立てられる</strong> (215-A。1 件ずつの保管や migrate で、同じグループが <code>archived/</code> と分かれるため)</li>
+		<li><strong><code>issue new</code> は、保管 (<code>archived/</code>) の有無によらず、どのグループにも立てられる</strong> (i261109-04-d4。112-A ・ 215-A を改めた)。保管はグループに課題を立てる妨げにしない</li>
 		<li>出力: <code>[OK] グループ &lt;g&gt; の N 件を archived/ へ動かした: &lt;id&gt; ・ …</code>。<code>--json</code> は <code>{ group, moved, count }</code></li>
 	</ul>
 	<ul>
