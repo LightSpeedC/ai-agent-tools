@@ -16,4 +16,6 @@ created: 2026-11-10
 - [済] TOOLS-USAGE ・ 詳細仕様に、repo の作成 ・ 改名 ・ id の変更で手順が要らないことを書く
 - [済] 222-A は、移すではなく写すにした (実装のとき)。--new-id はコピーして別のプロジェクトにしたときにも使うので、移すと元の予約を取り上げる。試験は写すの形で書き直した (写すの形の ❌Red は見ていない)
 - [済] 223-B は、former_ids を作らず、既にある legacy_names (154-A) を使った。同じ役目のキーを 2 つにしないため
-- [未] oracle-cloud で uuid が変わった原因を調べる (2026-11-10、oracle-cloud に git の履歴を問い合わせ中)。project-uuid.txt を消して init し直すと、前の uuid が分からず、予約を引き継げない
+- [済] oracle-cloud で uuid が変わった原因を調べる (2026-11-10、oracle-cloud に git の履歴を問い合わせ中)。project-uuid.txt を消して init し直すと、前の uuid が分からず、予約を引き継げない
+- [済] oracle-cloud の返事 (2026-11-10): git の履歴に出るのは 1313… だけで、bb13… は一度も commit されていない。記録で確かめられたのは issue init を 1 回流したことだけ。bb13… の予約 (17:28) は decide migrate が取った。そのとき project-uuid.txt を作ったのは、issue new ・ decide new が無ければ自動で作る処理の見込み (ops.ts の newIssue)。その後 1313… に変わった理由は分からない (消して作り直した ・ 別の写しで流した、のどちらか。確かめていない)
+- [済] 227-A を入れた。新しく置き場を作るとき、同じ project_id の別の uuid の置き場があれば [警告] を出す (numbers.ts の numbersBaseOf)。試験を先に足し ❌Red 1 件を見てから直した。✅ bun ・ node とも 44 件

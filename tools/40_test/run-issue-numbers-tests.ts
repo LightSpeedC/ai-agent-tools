@@ -282,5 +282,19 @@ console.log('\n[前の id も自分の id として数える (223-B)]');
 	check('check は legacy_names を通す', !c.out.includes('legacy_names'), c.out);
 }
 
+console.log('\n[同じ id の別の置き場を知らせる (227-A)]');
+{
+	const numbers = path.join(work, 'n-orphan');
+	fs.rmSync(numbers, { recursive: true, force: true });
+	const other = '0123456789abcdef0123456789abcdef';
+	seed(numbers, 'uuid_' + other + '_proj-orphan', { schema: 2, project_uuid: other, project_id: 'proj-orphan' }, ['50']);
+	const dir = mkProject(path.join(work, 'proj-orphan'), { [Items + 'project-uuid.txt']: uuidFile('proj-orphan') });
+	const r = run(['choice', 'next', '--root', dir], dir, numbers);
+	check('引き継がない (1 から取る)', r.code === 0 && r.out === '1', r.out + r.err);
+	check('同じ project_id の別の置き場があると、警告で知らせる (その名前を出す)', r.err.includes('[警告]') && r.err.includes('uuid_' + other + '_proj-orphan'), r.err);
+	const r2 = run(['choice', 'next', '--root', dir], dir, numbers);
+	check('自分の置き場ができたあとは、警告しない', r2.code === 0 && r2.out === '2' && !r2.err.includes('[警告]'), r2.err);
+}
+
 console.log(`\n=== issue (番号の予約): ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 process.exit(fail === 0 ? 0 : 1);

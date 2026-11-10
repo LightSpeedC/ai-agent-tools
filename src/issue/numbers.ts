@@ -6,6 +6,7 @@
 	- キーは uuid_<project_uuid>_<project_id> (220-A。203-A ・ 207-A を置き換える)。探すのは uuid の部分。
 	  リポジトリを作る ・ 名前を変える ・ id を変えても、同じフォルダを使う。古い名前と id の違いは付け直す (221-A)
 	- uuid を変えたら (init --new-id)、予約を新しい uuid の名前に写す (222-A。元のプロジェクトの予約は残す)
+	- 新しく置き場を作るとき、同じ project_id の別の uuid の置き場があれば警告する。引き継がない (227-A)
 	- legacy_names の旧 id も、legacy_ids を数えるときの自分の id にする (223-B)
 	- 予約は mkdir で取り、書き終えても残す。予約するついでに、3 日より前の予約を消す。系列ごとの最大の 1 つは残す (205-A)
 	- project-uuid.txt (schema 2) を読む。古い project-id.txt (schema 1) も読む (207-A ・ 208-A)
@@ -156,6 +157,15 @@ export function numbersBaseOf(root: string): string | null {
 	const top = numbersRoot(root);
 	let base = path.join(top, key);
 	const found = findByUuid(top, uuid);
+	if (found === null) {
+		// 新しく作る。同じ project_id の別の uuid の置き場があれば知らせる。名前だけでは別のプロジェクトかもしれないので、引き継がない (227-A)
+		let names: string[] = [];
+		try { names = fs.readdirSync(top); } catch { /* まだ無い */ }
+		const others = names.filter((n) => n.startsWith('uuid_') && n.endsWith('_' + safeName(projectId)));
+		for (const n of others) {
+			process.stderr.write(`[警告] 同じプロジェクト id (${projectId}) の、別の uuid の予約の置き場がある: ${n}。project-uuid.txt を作り直したなら、前の予約は引き継がれない\n`);
+		}
+	}
 	if (found !== null && found !== key) {
 		try {
 			fs.renameSync(path.join(top, found), base);
