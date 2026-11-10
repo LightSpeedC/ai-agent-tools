@@ -263,7 +263,7 @@ console.log('--- new');
 {
 	// 試験では、予約の置き場はプロジェクトの _numbers/ (ISSUE_TEST_TODAY があり、AI_AGENT_TOOLS_NUMBERS_DIR が無いとき。p261109-01)
 	const dir = std('new-locked');
-	const reserved = path.join(dir, '_numbers', 'uuid_7b0c4e1a9f3d4a62b8d51c2e6f90a3b7', 'ids', 'i261105-01');
+	const reserved = path.join(dir, '_numbers', 'uuid_7b0c4e1a9f3d4a62b8d51c2e6f90a3b7_new-locked', 'ids', 'i261105-01');
 	fs.mkdirSync(reserved, { recursive: true });
 	const r = newIssue(dir, Basic);
 	check('番号が別の持ち主に予約されていれば、次の番号を取る', r.code === 0 && r.out.includes('i261105-02') && fs.existsSync(reserved), r.out);
@@ -271,7 +271,7 @@ console.log('--- new');
 {
 	const dir = std('new-lock-kept');
 	newIssue(dir, Basic);
-	check('new が終わっても、自分の予約を残す (p261109-01 の 205-A)', fs.existsSync(path.join(dir, '_numbers', 'uuid_7b0c4e1a9f3d4a62b8d51c2e6f90a3b7', 'ids', 'i261105-01', 'info.json')));
+	check('new が終わっても、自分の予約を残す (p261109-01 の 205-A)', fs.existsSync(path.join(dir, '_numbers', 'uuid_7b0c4e1a9f3d4a62b8d51c2e6f90a3b7_new-lock-kept', 'ids', 'i261105-01', 'info.json')));
 	check('_lock/ は作らない', !fs.existsSync(path.join(dir, 'notes', '40_issues', '_lock')));
 }
 {

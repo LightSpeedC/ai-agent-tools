@@ -175,7 +175,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-09</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-10</p>
 	</div>
 </div>
 
@@ -1041,7 +1041,7 @@ safe-push "&lt;リポジトリ&gt;" common-rules.md rules  # 名指しのパス�
   issues-legacy.html 旧方式の issues.html (移行したプロジェクトだけ)</code></pre>
 	<p><strong>状態を変えると、ファイルが隣のフォルダへ動く。</strong>手でファイルを動かさず、<code>issue set</code> を使う。</p>
 	<p><strong>古い <code>project-id.txt</code> があるプロジェクトは、<code>issue init</code> を 1 回流す。</strong>乱数を変えずに <code>project-uuid.txt</code> へ移し、フォルダ名を <code>project_id</code> として書く。移したら commit する。移すまでは <code>issue check</code> が警告を出す (動きは変わらない)。</p>
-	<p><strong>課題 ・ 決定 ・ 選択肢の番号は、<code>~/.ai-agent-tools/numbers/</code> に予約してから使う</strong> (道具が自動で行う)。同じ PC の同じユーザなら、worktree や別の clone の間でも重ならない。別の PC ・ クラウドとは共有しない。</p>
+	<p><strong>課題 ・ 決定 ・ 選択肢の番号は、<code>~/.ai-agent-tools/numbers/</code> に予約してから使う</strong> (道具が自動で行う)。同じ PC の同じユーザなら、worktree や別の clone の間でも重ならない。別の PC ・ クラウドとは共有しない。置き場の名前は <code>uuid_&lt;project_uuid&gt;_&lt;プロジェクト id&gt;</code> で、GitHub のリポジトリを作る ・ 名前を変える ・ プロジェクト id を変えるときに、手順は要らない。<strong>プロジェクト id を変えるときは</strong>、<code>project-uuid.txt</code> の <code>project_id</code> を新しい名前にし、旧名を <code>legacy_names:</code> に残す。</p>
 
 	<h2>README から案内する</h2>
 	<p><strong>root の README には、<code>notes/40_issues/items/</code> の場所を文で書く。</strong>リンクにはしない (フォルダはページにならず、<code>_issues.html</code> は commit しないため)。見るときは <code>issue view</code> を使う、と添える。旧課題が無いプロジェクトは、ここまで。</p>

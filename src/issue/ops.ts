@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Folders, ItemsRel, NamePattern, RefPattern, SlugMax, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
 import { splitIssue } from './meta.ts';
-import { OldIdFileName, UuidFileName, mainFolderName, maxReserved, numbersBaseOf, prune, readProjectFile, reserve, uuidFileText } from './numbers.ts';
+import { OldIdFileName, UuidFileName, mainFolderName, copyUuid, maxReserved, numbersBaseOf, prune, readProjectFile, reserve, uuidFileText } from './numbers.ts';
 
 /** 引数の誤り。終了コード 5 */
 export class UsageError extends Error {}
@@ -77,9 +77,12 @@ export function initProject(root: string, newId: boolean): { rel: string; result
 		return { rel, result: 'moved' };
 	}
 	const projectId = current?.projectId ?? mainFolderName(root);
+	const uuid = crypto.randomUUID().replace(/-/g, '');
 	fs.mkdirSync(path.dirname(file), { recursive: true });
-	fs.writeFileSync(file, uuidFileText(crypto.randomUUID().replace(/-/g, ''), projectId));
+	fs.writeFileSync(file, uuidFileText(uuid, projectId, current?.formerIds ?? []));
 	fs.rmSync(oldFile, { force: true });
+	// 前の uuid の予約を、新しい uuid の名前に写す (222-A)
+	if (current?.uuid) copyUuid(root, current.uuid, uuid, projectId);
 	return { rel, result: current !== null ? 'replaced' : 'created' };
 }
 

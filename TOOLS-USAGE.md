@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-11-09
+> 📅 作成: 2026-09-04 / 更新: 2026-11-10
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -784,7 +784,7 @@ notes/40_issues/
 
 <strong>古い `project-id.txt` があるプロジェクトは、`issue init` を 1 回流す。</strong>乱数を変えずに `project-uuid.txt` へ移し、フォルダ名を `project_id` として書く。移したら commit する。移すまでは `issue check` が警告を出す (動きは変わらない)。
 
-**課題 ・ 決定 ・ 選択肢の番号は、`~/.ai-agent-tools/numbers/` に予約してから使う** (道具が自動で行う)。同じ PC の同じユーザなら、worktree や別の clone の間でも重ならない。別の PC ・ クラウドとは共有しない。
+**課題 ・ 決定 ・ 選択肢の番号は、`~/.ai-agent-tools/numbers/` に予約してから使う** (道具が自動で行う)。同じ PC の同じユーザなら、worktree や別の clone の間でも重ならない。別の PC ・ クラウドとは共有しない。置き場の名前は `uuid_<project_uuid>_<プロジェクト id>` で、GitHub のリポジトリを作る ・ 名前を変える ・ プロジェクト id を変えるときに、手順は要らない。**プロジェクト id を変えるときは**、`project-uuid.txt` の `project_id` を新しい名前にし、旧名を `legacy_names:` に残す。
 
 ### README から案内する
 

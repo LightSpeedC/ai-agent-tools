@@ -1,0 +1,216 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>番号の予約のキーを uuid にする 計画 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（4 章 / 色相 280 → 0 を 93.3 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch03{ --accent:hsl(93.3,78%,25%); --accent2:hsl(93.3,58%,55%); --soft:hsl(93.3,28%,95%); }
+	.ch04{ --accent:hsl(0,78%,25%); --accent2:hsl(0,58%,55%); --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 30px;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>番号の予約のキーを uuid にする 計画 (ai-agent-tools)</h1>
+		<p class="lead">番号の予約の置き場のキーを <code>uuid_&lt;project_uuid&gt;_&lt;プロジェクト id&gt;</code> にし、GitHub のリポジトリを作る ・ 名前を変える ・ プロジェクト id を変える ・ uuid を変える、のどれでも予約が割れないようにする。課題 i261110-01。</p>
+		<p class="date">📅 作成: 2026-11-10 / 更新: 2026-11-10</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は、このプロジェクトの <code>issue</code> ツール (<code>src/issue/numbers.ts</code> ・ <code>ops.ts</code> ・ <code>check.ts</code>)、仕様 <a href="../50_spec/課題ファイルの形と検査.html">課題ファイルの形と検査</a>、TOOLS-USAGE。入力は、<code>notes/40_issues/items/project-uuid.txt</code> と、<code>~/.ai-agent-tools/numbers/</code> の今のフォルダ。出力は、新しい名前の予約のフォルダ。前の計画は <a href="p261109-01-番号の予約の共有.html">p261109-01</a>。</p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">決めたこと</a></li>
+		<li class="ch02"><a href="#ch02">今ある動きと試験</a></li>
+		<li class="ch03"><a href="#ch03">進め方</a></li>
+		<li class="ch04"><a href="#ch04">移すフォルダ</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>決めたこと</h1>
+	<p>2026-11-10 に、利用者が選んだ。決定のファイルは <code>i261110-01-d1</code> 〜 <code>d4</code>。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>問い</th><th>選んだ案</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">220-A</td><td>予約のフォルダの名前 (キー)</td><td><code>uuid_&lt;project_uuid&gt;_&lt;プロジェクト id&gt;</code>。探すときは uuid の部分だけを見る。GitHub の情報は <code>key.json</code> に書くだけ。203-A (<code>p261109-01-d3</code>) を置き換える。選ばなかった案: GitHub のキーを残し、キーが変わったら前の予約を写す</td></tr>
+			<tr><td class="nowrap">221-A</td><td>プロジェクト id を変えたとき、名前の後ろを付け直すか</td><td>道具が呼ばれたときに、今の id と違えば付け直す。付け直せなければ古い名前のまま使う。選ばなかった案: 付け直さない</td></tr>
+			<tr><td class="nowrap">222-A</td><td>uuid が変わったときの扱い</td><td><code>issue init --new-id</code> で uuid を変えるとき、古い uuid のフォルダを新しい uuid の名前に移す。選ばなかった案: 何もしない</td></tr>
+			<tr><td class="nowrap">223-B</td><td>プロジェクト id を変えたときの <code>legacy_ids</code> の旧 id</td><td><code>project-uuid.txt</code> に <code>former_ids</code> を足し、旧 id も自分の id として数える。選ばなかった案: 何もしない</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>今ある動きと試験</h1>
+	<p>今ある動き: 直したあとも、次の動きを保つ。どれも <code>run-issue-numbers-tests.ts</code> (無ければ、予約を試す既存の試験) で見る。</p>
+	<ul>
+		<li>予約を mkdir で取る。同じ番号は 2 回取れない</li>
+		<li>3 日より前の予約を消す。系列ごとの最大の 1 つは残す (日付の番号は、今日より前の日なら最大も消す)</li>
+		<li>worktree から呼んでも、本体と同じ置き場を使う</li>
+		<li>選択肢の番号は、予約の最大と <code>legacy_ids</code> の旧番号の最大の、大きい方の次</li>
+		<li><code>issue init</code> は、<code>project-uuid.txt</code> があれば書き換えない。<code>--new-id</code> のときだけ新しい uuid にする</li>
+		<li>試験のときは、本物のホームを汚さず、プロジェクトの <code>_numbers/</code> を使う</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>進め方</h1>
+	<p>どの手順も、試験を先に書き、❌Red を見てから直す。bun と node の両方で流す。</p>
+	<ol>
+		<li>キーを <code>uuid_&lt;uuid&gt;_&lt;id&gt;</code> にし、探すときは <code>uuid_&lt;uuid&gt;_</code> で始まるフォルダを探す (220-A)。uuid が無いプロジェクトは、今までどおりキーを決められない</li>
+		<li>古い名前のフォルダ (<code>github_…</code> と <code>uuid_&lt;uuid&gt;</code>) を、<code>key.json</code> の <code>project_uuid</code> を見て、新しい名前に移す。最初に呼ばれたときに道具が行う。移す先が既にあれば、移さずに警告を出す</li>
+		<li>id が変わったら、名前の後ろを付け直す。付け直せなければ、古い名前のまま使う (221-A)</li>
+		<li><code>issue init --new-id</code> のときは、古い uuid の予約を新しい uuid の名前に写す (222-A)。<strong>実装で、移すから写すに変えた</strong>: <code>--new-id</code> はフォルダごとコピーして別のプロジェクトにしたときにも使うので、移すと元のプロジェクトの予約を取り上げる</li>
+		<li><code>legacy_ids</code> を数えるときに、旧 id も自分の id として扱う (223-B)。<strong>実装で、<code>former_ids</code> は作らず、既にある <code>legacy_names</code> (154-A、改名したときの旧名) を使うことにした</strong>。同じ役目のキーを 2 つにしないため</li>
+		<li>oracle-cloud で uuid が変わった原因を調べる。直し方が 1 つに決まらなければ、案を出す</li>
+		<li>TOOLS-USAGE と詳細仕様に書く。repo を作る ・ 名前を変える ・ id を変えるときに手順が要らないこと、id を変える手順 (<code>project_id</code> を直し、<code>former_ids</code> に旧 id を足す)</li>
+	</ol>
+</section>
+
+<section class="ch04" id="ch04">
+	<h1>移すフォルダ</h1>
+	<p>手順 2 で、2026-11-10 にある 4 つを次のように移す。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>今の名前</th><th>新しい名前</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>github_LightSpeedC_ai-agent-tools</code></td><td><code>uuid_3a72…_ai-agent-tools</code></td></tr>
+			<tr><td class="nowrap"><code>github_LightSpeedC_ai-chat-lite</code></td><td><code>uuid_593d…_ai-chat-lite</code></td></tr>
+			<tr><td class="nowrap"><code>uuid_1313…</code></td><td><code>uuid_1313…_20260917-oracle-cloud</code></td></tr>
+			<tr><td class="nowrap"><code>uuid_b378…</code></td><td><code>uuid_b378…_20261019-file-manager</code></td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+</div>
+
+<footer>
+	<a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a>
+</footer>
+
+</body>
+</html>
