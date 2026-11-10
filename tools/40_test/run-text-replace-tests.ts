@@ -149,6 +149,10 @@ setup();
 	check('--expect と違えば、期待と実際の件数を出す', (ng.out + ng.err).includes('4') && (ng.out + ng.err).includes('5'), ng.out + ng.err);
 	const ok = text(['replace', '[[旧名', '[[新名', '--path', path.join(work, 'a'), '-r', '--include', '*.md', '--expect', '5']);
 	check('--expect と合えば書き換える', ok.code === 0 && utf8('a/one.md').startsWith('[[新名]]'), ok.out + ok.err);
+	const zero = text(['replace', '存在しない語', 'x', '--path', path.join(work, 'a'), '-r', '--include', '*.md', '--expect', '0']);
+	check('--expect 0 で一致が 0 件なら、終了コード 0 (file-manager #1911 の 1)', zero.code === 0, zero.out + zero.err);
+	const zeroNg = text(['replace', '[[新名', 'x', '--path', path.join(work, 'a'), '-r', '--include', '*.md', '--expect', '0']);
+	check('--expect 0 で一致があれば、終了コード 6', zeroNg.code === 6, zeroNg.out + zeroNg.err);
 }
 setup();
 {
