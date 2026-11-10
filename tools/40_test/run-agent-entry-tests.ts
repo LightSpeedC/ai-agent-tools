@@ -50,12 +50,22 @@ function assertEqual(name: string, expected: unknown, actual: unknown): void {
 
 // 代役。claude.exe は引数・カレント・環境変数 (CLAUDE ・ KEEPER ・ KP_ で始まるもの) を記録する。
 // codex-trusted ・ ag-trusted (cmd) は、引数 (そのままの文字列) ・ カレント ・ 同じ環境変数の名前を記録する
+// どちらも、動いているコンソールの窓が見えるか (visible ・ hidden ・ none) を con= で記録する (i261101-03-d2)。
+// claude.exe の代役は --con だけを渡すと、それを標準出力に出して終わる (cmd の代役から使う)
 const claudeStub = `
 use std::io::Write;
+#[link(name = "kernel32")] extern "system" { fn GetConsoleWindow() -> isize; }
+#[link(name = "user32")] extern "system" { fn IsWindowVisible(h: isize) -> i32; }
+fn con() -> &'static str {
+	let h = unsafe { GetConsoleWindow() };
+	if h == 0 { "none" } else if unsafe { IsWindowVisible(h) } != 0 { "visible" } else { "hidden" }
+}
 fn main() {
+	if std::env::args().nth(1).as_deref() == Some("--con") { print!("{}", con()); return; }
 	let out = std::env::var("AGENT_LAUNCH_TEST_OUT").unwrap_or_default();
 	if out.is_empty() { return; }
 	let mut s = String::new();
+	s.push_str(&format!("con={}\\n", con()));
 	s.push_str(&format!("cwd={}\\n", std::env::current_dir().unwrap().display()));
 	let args: Vec<String> = std::env::args().skip(1).collect();
 	s.push_str(&format!("args={}\\n", args.join("\\u{1f}")));
@@ -75,6 +85,7 @@ const cmdStub = [
 	'>> "%AGENT_LAUNCH_TEST_OUT%.tmp" echo args=%*',
 	'for /f "delims==" %%a in (\'set KEEPER 2^>nul\') do >> "%AGENT_LAUNCH_TEST_OUT%.tmp" echo env:%%a',
 	'for /f "delims==" %%a in (\'set KP_ 2^>nul\') do >> "%AGENT_LAUNCH_TEST_OUT%.tmp" echo env:%%a',
+	'for /f %%v in (\'claude.exe --con\') do >> "%AGENT_LAUNCH_TEST_OUT%.tmp" echo con=%%v',
 	'move /y "%AGENT_LAUNCH_TEST_OUT%.tmp" "%AGENT_LAUNCH_TEST_OUT%" >nul',
 	'exit /b 0',
 	'',
@@ -110,16 +121,17 @@ function setup(): void {
 
 const sleepSync = (ms: number): void => { spawnSync(process.execPath, ['-e', 'setTimeout(()=>{},' + ms + ')']); };
 
-interface Recorded { cwd: string; args: string; env: string[] }
+interface Recorded { cwd: string; args: string; env: string[]; con: string }
 
 function readRecord(): Recorded | null {
 	if (!fs.existsSync(outPath)) { return null; }
 	// cmd の echo は窓のコードページ (932) で書く。claude.exe の代役は UTF-8
 	const bytes = fs.readFileSync(outPath);
 	const text = new TextDecoder('utf-8').decode(bytes).includes('\ufffd') ? new TextDecoder('shift_jis').decode(bytes) : new TextDecoder('utf-8').decode(bytes);
-	const rec: Recorded = { cwd: '', args: '', env: [] };
+	const rec: Recorded = { cwd: '', args: '', env: [], con: '' };
 	for (const l of text.split(/\r?\n/)) {
-		if (l.startsWith('cwd=')) { rec.cwd = l.slice(4); }
+		if (l.startsWith('con=')) { rec.con = l.slice(4).trim(); }
+		else if (l.startsWith('cwd=')) { rec.cwd = l.slice(4); }
 		else if (l.startsWith('args=')) { rec.args = l.slice(5); }
 		else if (l.startsWith('env:')) { rec.env.push(l.slice(4)); }
 	}
@@ -248,6 +260,7 @@ try {
 			assertEqual(agent + ': 履歴があれば、' + cont + ' を付ける', true, withHist.rec == null ? null : hasCont(withHist.rec.args));
 		}
 
+		assertEqual(agent + ': 非表示の試験では、エージェントのコンソールの窓が見えない (i261101-03-d2)', true, created.rec != null && created.rec.con !== 'visible' && created.rec.con !== '');
 		assertEqual(agent + ': エージェントに、KEEPER_* ・ KP_* の変数を渡さない', [], created.rec == null ? null : created.rec.env.filter((n) => /^(KEEPER|KP_)/i.test(n)));
 		if (agent === 'cc') {
 			assertEqual('cc: CLAUDE で始まる変数は、USE_POWERSHELL_TOOL だけが渡る', ['CLAUDE_CODE_USE_POWERSHELL_TOOL'], created.rec == null ? null : created.rec.env.filter((n) => /^CLAUDE/i.test(n)));

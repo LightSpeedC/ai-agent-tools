@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { hasHistory, type Agent } from './history.ts';
 import { keeperEnv, launchSpec, startArgs, windowTitle, type Env } from './launch.ts';
 import { pickFolder } from './pick.ts';
+import { launch } from '../spawn-server-ts/create-process.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const keeperPath = path.join(here, 'keeper.cmd');
@@ -38,20 +39,24 @@ function registerForClaude(dir: string): void {
 	spawnSync(process.execPath, [registerMain, dir], { stdio: 'inherit', env: process.env, cwd: dir });
 }
 
-function launchKeeper(title: string, dir: string, env: Env): void {
+async function launchKeeper(title: string, dir: string, env: Env): Promise<void> {
 	const hide = process.env.AGENT_LAUNCH_TEST_HIDE === '1';
 	if (hide) {
-		// 非表示 (試験): 番人に、尋ねずに終わる (KEEPER_NOASK) と渡す。detached でない子は、親が終わるときに
-		// 道連れで止められ (Node が Job に入れる)、detached だと choice が答えを待ち続けて残る (どちらも実測)
-		const child = spawn('cmd.exe', ['/d', '/c', keeperPath], { cwd: dir, env: { ...env, KEEPER_NOASK: '1' }, detached: true, stdio: 'ignore', windowsHide: true });
-		child.unref();
+		// 非表示 (試験): 番人に、尋ねずに終わる (KEEPER_NOASK) と渡す。
+		// spawn の detached は番人をコンソール無しで起こし、番人の子がそれぞれ見える窓を作る (i261101-03、実測)。
+		// そのため、新しいコンソールを非表示で作る CreateProcessW (spawn-server の launch) で起こす (225-A)。
+		// launch は環境変数を自分のものから引き継がせるので、渡す値に置き換えてから呼ぶ
+		const want: Env = { ...env, KEEPER_NOASK: '1', SPAWN_SERVER_TEST_HIDE: '1' };
+		for (const k of Object.keys(process.env)) { if (!(k in want)) { delete process.env[k]; } }
+		for (const [k, v] of Object.entries(want)) { if (v !== undefined) { process.env[k] = v; } }
+		await launch('"' + keeperPath + '"', dir, title.replace(/[&|<>^"]/g, ''));
 		return;
 	}
 	const child = spawn('cmd.exe', [startArgs(title, keeperPath)], { cwd: dir, env, detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true });
 	child.unref();
 }
 
-function main(argv: string[]): number {
+async function main(argv: string[]): Promise<number> {
 	const agent = argv[0] as Agent;
 	const name = argv[1];
 	if (!Agents.includes(agent)) {
@@ -77,8 +82,8 @@ function main(argv: string[]): number {
 
 	if (agent === 'cc') { registerForClaude(picked.dir); }
 	const spec = launchSpec(agent, picked.dir, history, now);
-	launchKeeper(windowTitle(agent, picked.dir), picked.dir, keeperEnv(agent, process.env, spec));
+	await launchKeeper(windowTitle(agent, picked.dir), picked.dir, keeperEnv(agent, process.env, spec));
 	return 0;
 }
 
-process.exit(main(process.argv.slice(2)));
+process.exit(await main(process.argv.slice(2)));
