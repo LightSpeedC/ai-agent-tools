@@ -7,10 +7,14 @@
 	- --expect <件数> と合計が違えば、どのファイルも書き換えずに終了コード 6 (230-A)。--expect 0 で 0 件なら終了コード 0
 	- 置き換えたあとの文字が、そのファイルの文字コードで表せなければ、どのファイルも書き換えずに終了コード 5
 	- 全部のファイルを先に組み立ててから書く。書くのは 1 ファイルずつ、一時ファイルを経て置き換える
+	- --rename なら、ファイルの名前 (フォルダ名は含めない) も同じ検索語で置き換え、合計と --expect に数える (239-A)。
+	  新しい名前が既にある ・ 2 つが同じ名前になる ・ 名前に使えない文字が入る、なら何も書き換えずに終了コード 7。
+	  中身を書き終えてから名前を変える。git の管理下のファイルは git mv
 */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { ToolError, comboName, decode, encodeRaw, findUnmappable, lineContent, looksBinary, preambleLen, splitLines } from './engine.ts';
 import { Args, out, resolve, show, writeAtomic } from './files.ts';
 import { makePattern, relPath, selectTargets } from './find.ts';
@@ -49,6 +53,7 @@ export function run(a: string[]): number {
 	const regex = args.flag('--regex', '--regex');
 	const ignoreCase = args.flag('-i', '--ignore-case');
 	const dryRun = args.flag('--dry-run', '--dry-run');
+	const rename = args.flag('--rename', '--rename');
 	const from = args.get('--from');
 	const expectText = args.get('--expect');
 	let expect: number | null = null;
@@ -120,9 +125,13 @@ export function run(a: string[]): number {
 		plans.push({ file, rel, combo: comboName(combo), count, bytes: result, changed });
 	}
 
-	const total = plans.reduce((s, p) => s + p.count, 0);
+	// ---- 1b. --rename: 名前の置き換えを組み立てる (239-A) ----
+	const renames = rename ? planRenames(targets, pattern, regex, replacement, baseFull, baseIsFile) : [];
+	const renameCount = renames.reduce((s, r) => s + r.count, 0);
+
+	const total = plans.reduce((s, p) => s + p.count, 0) + renameCount;
 	const head = '◎"' + show(basePath) + '"  検索="' + keyword + '"  置換="' + replacement + '"'
-		+ (regex ? '  正規表現' : '') + (ignoreCase ? '' : '  大小区別') + (dryRun ? '  dry-run (書き換えない)' : '');
+		+ (regex ? '  正規表現' : '') + (ignoreCase ? '' : '  大小区別') + (rename ? '  名前も' : '') + (dryRun ? '  dry-run (書き換えない)' : '');
 	out(head);
 
 	if (total === 0) {
@@ -145,6 +154,73 @@ export function run(a: string[]): number {
 			out(String(c.lineNo).padStart(6, ' ') + ' + ' + c.after);
 		}
 	}
-	out('合計 ' + total + ' 件 (' + plans.length + ' ファイル)' + (dryRun ? '。dry-run なので書き換えていない' : ''));
+	// 中身を書き終えてから名前を変える
+	for (const r of renames) {
+		if (!dryRun) { moveFile(r.from, r.to); }
+		out('→ "' + r.relFrom + '" → "' + r.relTo + '" ' + r.count + ' 件');
+	}
+	const files = new Set([...plans.map((p) => p.file), ...renames.map((r) => r.from)]).size;
+	out('合計 ' + total + ' 件 (' + files + ' ファイル' + (renames.length > 0 ? '、うち名前 ' + renames.length : '') + ')' + (dryRun ? '。dry-run なので書き換えていない' : ''));
 	return 0;
+}
+
+interface Rename { from: string; to: string; relFrom: string; relTo: string; count: number }
+
+/** 名前の置き換えを組み立て、ぶつかり ・ 使えない文字を調べる。だめなら終了コード 7 (何も書いていない段階) */
+function planRenames(targets: string[], pattern: RegExp, regex: boolean, replacement: string, baseFull: string, baseIsFile: boolean): Rename[] {
+	const list: Rename[] = [];
+	for (const file of targets) {
+		const name = path.basename(file);
+		let count = 0;
+		pattern.lastIndex = 0;
+		const newName = name.replace(pattern, (...a: unknown[]) => {
+			count++;
+			if (!regex) { return replacement; }
+			// replace の引数から RegExpExecArray 相当を組み立てる
+			const groups = typeof a[a.length - 1] === 'object' ? a[a.length - 1] as Record<string, string> : undefined;
+			const nCap = a.length - (groups !== undefined ? 3 : 2);
+			const m = a.slice(0, nCap) as string[] as unknown as RegExpExecArray;
+			(m as unknown as { groups?: Record<string, string> }).groups = groups;
+			return expand(replacement, m);
+		});
+		if (count === 0 || newName === name) { continue; }
+		const to = path.join(path.dirname(file), newName);
+		const rel = (p: string) => baseIsFile ? path.basename(p) : relPath(baseFull, p);
+		list.push({ from: file, to, relFrom: rel(file), relTo: rel(to), count });
+	}
+	const seen = new Map<string, string>();
+	const fromSet = new Set(list.map((r) => r.from.toLowerCase()));
+	for (const r of list) {
+		const newName = path.basename(r.to);
+		if (newName === '' || newName === '.' || newName === '..' || /[\\/:*?"<>|\x00-\x1f]/.test(newName)) {
+			throw new ToolError(7, '名前に使えない文字が入ります: "' + r.relFrom + '" → "' + newName + '"。どのファイルも書き換えていません。');
+		}
+		const key = r.to.toLowerCase();
+		const prev = seen.get(key);
+		if (prev !== undefined) {
+			throw new ToolError(7, '2 つのファイルが同じ名前になります: "' + prev + '" と "' + r.relFrom + '" → "' + r.relTo + '"。どのファイルも書き換えていません。');
+		}
+		seen.set(key, r.relFrom);
+		// 大小だけを変えるときは、自分自身なのでぶつからない。名前を変える別のファイルの元の名前もぶつからない
+		if (key !== r.from.toLowerCase() && fs.existsSync(r.to) && !fromSet.has(key)) {
+			throw new ToolError(7, '新しい名前のファイルが既にあります: "' + r.relTo + '"。どのファイルも書き換えていません。');
+		}
+	}
+	return list;
+}
+
+/** git の管理下なら git mv、そうでなければ fs.renameSync */
+function moveFile(from: string, to: string): void {
+	const dir = path.dirname(from);
+	const git = (args: string[]) => spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8', windowsHide: true });
+	try {
+		if (git(['ls-files', '--error-unmatch', '--', path.basename(from)]).status === 0) {
+			const mv = git(['mv', '--', path.basename(from), path.basename(to)]);
+			if (mv.status === 0) { return; }
+			throw new ToolError(2, 'git mv できません: ' + show(from) + ' → ' + path.basename(to) + ': ' + (mv.stderr ?? '').trim());
+		}
+	} catch (e) {
+		if (e instanceof ToolError) { throw e; }
+	}
+	fs.renameSync(from, to);
 }

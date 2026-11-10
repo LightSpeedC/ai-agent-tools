@@ -187,6 +187,56 @@ setup();
 	check('--path そのものが外されている (このプロジェクトの tmp) ときは、今までどおり読む', outside.code === 0 && outside.out.includes('one.md'), outside.out + outside.err);
 }
 
+// ---- 239-A: --rename でファイル名も置き換える ----
+
+console.log('\n[--rename (239-A)]');
+const has = (rel: string): boolean => fs.existsSync(path.join(work, rel));
+setup();
+{
+	put('r/i261020-0L-件名.md', Buffer.from('i261020-0L を見る\n', 'utf8'));
+	put('r/i261020-0L-only-name.md', Buffer.from('中身に番号なし\n', 'utf8'));
+	put('r/other.md', Buffer.from('i261020-0L だけ中身\n', 'utf8'));
+	const dry = text(['replace', 'i261020-0L', 'i261020-0v', '--path', path.join(work, 'r'), '--rename', '--dry-run']);
+	check('--dry-run は名前も中身も変えない', dry.code === 0 && has('r/i261020-0L-件名.md') && utf8('r/other.md').includes('0L'), dry.out + dry.err);
+	check('--dry-run は古い名前と新しい名前を並べて出す', dry.out.includes('i261020-0L-件名.md') && dry.out.includes('i261020-0v-件名.md'), dry.out);
+	check('名前の一致も合計に数える (中身 2 ・ 名前 2 で 4 件)', dry.out.includes('合計 4 件'), dry.out);
+	const ng = text(['replace', 'i261020-0L', 'i261020-0v', '--path', path.join(work, 'r'), '--rename', '--expect', '2']);
+	check('--expect は名前の件数も含めて比べる (2 なら終了コード 6)', ng.code === 6 && has('r/i261020-0L-件名.md'), ng.out + ng.err);
+	const ok = text(['replace', 'i261020-0L', 'i261020-0v', '--path', path.join(work, 'r'), '--rename', '--expect', '4']);
+	check('中身と名前の両方を置き換える', ok.code === 0 && has('r/i261020-0v-件名.md') && !has('r/i261020-0L-件名.md') && utf8('r/i261020-0v-件名.md') === 'i261020-0v を見る\n', ok.out + ok.err);
+	check('名前だけ一致するファイルも名前を変える', has('r/i261020-0v-only-name.md') && utf8('r/i261020-0v-only-name.md') === '中身に番号なし\n');
+	check('中身だけ一致するファイルは名前を変えない', has('r/other.md') && utf8('r/other.md') === 'i261020-0v だけ中身\n');
+	const noRename = text(['replace', 'other', 'x', '--path', path.join(work, 'r')]);
+	check('--rename が無ければ、名前は変えない (一致が中身に無ければ 0 件で終了コード 1)', noRename.code === 1 && has('r/other.md'), noRename.out + noRename.err);
+}
+setup();
+{
+	put('s/a-old.md', Buffer.from('old\n', 'utf8'));
+	put('s/a-new.md', Buffer.from('既にある\n', 'utf8'));
+	const r = text(['replace', 'old', 'new', '--path', path.join(work, 's'), '--rename']);
+	check('新しい名前のファイルが既にあれば、終了コード 7', r.code === 7, r.out + r.err);
+	check('ぶつかったら、中身も名前も書き換えない', utf8('s/a-old.md') === 'old\n' && utf8('s/a-new.md') === '既にある\n', r.out + r.err);
+	put('t/x1.md', Buffer.from('a\n', 'utf8'));
+	put('t/x2.md', Buffer.from('a\n', 'utf8'));
+	const two = text(['replace', '[12]', '', '--regex', '--path', path.join(work, 't'), '--rename']);
+	check('2 つのファイルが同じ名前になれば、終了コード 7', two.code === 7 && has('t/x1.md') && has('t/x2.md'), two.out + two.err);
+	const bad = text(['replace', 'x1', 'a:b', '--path', path.join(work, 't'), '--rename']);
+	check('名前に使えない文字が入れば、終了コード 7', bad.code === 7 && has('t/x1.md'), bad.out + bad.err);
+}
+setup();
+{
+	const g = path.join(work, 'gm');
+	put('gm/i1-old.md', Buffer.from('x\n', 'utf8'));
+	put('gm/new-untracked-old.md', Buffer.from('y\n', 'utf8'));
+	const git = (args: string[]) => spawnSync('git', ['-C', g, ...args], { encoding: 'utf8' });
+	git(['init', '-q']);
+	git(['add', 'i1-old.md']);
+	git(['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'init']);
+	const r = text(['replace', 'old', 'new', '--path', g, '--rename']);
+	check('git の管理下のファイルは git mv で名前を変える (rename として載る)', r.code === 0 && /R\s+i1-old\.md -> i1-new\.md/.test(git(['status', '--short']).stdout), git(['status', '--short']).stdout + r.out + r.err);
+	check('管理外のファイルも名前を変える', has('gm/new-untracked-new.md') && !has('gm/new-untracked-old.md'));
+}
+
 fs.rmSync(work, { recursive: true, force: true });
 console.log(`\n=== text replace: ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 process.exit(fail === 0 ? 0 : 1);
