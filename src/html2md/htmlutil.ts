@@ -114,6 +114,8 @@ export function getAnchor(heading: string): string {
  */
 export function getMarkdownHeadingAnchor(mdHeading: string): string {
 	let h = mdHeading.replace(/<[^>]+>/g, '');
+	// リンク ・ 画像は表示文字だけを残す。GitHub はリンク先の URL をアンカーに入れない (i260908-04 の変換 1)
+	h = h.replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1');
 	h = h.replace(/[*`]/g, '');
 	return getAnchor(h);
 }
