@@ -13,6 +13,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeAtomic } from '../lib/write-atomic.ts';
 import type { Collected, Item, Turn } from './collect.ts';
 import { findLeaks, type MaskContext } from './mask.ts';
 
@@ -201,7 +202,7 @@ export function write(out: string, b: Built): { written: number; same: number; r
 		const bytes = Buffer.from(rel.endsWith('.html') ? '﻿' + body : body, 'utf8');
 		if (fs.existsSync(p) && fs.readFileSync(p).equals(bytes)) { stat.same++; continue; }
 		fs.mkdirSync(path.dirname(p), { recursive: true });
-		fs.writeFileSync(p, bytes);
+		writeAtomic(p, bytes);   // 一時ファイルを経て置き換える (243-A)
 		stat.written++;
 	}
 	const data = path.join(out, 'data');

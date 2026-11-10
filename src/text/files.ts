@@ -3,9 +3,8 @@
 */
 
 import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as crypto from 'node:crypto';
 import { maskHome } from '../lib/paths.ts';
+import { writeAtomic as writeAtomicLib } from '../lib/write-atomic.ts';
 import type { Combo, EncKind } from './engine.ts';
 import {
 	ToolError, computeDigest, detectCombo, encodeRaw,
@@ -122,16 +121,7 @@ export function splice(original: Uint8Array, decoded: string, enc: EncKind,
  * 新規ファイル（置換先が無い）にも対応する。
  */
 export function writeAtomic(p: string, bytes: Uint8Array): void {
-	const full = path.resolve(p);
-	const dir = path.dirname(full);
-	const temp = path.join(dir, path.basename(full) + '.' + crypto.randomUUID().replace(/-/g, '') + '.tmp');
-	fs.writeFileSync(temp, bytes);
-	try {
-		fs.renameSync(temp, p);
-	} catch (e) {
-		try { fs.unlinkSync(temp); } catch { /* 消せなくても元は無事 */ }
-		throw e;
-	}
+	writeAtomicLib(p, bytes);
 }
 
 /** 更新日時（ローカル）を yymmdd-hhmmss-ccc で */

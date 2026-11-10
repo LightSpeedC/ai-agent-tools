@@ -8,8 +8,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as crypto from 'node:crypto';
 import type { EncKind } from '../lib/codec.ts';
+import { writeAtomic } from '../lib/write-atomic.ts';
 import {
 	countEol, decode, describeEol, encode, getLineNumber,
 	normalizeEol, normalizeEolBytes, sameBytes, startsWith,
@@ -90,23 +90,7 @@ function printUsage(): void {
 	out(lines.join('\n') + '\n');
 }
 
-/**
- * 同じフォルダに一時ファイルを作ってから置き換える。
- * 書き込みの途中で失敗しても元のファイルが壊れない。
- */
-function writeAtomic(p: string, bytes: Uint8Array): void {
-	const dir = path.dirname(path.resolve(p));
-	const temp = path.join(dir, path.basename(p) + '.' + crypto.randomUUID().replace(/-/g, '') + '.tmp');
-
-	fs.writeFileSync(temp, bytes);
-	try {
-		fs.renameSync(temp, p);
-	} catch (e) {
-		// 置き換えに失敗したら一時ファイルを残さない
-		try { fs.unlinkSync(temp); } catch { /* 消せなくても元は無事 */ }
-		throw e;
-	}
-}
+// 一時ファイルを経て置き換える書き込みは src/lib/write-atomic.ts (243-A。ほかの道具と共有)
 
 /**
  * 16 進テキストをバイト列に直す。空白と改行は読み飛ばす。
