@@ -71,9 +71,17 @@ export function keeperEnv(agent: Agent, env: Env, spec: LaunchSpec): Env {
 }
 
 /**
- * 新しい窓で番人を動かす cmd の引数。start は、最初の引用符つきの引数をタイトルとして扱うため、
- * タイトルは必ず引用符で囲む。cmd /s は先頭と末尾の引用符を 1 組外すので、全体をもう一組で囲む
+ * 番人を起こす行。番人のあとに、エージェント名とフォルダを載せる。番人は使わないが、
+ * 起こした親はすぐ終わるので、psls でコマンド行を見たときに、誰の ・ どのプロジェクトの番人かが分かる (i261110-03)
  */
-export function startArgs(title: string, keeper: string): string {
-	return '/d /s /c "start "' + title + '" cmd /d /c "' + keeper + '""';
+export function keeperCommand(keeper: string, agent: Agent, dir: string): string {
+	return '"' + keeper + '" ' + agent + ' "' + dir.replace(/"/g, '') + '"';
+}
+
+/**
+ * 新しい窓で番人の行を動かす cmd の引数。start は、最初の引用符つきの引数をタイトルとして扱うため、
+ * タイトルは必ず引用符で囲む。cmd /s は先頭と末尾の引用符を 1 組外すので、外側と番人の行の両方をもう一組で囲む
+ */
+export function startArgs(title: string, command: string): string {
+	return '/d /s /c "start "' + title + '" cmd /d /s /c "' + command + '""';
 }

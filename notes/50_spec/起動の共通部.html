@@ -213,6 +213,7 @@
 	</ol>
 	<ul>
 		<li>番人への入力は、環境変数 <code>KEEPER_EXE</code> ・ <code>KEEPER_FIRST</code> ・ <code>KEEPER_AGAIN</code>。番人は、起こす行の中で消し、<strong>エージェントに渡さない</strong> (作業用の <code>KP_*</code> も)。再起動の 2 回目以降にも値が残るよう、<code>setlocal</code> と <code>endlocal</code> で戻す</li>
+		<li>番人の行の後ろに、エージェント名とフォルダを載せる (<code>"keeper.cmd" cc "&lt;フォルダ&gt;"</code>)。番人は使わない。起こした親はすぐ終わるので、<code>psls keeper</code> で、誰の ・ どのプロジェクトの番人かを見分けるため (i261110-03)</li>
 		<li>エージェントは <code>call</code> で呼ぶ。<code>codex-trusted</code> ・ <code>ag-trusted</code> は cmd なので、<code>call</code> が無いと、終わっても番人に戻ってこない</li>
 		<li><strong>試験の非表示のときだけ</strong>、尋ねずに終わる (<code>KEEPER_NOASK</code>)。非表示の窓では、<code>choice</code> が答えを待ち続けて、プロセスが残るため (実測)</li>
 		<li><strong>試験の非表示のときは、番人を CreateProcessW で起こし、新しいコンソールを非表示 (<code>SW_HIDE</code>) で作る</strong> (spawn-server の <code>launch</code>、i261101-03-d2)。<code>spawn</code> の <code>detached</code> は番人をコンソール無しで起こし、番人の子 (エージェント ・ <code>for /f</code> の cmd) がそれぞれ見える窓を作った (実測)。非表示のコンソールなら、子も同じコンソールを使い、窓は出ない</li>

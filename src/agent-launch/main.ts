@@ -22,7 +22,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hasHistory, type Agent } from './history.ts';
-import { keeperEnv, launchSpec, startArgs, windowTitle, type Env } from './launch.ts';
+import { keeperCommand, keeperEnv, launchSpec, startArgs, windowTitle, type Env } from './launch.ts';
 import { pickFolder } from './pick.ts';
 import { launch } from '../spawn-server-ts/create-process.ts';
 
@@ -39,8 +39,10 @@ function registerForClaude(dir: string): void {
 	spawnSync(process.execPath, [registerMain, dir], { stdio: 'inherit', env: process.env, cwd: dir });
 }
 
-async function launchKeeper(title: string, dir: string, env: Env): Promise<void> {
+async function launchKeeper(agent: Agent, title: string, dir: string, env: Env): Promise<void> {
 	const hide = process.env.AGENT_LAUNCH_TEST_HIDE === '1';
+	// 番人の行に、エージェント名とフォルダを載せる (i261110-03)
+	const command = keeperCommand(keeperPath, agent, dir);
 	if (hide) {
 		// 非表示 (試験): 番人に、尋ねずに終わる (KEEPER_NOASK) と渡す。
 		// spawn の detached は番人をコンソール無しで起こし、番人の子がそれぞれ見える窓を作る (i261101-03、実測)。
@@ -49,10 +51,10 @@ async function launchKeeper(title: string, dir: string, env: Env): Promise<void>
 		const want: Env = { ...env, KEEPER_NOASK: '1', SPAWN_SERVER_TEST_HIDE: '1' };
 		for (const k of Object.keys(process.env)) { if (!(k in want)) { delete process.env[k]; } }
 		for (const [k, v] of Object.entries(want)) { if (v !== undefined) { process.env[k] = v; } }
-		await launch('"' + keeperPath + '"', dir, title.replace(/[&|<>^"]/g, ''));
+		await launch(command, dir, title.replace(/[&|<>^"]/g, ''));
 		return;
 	}
-	const child = spawn('cmd.exe', [startArgs(title, keeperPath)], { cwd: dir, env, detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true });
+	const child = spawn('cmd.exe', [startArgs(title, command)], { cwd: dir, env, detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true });
 	child.unref();
 }
 
@@ -82,7 +84,7 @@ async function main(argv: string[]): Promise<number> {
 
 	if (agent === 'cc') { registerForClaude(picked.dir); }
 	const spec = launchSpec(agent, picked.dir, history, now);
-	await launchKeeper(windowTitle(agent, picked.dir), picked.dir, keeperEnv(agent, process.env, spec));
+	await launchKeeper(agent, windowTitle(agent, picked.dir), picked.dir, keeperEnv(agent, process.env, spec));
 	return 0;
 }
 

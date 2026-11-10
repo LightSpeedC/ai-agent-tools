@@ -22,7 +22,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { encodeClaudeDir, hasHistory, pathForms } from '../../src/agent-launch/history.ts';
 import { datePart, pickFolder } from '../../src/agent-launch/pick.ts';
-import { agentEnv, keeperEnv, launchSpec, startArgs, windowTitle } from '../../src/agent-launch/launch.ts';
+import { agentEnv, keeperCommand, keeperEnv, launchSpec, startArgs, windowTitle } from '../../src/agent-launch/launch.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
@@ -241,8 +241,11 @@ console.log('--- 起こす処理 ---');
 	const kenv = keeperEnv('ag', { PATH: 'p' }, { exe: 'ag-trusted', first: 'A', again: 'B' });
 	assertEqual('番人への入力: KEEPER_EXE ・ KEEPER_FIRST ・ KEEPER_AGAIN を足す', { PATH: 'p', KEEPER_EXE: 'ag-trusted', KEEPER_FIRST: 'A', KEEPER_AGAIN: 'B' }, kenv);
 
-	assertEqual('start の行: タイトルは引用符で囲み、番人を cmd で動かす (全体は /s のためもう一組の引用符で囲む)', '/d /s /c "start "cc 20261101-foo" cmd /d /c "C:\\work\\src\\keeper.cmd""', startArgs('cc 20261101-foo', 'C:\\work\\src\\keeper.cmd'));
-	assertEqual('start の行: 空白や日本語を含むタイトルも、引用符で囲まれる', '/d /s /c "start "ag 日本語 x" cmd /d /c "K""', startArgs('ag 日本語 x', 'K'));
+	assertEqual('番人の行: 番人のあとに、エージェント名とフォルダを載せる (使わない引数。psls で誰の番人か分かる。i261110-03)', '"C:\\work\\src\\keeper.cmd" cc "C:\\work\\2026\\20261101-foo"', keeperCommand('C:\\work\\src\\keeper.cmd', 'cc', 'C:\\work\\2026\\20261101-foo'));
+	assertEqual('番人の行: 空白を含むフォルダも、引用符で囲んで 1 つの引数にする', '"K" ag "C:\\a b"', keeperCommand('K', 'ag', 'C:\\a b'));
+	assertEqual('番人の行: 引用符を含むフォルダでも、引用符を取り除く', '"K" cx "C:\\ab"', keeperCommand('K', 'cx', 'C:\\a"b'));
+	assertEqual('start の行: タイトルは引用符で囲み、番人の行を cmd /s で動かす (どちらも /s のためもう一組の引用符で囲む)', '/d /s /c "start "cc 20261101-foo" cmd /d /s /c ""K" cc "D"""', startArgs('cc 20261101-foo', '"K" cc "D"'));
+	assertEqual('start の行: 空白や日本語を含むタイトルも、引用符で囲まれる', '/d /s /c "start "ag 日本語 x" cmd /d /s /c "K""', startArgs('ag 日本語 x', 'K'));
 }
 
 fs.rmSync(work, { recursive: true, force: true });
