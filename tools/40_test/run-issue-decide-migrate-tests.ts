@@ -281,6 +281,45 @@ console.log('--- 引数');
 }
 
 console.log('');
+// ---- 字の無い旧番号 (:proj:210) も既にあるとみなす (i261110-05) ----
+
+console.log('--- 字の無い旧番号');
+{
+	const dir = mkProject('bare', {
+		[Decisions + 'i261104-01-d1-字なし.md']: '---\nschema: 1\nid: i261104-01-d1\ntitle: 字なし\nparent: i261104-01\ndecided: 2026-11-04\nchosen: A\nlegacy_ids: :bare:30\n---\n\n## 案\n\n- A: a\n',
+	});
+	const j = json(run(['--dry-run', '--json'], dir));
+	check('legacy_ids に字の無い番号 (:bare:30) があれば、30 は既にあるとみなして移さない', !(j?.move ?? []).some((m: any) => String(m.legacy).startsWith('30-')), JSON.stringify((j?.move ?? []).map((m: any) => m.legacy)));
+}
+
+// ---- 見出しに「案」の無い案の表 (i261110-05) ----
+
+console.log('--- 見出しに「案」の無い案の表');
+{
+	const body = `<section class="ch01" id="ch01"><h1>決めること</h1>
+<h2>60: 受け持ち (2026-11-01、60-A に決定)</h2>
+<table>
+	<thead><tr><th>番号</th><th>中身</th><th>恒久 / 暫定</th></tr></thead>
+	<tbody>
+		<tr><td>60-A (推奨)</td><td>決めて起こす</td><td>恒久</td></tr>
+		<tr><td>60-B</td><td>決めるだけ</td><td>恒久</td></tr>
+	</tbody>
+</table></section>`;
+	const dir = mkProject('noheader', { [Plan + 'p261107-01-見出しの無い案.html']: page('見出しの無い案', body, '2026-11-07') });
+	const r = run(['--dry-run', '--json'], dir);
+	const m = (json(r)?.move ?? []).find((x: any) => String(x.legacy).startsWith('60-'));
+	check('同じ表に同じ番号の行が 2 つ以上あれば、案の表として読む (最後の行の字を選んだ字にしない)', m !== undefined && m.legacy === '60-A' && m.chosen === 'A', JSON.stringify(m) + ' / ' + (json(r)?.move ?? []).map((x: any) => x.legacy).join(',') + r.err);
+	const a = run(['--apply'], dir);
+	const d60 = decisionFiles(dir).map((f) => read(dir, Decisions + f)).find((t) => t.includes(':noheader:60-')) ?? '';
+	check('案の表として読んだとき、両方の案の文を残す', a.code === 0 && d60.includes('- A: 決めて起こす') && d60.includes('- B: 決めるだけ') && d60.includes('chosen: A'), a.out + a.err + ' / ' + d60);
+	// 誤った字で移った決定を、手で置き換えたあとの --recheck
+	const wrongId = /^id: (\S+)$/m.exec(d60)?.[1] ?? '';
+	fs.writeFileSync(path.join(dir, Decisions, 'p261107-01-d9-置き換え.md'), `---\nschema: 1\nid: p261107-01-d9\ntitle: 受け持ち\nparent: p261107-01\ndecided: 2026-11-10\nchosen: A\nreplaces: ${wrongId}\nlegacy_ids: :noheader:60-A\n---\n\n## 案\n\n- A: 決めて起こす\n- B: 決めるだけ\n`);
+	const rc = json(run(['--dry-run', '--recheck', '--json'], dir));
+	const ids = (rc?.recheck ?? []).map((h: any) => h.id);
+	check('--recheck は、置き換えられた決定と、--replaces で書いた決定を出さない (人が見直し済み)', !ids.includes(wrongId) && !ids.includes('p261107-01-d9'), JSON.stringify(ids));
+}
+
 console.log(`=== issue (decide migrate): ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 fs.rmSync(work, { recursive: true, force: true });
 process.exit(fail === 0 ? 0 : 1);

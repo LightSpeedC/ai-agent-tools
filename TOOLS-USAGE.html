@@ -686,7 +686,7 @@ text replace "v(\d)\.(\d)" "v$1-$2" --path . -r --regex                 # 正規
 		<li><strong>ファイルの選び方は <code>find</code> と同じ</strong> (<code>-r</code> ・ <code>--include</code> ・ <code>--exclude</code> ・ <code>--exclude-dir</code> ・ 既定で外すフォルダ)。1 ファイルの中の一致は、全部置き換える</li>
 		<li><strong>文字コード ・ BOM ・ 改行は、ファイルごとに元のまま</strong>書き戻す (SJIS ・ UTF-16 も)。一致しなかった部分のバイト列は変えない</li>
 		<li>出力は、ファイルごとの件数と合計。<code>--dry-run</code> は書き換えず、変わる行の前と後も出す</li>
-		<li><code>--regex</code> のとき、置き換える側で <code>$1</code> ・ <code>$&amp;</code> ・ <code>$&lt;名前&gt;</code> ・ <code>$$</code> を使える。付けなければ <code>$</code> もそのまま書く</li>
+		<li><code>--regex</code> のとき、置き換える側で <code>$1</code> ・ <code>$&amp;</code> ・ <code>$&lt;名前&gt;</code> ・ <code>$$</code> を使える。付けなければ <code>$</code> もそのまま書く。<code>^</code> と <code>$</code> は、<code>find</code> と同じく行の頭と終わりに当たる。置き換える側に書いた <code>\n</code> は、改行ではなく文字のまま入る</li>
 		<li><strong>全部のファイルを組み立ててから書く。</strong>次のときは、どのファイルも書き換えない。一致が 0 件 (終了コード 1)、置き換えた文字がそのファイルの組で表せない (終了コード 5)、合計が <code>--expect</code> と違う (終了コード 6)</li>
 	</ul>
 

@@ -134,6 +134,9 @@ setup();
 	check('--regex と -i を合わせられる', ci.code === 0 && utf8('b/plain.txt') === 'a.c <b> <B>\n', utf8('b/plain.txt') + ci.err);
 	const bad = text(['replace', '(', 'x', '--path', path.join(work, 'b'), '--regex']);
 	check('正規表現が読めなければ、終了コード 2', bad.code === 2, bad.out + bad.err);
+	setup();
+	const anc = text(['replace', '^(他の行)$', '[$1]', '--path', path.join(work, 'a', 'one.md'), '--regex']);
+	check('--regex の ^ と $ は、行の頭と終わりに当たる (find と同じ)', anc.code === 0 && utf8('a/one.md') === '[[旧名]] と [[旧名]]\n[他の行]\n', utf8('a/one.md') + anc.out + anc.err);
 }
 
 console.log('\n[--expect (230-A) ・ 表せない文字]');

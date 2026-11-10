@@ -148,10 +148,10 @@ function readSources(root: string): Source[] {
 }
 
 type Cell = { html: string; rowspan: number };
-type TableRow = { number: number; letter: string; cells: string[]; headers: string[] };
+type TableRow = { number: number; letter: string; cells: string[]; headers: string[]; table: number };
 
-/** 1 つの表の行を読む。rowspan を後ろの行へ配る */
-function readTable(tableHtml: string): TableRow[] {
+/** 1 つの表の行を読む。rowspan を後ろの行へ配る。table は資料の中の何番目の表か */
+function readTable(tableHtml: string, table: number): TableRow[] {
 	const headers = [...tableHtml.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map((m) => plain(m[1]));
 	const rows: TableRow[] = [];
 	const carry: (string | null)[] = [];
@@ -174,7 +174,7 @@ function readTable(tableHtml: string): TableRow[] {
 		}
 		const m = CellNumber.exec(cells[0] ?? '');
 		if (m === null) continue;
-		rows.push({ number: Number(m[1]), letter: m[2], cells: cells.slice(1), headers: headers.slice(1) });
+		rows.push({ number: Number(m[1]), letter: m[2], cells: cells.slice(1), headers: headers.slice(1), table });
 	}
 	return rows;
 }
@@ -208,7 +208,8 @@ export function planDecideMigration(root: string): DecideMigratePlan {
 	const existingKeys = new Set<string>();
 	for (const d of loadDecisions(root, () => {})) {
 		for (const l of (d.meta.legacy_ids ?? '').split(',')) {
-			const m = new RegExp(`^:${project.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:((?:[ipr]\\d{6}-[0-9a-kLm-z]{2}/)?\\d+)-[A-Z]$`).exec(l.trim());
+			// 字の無い形 (:proj:210) も読む。decide new で旧番号だけを書いた決定がある (i261110-05)
+			const m = new RegExp(`^:${project.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:((?:[ipr]\\d{6}-[0-9a-kLm-z]{2}/)?\\d+)(?:-[A-Z])?$`).exec(l.trim());
 			if (m !== null) existingKeys.add(m[1]);
 		}
 	}
@@ -221,7 +222,8 @@ export function planDecideMigration(root: string): DecideMigratePlan {
 	for (const s of sources) {
 		if (s.html === null) continue;
 		const rows: TableRow[] = [];
-		for (const t of s.html.matchAll(/<table\b[\s\S]*?<\/table>/gi)) rows.push(...readTable(t[0]));
+		let tableNo = 0;
+		for (const t of s.html.matchAll(/<table\b[\s\S]*?<\/table>/gi)) rows.push(...readTable(t[0], tableNo++));
 		if (rows.length === 0) continue;
 		if (s.id === null) {
 			plan.unreadable.push({ where: s.rel, message: `番号の無い資料の表は親にできない: ${[...new Set(rows.map((r) => r.number))].join(' ・ ')}` });
@@ -247,6 +249,12 @@ export function planDecideMigration(root: string): DecideMigratePlan {
 					const text = (r.cells[optCol] ?? '').replace(/^[A-Z]\s*[:：]\s*/, '');
 					const why = col(/理由/);
 					options.set(r.letter, why >= 0 && (r.cells[why] ?? '') !== '' ? `${text} (推す理由: ${r.cells[why]})` : text);
+				} else if (mine.filter((x) => x.table === r.table).length > 1) {
+					// 見出しに「案」が無くても、同じ表に同じ番号の行が 2 つ以上あれば、案の表 (i261110-05)。
+					// 決めたことの表として読むと、最後の行の字が選んだ字になってしまう。選んだ字は本文から拾う
+					const text = (r.cells[0] ?? '').replace(/^[A-Z]\s*[:：]\s*/, '');
+					const rest = r.headers.map((h, i) => (i > 0 && (r.cells[i] ?? '') !== '' ? `${h}: ${r.cells[i]}` : '')).filter((x) => x !== '');
+					options.set(r.letter, rest.length > 0 ? `${text} (${rest.join(' ・ ')})` : text);
 				} else {
 					// 決めたことの表: この行の字が選んだ案
 					const q = col(/^問い$/);
@@ -362,8 +370,9 @@ export function recheckDecisions(root: string): RecheckHit[] {
 			if (docId !== null && s.id !== docId) continue;
 			out.push(...jointLetters(s.text, n));
 			if (s.html !== null) for (const t of s.html.matchAll(/<table\b[\s\S]*?<\/table>/gi)) {
-				for (const r of readTable(t[0])) {
-					// 案の表 (案の列がある) は、選んだ字ではないので数えない
+				for (const r of readTable(t[0], 0)) {
+					// 案の表 (案の列がある) は、選んだ字ではないので数えない。
+					// 見出しに「案」の無い案の表は、あえて数える。i261110-05 の前に、その表から誤った字で移った決定を拾うため
 					if (r.number === n && !r.headers.some((h) => /^案$/.test(h))) out.push(r.letter);
 				}
 			}
@@ -372,7 +381,11 @@ export function recheckDecisions(root: string): RecheckHit[] {
 	};
 	const hits: RecheckHit[] = [];
 	const esc = project.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-	for (const d of loadDecisions(root, () => {})) {
+	const all = loadDecisions(root, () => {});
+	// 置き換えられた決定と、--replaces で書いた決定は、人が見直し済みなので出さない
+	const replaced = new Set(all.map((d) => d.meta.replaces ?? '').filter((x) => x !== ''));
+	for (const d of all) {
+		if (replaced.has(d.id) || (d.meta.replaces ?? '') !== '') continue;
 		const chosen = (d.meta.chosen ?? '').split(',').filter((c) => c !== '');
 		for (const l of (d.meta.legacy_ids ?? '').split(',')) {
 			const m = new RegExp(`^:${esc}:(?:([ipr]\\d{6}-[0-9a-kLm-z]{2})/)?(\\d+)-[A-Z]$`).exec(l.trim());

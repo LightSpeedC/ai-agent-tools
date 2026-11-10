@@ -28,7 +28,8 @@ export const DefaultExcludeDirs = ['tmp', 'etc', 'node_modules', '.git'];
 export function makePattern(keyword: string, regex: boolean, ignoreCase: boolean): RegExp {
 	const src = regex ? keyword : keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	try {
-		return new RegExp(src, 'g' + (ignoreCase ? 'i' : '') + 'u');
+		// m: ^ と $ を行の頭と終わりに当てる。find は行ごとに、replace は全文に当てるので、どちらでも同じ意味にする
+		return new RegExp(src, 'gm' + (ignoreCase ? 'i' : '') + 'u');
 	} catch (e) {
 		throw new ToolError(2, '正規表現が読めません: ' + (e as Error).message);
 	}
