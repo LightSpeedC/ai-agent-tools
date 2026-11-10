@@ -391,7 +391,7 @@ html2md --root . --dry-run                # 書き出さず、結果と指摘だ
 
 	<p>Markdown を GitHub のレンダラに投げ、返る HTML に <code>**</code> が記号のまま残っていないかを見る。<strong>日本語では <code>**</code> が強調にならないことがある</strong>（前後の文字で開閉が決まる）。html2md は該当箇所を <code>&lt;strong&gt;</code> に置き換えるが、実物で確かめるのはこちら。</p>
 
-	<p>認証なしは 60 回/時。<code>--token</code> を渡すと 5000 回/時になる。</p>
+	<p>認証なしは 60 回/時。トークンがあれば 5000 回/時になる。<strong>トークンは引数で受けない</strong> (シェルの履歴やプロセスの一覧に残るため。234-A)。環境変数 <code>GITHUB_TOKEN</code> ・ <code>GH_TOKEN</code> か、<code>gh auth token</code> から読み、読み先の名前だけを出す。<code>--token</code> を渡すと終了コード 2。</p>
 
 	<div class="tablewrap">
 	<table>

@@ -12,6 +12,7 @@
 */
 
 import * as fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { parseArgs, type OptionSpec } from '../lib/args.ts';
 import { collect, relativeTo } from '../lib/walk.ts';
 
@@ -42,13 +43,33 @@ function usage(toStdout: boolean): void {
 	write('');
 	write('  -p, --path <対象>         フォルダかファイル。既定はカレント');
 	write('  -r, --recurse             サブフォルダも見る');
-	write('  -t, --token <値>          GitHub のトークン。渡すと 5000 回/時になる');
 	write('  -e, --exclude <正規表現>  除外するパス');
 	write('      --delay-ms <ミリ秒>   1 ファイルごとの待ち。既定 300');
 	write('  -h, --help                この使い方を出す');
 	write('');
 	write('対象はオプション名を付けずに置いてもかまいません（check-markdown . -r）。');
 	write('古い -Path 形式も受けます。');
+	write('');
+	write('GitHub のトークンは、環境変数 GITHUB_TOKEN ・ GH_TOKEN か、gh auth token から読みます (5000 回/時)。');
+	write('無ければ認証なし (60 回/時)。引数では受けません (履歴やプロセスの一覧に残るため)。');
+}
+
+/** トークンの読み先。値は返すが、画面には読み先の名前だけを出す (234-A) */
+function envToken(): { token: string; source: string } | null {
+	for (const name of ['GITHUB_TOKEN', 'GH_TOKEN']) {
+		const v = process.env[name];
+		if (v !== undefined && v.trim() !== '') { return { token: v.trim(), source: '環境変数 ' + name }; }
+	}
+	return null;
+}
+
+function ghToken(): { token: string; source: string } {
+	try {
+		const r = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+		const v = (r.stdout ?? '').trim();
+		if (r.status === 0 && v !== '') { return { token: v, source: 'gh auth token' }; }
+	} catch { /* gh が無い */ }
+	return { token: '', source: 'なし (60 回/時)' };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -76,11 +97,18 @@ async function main(): Promise<number> {
 
 	const target = String(parsed.values['path']);
 	const recurse = parsed.values['recurse'] === true;
-	const token = String(parsed.values['token']);
+	// 234-A: トークンを引数で受けない。値は出さない
+	if (String(parsed.values['token']) !== '') {
+		console.error('[NG] トークンは引数で受けません (シェルの履歴やプロセスの一覧に残るため)。');
+		console.error('     環境変数 GITHUB_TOKEN か GH_TOKEN に入れるか、gh auth login を済ませてください (gh auth token から読みます)。');
+		return ExitBadArgs;
+	}
 	const exclude = String(parsed.values['exclude']);
 	const delayMs = Number(parsed.values['delay-ms']);
 
 	console.log('=== Markdown の表示チェック（GitHub のレンダラ） ===');
+	const fromEnv = envToken();
+	if (fromEnv !== null) { console.log('  認証: ' + fromEnv.source); }
 
 	const found = collect(target, '.md', recurse, exclude);
 	if (found.missing) {
@@ -96,6 +124,9 @@ async function main(): Promise<number> {
 	}
 
 	console.log('  対象: ' + found.files.length + ' ファイル');
+	const auth = fromEnv ?? ghToken();
+	const token = auth.token;
+	if (fromEnv === null) { console.log('  認証: ' + auth.source); }
 	console.log('');
 
 	const headers: Record<string, string> = {
@@ -165,7 +196,7 @@ async function main(): Promise<number> {
 	if (errFiles > 0) {
 		console.log('=== ' + errFiles + ' ファイルを検証できませんでした ===');
 		console.log('レート制限（認証なしで 60 回/時）に達した可能性があります。');
-		console.log('時間をおくか、--token を渡して再実行してください。');
+		console.log('時間をおくか、環境変数 GITHUB_TOKEN を入れるか gh auth login を済ませて、再実行してください。');
 		if (ngTotal > 0) {
 			console.log('あわせて ' + ngFiles + ' ファイルに ' + ngTotal + ' 箇所の問題が見つかっています。');
 		}
