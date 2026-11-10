@@ -187,7 +187,17 @@ console.log('--- new');
 {
 	const dir = std('new-36', { [Todo + 'i261105-0k-x.md']: issueText({ id: 'i261105-0k' }) });
 	const r = newIssue(dir, Basic);
-	check('0k の次は、l でなく大文字の L (0L)', r.code === 0 && r.out.includes('i261105-0L'), r.out);
+	check('0k の次は、l を欠番にして 0m (共通ルール、ai-agent-rules #1903)', r.code === 0 && r.out.includes('i261105-0m'), r.out);
+}
+{
+	const dir = std('new-35', { [Todo + 'i261105-0z-x.md']: issueText({ id: 'i261105-0z' }) });
+	const r = newIssue(dir, Basic);
+	check('0z の次は 10 (l を除く 35 字で桁が上がる)', r.code === 0 && r.out.includes('i261105-10'), r.out);
+}
+{
+	const dir = std('new-legacy-L', { [Todo + 'i261105-0L-x.md']: issueText({ id: 'i261105-0L' }) });
+	const r = newIssue(dir, Basic);
+	check('前からある 0L の次は 0m (0L は k と m の間に数える)', r.code === 0 && r.out.includes('i261105-0m'), r.out);
 }
 {
 	const dir = std('new-slug');

@@ -230,8 +230,10 @@ export function maxReserved(base: string, kind: 'ids' | 'choices', pattern: RegE
 
 const DatedPattern = /^([ipr]\d{6})-([0-9a-zA-Z]{2})$/;
 const DecisionPattern = /^(.+)-d(\d+)$/;
-const Digits = '0123456789abcdefghijkLmnopqrstuvwxyz';
-const nnValue = (nn: string): number => Digits.indexOf(nn[0]) * 36 + Digits.indexOf(nn[1]);
+// l を欠番にした 35 字 (ops.ts の Digits と同じ)。前からある L は k と m の間に数える
+const Digits = '0123456789abcdefghijkmnopqrstuvwxyz';
+const digitValue = (c: string): number => (c === 'L' ? Digits.indexOf('k') + 0.5 : Digits.indexOf(c));
+const nnValue = (nn: string): number => digitValue(nn[0]) * Digits.length + digitValue(nn[1]);
 
 /**
  * 3 日より前の予約を消す (205-A)。系列ごとの最大の 1 つは残す。

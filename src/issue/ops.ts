@@ -21,9 +21,14 @@ export class Failure extends Error {}
 /** フォルダが表す状態 (archived は、済のまま退避したもの) */
 export const StateOf: Record<Folder, string> = { todo: '未', doing: '着手', done: '済', archived: '済' };
 
-/** 連番の 36 進数の桁 (英字は小文字。l は読み間違えるので大文字の L) */
-const Digits = '0123456789abcdefghijkLmnopqrstuvwxyz';
-const NumberMax = 36 * 36 - 1;
+/**
+ * 連番の桁 (英字は小文字)。l は欠番にした 35 字 (共通ルール、ai-agent-rules #1903)。
+ * 前は l の代わりに大文字の L を使っていた。前からある L の番号は、k と m の間に数える (Legacy)
+ */
+const Digits = '0123456789abcdefghijkmnopqrstuvwxyz';
+const Base = Digits.length;
+const Legacy = 'L';
+const NumberMax = Base * Base - 1;
 
 function itemsDirOf(root: string): string {
 	return path.join(root, ...ItemsRel.split('/'));
@@ -41,16 +46,22 @@ export function todayJst(): string {
 }
 
 function nnOf(n: number): string {
-	return Digits[Math.floor(n / 36) % 36] + Digits[n % 36];
+	return Digits[Math.floor(n / Base) % Base] + Digits[n % Base];
 }
 
+/** 桁の値。前からある L は k と m の間 (k + 0.5) */
+function digitOf(c: string): number {
+	return c === Legacy ? Digits.indexOf('k') + 0.5 : Digits.indexOf(c);
+}
+
+/** 連番の値。前からある L を含むときは小数になるので、新しい番号は切り上げて取る */
 function numberOf(nn: string): number {
-	const a = Digits.indexOf(nn[0]);
-	const b = Digits.indexOf(nn[1]);
-	return a < 0 || b < 0 ? -1 : a * 36 + b;
+	const a = digitOf(nn[0]);
+	const b = digitOf(nn[1]);
+	return a < 0 || b < 0 ? -1 : a * Base + b;
 }
 
-/** id を、日付と連番の順に並べるための比較 (36 進数の順は、文字コード順と違う: L は 0〜9 と a〜k の後) */
+/** id を、日付と連番の順に並べるための比較 (文字コード順と違う: 前からある L は 0〜9 と a〜k の後) */
 export function compareId(a: string, b: string): number {
 	const da = a.slice(1, 7);
 	const db = b.slice(1, 7);
@@ -167,7 +178,8 @@ export function newIssue(root: string, o: NewOptions): { id: string; rel: string
 	const todoDir = path.join(itemsDirOf(root), 'todo');
 	const reservedMax = maxReserved(base, 'ids', new RegExp(`^i${date6}-([0-9a-kLm-z]{2})$`), numberOf);
 
-	for (let n = Math.max(1, maxNumber(root, date6) + 1, reservedMax + 1); n <= NumberMax; n++) {
+	// 前からある L の番号は値が小数 (k + 0.5) になるので、切り捨ててから次を取る
+	for (let n = Math.max(1, Math.floor(maxNumber(root, date6)) + 1, Math.floor(reservedMax) + 1); n <= NumberMax; n++) {
 		const id = `i${date6}-${nnOf(n)}`;
 		if (hasFileWithId(root, id)) continue;
 		if (!reserve(base, 'ids', id, { kind: 'issue', title })) continue;

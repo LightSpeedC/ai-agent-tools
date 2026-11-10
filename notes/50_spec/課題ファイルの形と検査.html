@@ -187,7 +187,7 @@
 	<h2>ファイル名</h2>
 	<p><code>&lt;id&gt;-&lt;件名&gt;.md</code> (例: <code>i261103-01-li内の表.md</code>)。</p>
 	<ul>
-		<li><strong><code>&lt;id&gt;</code></strong>: <code>i</code> ＋ <code>yymmdd</code> ＋ <code>-</code> ＋ 2 桁の連番。連番は 36 進数で、英字は小文字。<code>l</code> は読み間違えるので大文字の <code>L</code> と書く (<code>0a</code> ・ <code>0k</code> ・ <code>0L</code> ・ <code>0m</code>)</li>
+		<li><strong><code>&lt;id&gt;</code></strong>: <code>i</code> ＋ <code>yymmdd</code> ＋ <code>-</code> ＋ 2 桁の連番。連番は、英字を小文字にした 35 字 (<code>l</code> は欠番)。<code>0k</code> の次は <code>0m</code> (<code>0a</code> ・ <code>0k</code> ・ <code>0m</code>)。前に使っていた大文字の <code>L</code> の番号は、そのまま読み、<code>k</code> と <code>m</code> の間に並べる</li>
 		<li><strong><code>&lt;件名&gt;</code></strong>: 立てるときに決める短い名前で、<strong>あとから変えない</strong>。英数字 ・ ハイフン ・ 下線 ・ ピリオド ・ 日本語 (ひらがな ・ カタカナ ・ 漢字) だけ。空白は入れない。30 文字を超えると警告する</li>
 		<li>題を直しても、ファイル名は動かない。題は本文のメタ情報の <code>title</code> に自由に書く</li>
 	</ul>
@@ -393,7 +393,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<h2><code>issue new --title &lt;題&gt; --group &lt;グループ&gt; [--slug &lt;件名&gt;] [--from &lt;報告元&gt;] [--refs &lt;番号,…&gt;] [--body &lt;本文&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
 	<ul>
 		<li><code>todo/</code> に <code>&lt;id&gt;-&lt;件名&gt;.md</code> を作る。<strong>引数はすべて、何かを作る前に確かめる</strong>。誤りなら、何も作らず終了コード 5</li>
-		<li><strong>id</strong> は、<code>i</code> ＋ 今日の日付 (JST の <code>yymmdd</code>) ＋ 連番。連番は、<strong>その日の既存の最大 (4 つのフォルダすべて) の次</strong>で、36 進数 2 桁 (<code>09</code> の次は <code>0a</code>、<code>0k</code> の次は <code>0L</code>)。その日の最初は <code>01</code></li>
+		<li><strong>id</strong> は、<code>i</code> ＋ 今日の日付 (JST の <code>yymmdd</code>) ＋ 連番。連番は、<strong>その日の既存の最大 (4 つのフォルダすべて) の次</strong>で、35 字 2 桁 (<code>09</code> の次は <code>0a</code>、<code>0k</code> の次は <code>0m</code>、<code>0z</code> の次は <code>10</code>)。その日の最初は <code>01</code></li>
 		<li><strong>件名</strong>は、<code>--slug</code> があればそれ、無ければ題から作る (使えない文字 ・ 空白は <code>-</code> に直し、30 文字までに切る)。<code>--slug</code> が使えない文字を含む ・ 30 文字を超える ・ 題からも作れない (記号だけ等) ときは終了コード 5</li>
 		<li><strong><code>groups.txt</code> があれば</strong>、<code>--group</code> がそこに並んでいる名前であること (誤字を防ぐため)。無ければ何でもよい</li>
 		<li><code>--from</code> があれば、<code>from</code> と <code>confirmed: false</code> を書く。<code>--refs</code> は番号をカンマで区切り、カンマのあとに空白 1 つで書く。形が違えば終了コード 5</li>
