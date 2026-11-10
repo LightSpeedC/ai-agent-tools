@@ -54,7 +54,13 @@ export class Converter {
 	convertFile(htmlPath: string, write: boolean): ConvertResult {
 		this.inline.reset();
 
-		let html = new TextDecoder('utf-8').decode(fs.readFileSync(htmlPath));
+		// UTF-8 として読めなければ止める。化けた文字 (U+FFFD) のまま変換を進めない (i260908-03 の low)
+		let html: string;
+		try {
+			html = new TextDecoder('utf-8', { fatal: true }).decode(fs.readFileSync(htmlPath));
+		} catch {
+			throw new Error('UTF-8 として読めません (SJIS など別の文字コードの見込み)。BOM 付き UTF-8 で保存し直してください');
+		}
 		// BOM は本文の先頭に混ざるので落とす
 		if (html.charCodeAt(0) === 0xfeff) { html = html.substring(1); }
 

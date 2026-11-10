@@ -192,7 +192,7 @@ Markdown を GitHub のレンダラに投げ、返る HTML に `**` が記号の
 |---:|---|
 | 0 | 問題なし |
 | 1 | 表示が壊れる箇所がある。該当箇所を前後 45 文字つきで出す |
-| 2 | **検証できなかった**（レート制限・通信断など） |
+| 2 | **検証できなかった**（レート制限・通信断など）。引数の誤り・パスが無い・`--token` を渡した、も 2 |
 
 > [!IMPORTANT]
 > <strong>2 を 0 と混同しない。</strong>2 は「問題なし」ではない。検証できていないのに問題なしと報告するのは、このツールが防ごうとしている誤りそのもの。
@@ -210,6 +210,8 @@ check-public --allow-list ng/allow.txt  # 誤検出を外す指定を、別の�
 ```
 
 コミットは履歴に残る。<strong>一度上げたものを消すには履歴の書き換えが要る。</strong>上げる前に機械で見る。
+
+終了コードは `0`＝指摘なし、`1`＝指摘あり、`2`＝引数や対象の誤り。
 
 | 項目 | 見るもの | `--skip` |
 |---|---|---|
@@ -270,7 +272,7 @@ docs/js/lib/                mail     @example.
 
 ### 既定で除外するフォルダがある
 
-`check-markdown` は、<strong>次のフォルダを既定で対象から外す。</strong>除外した件数は画面に出ないので、対象が思ったより少ないときはここを疑う。
+`check-markdown` は、<strong>次のフォルダを既定で対象から外す。</strong>外した件数は「除外 N 件」と画面に出る。対象が思ったより少ないときはここを疑う。
 
 | ツール | 既定の除外 |
 |---|---|
@@ -360,7 +362,7 @@ convert-encoding foo.cmd --to cmd
 ```
 
 > [!WARNING]
-> **編集中は `.cmd` が UTF-8 のまま。編集したらすぐ `--to cmd` で戻す**（中断すると UTF-8 で残り、日本語入りは正しく動かない）。読むのは `text read`、消すのは `Remove-Item`（文字コード無関係）。手段の比較は html2md の `notes/10_plan/p260908-01-sjis-file-handling.html`。
+> **編集中は `.cmd` が UTF-8 のまま。編集したらすぐ `--to cmd` で戻す**（中断すると UTF-8 で残り、日本語入りは正しく動かない）。読むのは `text read`、消すのは `Remove-Item`（文字コード無関係）。手段の比較は [p260908-01 SJIS のファイルの扱い](notes/10_plan/p260908-01-sjis-file-handling.md)。
 
 ### SJIS のファイルを読む
 
@@ -421,6 +423,8 @@ SJIS に無い文字（絵文字・ハングル・簡体字など）は `?` に�
 | `text replace` | sed -i | 複数のファイルにまたがって、一致を全部置き換える。**ファイルごとに元の組のまま書き戻す** |
 
 **サブコマンドごとの書式とオプションは `text <read|find|edit|write|replace> --help`**（`-h` も）で出る。**サブコマンドの直後に置いたときだけ**効く。後ろに置いた `--help` は、`--new "--help"` のような値と区別できないため。
+
+<strong>出力は UTF-8。スクリプトから使うときは、受け取る側も UTF-8 に固定する。</strong>Windows PowerShell 5.1 は外部コマンドの出力を OEM コードページ (932) として読むため化ける。`[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` を先に置くか、`psh` を通す。pwsh 7 と Bash は、そのままで読める。
 
 ### 読む・探す
 
@@ -493,7 +497,7 @@ echo @echo off | text write new.cmd --to cmd    # 標準入力／第 2 引数で
 > [!IMPORTANT]
 > **UTF-8 と分かっているファイルは標準の Edit のほうが快適**（差分プレビュー・自動追跡）。`text` の出番は **SJIS・UTF-16・UTF-8BOM** のときと、大きな範囲を安く置換したいとき。`--from <組>` で判定を上書きできる（`convert-encoding --from` と同じ「入力側」の指定）。
 
-詳しい仕様は html2md 側の `notes/10_plan/p260907-01-text-tools.html` にある。
+詳しい仕様は [p260907-01 text ツール](notes/10_plan/p260907-01-text-tools.md) にある。
 
 ## 6. PowerShell を呼ぶ（psh）
 

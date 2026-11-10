@@ -165,7 +165,7 @@
 	<div class="inner">
 		<h1>html2md タグ対応仕様</h1>
 		<p class="lead">html2md がどのタグをどう変換するか。実測した結果と、まだ決まっていない論点をまとめる。</p>
-		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-11-07</p>
+		<p class="date">📅 作成: 2026-08-30 / 更新: 2026-11-11</p>
 	</div>
 </div>
 
@@ -229,7 +229,8 @@
 			<tr><td class="nowrap"><code>h1</code></td><td>章の中</td><td><code>## 1. 章名</code>（連番が付く）</td></tr>
 			<tr><td class="nowrap"><code>h2</code></td><td>章の中</td><td><code>### 節名</code></td></tr>
 			<tr><td class="nowrap"><code>h2</code></td><td>章の外</td><td><code>## 節名</code></td></tr>
-			<tr><td class="nowrap"><code>h3</code>〜<code>h6</code></td><td>—</td><td><code>####</code>〜<code>######</code></td></tr>
+			<tr><td class="nowrap"><code>h3</code>〜<code>h6</code></td><td>章の中</td><td><code>####</code>〜<code>######</code></td></tr>
+			<tr><td class="nowrap"><code>h3</code>〜<code>h6</code></td><td>章の外</td><td><code>###</code>〜<code>######</code> (1 段浅い。<code>######</code> より深くはしない)</td></tr>
 			<tr><td class="nowrap"><code>p</code></td><td>—</td><td>段落</td></tr>
 			<tr><td class="nowrap"><code>p.date</code> <code>p.meta</code></td><td>—</td><td><code>&gt; 📅 …</code> の引用行</td></tr>
 			<tr><td class="nowrap"><code>div.titlebar</code></td><td>—</td><td>中身を処理する。中の <code>h1</code> が <code>#</code> になる</td></tr>

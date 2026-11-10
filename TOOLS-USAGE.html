@@ -399,7 +399,7 @@ html2md --root . --dry-run                # 書き出さず、結果と指摘だ
 		<tbody>
 			<tr><td class="num">0</td><td>問題なし</td></tr>
 			<tr><td class="num">1</td><td>表示が壊れる箇所がある。該当箇所を前後 45 文字つきで出す</td></tr>
-			<tr><td class="num">2</td><td><strong>検証できなかった</strong>（レート制限・通信断など）</td></tr>
+			<tr><td class="num">2</td><td><strong>検証できなかった</strong>（レート制限・通信断など）。引数の誤り・パスが無い・<code>--token</code> を渡した、も 2</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -419,6 +419,8 @@ check-public --word-list _ng.txt  # 除外語リストを指定する
 check-public --allow-list ng/allow.txt  # 誤検出を外す指定を、別の場所から読む</code></pre>
 
 	<p>コミットは履歴に残る。<strong>一度上げたものを消すには履歴の書き換えが要る。</strong>上げる前に機械で見る。</p>
+
+	<p>終了コードは <code>0</code>＝指摘なし、<code>1</code>＝指摘あり、<code>2</code>＝引数や対象の誤り。</p>
 
 	<div class="tablewrap">
 	<table>
@@ -488,7 +490,7 @@ docs/js/lib/                mail     @example.</code></pre>
 
 	<h2>既定で除外するフォルダがある</h2>
 
-	<p><code>check-markdown</code> は、<strong>次のフォルダを既定で対象から外す。</strong>除外した件数は画面に出ないので、対象が思ったより少ないときはここを疑う。</p>
+	<p><code>check-markdown</code> は、<strong>次のフォルダを既定で対象から外す。</strong>外した件数は「除外 N 件」と画面に出る。対象が思ったより少ないときはここを疑う。</p>
 
 	<div class="tablewrap">
 	<table>
@@ -580,7 +582,7 @@ convert-encoding foo.cmd --to utf8
 convert-encoding foo.cmd --to cmd</code></pre>
 
 	<div class="callout callout-warning">
-		<p><strong>編集中は <code>.cmd</code> が UTF-8 のまま。編集したらすぐ <code>--to cmd</code> で戻す</strong>（中断すると UTF-8 で残り、日本語入りは正しく動かない）。読むのは <code>text read</code>、消すのは <code>Remove-Item</code>（文字コード無関係）。手段の比較は html2md の <code>notes/10_plan/p260908-01-sjis-file-handling.html</code>。</p>
+		<p><strong>編集中は <code>.cmd</code> が UTF-8 のまま。編集したらすぐ <code>--to cmd</code> で戻す</strong>（中断すると UTF-8 で残り、日本語入りは正しく動かない）。読むのは <code>text read</code>、消すのは <code>Remove-Item</code>（文字コード無関係）。手段の比較は <a href="notes/10_plan/p260908-01-sjis-file-handling.html">p260908-01 SJIS のファイルの扱い</a>。</p>
 	</div>
 
 	<h2>SJIS のファイルを読む</h2>
@@ -651,6 +653,8 @@ convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</c
 
 	<p><strong>サブコマンドごとの書式とオプションは <code>text &lt;read|find|edit|write|replace&gt; --help</code></strong>（<code>-h</code> も）で出る。<strong>サブコマンドの直後に置いたときだけ</strong>効く。後ろに置いた <code>--help</code> は、<code>--new "--help"</code> のような値と区別できないため。</p>
 
+	<p><strong>出力は UTF-8。スクリプトから使うときは、受け取る側も UTF-8 に固定する。</strong>Windows PowerShell 5.1 は外部コマンドの出力を OEM コードページ (932) として読むため化ける。<code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8</code> を先に置くか、<code>psh</code> を通す。pwsh 7 と Bash は、そのままで読める。</p>
+
 	<h2>読む・探す</h2>
 
 <pre><code class="language-powershell">text read tools/80_ops/foo.cmd            # SJIS でも化けずに読む（◆ ヘッダーに組・digest）
@@ -718,7 +722,7 @@ echo @echo off | text write new.cmd --to cmd    # 標準入力／第 2 引数で
 		<p><strong>UTF-8 と分かっているファイルは標準の Edit のほうが快適</strong>（差分プレビュー・自動追跡）。<code>text</code> の出番は <strong>SJIS・UTF-16・UTF-8BOM</strong> のときと、大きな範囲を安く置換したいとき。<code>--from &lt;組&gt;</code> で判定を上書きできる（<code>convert-encoding --from</code> と同じ「入力側」の指定）。</p>
 	</div>
 
-	<p>詳しい仕様は html2md 側の <code>notes/10_plan/p260907-01-text-tools.html</code> にある。</p>
+	<p>詳しい仕様は <a href="notes/10_plan/p260907-01-text-tools.html">p260907-01 text ツール</a> にある。</p>
 </section>
 
 <section class="ch06" id="ch06">
