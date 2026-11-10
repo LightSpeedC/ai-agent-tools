@@ -860,7 +860,7 @@ issue decide list --parent p261108-01
 issue decide show p261108-01-d1
 ```
 
-`--option` を書いた順に A ・ B ・ C … と振る。両方の案を選んだときは `--chosen A,B` とカンマで区切る。旧番号 (`171-A` 等) を残すときは `--legacy :<プロジェクト名>:171-A`、前の決定を覆すときは `--replaces <id>`。`issue check` が決定のファイルも検査する。チャットの選択肢の番号は、`issue choice next` で取る。
+`--option` を書いた順に A ・ B ・ C … と振る。両方の案を選んだときは `--chosen A,B` とカンマで区切る。旧番号 (`171-A` 等) を残すときは `--legacy :<プロジェクト名>:171-A`、前の決定を覆すときは `--replaces <id>`。**置き換えた元の決定のファイルは消さない** (消すと、`issue check` が replaces の参照先を見つけられずに警告し、`--recheck` の候補にも戻る。237-A)。`issue check` が決定のファイルも検査する。チャットの選択肢の番号は、`issue choice next` で取る。
 
 ### 旧方式から移す
 
