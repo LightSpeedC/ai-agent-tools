@@ -55,6 +55,21 @@ console.log('\n[トークンの受け方 (234-A)]');
 	check('GITHUB_TOKEN の値は出さない', !(r.out + r.err).includes(Secret), r.out + r.err);
 }
 
+console.log('\n[.gitignore で外した md は送らない (242-A)]');
+{
+	// 外した md だけを置く。送る対象が 0 件になれば、GitHub へは何も送らない
+	const g = path.join(work, 'g');
+	fs.mkdirSync(path.join(g, 'logs'), { recursive: true });
+	fs.writeFileSync(path.join(g, '.gitignore'), 'logs/\n_*\n');
+	fs.writeFileSync(path.join(g, 'logs', 'run.md'), '# x\n');
+	fs.writeFileSync(path.join(g, '_memo.md'), '# y\n');
+	spawnSync('git', ['init', '-q', g], { encoding: 'utf8' });
+	// 材料は tmp の下にあるので、既定の除外 (tmp 等) で落ちないよう、当たらない除外を渡す
+	const r = cm([g, '-r', '-e', 'NEVER_MATCHES_ANY_PATH']);
+	check('.gitignore で外した md は対象にしない (0 件なら送らずに終わる)', r.code === 0 && r.out.includes('対象の .md がありません') && !r.out.includes('除外 '), r.out + r.err);
+	check('外した件数を出す', r.out.includes('.gitignore で外した 2 件'), r.out + r.err);
+}
+
 fs.rmSync(work, { recursive: true, force: true });
 console.log(`\n=== check-markdown: ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 process.exit(fail === 0 ? 0 : 1);

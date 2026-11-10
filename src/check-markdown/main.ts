@@ -110,13 +110,17 @@ async function main(): Promise<number> {
 	const fromEnv = envToken();
 	if (fromEnv !== null) { console.log('  認証: ' + fromEnv.source); }
 
-	const found = collect(target, '.md', recurse, exclude);
+	// 242-A: git の管理下では、.gitignore で外した md を送らない (名指ししたファイルは送る)
+	const found = collect(target, '.md', recurse, exclude, true);
 	if (found.missing) {
 		console.log('パスが見つかりません: ' + target);
 		return ExitBadArgs;
 	}
 	if (found.excluded > 0) {
 		console.log('  除外 ' + found.excluded + ' 件');
+	}
+	if (found.ignored > 0) {
+		console.log('  .gitignore で外した ' + found.ignored + ' 件');
 	}
 	if (found.files.length === 0) {
 		console.log('対象の .md がありません');
