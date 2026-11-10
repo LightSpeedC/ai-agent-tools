@@ -644,11 +644,12 @@ convert-encoding foo.cmd --dump --offset 0 --bytes 16   # 先頭 16 バイト</c
 			<tr><td class="nowrap"><code>text find</code></td><td class="nowrap">Grep</td><td>何であろうと探す（SJIS の日本語も当たる）</td></tr>
 			<tr><td class="nowrap"><code>text edit</code></td><td class="nowrap">Edit</td><td>部分置換して<strong>元の組のまま書き戻す</strong></td></tr>
 			<tr><td class="nowrap"><code>text write</code></td><td class="nowrap">Write</td><td>指定・または既存の組で全文を書く</td></tr>
+			<tr><td class="nowrap"><code>text replace</code></td><td class="nowrap">sed -i</td><td>複数のファイルにまたがって、一致を全部置き換える。<strong>ファイルごとに元の組のまま書き戻す</strong></td></tr>
 		</tbody>
 	</table>
 	</div>
 
-	<p><strong>サブコマンドごとの書式とオプションは <code>text &lt;read|find|edit|write&gt; --help</code></strong>（<code>-h</code> も）で出る。<strong>サブコマンドの直後に置いたときだけ</strong>効く。後ろに置いた <code>--help</code> は、<code>--new "--help"</code> のような値と区別できないため。</p>
+	<p><strong>サブコマンドごとの書式とオプションは <code>text &lt;read|find|edit|write|replace&gt; --help</code></strong>（<code>-h</code> も）で出る。<strong>サブコマンドの直後に置いたときだけ</strong>効く。後ろに置いた <code>--help</code> は、<code>--new "--help"</code> のような値と区別できないため。</p>
 
 	<h2>読む・探す</h2>
 
@@ -672,6 +673,24 @@ text find 日本語 --path . --recurse --include "*.cmd,*.reg"</code></pre>
 	</div>
 
 	<p>意図して見たいときは <code>--no-default-exclude</code> で解除する。<strong>付け忘れると読んでしまう形ではなく、明示したときだけ読む形にしてある。</strong></p>
+
+	<p><code>--regex</code> を付けると、検索語を正規表現 (JavaScript の書き方) として読み、<strong>行ごとに</strong>当てる。付けなければ、<code>.</code> や <code>[</code> も文字のまま探す。<code>-i</code> と合わせられる。読めない正規表現は終了コード 2。</p>
+
+	<h2>まとめて置き換える (replace)</h2>
+
+	<pre><code class="language-powershell">text replace "[[旧名" "[[新名" --path . -r --include "*.md" --dry-run   # 件数と、変わる行の前 (-) と後 (+) を見る
+text replace "[[旧名" "[[新名" --path . -r --include "*.md" --expect 59  # 見た件数と同じときだけ書く
+text replace "v(\d)\.(\d)" "v$1-$2" --path . -r --regex                 # 正規表現。置き換える側で $1 等を使う</code></pre>
+
+	<ul>
+		<li><strong>ファイルの選び方は <code>find</code> と同じ</strong> (<code>-r</code> ・ <code>--include</code> ・ <code>--exclude</code> ・ <code>--exclude-dir</code> ・ 既定で外すフォルダ)。1 ファイルの中の一致は、全部置き換える</li>
+		<li><strong>文字コード ・ BOM ・ 改行は、ファイルごとに元のまま</strong>書き戻す (SJIS ・ UTF-16 も)。一致しなかった部分のバイト列は変えない</li>
+		<li>出力は、ファイルごとの件数と合計。<code>--dry-run</code> は書き換えず、変わる行の前と後も出す</li>
+		<li><code>--regex</code> のとき、置き換える側で <code>$1</code> ・ <code>$&amp;</code> ・ <code>$&lt;名前&gt;</code> ・ <code>$$</code> を使える。付けなければ <code>$</code> もそのまま書く</li>
+		<li><strong>全部のファイルを組み立ててから書く。</strong>次のときは、どのファイルも書き換えない。一致が 0 件 (終了コード 1)、置き換えた文字がそのファイルの組で表せない (終了コード 5)、合計が <code>--expect</code> と違う (終了コード 6)</li>
+	</ul>
+
+	<div class="callout callout-tip"><p><strong><code>--dry-run</code> で見た件数を、本番の <code>--expect</code> に渡す。</strong>見てから流すまでのあいだに、ほかのセッションがファイルを変えていれば、件数が合わずに止まる。</p></div>
 
 	<h2>編集する</h2>
 

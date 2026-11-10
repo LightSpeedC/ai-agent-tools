@@ -1,5 +1,5 @@
 /*
-	text find — 文字コードを問わず素の文字列を探す。◎/■/◆ の入れ子で出す。
+	text find — 文字コードを問わず素の文字列 (--regex なら正規表現) を探す。◎/■/◆ の入れ子で出す。
 */
 
 import * as fs from 'node:fs';
@@ -19,7 +19,44 @@ const ValueOpts = new Set(['--path', '--include', '--exclude', '--exclude-dir', 
 	check-markdown ・ check-contrast は既にこの 4 つを外している。揃える。
 	意図して見たいときは --no-default-exclude で解除できる。
 */
-const DefaultExcludeDirs = ['tmp', 'etc', 'node_modules', '.git'];
+export const DefaultExcludeDirs = ['tmp', 'etc', 'node_modules', '.git'];
+
+/**
+ * 検索語から、行や全文に当てる正規表現を作る (228-B)。--regex でなければ、語を文字のまま探す形にする。
+ * g を付けて返す。読めない正規表現は、終了コード 2
+ */
+export function makePattern(keyword: string, regex: boolean, ignoreCase: boolean): RegExp {
+	const src = regex ? keyword : keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	try {
+		return new RegExp(src, 'g' + (ignoreCase ? 'i' : '') + 'u');
+	} catch (e) {
+		throw new ToolError(2, '正規表現が読めません: ' + (e as Error).message);
+	}
+}
+
+/** 対象のファイルを選ぶ (find ・ replace 共通)。--path ・ 第 2 位置引数 ・ -r ・ --include ・ --exclude ・ --exclude-dir */
+export function selectTargets(args: Args, pathPos: number): { basePath: string; baseFull: string; baseIsFile: boolean; recurse: boolean; targets: string[] } {
+	let basePath = args.get('--path');
+	if (basePath == null && args.positional.length > pathPos) { basePath = args.positional[pathPos]; }
+	if (basePath == null) { basePath = '.'; }
+	const recurse = args.flag('-r', '--recurse');
+	const inc = globs(args.get('--include'));
+	const exc = globs(args.get('--exclude'));
+	const excDir = dirSet(args.get('--exclude-dir'));
+	if (!args.flag('--no-default-exclude', '--no-default-exclude')) {
+		for (const d of DefaultExcludeDirs) { excDir.add(d); }
+	}
+	const baseFull = path.resolve(basePath);
+	const baseIsFile = fs.existsSync(basePath) && fs.statSync(basePath).isFile();
+	const targets: string[] = [];
+	if (baseIsFile) { targets.push(path.resolve(basePath)); }
+	else if (fs.existsSync(basePath) && fs.statSync(basePath).isDirectory()) {
+		walk(baseFull, recurse, inc, exc, excDir, targets);
+	} else {
+		throw new ToolError(2, '対象がありません: ' + show(basePath));
+	}
+	return { basePath, baseFull, baseIsFile, recurse, targets };
+}
 
 interface Hit {
 	lineNo: number;
@@ -42,43 +79,22 @@ export function run(a: string[]): number {
 	const keyword = args.positional[0];
 	if (keyword.length === 0) { throw new ToolError(2, '検索語が空です。'); }
 
-	let basePath = args.get('--path');
 	// grep と同じ書き方 text find <語> <パス> を受ける。第 2 位置引数をパスにする。
-	if (basePath == null && args.positional.length >= 2) { basePath = args.positional[1]; }
-	if (basePath == null) { basePath = '.'; }
-	const recurse = args.flag('-r', '--recurse');
-	const ignoreCase = args.flag('-i', '--ignore-case');
-	const bare = args.flag('--bare', '--bare');
-	const from = args.get('--from');
-
-	const inc = globs(args.get('--include'));
-	const exc = globs(args.get('--exclude'));
-
 	/*
 		既定の除外に --exclude-dir を足す。
 		--no-default-exclude を渡したときだけ既定を外す。
 		**足す形にしているので、--exclude-dir を渡しても既定は消えない。**
 	*/
-	const excDir = dirSet(args.get('--exclude-dir'));
-	if (!args.flag('--no-default-exclude', '--no-default-exclude')) {
-		for (const d of DefaultExcludeDirs) { excDir.add(d); }
-	}
-
-	const baseFull = path.resolve(basePath);
-	const baseIsFile = fs.existsSync(basePath) && fs.statSync(basePath).isFile();
-
-	const targets: string[] = [];
-	if (baseIsFile) { targets.push(path.resolve(basePath)); }
-	else if (fs.existsSync(basePath) && fs.statSync(basePath).isDirectory()) {
-		walk(baseFull, recurse, inc, exc, excDir, targets);
-	} else {
-		throw new ToolError(2, '対象がありません: ' + show(basePath));
-	}
+	const { basePath, baseFull, baseIsFile, recurse, targets } = selectTargets(args, 1);
+	const ignoreCase = args.flag('-i', '--ignore-case');
+	const bare = args.flag('--bare', '--bare');
+	const from = args.get('--from');
+	const pattern = makePattern(keyword, args.flag('--regex', '--regex'), ignoreCase);
 
 	const results: FileHits[] = [];
 	for (const file of targets) {
 		try {
-			const fh = scan(file, baseFull, baseIsFile, from, keyword, ignoreCase);
+			const fh = scan(file, baseFull, baseIsFile, from, pattern);
 			if (fh != null && fh.hits.length > 0) { results.push(fh); }
 		} catch {
 			// 読めないファイルは飛ばす
@@ -93,19 +109,18 @@ export function run(a: string[]): number {
 }
 
 function scan(file: string, baseFull: string, baseIsFile: boolean,
-	from: string | null, keyword: string, ignoreCase: boolean): FileHits | null {
+	from: string | null, pattern: RegExp): FileHits | null {
 	const bytes = new Uint8Array(fs.readFileSync(file));
 	const combo = resolve(bytes, from);
 	if (looksBinary(bytes, combo.enc)) { return null; }
 	const text = decode(bytes, combo.enc);
 	const lines = splitLines(text);
 
-	const needle = ignoreCase ? keyword.toLowerCase() : keyword;
 	const hits: Hit[] = [];
 	for (let i = 0; i < lines.length; i++) {
 		const content = lineContent(text, lines[i]);
-		const hay = ignoreCase ? content.toLowerCase() : content;
-		if (hay.indexOf(needle) >= 0) {
+		pattern.lastIndex = 0;
+		if (pattern.test(content)) {
 			hits.push({ lineNo: i + 1, content: content });
 		}
 	}
@@ -138,6 +153,7 @@ function outputGrouped(basePath: string, keyword: string, args: Args,
 	if (include != null) { opt += '  対象="' + include + '"'; }
 	if (recurse) { opt += '  再帰'; }
 	if (!ignoreCase) { opt += '  大小区別'; }
+	if (args.flag('--regex', '--regex')) { opt += '  正規表現'; }
 	out(opt);
 
 	let curSub: string | null = null;
@@ -161,7 +177,7 @@ function outputBare(results: FileHits[]): void {
 	}
 }
 
-function walk(dir: string, recurse: boolean, inc: RegExp[], exc: RegExp[],
+export function walk(dir: string, recurse: boolean, inc: RegExp[], exc: RegExp[],
 	excDir: Set<string>, outFiles: string[]): void {
 	let entries: fs.Dirent[];
 	try {
@@ -190,7 +206,7 @@ function walk(dir: string, recurse: boolean, inc: RegExp[], exc: RegExp[],
 	}
 }
 
-function relPath(baseFull: string, file: string): string {
+export function relPath(baseFull: string, file: string): string {
 	const b = baseFull.replace(/\\/g, '/').replace(/\/+$/, '');
 	const f = path.resolve(file).replace(/\\/g, '/');
 	if (f.toLowerCase().startsWith((b + '/').toLowerCase())) {

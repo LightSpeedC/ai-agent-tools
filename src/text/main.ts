@@ -1,10 +1,10 @@
 /*
 	text — 文字コード対応テキスト・ツール一式。
-	text read | find | edit | write のサブコマンドに振り分ける。
+	text read | find | edit | write | replace のサブコマンドに振り分ける。
 
 	終了コード:
-	  0 成功 / 1 find 一致なし / 2 エラー / 3 両方妥当で拒否
-	  4 合言葉不一致 / 5 変換先で表現できない文字
+	  0 成功 / 1 find ・ replace 一致なし / 2 エラー / 3 両方妥当で拒否
+	  4 合言葉不一致 / 5 変換先で表現できない文字 / 6 replace の件数が --expect と違う
 */
 
 import { ToolError } from './engine.ts';
@@ -13,10 +13,11 @@ import * as readCmd from './read.ts';
 import * as findCmd from './find.ts';
 import * as editCmd from './edit.ts';
 import * as writeCmd from './write.ts';
+import * as replaceCmd from './replace.ts';
 
 const TopHelp = [
-	'text <read|find|edit|write> — 文字コード対応のテキスト操作',
-	'  サブコマンドごとの使い方: text <read|find|edit|write> --help',
+	'text <read|find|edit|write|replace> — 文字コード対応のテキスト操作',
+	'  サブコマンドごとの使い方: text <read|find|edit|write|replace> --help',
 ];
 
 /*
@@ -33,10 +34,11 @@ const SubHelp: Record<string, string[]> = {
 	],
 	find: [
 		'text find <検索語> [<パス>] [--path <パス>] [-r] [-i] [--include <glob,…>] [--exclude <glob,…>]',
-		'          [--exclude-dir <名前,…>] [--no-default-exclude] [--from <組>] [--bare]',
+		'          [--exclude-dir <名前,…>] [--no-default-exclude] [--from <組>] [--bare] [--regex]',
 		'  文字コードを問わず素の文字列を探す。見つからなければ終了コード 1',
 		'  -r, --recurse          下の階層も探す（付けないと直下だけ）',
 		'  -i, --ignore-case      大小を区別しない',
+		'  --regex                検索語を正規表現として読む（JavaScript の書き方。行ごとに当てる）',
 		'  --include / --exclude  対象のファイル名（カンマ区切りの glob）',
 		'  --exclude-dir          外すフォルダ。既定で tmp ・ etc ・ node_modules ・ .git を外す',
 		'  --no-default-exclude   既定の除外をやめる',
@@ -51,6 +53,18 @@ const SubHelp: Record<string, string[]> = {
 		'  --lines A-B           範囲。--old が無ければ範囲まるごとを置き換える',
 		'  --digest <合言葉>     read で出た digest。食い違えば終了コード 4（別の人が更新した）',
 		'  --from <組>           文字コードの組を明示する',
+	],
+	replace: [
+		'text replace <検索語> <置き換える文字列> [<パス>] [--path <パス>] [-r] [-i] [--regex]',
+		'             [--include <glob,…>] [--exclude <glob,…>] [--exclude-dir <名前,…>] [--no-default-exclude]',
+		'             [--dry-run] [--expect <件数>] [--from <組>]',
+		'  複数のファイルにまたがって、一致を全部置き換える。文字コード ・ BOM ・ 改行は元のまま',
+		'  ファイルの選び方は text find と同じ。ファイルごとの件数と合計を出す',
+		'  --regex          検索語を正規表現として読む。置き換える側で $1 ・ $& ・ $<名前> ・ $$ を使える',
+		'  -i               大小を区別しない',
+		'  --dry-run        書き換えず、件数と、変わる行の前 (-) と後 (+) を出す',
+		'  --expect <件数>  合計がこの件数でなければ、どのファイルも書き換えない（終了コード 6）',
+		'  一致が 0 件なら終了コード 1。表せない文字があれば、どのファイルも書き換えない（終了コード 5）',
 	],
 	write: [
 		'text write <ファイル> (--to <用途> | --keep) [<中身> | --in <パス> | 標準入力] [--from <組>]',
@@ -82,6 +96,7 @@ function main(argv: string[]): number {
 			case 'find': return findCmd.run(rest);
 			case 'edit': return editCmd.run(rest);
 			case 'write': return writeCmd.run(rest);
+			case 'replace': return replaceCmd.run(rest);
 			case '-h':
 			case '--help':
 				for (const l of TopHelp) { out(l); }
