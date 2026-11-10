@@ -9,7 +9,7 @@
 	  ・読んだあとに別のものが書き換えたら、読み直す
 
 	実物の形 (2026-11-01 に実測): BOM なし ・ LF ・ インデント 2 つの空白 ・ 末尾に LF。
-	文字列は Go 風のエスケープ (> が \u003e)。パスは W:\\2026\\… (JSON では \ が 2 つ)。
+	文字列は Go 風のエスケープ (> が \u003e)。パスは C:\\work\\2026\\… (JSON では \ が 2 つ)。
 	期待値は、その形から手で書いた。本物の ~/.gemini は触らない。
 */
 
@@ -57,8 +57,8 @@ const sample = [
 	'    ]',
 	'  },',
 	'  "trustedWorkspaces": [',
-	'    "W:\\\\2026\\\\a",',
-	'    "W:\\\\ai-agent-tools"',
+	'    "C:\\\\work\\\\2026\\\\a",',
+	'    "C:\\\\work\\\\ai-agent-tools"',
 	'  ]',
 	'}',
 	'',
@@ -74,28 +74,28 @@ fs.mkdirSync(work, { recursive: true });
 // ---- 文字列としての挿入 ----
 console.log('--- 文字列としての挿入 ---');
 {
-	const r = addTrustedWorkspace(sample, 'W:\\2026\\new');
-	const expected = sample.replace('    "W:\\\\ai-agent-tools"\n', '    "W:\\\\ai-agent-tools",\n    "W:\\\\2026\\\\new"\n');
+	const r = addTrustedWorkspace(sample, 'C:\\work\\2026\\new');
+	const expected = sample.replace('    "C:\\\\work\\\\ai-agent-tools"\n', '    "C:\\\\work\\\\ai-agent-tools",\n    "C:\\\\work\\\\2026\\\\new"\n');
 	assertEqual('追加: 最後の要素の後ろに 1 行足し、前の要素にカンマが付く。ほかは 1 バイトも変わらない', expected, r.text);
 	assertEqual('追加: changed は true', true, r.changed);
 	const parsed = JSON.parse(r.text);
-	assertEqual('追加: 読み直すと、パスが配列に入っている', true, parsed.trustedWorkspaces.includes('W:\\2026\\new'));
+	assertEqual('追加: 読み直すと、パスが配列に入っている', true, parsed.trustedWorkspaces.includes('C:\\work\\2026\\new'));
 	assertEqual('追加: 許可リストなど、ほかのキーは変わらない', JSON.parse(sample).permissions, parsed.permissions);
 
-	const again = addTrustedWorkspace(r.text, 'W:\\2026\\new');
+	const again = addTrustedWorkspace(r.text, 'C:\\work\\2026\\new');
 	assertEqual('冪等: 登録済み (完全一致) なら、書き換えない', { text: r.text, changed: false }, again);
 
 	const mixed = addTrustedWorkspace(sample, 'w:\\2026\\A');
 	assertEqual('大小が違うパスは、完全一致ではないので足す (agy は完全一致で見るとされているため)', true, mixed.changed);
 
-	const empty = addTrustedWorkspace('{\n  "a": 1,\n  "trustedWorkspaces": []\n}\n', 'W:\\x');
-	assertEqual('空の配列: 配列を開いて 1 行入れる', '{\n  "a": 1,\n  "trustedWorkspaces": [\n    "W:\\\\x"\n  ]\n}\n', empty.text);
+	const empty = addTrustedWorkspace('{\n  "a": 1,\n  "trustedWorkspaces": []\n}\n', 'C:\\work\\x');
+	assertEqual('空の配列: 配列を開いて 1 行入れる', '{\n  "a": 1,\n  "trustedWorkspaces": [\n    "C:\\\\work\\\\x"\n  ]\n}\n', empty.text);
 
-	const absent = addTrustedWorkspace('{\n  "a": 1\n}\n', 'W:\\x');
-	assertEqual('キーが無い: 最後のキーの後ろに、キーごと足す', '{\n  "a": 1,\n  "trustedWorkspaces": [\n    "W:\\\\x"\n  ]\n}\n', absent.text);
+	const absent = addTrustedWorkspace('{\n  "a": 1\n}\n', 'C:\\work\\x');
+	assertEqual('キーが無い: 最後のキーの後ろに、キーごと足す', '{\n  "a": 1,\n  "trustedWorkspaces": [\n    "C:\\\\work\\\\x"\n  ]\n}\n', absent.text);
 
-	const none = addTrustedWorkspace('{}', 'W:\\x');
-	assertEqual('中身が空の { }: キーだけを入れる', '{\n  "trustedWorkspaces": [\n    "W:\\\\x"\n  ]\n}', none.text);
+	const none = addTrustedWorkspace('{}', 'C:\\work\\x');
+	assertEqual('中身が空の { }: キーだけを入れる', '{\n  "trustedWorkspaces": [\n    "C:\\\\work\\\\x"\n  ]\n}', none.text);
 
 	const tricky = [
 		'{',
@@ -107,18 +107,18 @@ console.log('--- 文字列としての挿入 ---');
 		'}',
 		'',
 	].join('\n');
-	const t = addTrustedWorkspace(tricky, 'W:\\x');
-	assertEqual('許可リストの文字列に "trustedWorkspaces" という語があっても、取り違えない', ['W:\\x'], JSON.parse(t.text).trustedWorkspaces);
+	const t = addTrustedWorkspace(tricky, 'C:\\work\\x');
+	assertEqual('許可リストの文字列に "trustedWorkspaces" という語があっても、取り違えない', ['C:\\work\\x'], JSON.parse(t.text).trustedWorkspaces);
 	assertEqual('同上: 許可リストは変わらない', JSON.parse(tricky).permissions, JSON.parse(t.text).permissions);
 
-	const crlf = addTrustedWorkspace(sample.replace(/\n/g, '\r\n'), 'W:\\2026\\new');
+	const crlf = addTrustedWorkspace(sample.replace(/\n/g, '\r\n'), 'C:\\work\\2026\\new');
 	assertEqual('CRLF のファイルには、CRLF で足す (混ぜない)', false, /[^\r]\n/.test(crlf.text));
 
-	const ja = addTrustedWorkspace(sample, 'W:\\2026\\テスト');
-	assertEqual('日本語のパスは、そのまま書く', true, ja.text.includes('"W:\\\\2026\\\\テスト"'));
+	const ja = addTrustedWorkspace(sample, 'C:\\work\\2026\\テスト');
+	assertEqual('日本語のパスは、そのまま書く', true, ja.text.includes('"C:\\\\work\\\\2026\\\\テスト"'));
 
-	throws('JSON として読めなければ、例外 (書き換えない判断を呼び出し側に任せる)', () => addTrustedWorkspace('{ broken', 'W:\\x'));
-	throws('配列でない trustedWorkspaces は、例外', () => addTrustedWorkspace('{ "trustedWorkspaces": 1 }', 'W:\\x'));
+	throws('JSON として読めなければ、例外 (書き換えない判断を呼び出し側に任せる)', () => addTrustedWorkspace('{ broken', 'C:\\work\\x'));
+	throws('配列でない trustedWorkspaces は、例外', () => addTrustedWorkspace('{ "trustedWorkspaces": 1 }', 'C:\\work\\x'));
 }
 
 // ---- ファイルへの書き込み ----
@@ -126,29 +126,29 @@ console.log('--- ファイルへの書き込み ---');
 {
 	const f = path.join(work, 'settings.json');
 	fs.writeFileSync(f, sample);
-	const r1 = ensureTrusted(f, 'W:\\2026\\new');
+	const r1 = ensureTrusted(f, 'C:\\work\\2026\\new');
 	assertEqual('書き込み: 追加できる', 'added', r1.status);
-	assertEqual('書き込み: 書いた中身は、挿入の結果と同じ', addTrustedWorkspace(sample, 'W:\\2026\\new').text, fs.readFileSync(f, 'utf8'));
+	assertEqual('書き込み: 書いた中身は、挿入の結果と同じ', addTrustedWorkspace(sample, 'C:\\work\\2026\\new').text, fs.readFileSync(f, 'utf8'));
 	assertEqual('書き込み: 書く前の控えができ、中身は元のまま', sample, r1.backup != null ? fs.readFileSync(r1.backup, 'utf8') : null);
 
 	const before = fs.readdirSync(work).sort();
 	const mtime = fs.statSync(f).mtimeMs;
-	const r2 = ensureTrusted(f, 'W:\\2026\\new');
+	const r2 = ensureTrusted(f, 'C:\\work\\2026\\new');
 	assertEqual('登録済み: 書かない', 'already', r2.status);
 	assertEqual('登録済み: 控えも作らず、更新日時も変わらない', { files: before, mtime }, { files: fs.readdirSync(work).sort(), mtime: fs.statSync(f).mtimeMs });
 
-	assertEqual('設定が無い: 作らず、そう返す', 'no-file', ensureTrusted(path.join(work, 'none.json'), 'W:\\x').status);
+	assertEqual('設定が無い: 作らず、そう返す', 'no-file', ensureTrusted(path.join(work, 'none.json'), 'C:\\work\\x').status);
 	assertEqual('設定が無い: ファイルを作らない', false, fs.existsSync(path.join(work, 'none.json')));
 
 	const bad = path.join(work, 'bad.json');
 	fs.writeFileSync(bad, '{ broken');
-	assertEqual('壊れている: 書かず、そう返す', 'broken', ensureTrusted(bad, 'W:\\x').status);
+	assertEqual('壊れている: 書かず、そう返す', 'broken', ensureTrusted(bad, 'C:\\work\\x').status);
 	assertEqual('壊れている: 中身は変わらない', '{ broken', fs.readFileSync(bad, 'utf8'));
 
 	// 読んだあとに、agy が許可リストへ足したとする。足した分を消さず、そのうえで挿入する
 	const race = path.join(work, 'race.json');
 	fs.writeFileSync(race, sample);
-	const raced = ensureTrusted(race, 'W:\\2026\\new', {
+	const raced = ensureTrusted(race, 'C:\\work\\2026\\new', {
 		beforeWrite(attempt) {
 			if (attempt !== 1) { return; }
 			fs.writeFileSync(race, sample.replace('      "command(Get-ChildItem \\"C:\\\\x\\")"\n', '      "command(Get-ChildItem \\"C:\\\\x\\")",\n      "command(added by agy)"\n'));
@@ -157,13 +157,13 @@ console.log('--- ファイルへの書き込み ---');
 	const final = JSON.parse(fs.readFileSync(race, 'utf8'));
 	assertEqual('衝突: 読んだあとの更新を見つけて、読み直してから書く', 'added', raced.status);
 	assertEqual('衝突: agy が足した許可を消さない', true, final.permissions.allow.includes('command(added by agy)'));
-	assertEqual('衝突: 信頼も入っている', true, final.trustedWorkspaces.includes('W:\\2026\\new'));
+	assertEqual('衝突: 信頼も入っている', true, final.trustedWorkspaces.includes('C:\\work\\2026\\new'));
 
 	// いつ読み直しても更新されるなら、書かずに止める (最大 3 回)
 	const busy = path.join(work, 'busy.json');
 	fs.writeFileSync(busy, sample);
 	let n = 0;
-	const rb = ensureTrusted(busy, 'W:\\2026\\new', {
+	const rb = ensureTrusted(busy, 'C:\\work\\2026\\new', {
 		beforeWrite() {
 			n++;
 			// 呼ばれるたびに、必ず中身が変わるようにする (true と false を入れ替える)
@@ -171,7 +171,7 @@ console.log('--- ファイルへの書き込み ---');
 		},
 	});
 	assertEqual('衝突が続く: 3 回で諦め、書かずに busy を返す', { status: 'busy', tries: 3 }, { status: rb.status, tries: n });
-	assertEqual('衝突が続く: 信頼は書かれていない', false, JSON.parse(fs.readFileSync(busy, 'utf8')).trustedWorkspaces.includes('W:\\2026\\new'));
+	assertEqual('衝突が続く: 信頼は書かれていない', false, JSON.parse(fs.readFileSync(busy, 'utf8')).trustedWorkspaces.includes('C:\\work\\2026\\new'));
 }
 
 // ---- コマンドとしての動き ----

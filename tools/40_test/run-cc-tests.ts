@@ -1,12 +1,12 @@
 /*
 	cc.cmd のテスト。
 
-	cc.cmd は W:\ の下にプロジェクトを作って claude.exe を起こす。試験では、
+	cc.cmd は C:\work\ の下にプロジェクトを作って claude.exe を起こす。試験では、
 	  ・置き場を環境変数 AGENT_LAUNCH_TEST_ROOT で tmp/ の下へ差し替える
 	  ・~/.claude.json を環境変数 CC_REGISTER_TEST_CLAUDE_JSON で tmp/ の複製に向ける
 	  ・claude.exe を、引数・カレント・CLAUDE で始まる環境変数を記録するだけの代役に差し替える
 	  （PATH の先頭に置く。rustc で作る）
-	本物の W:\ ・ 本物の ~/.claude.json ・ 本物の claude は触らない。
+	本物の C:\work\ ・ 本物の ~/.claude.json ・ 本物の claude は触らない。
 
 	決め（利用者の判断。2026-10-28）:
 	  ・claude を起こす前に、CLAUDE で始まる環境変数を、CLAUDE_CODE_USE_POWERSHELL_TOOL 以外すべて消す
@@ -131,9 +131,9 @@ function keyOf(dir: string): string {
 }
 
 function main(): void {
-	// 置き場を差し替えられない cc.cmd は、本物の W:\ にフォルダを作ってしまうので、試験を回さない
+	// 置き場を差し替えられない cc.cmd は、本物の C:\work\ にフォルダを作ってしまうので、試験を回さない
 	if (!fs.readFileSync(cc, 'latin1').includes('agent-launch') || !fs.readFileSync(path.join(root, 'src', 'agent-launch', 'main.ts'), 'utf8').includes('AGENT_LAUNCH_TEST_ROOT')) {
-		console.log('[NG] cc.cmd が AGENT_LAUNCH_TEST_ROOT に対応していません。本物の W:\\ に作らないよう、試験を回しません');
+		console.log('[NG] cc.cmd が AGENT_LAUNCH_TEST_ROOT に対応していません。本物の C:\work\\ に作らないよう、試験を回しません');
 		process.exit(1);
 	}
 	setup();

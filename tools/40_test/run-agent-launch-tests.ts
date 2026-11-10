@@ -213,12 +213,12 @@ console.log('--- codex の履歴 ---');
 //   ・番人への入力 (KEEPER_*) は、エージェントに渡さない
 console.log('--- 起こす処理 ---');
 {
-	const dir = 'W:\\2026\\20261101-foo';
+	const dir = 'C:\\work\\2026\\20261101-foo';
 	assertEqual('タイトル: <入口のコマンド名> <フォルダ名> (cc)', 'cc 20261101-foo', windowTitle('cc', dir));
 	assertEqual('タイトル: cx', 'cx 20261101-foo', windowTitle('cx', dir));
 	assertEqual('タイトル: ag', 'ag 20261101-foo', windowTitle('ag', dir));
-	assertEqual('タイトル: 日本語のフォルダ名はそのまま', 'cc 20261101-テスト', windowTitle('cc', 'W:\\2026\\20261101-テスト'));
-	assertEqual('タイトル: 引用符は取り除く (start の引数を壊さない)', 'cc ab', windowTitle('cc', 'W:\\2026\\a"b'));
+	assertEqual('タイトル: 日本語のフォルダ名はそのまま', 'cc 20261101-テスト', windowTitle('cc', 'C:\\work\\2026\\20261101-テスト'));
+	assertEqual('タイトル: 引用符は取り除く (start の引数を壊さない)', 'cc ab', windowTitle('cc', 'C:\\work\\2026\\a"b'));
 
 	const name = '20261101-foo 11/01 09:05';
 	assertEqual('cc 履歴なし: -c を付けない。再起動は -c', { exe: 'claude.exe', first: '-n "' + name + '"', again: '-c -n "' + name + '"' }, launchSpec('cc', dir, false, now));
@@ -241,7 +241,7 @@ console.log('--- 起こす処理 ---');
 	const kenv = keeperEnv('ag', { PATH: 'p' }, { exe: 'ag-trusted', first: 'A', again: 'B' });
 	assertEqual('番人への入力: KEEPER_EXE ・ KEEPER_FIRST ・ KEEPER_AGAIN を足す', { PATH: 'p', KEEPER_EXE: 'ag-trusted', KEEPER_FIRST: 'A', KEEPER_AGAIN: 'B' }, kenv);
 
-	assertEqual('start の行: タイトルは引用符で囲み、番人を cmd で動かす (全体は /s のためもう一組の引用符で囲む)', '/d /s /c "start "cc 20261101-foo" cmd /d /c "W:\\src\\keeper.cmd""', startArgs('cc 20261101-foo', 'W:\\src\\keeper.cmd'));
+	assertEqual('start の行: タイトルは引用符で囲み、番人を cmd で動かす (全体は /s のためもう一組の引用符で囲む)', '/d /s /c "start "cc 20261101-foo" cmd /d /c "C:\\work\\src\\keeper.cmd""', startArgs('cc 20261101-foo', 'C:\\work\\src\\keeper.cmd'));
 	assertEqual('start の行: 空白や日本語を含むタイトルも、引用符で囲まれる', '/d /s /c "start "ag 日本語 x" cmd /d /c "K""', startArgs('ag 日本語 x', 'K'));
 }
 

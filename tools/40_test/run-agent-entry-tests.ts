@@ -10,7 +10,7 @@
 	試験では、置き場を AGENT_LAUNCH_TEST_ROOT で、履歴の置き場 (ホーム) を AGENT_LAUNCH_TEST_HOME で tmp/ の下へ差し替え、
 	起こす相手 (claude.exe ・ codex-trusted ・ ag-trusted) を、記録するだけの代役に差し替える (PATH の先頭に置く)。
 	窓は、AGENT_LAUNCH_TEST_HIDE=1 で非表示にする (共通ルール「窓が要る試験は、非表示で裏に回す」)。
-	本物の W:\ ・ 本物の履歴 ・ 本物のエージェントは触らない。
+	本物の C:\work\ ・ 本物の履歴 ・ 本物のエージェントは触らない。
 */
 
 import { spawnSync } from 'node:child_process';
@@ -260,7 +260,7 @@ try {
 		const bin = path.join(root, 'bin', agent + '.cmd');
 		const text = fs.readFileSync(bin, 'latin1');
 		if (!text.includes('agent-launch')) {
-			ng(agent + '.cmd: 新しい入口 (agent-launch) になっていない', '本物の W:\\ に作らないよう、動かさない');
+			ng(agent + '.cmd: 新しい入口 (agent-launch) になっていない', '本物の C:\\work\\ に作らないよう、動かさない');
 			continue;
 		}
 		fs.rmSync(outPath, { force: true });

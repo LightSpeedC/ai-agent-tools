@@ -7,7 +7,7 @@
 	確認が出ない。内部の道具なので、使い方の資料には載せない。
 
 	決め:
-	  ・キーは W:/… の形（区切りは /、末尾の区切りは落とす）。Claude Code が書くキーと同じ形
+	  ・キーは C:/work/… の形（区切りは /、末尾の区切りは落とす）。Claude Code が書くキーと同じ形
 	  ・信頼の確認を済みにした最小の項目を足す
 	  ・登録済みなら何もしない。ファイルを書き直さない（開いている Claude が書き続けているため、
 	    読んでから書くまでの間に、その書き込みを消す危険を、足すときだけに限る）
@@ -36,7 +36,7 @@ function newEntry(): Record<string, unknown> {
 	};
 }
 
-/** W:\2026\a\ → W:/2026/a */
+/** C:\work\2026\a\ → C:/work/2026/a */
 function toKey(dir: string): string {
 	let key = dir.split('\\').join('/');
 	while (key.length > 1 && key.endsWith('/') && !/^[A-Za-z]:\/$/.test(key)) {

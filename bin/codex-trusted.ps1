@@ -32,7 +32,7 @@ function Get-CanonicalProjectPaths {
 	} elseif ($resolved -match "^(?i)w:\\(.+)$") {
 		$relative = $matches[1]
 	} else {
-		throw "対象は C:\work または W: 配下にしてください。"
+		throw "対象は C:\work 配下にしてください。"
 	}
 
 	$relative = $relative.Replace("/", "\").ToLowerInvariant()
