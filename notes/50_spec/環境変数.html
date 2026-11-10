@@ -136,7 +136,7 @@
 	<div class="inner">
 		<h1>環境変数の仕様 (ai-agent-tools)</h1>
 		<p class="lead">このプロジェクトの道具が、読む ・ 設定する ・ 消す環境変数の一覧。試験用は後半の章に分けてある。</p>
-		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-05</p>
+		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-10</p>
 	</div>
 </div>
 
@@ -207,7 +207,7 @@
 	<table>
 		<thead><tr><th>変数</th><th>読む場所</th><th>役目</th><th>未設定のとき</th><th>読む側</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap"><code>AGENT_LAUNCH_TEST_ROOT</code></td><td><code>src/agent-launch/main.ts</code> (<code>cc</code> ・ <code>cx</code> ・ <code>ag</code> 共通)</td><td>プロジェクトを作る置き場。試験は <code>tmp/</code> の下へ差し替える</td><td><code>W:\</code></td><td>本番の道具が読む</td></tr>
+			<tr><td class="nowrap"><code>AGENT_LAUNCH_TEST_ROOT</code></td><td><code>src/agent-launch/main.ts</code> (<code>cc</code> ・ <code>cx</code> ・ <code>ag</code> 共通)</td><td>プロジェクトを作る置き場。試験は <code>tmp/</code> の下へ差し替える</td><td><code>C:\work\</code></td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>CC_REGISTER_TEST_CLAUDE_JSON</code></td><td><code>src/cc-register</code></td><td>フォルダを登録する先の <code>.claude.json</code></td><td>ホームの <code>.claude.json</code></td><td>本番の道具が読む</td></tr>
 			<tr><td class="nowrap"><code>CC_TEST_STUB_OUT</code></td><td><code>tools/40_test/run-cc-tests.ts</code> が作る代役の <code>claude</code></td><td>受けた引数と <code>CLAUDE</code> で始まる変数の書き出し先</td><td>何も書かない</td><td>試験の側だけ</td></tr>
 			<tr><td class="nowrap"><code>HISTORY2HTML_TEST_HOME</code></td><td><code>src/history2html</code></td><td>伏せる対象のホームのフォルダ</td><td><code>os.homedir()</code></td><td>本番の道具が読む</td></tr>

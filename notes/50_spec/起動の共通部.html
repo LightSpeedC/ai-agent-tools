@@ -138,7 +138,7 @@
 	<div class="inner">
 		<h1>cc ・ cx ・ ag の起動の仕様 (ai-agent-tools)</h1>
 		<p class="lead"><code>cc</code> (claude) ・ <code>cx</code> (codex) ・ <code>ag</code> (agy) が、フォルダを決め、履歴があれば続きで、新しい窓で起動し、終了のあとで再起動できるまで。</p>
-		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-01</p>
+		<p class="date">📅 作成: 2026-11-01 / 更新: 2026-11-10</p>
 	</div>
 </div>
 
@@ -164,7 +164,7 @@
 	<p>入口の cmd は、<code>node src/agent-launch/main.ts &lt;cc | cx | ag&gt; &lt;名前&gt;</code> を呼ぶだけ。変数を設定せず、カレントも動かさないので、<strong>呼んだ窓の環境変数とカレントは変わらない</strong>。常駐するプロセスは無い (起動する短命の node が、すぐ終わる)。</p>
 	<ol>
 		<li><strong>名前が無い</strong>: <code>[NG]</code> を出して終了コード 2。何も起こさない</li>
-		<li><strong>置き場</strong> (<code>AGENT_LAUNCH_TEST_ROOT</code>。未設定のとき <code>W:\</code>) が無い: <code>[NG]</code> で終了コード 1</li>
+		<li><strong>置き場</strong> (<code>AGENT_LAUNCH_TEST_ROOT</code>。未設定のとき <code>C:\work\</code>) が無い: <code>[NG]</code> で終了コード 1</li>
 		<li><strong>フォルダを決める</strong>: 年のフォルダ (<code>&lt;置き場&gt;\&lt;yyyy&gt;</code>) を、無ければ作る。置き場の直下 → 年のフォルダの中の順に、名前の一部 (大小を区別しない) が当たるフォルダを探す。複数に当たれば、名前順で最初の 1 つ。どちらにも無ければ、年のフォルダの中に <code>&lt;yyyymmdd&gt;-&lt;名前&gt;</code> を作る。<strong>フォルダだけを探す</strong> (名前が当たるファイルがあっても、新しく作る)</li>
 		<li><strong>続きか新規か</strong>: 既存のフォルダで、<strong>そのエージェントの履歴</strong>があれば続き、無ければ新規。新しく作ったフォルダは、必ず新規。別のエージェントが先に作ったフォルダでも、そのエージェントの履歴が無ければ新規になる</li>
 		<li><strong>起動</strong>: 新しい窓で、番人 (<code>keeper.cmd</code>) を動かす。窓のタイトルは <code>&lt;入口のコマンド名&gt; &lt;フォルダ名&gt;</code> (例: <code>cc 20261101-foo</code>)。起動したフォルダがカレント</li>

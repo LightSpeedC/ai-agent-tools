@@ -8,7 +8,7 @@
 	窓のタイトルは <入口のコマンド名> <フォルダ名>。
 
 	試験が差し替えられる環境変数 (本番では指定しない):
-	  AGENT_LAUNCH_TEST_ROOT   置き場。未設定のとき W:\
+	  AGENT_LAUNCH_TEST_ROOT   置き場。未設定のとき C:\work\
 	  AGENT_LAUNCH_TEST_HOME   履歴の置き場 (ホーム)。未設定のとき本物のホーム
 	  AGENT_LAUNCH_TEST_HIDE   1 のとき、窓を作らず、非表示のまま番人を動かす (共通ルール
 	                           「窓が要る試験は、非表示で裏に回す」)
@@ -62,7 +62,7 @@ function main(argv: string[]): number {
 		console.error('[NG] プロジェクト名を指定してください。(例: ' + agent + ' 名前)');
 		return ExitBadArgs;
 	}
-	const root = process.env.AGENT_LAUNCH_TEST_ROOT ?? 'W:\\';
+	const root = process.env.AGENT_LAUNCH_TEST_ROOT ?? 'C:\\work\\';
 	if (!fs.existsSync(root)) {
 		console.error('[NG] ' + root + ' が見つかりません');
 		return ExitNoRoot;
