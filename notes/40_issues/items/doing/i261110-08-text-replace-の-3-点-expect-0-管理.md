@@ -13,6 +13,6 @@ file-manager の #1911。課題の番号の振り直し (10 種類・131 件) �
 ## やること
 
 - [済] 1: --expect 0 で一致が 0 件なら終了コード 0 にした (試験を先に足し ❌Red を見てから直した。text-replace 38 件 bun ・ node とも ✅)。2026-11-10 23:15、#1913 で file-manager から確認済み
-- [未] 2: --path を root にすると、Rust の target など .gitignore で外したものまで読む。238-A: git の管理下では既定で外す (find ・ replace とも)
+- [済] 2: --path を root にすると、Rust の target など .gitignore で外したものまで読む。238-A: git の管理下では既定で外す (find ・ replace とも)。git ls-files -o -i --exclude-standard --directory で外したフォルダを受け取り、中に入らない。--path そのものが外されているときは今までどおり読む。試験を先に足し ❌Red 4 件を見てから作った (text-replace 44 件 ・ text 92 件、bun ・ node とも ✅)。'.' で check-ignore を聞くと、利用者の全体の .gitignore の書き方でリポジトリの頭でも「外した」と返ったので、頭では聞かない形にした
 - [未] 3: 番号がファイル名にも入っていた。239-A: --rename を足す (git の管理下なら git mv)
 - [未] 2 と 3 ができたら file-manager に知らせ、確認をもらってから済にする

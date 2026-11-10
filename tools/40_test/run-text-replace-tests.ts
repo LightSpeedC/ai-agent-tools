@@ -163,6 +163,30 @@ setup();
 	check('どのファイルで表せないかを出す', (r.out + r.err).includes('sj.cmd'), r.out + r.err);
 }
 
+// ---- 238-A: git の管理下では、.gitignore で外したものを読まない ----
+
+console.log('\n[.gitignore で外したもの (238-A)]');
+setup();
+{
+	const g = path.join(work, 'g');
+	put('g/.gitignore', Buffer.from('target/\n*.log\n', 'utf8'));
+	put('g/src/keep.md', Buffer.from('旧名\n', 'utf8'));
+	put('g/target/debug/big.md', Buffer.from('旧名\n', 'utf8'));
+	put('g/run.log', Buffer.from('旧名\n', 'utf8'));
+	const init = spawnSync('git', ['init', '-q', g], { encoding: 'utf8' });
+	if (init.status !== 0) { console.log('[NG] git init できません: ' + init.stderr); process.exit(2); }
+	const f = text(['find', '旧名', g, '-r', '--bare']);
+	check('find は .gitignore で外したフォルダ (target) を見ない', f.code === 0 && f.out.includes('keep.md') && !f.out.includes('big.md'), f.out);
+	check('find は .gitignore で外したファイル (*.log) を見ない', !f.out.includes('run.log'), f.out);
+	check('find は、外した件数を標準エラーに 1 行出す', /\.gitignore で外した 2 件/.test(f.err), f.err);
+	const all = text(['find', '旧名', g, '-r', '--bare', '--no-default-exclude']);
+	check('--no-default-exclude なら、.gitignore で外したものも見る', all.out.includes('big.md') && all.out.includes('run.log'), all.out);
+	const rp = text(['replace', '旧名', '新名', '--path', g, '-r']);
+	check('replace も .gitignore で外したものを書き換えない', rp.code === 0 && utf8('g/src/keep.md') === '新名\n' && utf8('g/target/debug/big.md') === '旧名\n' && utf8('g/run.log') === '旧名\n', rp.out + rp.err);
+	const outside = text(['find', '旧名', path.join(work, 'a'), '-r', '--bare']);
+	check('--path そのものが外されている (このプロジェクトの tmp) ときは、今までどおり読む', outside.code === 0 && outside.out.includes('one.md'), outside.out + outside.err);
+}
+
 fs.rmSync(work, { recursive: true, force: true });
 console.log(`\n=== text replace: ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 process.exit(fail === 0 ? 0 : 1);

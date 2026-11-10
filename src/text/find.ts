@@ -4,6 +4,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { ToolError, comboName, decode, lineContent, looksBinary, mtimeOf, splitLines } from './engine.ts';
 import { Args, out, resolve, show } from './files.ts';
 
@@ -52,7 +53,11 @@ export function selectTargets(args: Args, pathPos: number): { basePath: string; 
 	const targets: string[] = [];
 	if (baseIsFile) { targets.push(path.resolve(basePath)); }
 	else if (fs.existsSync(basePath) && fs.statSync(basePath).isDirectory()) {
-		walk(baseFull, recurse, inc, exc, excDir, targets);
+		// 238-A: git の管理下では、.gitignore で外したものを読まない (--no-default-exclude で解除)
+		const ignored = args.flag('--no-default-exclude', '--no-default-exclude') ? null : gitIgnored(baseFull);
+		const skipped = { n: 0 };
+		walk(baseFull, recurse, inc, exc, excDir, targets, ignored, skipped);
+		if (skipped.n > 0) { process.stderr.write('.gitignore で外した ' + skipped.n + ' 件 (--no-default-exclude で読む)\n'); }
 	} else {
 		throw new ToolError(2, '対象がありません: ' + show(basePath));
 	}
@@ -178,8 +183,40 @@ function outputBare(results: FileHits[]): void {
 	}
 }
 
+/**
+ * .gitignore で外したもの (フォルダとファイル) の絶対パスを、小文字にした集合で返す (238-A)。
+ * git の管理下でない ・ git が無い ・ base そのものが外されている (利用者が名指しした) ときは null。
+ * git ls-files --directory は、外したフォルダを中まで見ずに 1 行で返すので、大きい target も読まない
+ */
+export function gitIgnored(base: string): Set<string> | null {
+	const git = (args: string[]) => spawnSync('git', ['-C', base, ...args], { encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
+	try {
+		const inside = git(['rev-parse', '--is-inside-work-tree']);
+		if (inside.status !== 0 || inside.stdout.trim() !== 'true') { return null; }
+		// base が外されているかは、リポジトリの頭でなければ絶対パスで聞く。'.' で聞くと、
+		// 利用者の全体の .gitignore の書き方によっては頭でも「外した」と返る (実測)
+		const prefix = git(['rev-parse', '--show-prefix']);
+		if (prefix.status !== 0) { return null; }
+		if (prefix.stdout.trim() !== '' && git(['check-ignore', '-q', '--', base]).status === 0) { return null; }
+		const ls = git(['ls-files', '-o', '-i', '--exclude-standard', '--directory', '-z']);
+		if (ls.status !== 0) { return null; }
+		const set = new Set<string>();
+		for (const rel of ls.stdout.split('\0')) {
+			if (rel === '') { continue; }
+			set.add(norm(path.join(base, rel.replace(/\/$/, ''))));
+		}
+		return set;
+	} catch {
+		return null;
+	}
+}
+
+function norm(p: string): string {
+	return path.resolve(p).replace(/\\/g, '/').toLowerCase();
+}
+
 export function walk(dir: string, recurse: boolean, inc: RegExp[], exc: RegExp[],
-	excDir: Set<string>, outFiles: string[]): void {
+	excDir: Set<string>, outFiles: string[], ignored: Set<string> | null = null, skipped: { n: number } = { n: 0 }): void {
 	let entries: fs.Dirent[];
 	try {
 		entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -192,6 +229,7 @@ export function walk(dir: string, recurse: boolean, inc: RegExp[], exc: RegExp[]
 		const name = ent.name;
 		if (inc.length > 0 && !matchAny(inc, name)) { continue; }
 		if (exc.length > 0 && matchAny(exc, name)) { continue; }
+		if (ignored !== null && ignored.has(norm(path.join(dir, name)))) { skipped.n++; continue; }
 		outFiles.push(path.join(dir, name));
 	}
 
@@ -203,7 +241,8 @@ export function walk(dir: string, recurse: boolean, inc: RegExp[], exc: RegExp[]
 		if (name === '.git') { continue; }
 		if (name.startsWith('_')) { continue; }
 		if (excDir.has(name.toLowerCase())) { continue; }
-		walk(path.join(dir, name), true, inc, exc, excDir, outFiles);
+		if (ignored !== null && ignored.has(norm(path.join(dir, name)))) { skipped.n++; continue; }
+		walk(path.join(dir, name), true, inc, exc, excDir, outFiles, ignored, skipped);
 	}
 }
 

@@ -40,8 +40,8 @@ const SubHelp: Record<string, string[]> = {
 		'  -i, --ignore-case      大小を区別しない',
 		'  --regex                検索語を正規表現として読む（JavaScript の書き方。行ごとに当てる）',
 		'  --include / --exclude  対象のファイル名（カンマ区切りの glob）',
-		'  --exclude-dir          外すフォルダ。既定で tmp ・ etc ・ node_modules ・ .git を外す',
-		'  --no-default-exclude   既定の除外をやめる',
+		'  --exclude-dir          外すフォルダ。既定で tmp ・ etc ・ node_modules ・ .git と、git の管理下で .gitignore で外したものを外す',
+		'  --no-default-exclude   既定の除外をやめる (git の管理下で .gitignore で外したものも読む)',
 		'  --bare                 grep と同じ 1 行 1 件の形で出す',
 	],
 	edit: [

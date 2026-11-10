@@ -672,6 +672,8 @@ text find 日本語 --path . --recurse --include "*.cmd,*.reg"</code></pre>
 		<p><strong><code>etc/history/jsonl</code> には会話ログが入る。</strong>素で <code>--recurse</code> を撃つとここまで読み、<strong>過去の会話が出力に出る。</strong>共通ルール「.gitignore で除外されたファイルの取り扱い」を破ることになるため、既定で外してある。</p>
 	</div>
 
+	<p><strong>git の管理下では、<code>.gitignore</code> で外したもの (Rust の <code>target</code> 等) も既定で読まない</strong> (find ・ replace とも。238-A)。外したフォルダの中には入らないので、大きい置き場でも遅くならない。外した件数は標準エラーに 1 行出す。<code>--path</code> そのものが外されている (名指しした) ときは、今までどおり読む。</p>
+
 	<p>意図して見たいときは <code>--no-default-exclude</code> で解除する。<strong>付け忘れると読んでしまう形ではなく、明示したときだけ読む形にしてある。</strong></p>
 
 	<p><code>--regex</code> を付けると、検索語を正規表現 (JavaScript の書き方) として読み、<strong>行ごとに</strong>当てる。付けなければ、<code>.</code> や <code>[</code> も文字のまま探す。<code>-i</code> と合わせられる。読めない正規表現は終了コード 2。</p>
