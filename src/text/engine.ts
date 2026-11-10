@@ -11,6 +11,7 @@ import {
 } from '../lib/codec.ts';
 import type { EncKind } from '../lib/codec.ts';
 import { decideAmbiguous, isValidSjis, isValidUtf8 } from '../lib/detector.ts';
+import { parseSource, parseTarget } from '../convert-encoding/spec.ts';
 
 export type { EncKind };
 
@@ -49,38 +50,21 @@ export function comboName(c: Combo): string {
 
 // ---- 名前 ----------------------------------------------------------------
 
-const EncMap: Record<string, EncKind> = {
-	utf8: 'utf8',
-	utf8bom: 'utf8bom',
-	sjis: 'sjis',
-	utf16le: 'utf16le',
-	utf16be: 'utf16be',
-};
-
-/** --to の用途名。文字コードと改行の両方が決まる */
-const ToMap: Record<string, { enc: EncKind; eol: EolKind }> = {
-	cmd: { enc: 'sjis', eol: 'crlf' },
-	bat: { enc: 'sjis', eol: 'crlf' },
-	ps1: { enc: 'utf8bom', eol: 'crlf' },
-	html: { enc: 'utf8bom', eol: 'lf' },
-	reg: { enc: 'utf16le', eol: 'crlf' },
-	utf8: { enc: 'utf8', eol: 'lf' },
-};
-
+/*
+	--to ・ --from の名前は convert-encoding と同じものを使う (232-B)。
+	用途名 (ps1 cmd bat reg html) ・ 文字コード ・ /lf /crlf。文字コードだけなら改行は変えない (null)
+*/
 export function parseFrom(text: string): EncKind {
-	if (text == null || text.length === 0) { throw new ToolError(2, '--from に値がありません。'); }
-	const k = EncMap[text.toLowerCase()];
-	if (k != null) { return k; }
-	throw new ToolError(2, '--from に指定できない名前です: ' + text
-		+ ' ／ 使える名前: utf8 utf8bom sjis utf16le utf16be');
+	const r = parseSource(text);
+	if (r.kind != null) { return r.kind; }
+	throw new ToolError(2, (r.error ?? '--from が読めません。').replace(/\n/g, ' ／ '));
 }
 
-export function parseTo(text: string): { enc: EncKind; eol: EolKind } {
-	if (text == null || text.length === 0) { throw new ToolError(2, '--to に値がありません。'); }
-	const v = ToMap[text.toLowerCase()];
-	if (v != null) { return v; }
-	throw new ToolError(2, '--to に指定できない用途名です: ' + text
-		+ ' ／ 使える用途名: cmd bat ps1 html reg utf8');
+/** enc ・ eol が null なら「変えない」(書くときに既存のファイルの組を使う) */
+export function parseTo(text: string): { enc: EncKind | null; eol: 'crlf' | 'lf' | null } {
+	const r = parseTarget(text);
+	if (r.spec != null) { return { enc: r.spec.enc, eol: r.spec.eol }; }
+	throw new ToolError(2, (r.error ?? '--to が読めません。').replace(/\n/g, ' ／ '));
 }
 
 // ---- 判定 ----------------------------------------------------------------

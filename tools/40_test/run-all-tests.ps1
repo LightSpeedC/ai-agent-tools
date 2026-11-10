@@ -104,6 +104,7 @@ $Suites = @(
 	@{ Name = 'text'; Script = 'run-text-tests.ps1'; NodeTarget = 'runners\text-node.cmd' },
 	@{ Name = 'text replace'; Script = 'run-text-replace-tests.ts' },
 	@{ Name = 'check-markdown'; Script = 'run-check-markdown-tests.ts' },
+	@{ Name = 'text の名前'; Script = 'run-text-names-tests.ts' },
 	# psh のテストだけ ts で書いてある。道具自体が PowerShell を呼ぶため、
 	# テストまで ps1 にすると道具が壊れたときにテストも動かせない。
 	# ExeTarget は Rust 版（計画 p260929-01）。同じテストを PSH_TEST_TARGET で当てる

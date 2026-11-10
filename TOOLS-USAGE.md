@@ -485,6 +485,8 @@ text write app.reg --keep --in tmp/body.txt     # 既存の組を保って書く
 echo @echo off | text write new.cmd --to cmd    # 標準入力／第 2 引数でも渡せる
 ```
 
+`--to` ・ `--from` に書ける名前は convert-encoding と同じ (232-B)。用途名 (`ps1` `cmd` `bat` `reg` `html`)、文字コード (`utf8` `utf8bom` `sjis` `utf16le` `utf16be`)、改行を足す `/lf` `/crlf` (`utf8/crlf`)。**文字コードだけを渡すと、改行は変えない**: 既存のファイルがあればその改行、無ければ中身のまま。`--from` は用途名も受ける (`--from cmd` は sjis)。
+
 > [!WARNING]
 > **変換先で表現できない文字は、書かずに `exit 5` で止まる**（cmd＝SJIS に無い絵文字・ハングル・`✓` など）。黙って `?` にはしない。`edit` も同じ。中身は `--in <path>` か第 2 引数で渡す（空の標準入力では上書きしない）。
 

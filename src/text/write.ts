@@ -24,8 +24,17 @@ export function run(a: string[]): number {
 
 	if (to != null) {
 		const v = parseTo(to);
-		enc = v.enc;
-		eol = v.eol;
+		// 文字コード ・ 改行の片方だけを渡したときは、もう片方を既存のファイルから取る (convert-encoding と同じ。232-B)。
+		// ファイルが無ければ、改行は中身のまま ('none' = 変えない)。文字コードが決まらなければ止める
+		let cur: { enc: EncKind; eol: EolKind } | null = null;
+		if ((v.enc == null || v.eol == null) && exists(p)) {
+			const b = readBytes(p);
+			const c = resolve(b, args.get('--from'));
+			if (!looksBinary(b, c.enc)) { cur = { enc: c.enc, eol: c.eol }; }
+		}
+		if (v.enc == null && cur == null) { throw new ToolError(2, '--to に文字コードがありません (既存のファイルから取れません): ' + to); }
+		enc = v.enc ?? cur!.enc;
+		eol = v.eol ?? (cur !== null && (cur.eol === 'crlf' || cur.eol === 'lf') ? cur.eol : 'none');
 	} else if (keep) {
 		if (!exists(p)) { throw new ToolError(2, '--keep は既存ファイルが必要です: ' + show(p)); }
 		const cur = readBytes(p);

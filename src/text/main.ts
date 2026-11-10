@@ -71,7 +71,8 @@ const SubHelp: Record<string, string[]> = {
 	write: [
 		'text write <ファイル> (--to <用途> | --keep) [<中身> | --in <パス> | 標準入力] [--from <組>]',
 		'  全文を書く',
-		'  --to <用途>    用途名で文字コードと改行を決める（convert-encoding の --to と同じ）',
+		'  --to <用途>    用途名 (ps1 cmd bat reg html) か文字コード (utf8 utf8bom sjis utf16le utf16be)。',
+		'                 /lf ・ /crlf を足せる。文字コードだけなら改行は変えない（convert-encoding の --to と同じ）',
 		'  --keep         既存ファイルの組のまま書く',
 		'  --in <パス>    中身をファイルから読む。第 2 引数でも、空でない標準入力でも渡せる',
 		'  --from <組>    --keep のとき、既存ファイルの組を明示する',
