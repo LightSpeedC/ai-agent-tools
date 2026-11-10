@@ -1,0 +1,208 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>text の .gitignore と --rename 計画 (ai-agent-tools)</title>
+<style>
+	:root{
+		--navy1:#12224d; --navy2:#2f5fbf;
+		--ink:#1c2330; --ink-soft:#4a5568; --line:#d9dfe8; --code-bg:#f4f6fa;
+		--link:#1a4fa0;
+		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
+	}
+	/* 章のアクセント色（3 章 / 色相 280 → 0 を 140 度刻み） */
+	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
+	.ch02{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
+	.ch03{ --accent:hsl(0,78%,25%); --accent2:hsl(0,58%,55%); --soft:hsl(0,28%,95%); }
+
+	*{ box-sizing:border-box; }
+	body{
+		margin:0; background:#fff; color:var(--ink,#1c2330);
+		font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;
+		font-size:15.5px; line-height:1.85;
+	}
+
+	.titlebar{
+		background:#12224d;
+		background:linear-gradient(135deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:34px 30px 30px;
+	}
+	.titlebar .inner{ max-width:1600px; margin:0 auto; }
+	.titlebar h1{ font-size:1.95em; margin:0 0 8px; }
+	.titlebar .lead{ margin:0 0 10px; font-size:.98em; color:#dce6fb; background:transparent; }
+	.titlebar .date{ margin:0; font-size:.88em; color:#c6d5f5; background:transparent; }
+	.titlebar code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+
+	.wrap{ max-width:1600px; margin:0 auto; padding:0 30px; }
+	.wrap a{ color:var(--link,#1a4fa0); background:transparent; }
+	.backlink{ margin:18px 0 0; font-size:.94em; }
+
+	section{
+		background:#f2f5fb;
+		background:linear-gradient(180deg,var(--soft,#f2f5fb),#fff);
+		color:var(--ink,#1c2330);
+		border:1px solid var(--line,#d9dfe8); border-radius:10px;
+		padding:4px 26px 26px; margin:34px 0;
+	}
+	section h1{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; padding:14px 20px; margin:26px 0 20px;
+		border-radius:8px; font-size:1.35em;
+		box-shadow:0 3px 10px rgba(0,0,0,.18);
+	}
+	section h1 code{ background:rgba(255,255,255,.16); color:#fff; border:none; }
+	h2{
+		border-left:6px solid var(--accent,#12224d);
+		background:#f2f5fb;
+		background:linear-gradient(90deg,var(--soft,#f2f5fb),#fff);
+		color:var(--accent,#12224d);
+		padding:6px 12px; margin:30px 0 12px; font-size:1.16em;
+	}
+	p{ margin:12px 0; }
+	ul,ol{ margin:12px 0; padding-left:1.6em; }
+	li{ margin:5px 0; }
+
+	code{
+		background:#f4f6fa;
+		background:var(--code-bg,#f4f6fa); color:#17335f;
+		border:1px solid var(--line,#d9dfe8);
+		padding:1px 5px; border-radius:4px; font-size:.93em;
+		font-family:Consolas,"Courier New",monospace;
+	}
+
+	.tablewrap{ overflow-x:auto; margin:14px 0; }
+	table{
+		border-collapse:collapse; width:100%; font-size:.94em;
+		border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.08);
+	}
+	th{
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-align:left; padding:9px 12px; white-space:nowrap;
+	}
+	td{ padding:9px 12px; border-bottom:1px solid var(--line,#d9dfe8); vertical-align:top; }
+	tr:nth-child(even) td{ background:#fafbfe; color:var(--ink,#1c2330); }
+	td.nowrap{ white-space:nowrap; }
+
+	.toc{ margin:26px 0 6px; }
+	.toc ol{
+		list-style:none; display:flex; flex-wrap:wrap; gap:8px;
+		padding:0; margin:0; counter-reset:toc;
+	}
+	.toc ol li{ counter-increment:toc; }
+	.toc ol a{
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+		overflow:hidden; text-overflow:ellipsis; white-space:normal;
+		width:310px; max-width:100%;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--accent,#12224d),var(--accent2,#2f5fbf));
+		color:#fff; text-decoration:none; padding:9px 13px;
+		border-radius:6px; font-size:.95em; line-height:1.45;
+		font-weight:700;
+	}
+	.toc ol a::before{ content:counter(toc) ". "; font-weight:700; }
+
+	footer{
+		max-width:1600px; margin:0 auto; padding:18px 30px 30px;
+		border-top:1px solid var(--line,#d9dfe8);
+		background:#fff; color:var(--ink-soft,#4a5568); font-size:.94em;
+	}
+	footer a{ color:var(--link,#1a4fa0); background:transparent; }
+	.wrap a.home, footer a.home{
+		display:inline-block; vertical-align:middle; line-height:1; text-decoration:none;
+		background:#12224d;
+		background:linear-gradient(100deg,var(--navy1,#12224d),var(--navy2,#2f5fbf));
+		color:#fff; padding:3px 9px; border-radius:6px;
+	}
+	a.home svg{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+	<div class="inner">
+		<h1>text の .gitignore と --rename 計画 (ai-agent-tools)</h1>
+		<p class="lead"><code>text find</code> ・ <code>text replace</code> が .gitignore で外したものを読まないようにし、<code>text replace --rename</code> でファイル名も置き換えられるようにする。課題 i261110-08 (file-manager の #1911)。</p>
+		<p class="date">📅 作成: 2026-11-10 / 更新: 2026-11-10</p>
+	</div>
+</div>
+
+<div class="wrap">
+
+<p class="backlink"><a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a></p>
+
+<p><strong>対象 ・ 入力 ・ 出力</strong>: 対象は、このプロジェクトの <code>src/text/</code> (<code>find.ts</code> ・ <code>replace.ts</code> ・ <code>main.ts</code>) と試験 (<code>run-text-replace-tests.ts</code> ・ text の試験)、TOOLS-USAGE。入力は、<code>--path</code> の下のファイルと git の管理の情報。出力は、書き換えたファイルの中身と名前。</p>
+
+<div class="toc">
+	<h2>目次</h2>
+	<ol>
+		<li class="ch01"><a href="#ch01">決めたこと</a></li>
+		<li class="ch02"><a href="#ch02">今ある動きと試験</a></li>
+		<li class="ch03"><a href="#ch03">進め方</a></li>
+	</ol>
+</div>
+
+<section class="ch01" id="ch01">
+	<h1>決めたこと</h1>
+	<p>2026-11-10 に、利用者が選んだ。決定のファイルは <code>i261110-08-d1</code> ・ <code>d2</code>。</p>
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>番号</th><th>問い</th><th>選んだ案</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap">238-A</td><td>.gitignore で外したもの (Rust の target 等) を読むか</td><td>git の管理下では、既定で読まない。find ・ replace の両方。選ばなかった案: 外すオプションを足す</td></tr>
+			<tr><td class="nowrap">239-A</td><td>ファイル名も置き換えるか</td><td><code>--rename</code> を足す。git の管理下なら <code>git mv</code>。選ばなかった案: 足さない</td></tr>
+		</tbody>
+	</table>
+	</div>
+</section>
+
+<section class="ch02" id="ch02">
+	<h1>今ある動きと試験</h1>
+	<p>今ある動き: 直したあとも、次の動きを保つ。どれも <code>run-text-replace-tests.ts</code> と text の試験で見る。</p>
+	<ul>
+		<li>find と replace は、同じ <code>selectTargets</code> でファイルを選ぶ (<code>--path</code> ・ 第 2 位置引数 ・ <code>-r</code> ・ <code>--include</code> ・ <code>--exclude</code> ・ <code>--exclude-dir</code>)</li>
+		<li>既定で外すフォルダは <code>tmp</code> ・ <code>etc</code> ・ <code>node_modules</code> ・ <code>.git</code> と、<code>_</code> で始まるもの。<code>--no-default-exclude</code> で既定を外す</li>
+		<li>replace は全部のファイルを組み立ててから書く。0 件 (終了コード 1。<code>--expect 0</code> なら 0) ・ 表せない文字 (5) ・ <code>--expect</code> と違う (6) なら、どのファイルも書き換えない</li>
+		<li>文字コード ・ BOM ・ 改行を保つ。<code>--dry-run</code> は書き換えない</li>
+	</ul>
+</section>
+
+<section class="ch03" id="ch03">
+	<h1>進め方</h1>
+	<p>どの手順も、試験を先に書き、❌Red を見てから作る。bun と node の両方で流す。</p>
+	<h2>1. .gitignore で外したものを読まない (238-A)</h2>
+	<ol>
+		<li><code>--path</code> が git の管理下なら、最初に <code>git ls-files -o -i --exclude-standard --directory</code> を 1 回だけ流し、外されたフォルダとファイルを受け取る</li>
+		<li>walk は、そのフォルダに入らず、そのファイルを拾わない。target のような大きいフォルダも中を読まない</li>
+		<li>git の管理下でない ・ git が無いときは、今の動きのまま</li>
+		<li><code>--no-default-exclude</code> を渡したら、これも外さない</li>
+		<li>外した件数を「.gitignore で外した N 件」と 1 行出す</li>
+		<li>試験: 一時フォルダで <code>git init</code> し、<code>.gitignore</code> に <code>target/</code> を書く。find ・ replace が target の中を見ないこと、<code>--no-default-exclude</code> なら見ること、git の外では今のままであること</li>
+	</ol>
+	<h2>2. --rename でファイル名も置き換える (239-A)</h2>
+	<ol>
+		<li>中身と同じ検索語 ・ <code>--regex</code> ・ <code>-i</code> で、ファイルの名前 (フォルダ名は含めない) も置き換える</li>
+		<li>名前の変わった数を、合計と <code>--expect</code> に数える。<code>--dry-run</code> は古い名前と新しい名前を並べて出す</li>
+		<li>書く前にすべて調べ、次のどれかがあれば、何も書き換えずに終了コード 7 で止める: 新しい名前のファイルが既にある ・ 2 つのファイルが同じ名前になる ・ 名前に使えない文字が入る</li>
+		<li>中身を書き終えてから名前を変える。git の管理下のファイルは <code>git mv</code>、管理外は <code>fs.renameSync</code></li>
+		<li>試験: 名前だけ ・ 中身だけ ・ 両方が一致する場合、ぶつかって止まる場合、git mv で変えたことが <code>git status</code> に出る場合、<code>--dry-run</code> では何も変えない場合</li>
+	</ol>
+	<h2>3. 仕上げ</h2>
+	<ol>
+		<li>TOOLS-USAGE と使い方の表示を直す</li>
+		<li>text の試験を bun と node で全件流す</li>
+		<li>課題 i261110-08 に結果を書き、file-manager に知らせて確認を頼む</li>
+	</ol>
+</section>
+
+</div>
+
+<footer>
+	<a class="home" href="../../README.html" aria-label="戻る" title="README へ戻る"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1 1 7h2v7h4v-4h2v4h4V7h2z"/></svg></a>
+</footer>
+
+</body>
+</html>

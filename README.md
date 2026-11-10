@@ -95,6 +95,7 @@ AI エージェントと人が、どのプロジェクトでも同じ手順で�
 | [render に決定を出す 計画](notes/10_plan/p261108-02-renderに決定を出す.md) | 記録した決定を、`issue render` の HTML で、課題の下と「計画の決定」の章に出す |
 | [過去の決定の移行 計画](notes/10_plan/p261108-03-過去の決定の移行.md) | 資料と課題に散っている過去の決定を `issue decide migrate` で `decisions/` へ移す。失敗したら戻す |
 | [番号の予約の共有 計画](notes/10_plan/p261109-01-番号の予約の共有.md) | 課題 ・ 決定 ・ 選択肢の番号の予約をホームの下に置き、worktree や別の clone の間でも重ならないようにする。`project-id.txt` を `project-uuid.txt` に改める |
+| [text の .gitignore と --rename 計画](notes/10_plan/i261110-08-text-replaceのgitignoreとrename.md) | `text find` ・ `text replace` が .gitignore で外したものを読まないようにし、`--rename` でファイル名も置き換える |
 | [番号の予約のキーを uuid にする 計画](notes/10_plan/i261110-01-番号の予約のキーをuuidにする.md) | 予約の置き場のキーを `uuid_<project_uuid>_<プロジェクト id>` にし、リポジトリの作成 ・ 改名 ・ id の変更で予約が割れないようにする |
 | [環境変数の仕様](notes/50_spec/環境変数.md) | 道具が読む ・ 設定する ・ 消す環境変数の一覧。試験 ・ 計測のための変数は後半の章に分けてある |
 | [less の折り返し](notes/50_spec/lessの折り返し.md) | 端末の桁数を超える行を、画面行に分けて数える規則と、[EOF] の出す場所。限界と、確かめていないこと |
