@@ -65,7 +65,7 @@ const Usage = [
 	'  issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]',
 	'  issue confirm <id> [--undo] [--root <dir>] [--json]            報告元の確認 (confirmed) を true にする (--undo で false)',
 	'  issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]',
-	'                                                                 HTML を作る (開かない)。既定は notes/40_issues/_issues.html',
+	'                                                                 HTML を作る (開かない)。既定は notes/40_issues/_issues.html と _issues-archive.html の 2 枚',
 	'  issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]',
 	'                                                                 _issues.html を作り直して、既定のアプリで開く',
 	'  issue archive <group|番号> [--root <dir>] [--json]             グループの全件が済なら、archived/ へ動かす。番号なら済の課題 1 件だけを動かす',
@@ -438,6 +438,22 @@ function runRender(rest: string[]): number {
 	const root = existingRoot(o);
 	const outFile = outArg !== undefined ? path.resolve(outArg) : defaultOutFile(root);
 	let warnings = 0;
+	// 240-A: --out ・ id ・ --group を渡さないときは、保管の一覧 (_issues-archive.html) も作り直す。
+	// --all を「全部作り直す」と受け取っても、古い保管の一覧が残らないようにする。リンクを張るため先に作る
+	const archiveLines: string[] = [];
+	if (outArg === undefined && o.positionals.length === 0 && !o.values.has('--group')) {
+		const archiveFile = archiveOutFile(root);
+		const a = renderHtml({
+			root, outFile: archiveFile, standalone: false, folders: ['archived'], group: null, ids: [],
+			warn: (m) => { warnings++; console.error(m); },
+			peer: { file: defaultOutFile(root), label: '未・着手・済の課題', always: true },
+		});
+		if (a.count > 0 || fs.existsSync(archiveFile)) {
+			const w = writeIfChanged(archiveFile, a.html);
+			const s = relShown(root, archiveFile);
+			archiveLines.push(w === 'unchanged' ? `[OK] ${s} は変更なし (課題 ${a.count} 件)` : `[OK] ${s} を${w === 'created' ? '作った' : '作り直した'} (課題 ${a.count} 件)`);
+		}
+	}
 	const r = renderHtml({
 		root, outFile, standalone, folders, group: o.values.get('--group') ?? null, ids: o.positionals,
 		warn: (m) => { warnings++; console.error(m); },
@@ -453,6 +469,7 @@ function runRender(rest: string[]): number {
 	} else {
 		console.log(`[OK] ${shown} を${written === 'created' ? '作った' : '作り直した'} (課題 ${r.count} 件)`);
 	}
+	if (!o.flags.has('--json')) for (const l of archiveLines) console.log(l);
 	return ExitOk;
 }
 

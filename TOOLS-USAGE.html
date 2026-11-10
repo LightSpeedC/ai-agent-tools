@@ -1095,7 +1095,7 @@ created: 2026-11-01
 			<tr><td class="nowrap"><code>issue confirm &lt;id&gt;</code></td><td>報告元の確認が取れたことを記録する</td></tr>
 			<tr><td class="nowrap"><code>issue archive &lt;グループ&gt;</code></td><td>全件が済のグループを <code>archived/</code> へ動かす。<code>issue archive &lt;番号&gt;</code> なら、済の課題 1 件だけを動かす。<code>issue archive --done-before &lt;yyyy-mm-dd&gt;</code> なら、その日より前に立てた済の課題をまとめて動かす (<code>--dry-run</code> で先に一覧を見る)。保管したグループにも、<code>issue new</code> で立てられる</td></tr>
 			<tr><td class="nowrap"><code>issue check</code></td><td>課題ファイルを検査する。commit の前に流す</td></tr>
-			<tr><td class="nowrap"><code>issue render</code> ・ <code>issue view</code></td><td>一覧の HTML を作る (<code>view</code> は作って開く)。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る</td></tr>
+			<tr><td class="nowrap"><code>issue render</code> ・ <code>issue view</code></td><td>一覧の HTML を作る (<code>view</code> は作って開く)。<code>--out</code> ・ id ・ <code>--group</code> を渡さない <code>render</code> は、<code>_issues.html</code> と保管の <code>_issues-archive.html</code> の両方を作り直す (中身が同じなら書かない。240-A)。<code>--all</code> は <code>_issues.html</code> に保管も含める指定。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る</td></tr>
 			<tr><td class="nowrap"><code>issue choice next</code></td><td>選択肢の通し番号 (<code>202-A</code> の <code>202</code>) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない)</td></tr>
 			<tr><td class="nowrap"><code>issue decide migrate</code></td><td>資料と課題に散っている過去の決定を <code>decisions/</code> へ移す (既定は <code>--dry-run</code>。<code>--apply</code> は書いたあとに確かめ、だめなら戻す。<code>--undo</code> で戻せる)。<strong>先に課題を <code>issue migrate</code> で移しておく</strong></td></tr>
 		</tbody>

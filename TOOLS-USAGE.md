@@ -844,7 +844,7 @@ created: 2026-11-01
 | `issue confirm <id>` | 報告元の確認が取れたことを記録する |
 | `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす。`issue archive <番号>` なら、済の課題 1 件だけを動かす。`issue archive --done-before <yyyy-mm-dd>` なら、その日より前に立てた済の課題をまとめて動かす (`--dry-run` で先に一覧を見る)。保管したグループにも、`issue new` で立てられる |
 | `issue check` | 課題ファイルを検査する。commit の前に流す |
-| `issue render` ・ `issue view` | 一覧の HTML を作る (`view` は作って開く)。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る |
+| `issue render` ・ `issue view` | 一覧の HTML を作る (`view` は作って開く)。`--out` ・ id ・ `--group` を渡さない `render` は、`_issues.html` と保管の `_issues-archive.html` の両方を作り直す (中身が同じなら書かない。240-A)。`--all` は `_issues.html` に保管も含める指定。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る |
 | `issue choice next` | 選択肢の通し番号 (`202-A` の `202`) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない) |
 | `issue decide migrate` | 資料と課題に散っている過去の決定を `decisions/` へ移す (既定は `--dry-run`。`--apply` は書いたあとに確かめ、だめなら戻す。`--undo` で戻せる)。**先に課題を `issue migrate` で移しておく** |
 

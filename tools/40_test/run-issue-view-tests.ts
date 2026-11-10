@@ -218,6 +218,19 @@ console.log('--- 自動の作り直し ---');
 	const r2 = run(['unarchive', 'text'], dir);
 	check('159-A: unarchive の最後に、戻した課題が _issues-archive.html から消える', r2.code === 0 && exists(dir, OutArchive) && !html(dir, OutArchive).includes('済の課題う'), r2.out + r2.err);
 }
+// 240-A: --out ・ id ・ --group を渡さない render は、_issues.html と _issues-archive.html の両方を作り直す
+{
+	const OutArchive = 'notes/40_issues/_issues-archive.html';
+	for (const extra of [[], ['--all']]) {
+		const dir = basic('render-both' + extra.join(''));
+		const r = run(['render', ...extra], dir);
+		check(`240-A: render ${extra.join(' ')} は _issues-archive.html も作る`, r.code === 0 && exists(dir, OutArchive) && html(dir, OutArchive).includes('保管の課題え'), r.out + r.err);
+		check(`240-A: render ${extra.join(' ')} は、作った 2 枚を出す`, r.out.includes('_issues-archive.html'), r.out);
+	}
+	const dir = basic('render-out-only');
+	run(['render', '--out', path.join(dir, 'tmp-one.html')], dir);
+	check('240-A: --out を渡したときは、_issues-archive.html を作らない', !exists(dir, OutArchive));
+}
 {
 	const dir = basic('no-archive-link');
 	run(['set', 'i261103-01', '--state', '着手'], dir);
