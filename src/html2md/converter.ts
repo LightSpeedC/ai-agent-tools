@@ -536,7 +536,23 @@ export function buildAnchorsFromHtml(html: string): Map<string, string> {
  */
 function buildAnchorMap(body: string): Map<string, string> {
 	const map = new Map<string, string>();
+	// 241-A: 章番号は本文と同じく h1 ごとに数える (タイトルバーと md-skip の中の h1 は数えない)。
+	// section の id は、その中の最初の h1 の番号で引く
+	const skips: [number, number][] = [];
+	for (const m of body.matchAll(/<([a-z][a-z0-9]*)\b[^>]*\bclass="[^"]*\b(?:titlebar|md-skip)\b[^"]*"[^>]*>/gi)) {
+		const start = m.index ?? 0;
+		const block = getBlock(body, start, m[1].toLowerCase());
+		skips.push([start, start + block.outer.length]);
+	}
+	const skipped = (pos: number): boolean => skips.some(([s, e]) => pos >= s && pos < e);
+	const h1s: { pos: number; inner: string; no: number }[] = [];
 	let no = 0;
+	for (const m of body.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/g)) {
+		const pos = m.index ?? 0;
+		if (skipped(pos)) { continue; }
+		no++;
+		h1s.push({ pos, inner: m[1], no });
+	}
 	let i = 0;
 	for (;;) {
 		const m = /<section\b/.exec(body.substring(i));
@@ -544,13 +560,12 @@ function buildAnchorMap(body: string): Map<string, string> {
 		const start = i + m.index;
 		const block = getBlock(body, start, 'section');
 		i = start + block.outer.length;
-
-		const h1 = /<h1\b[^>]*>([\s\S]*?)<\/h1>/.exec(block.outer);
-		if (h1 == null) { continue; }   // 目次など h1 を持たない section は章に数えない
-		no++;
 		const id = getAttr(getOpenTag(block.outer), 'id');
 		if (id.length === 0) { continue; }
-		map.set(id, headingAnchor(h1[1], no + '. '));
+		// 目次など h1 を持たない section は章に数えない
+		const first = h1s.find((h) => h.pos >= start && h.pos < start + block.outer.length);
+		if (first === undefined) { continue; }
+		map.set(id, headingAnchor(first.inner, first.no + '. '));
 	}
 	// h2 / h3 に id が振られている場合も拾う
 	for (const m of body.matchAll(/<h([23])\b([^>]*)>([\s\S]*?)<\/h\1>/g)) {
