@@ -5,7 +5,7 @@ title: decide migrate で、答え待ち ・ 仮に決めた決定も、その�
 group: issue
 created: 2026-11-11
 from: file-manager
-confirmed: false
+confirmed: true
 refs: i261111-01
 ---
 
@@ -13,5 +13,6 @@ file-manager の #1920。いまは資料の 674-A のような番号を拾うと
 
 ## やること
 - [済] 249-A を作った: 決定に status (決めた ・ 仮に決めた ・ 答え待ち)、decide new --status、decide set、migrate の --pending ・ --provisional、render の印。choice next は決定の題の番号も数える (244-A)。試験を先に書き ❌Red を見てから作った (決定の状態 17 件 ・ decide migrate 63 件 ・ numbers 45 件、bun ・ node とも ✅)。資料: 仕様 ・ TOOLS-USAGE
-- [未] file-manager に知らせ、確認をもらってから済にする
+- [済] file-manager に知らせ、確認をもらってから済にする
 - [済] 2026-11-11 09:58、#1929 で file-manager から (1) は確認済み (--dry-run で名指しどおりの状態)。(2) 移した後の choice next が 681 を出すかは、fm の移行の後に確かめて返す
+- [済] 2026-11-11 10:00、#1931 で (2) も確認済み (fm で 698 件を移し、choice next は 681)
