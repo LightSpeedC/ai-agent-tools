@@ -144,7 +144,7 @@
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
 		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-uuid.txt</code> の形と、番号の予約。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> ・ <code>decide</code> ・ <code>choice</code> まで。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-10</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-11</p>
 	</div>
 </div>
 
@@ -316,6 +316,7 @@ legacy_ids: :ai-agent-tools:171-A
 			<tr><td class="nowrap"><code>decided</code></td><td>必須</td><td>決めた日 (実在する yyyy-mm-dd)</td></tr>
 			<tr><td class="nowrap"><code>chosen</code></td><td>必須</td><td>選んだ案の英大文字 1 字。複数の案を選んだときはカンマで区切る (<code>A,C</code>。217-A)。同じ字を重ねない。本文に、選んだどの字の案の行もある</td></tr>
 			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>参照する課題 ・ 計画 ・ 調査 ・ 決定の番号 (カンマ区切り)。別プロジェクトは <code>:名前:番号</code> か <code>名前:番号</code></td></tr>
+			<tr><td class="nowrap"><code>status</code></td><td>任意</td><td>決定の状態 (249-A)。<code>決めた</code> ・ <code>仮に決めた</code> ・ <code>答え待ち</code> のどれか。書いていなければ <code>決めた</code>。<code>仮に決めた</code> ・ <code>答え待ち</code> の <code>chosen</code> は、推す案 (仮に選んだ案)。<code>chosen</code> の後に置く。変えるのは <code>issue decide set</code> (決めた日も今日になる)</td></tr>
 			<tr><td class="nowrap"><code>replaces</code></td><td>任意</td><td>この決定が置き換えた決定の id (カンマ区切り。形は <code>refs</code> と同じ)</td></tr>
 			<tr><td class="nowrap"><code>legacy_ids</code></td><td>任意</td><td>旧番号。<code>:プロジェクト名:旧番号</code> をカンマで区切る</td></tr>
 		</tbody>
@@ -537,7 +538,7 @@ issue decide show &lt;id&gt; [--root &lt;dir&gt;] [--json]</code></pre>
 	<h2><code>issue choice next [--root &lt;dir&gt;] [--json]</code> (選択肢の番号)</h2>
 	<ul>
 		<li>選択肢の通し番号 (<code>202-A</code> の <code>202</code>) を 1 つ予約して出す (計画 p261109-01 の 201-A)。出力は番号だけ、<code>--json</code> は <code>{ number }</code></li>
-		<li>次の番号は、予約 (<code>choices/</code>) の最大と、手元の決定の <code>legacy_ids</code> のうち自分のプロジェクト (<code>:&lt;project_id&gt;:</code>) の番号の最大の、大きいほう + 1</li>
+		<li>次の番号は、予約 (<code>choices/</code>) の最大と、手元の決定の <code>legacy_ids</code> のうち自分のプロジェクト (<code>:&lt;project_id&gt;:</code>) の番号の最大と、手元の決定の題の頭の番号 (<code>243: …</code>。244-A) の最大の、いちばん大きいもの + 1。題の途中の数字 (<code>37 件の表</code>) は数えない</li>
 		<li>案を出す前に呼び、出た番号を使う。子セッションでも同じ</li>
 	</ul>
 </section>

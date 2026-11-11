@@ -1105,7 +1105,7 @@ created: 2026-11-01
 			<tr><td class="nowrap"><code>issue archive &lt;グループ&gt;</code></td><td>全件が済のグループを <code>archived/</code> へ動かす。<code>issue archive &lt;番号&gt;</code> なら、済の課題 1 件だけを動かす。<code>issue archive --done-before &lt;yyyy-mm-dd&gt;</code> なら、その日より前に立てた済の課題をまとめて動かす (<code>--dry-run</code> で先に一覧を見る)。保管したグループにも、<code>issue new</code> で立てられる</td></tr>
 			<tr><td class="nowrap"><code>issue check</code></td><td>課題ファイルを検査する。commit の前に流す</td></tr>
 			<tr><td class="nowrap"><code>issue render</code> ・ <code>issue view</code></td><td>一覧の HTML を作る (<code>view</code> は作って開く)。<code>--out</code> ・ id ・ <code>--group</code> を渡さない <code>render</code> は、<code>_issues.html</code> と保管の <code>_issues-archive.html</code> の両方を作り直す (中身が同じなら書かない。240-A)。<code>--all</code> は <code>_issues.html</code> に保管も含める指定。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る</td></tr>
-			<tr><td class="nowrap"><code>issue choice next</code></td><td>選択肢の通し番号 (<code>202-A</code> の <code>202</code>) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない)</td></tr>
+			<tr><td class="nowrap"><code>issue choice next</code></td><td>選択肢の通し番号 (<code>202-A</code> の <code>202</code>) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない)。予約のほか、決定の <code>legacy_ids</code> と、決定の題の頭の番号 (<code>243: …</code>) も、使った番号として数える</td></tr>
 			<tr><td class="nowrap"><code>issue decide migrate</code></td><td>資料と課題に散っている過去の決定を <code>decisions/</code> へ移す (既定は <code>--dry-run</code>。<code>--apply</code> は書いたあとに確かめ、だめなら戻す。<code>--undo</code> で戻せる)。<strong>先に課題を <code>issue migrate</code> で移しておく</strong></td></tr>
 		</tbody>
 	</table>
@@ -1117,6 +1117,8 @@ created: 2026-11-01
 <pre><code class="language-shell">issue decide new --parent p261108-01 --title 進める順 --option "先に作る" --option "順に進める" --chosen A
 issue decide list --parent p261108-01
 issue decide show p261108-01-d1</code></pre>
+	<p><strong>まだ決まっていない決定は、状態を付けて書く</strong> (249-A)。<code>--status 答え待ち</code> (案を出して答えを待っている) ・ <code>--status 仮に決めた</code> (推奨で仮に決めた) を付け、<code>--chosen</code> には推す案を書く。決まったら <code>issue decide set &lt;id&gt; --status 決めた [--chosen &lt;字&gt;]</code> で変える (決めた日も今日になる)。過去の決定を移すときは、<code>issue decide migrate --apply --pending &lt;旧番号,…&gt; --provisional &lt;旧番号,…&gt;</code> で、名指しした番号をその状態で移す。一覧 (<code>_issues.html</code>) では、決めた以外の決定に状態の印が付く。</p>
+
 	<p><code>--option</code> を書いた順に A ・ B ・ C … と振る。両方の案を選んだときは <code>--chosen A,B</code> とカンマで区切る。旧番号 (<code>171-A</code> 等) を残すときは <code>--legacy :&lt;プロジェクト名&gt;:171-A</code>、前の決定を覆すときは <code>--replaces &lt;id&gt;</code>。<strong>置き換えた元の決定のファイルは消さない</strong> (消すと、<code>issue check</code> が replaces の参照先を見つけられずに警告し、<code>--recheck</code> の候補にも戻る。237-A)。<code>issue check</code> が決定のファイルも検査する。チャットの選択肢の番号は、<code>issue choice next</code> で取る。</p>
 
 	<h2>旧方式から移す</h2>

@@ -854,7 +854,7 @@ created: 2026-11-01
 | `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす。`issue archive <番号>` なら、済の課題 1 件だけを動かす。`issue archive --done-before <yyyy-mm-dd>` なら、その日より前に立てた済の課題をまとめて動かす (`--dry-run` で先に一覧を見る)。保管したグループにも、`issue new` で立てられる |
 | `issue check` | 課題ファイルを検査する。commit の前に流す |
 | `issue render` ・ `issue view` | 一覧の HTML を作る (`view` は作って開く)。`--out` ・ id ・ `--group` を渡さない `render` は、`_issues.html` と保管の `_issues-archive.html` の両方を作り直す (中身が同じなら書かない。240-A)。`--all` は `_issues.html` に保管も含める指定。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る |
-| `issue choice next` | 選択肢の通し番号 (`202-A` の `202`) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない) |
+| `issue choice next` | 選択肢の通し番号 (`202-A` の `202`) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない)。予約のほか、決定の `legacy_ids` と、決定の題の頭の番号 (`243: …`) も、使った番号として数える |
 | `issue decide migrate` | 資料と課題に散っている過去の決定を `decisions/` へ移す (既定は `--dry-run`。`--apply` は書いたあとに確かめ、だめなら戻す。`--undo` で戻せる)。**先に課題を `issue migrate` で移しておく** |
 
 引数の全体は `issue` を引数なしで呼ぶと出る。
@@ -868,6 +868,8 @@ issue decide new --parent p261108-01 --title 進める順 --option "先に作る
 issue decide list --parent p261108-01
 issue decide show p261108-01-d1
 ```
+
+**まだ決まっていない決定は、状態を付けて書く** (249-A)。`--status 答え待ち` (案を出して答えを待っている) ・ `--status 仮に決めた` (推奨で仮に決めた) を付け、`--chosen` には推す案を書く。決まったら `issue decide set <id> --status 決めた [--chosen <字>]` で変える (決めた日も今日になる)。過去の決定を移すときは、`issue decide migrate --apply --pending <旧番号,…> --provisional <旧番号,…>` で、名指しした番号をその状態で移す。一覧 (`_issues.html`) では、決めた以外の決定に状態の印が付く。
 
 `--option` を書いた順に A ・ B ・ C … と振る。両方の案を選んだときは `--chosen A,B` とカンマで区切る。旧番号 (`171-A` 等) を残すときは `--legacy :<プロジェクト名>:171-A`、前の決定を覆すときは `--replaces <id>`。**置き換えた元の決定のファイルは消さない** (消すと、`issue check` が replaces の参照先を見つけられずに警告し、`--recheck` の候補にも戻る。237-A)。`issue check` が決定のファイルも検査する。チャットの選択肢の番号は、`issue choice next` で取る。
 
