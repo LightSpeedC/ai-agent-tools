@@ -187,6 +187,17 @@ console.log('\n[選択肢の番号の始まり]');
 	const r = run(['choice', 'next', '--root', dir], dir, numbers);
 	check('最初の番号は、自分のプロジェクトの legacy_ids の最大に 1 を足す (151。ほかのプロジェクトの 900 は数えない)', r.code === 0 && r.out === '151', r.out + r.err);
 }
+{
+	// 244-A: decide new の題に書いた番号 (NNN: で始まる) も、使った番号として数える
+	const numbers = path.join(work, 'n-choice-title');
+	const dir = mkProject(path.join(work, 'proj-choice-title'), {
+		[Items + 'project-uuid.txt']: `schema: 2\nproject_uuid: ${Uuid}\nproject_id: proj-choice-title\n`,
+		'notes/40_issues/decisions/i261111-01-d1-x.md': '---\nschema: 1\nid: i261111-01-d1\ntitle: "243: 書き込みの原子性"\nparent: i261111-01\ndecided: 2026-11-11\nchosen: A\n---\n\n## 案\n\n- A: a\n',
+		'notes/40_issues/decisions/i261111-01-d2-y.md': '---\nschema: 1\nid: i261111-01-d2\ntitle: 37 件の表\nparent: i261111-01\ndecided: 2026-11-11\nchosen: A\n---\n\n## 案\n\n- A: a\n',
+	});
+	const r = run(['choice', 'next', '--root', dir], dir, numbers);
+	check('244-A: 決定の題の番号 (243:) も数え、次は 244 (「37 件」のような題の数字は数えない)', r.code === 0 && r.out === '244', r.out + r.err);
+}
 
 // ---- 3 日より前の予約を消す ----
 

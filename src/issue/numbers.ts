@@ -282,7 +282,7 @@ export function prune(base: string, today: string, now: number = Date.now()): vo
 
 // ---- 選択肢の番号 (201-A) ----
 
-/** 手元の決定の legacy_ids から、自分のプロジェクトの選択肢の番号の最大を拾う (:<id>:150-A ・ :<id>:p261001-01/7-B ・ :<id>:206) */
+/** 手元の決定の legacy_ids (:<id>:150-A ・ :<id>:p261001-01/7-B ・ :<id>:206) と、題の頭の番号 (243: …) から、自分のプロジェクトの選択肢の番号の最大を拾う */
 function maxLegacyChoice(root: string, projectIds: string[]): number {
 	const dir = path.join(root, ...DecisionsDirRel);
 	let files: string[];
@@ -291,6 +291,9 @@ function maxLegacyChoice(root: string, projectIds: string[]): number {
 	for (const f of files) {
 		let text: string;
 		try { text = fs.readFileSync(path.join(dir, f), 'utf8'); } catch { continue; }
+		// 244-A: decide new の題に書いた番号 (NNN: で始まる) も、使った番号として数える
+		const title = /^title:[ \t]*["']?(\d{1,4}):/m.exec(text.replace(/\r/g, ''));
+		if (title !== null) max = Math.max(max, Number(title[1]));
 		const line = /^legacy_ids:[ \t]*(.*)$/m.exec(text.replace(/\r/g, ''));
 		if (line === null) continue;
 		for (const item of line[1].split(',').map((s) => s.trim())) {
