@@ -44,7 +44,7 @@ import {
 } from './ops.ts';
 import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWritten, verifyWritten } from './migrate.ts';
 import { listDecisions, newDecision, searchDecisions, setDecision, showDecision } from './decide.ts';
-import { DecideWrittenListRel, applyDecideMigration, planDecideMigration, recheckDecisions, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
+import { DecideWrittenListRel, applyDecideMigration, markStatuses, planDecideMigration, recheckDecisions, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
 import { DecisionIdPattern, ParentPattern } from './check.ts';
 import { todayJst } from './ops.ts';
 import { nextChoice } from './numbers.ts';
@@ -78,7 +78,7 @@ const Usage = [
 	'                                                                 決定の状態と選んだ字を変える (決めた日は今日になる)',
 	'  issue decide list [--parent <番号>] [--root <dir>] [--json]    決定の一覧',
 	'  issue decide show <id> [--root <dir>] [--json]                 決定を 1 件読む',
-	'  issue decide migrate [--dry-run [--recheck] | --apply | --undo] [--root <dir>] [--json]',
+	'  issue decide migrate [--dry-run [--recheck] | --apply | --undo] [--pending <旧番号,…>] [--provisional <旧番号,…>] [--root <dir>] [--json]',
 	'                                                                 資料と課題の過去の決定 (96-A 等) を decisions/ へ移す (既定は --dry-run。--apply は書いたあとに確かめ、だめなら戻す)',
 	'  issue choice next [--root <dir>] [--json]                      選択肢の通し番号を 1 つ予約して出す (worktree の間でも重ならない)',
 	'  issue migrate [--dry-run | --apply] [--root <dir>] [--json]    旧 issues.html の課題を読み、移す計画を出す (既定は --dry-run。--apply で items/ へ書く。すでにある番号は飛ばす。旧の記録が食い違うものは、--state-override で状態を決めるまで書かない)',
@@ -742,7 +742,17 @@ function runDecide(rest: string[]): number {
 // ---- decide migrate (過去の決定の移行。計画 p261108-03) ----
 
 function runDecideMigrate(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json', '--dry-run', '--apply', '--undo', '--recheck'], positionals: 0 });
+	const o = parseOptions(rest, { valued: ['--root', '--pending', '--provisional'], flags: ['--json', '--dry-run', '--apply', '--undo', '--recheck'], positionals: 0 });
+	// 249-A: 名指しした旧番号を、答え待ち ・ 仮に決めた で移す
+	const numList = (name: string): number[] => {
+		const v = o.values.get(name);
+		if (v === undefined) return [];
+		const items = v.split(',').map((s) => s.trim());
+		if (items.some((s) => !/^\d{1,4}$/.test(s))) throw new UsageError(`${name} は旧番号をカンマで区切る (例: 674,675): ${v}`);
+		return items.map(Number);
+	};
+	const pendingNums = numList('--pending');
+	const provisionalNums = numList('--provisional');
 	if ([o.flags.has('--apply'), o.flags.has('--dry-run'), o.flags.has('--undo')].filter((x) => x).length > 1) throw new UsageError('--apply ・ --dry-run ・ --undo は一緒に使えない');
 	if (o.flags.has('--recheck') && (o.flags.has('--apply') || o.flags.has('--undo'))) throw new UsageError('--recheck は --dry-run とだけ使える (何も書かない)');
 	const root = existingRoot(o);
@@ -762,9 +772,12 @@ function runDecideMigrate(rest: string[]): number {
 	}
 
 	const plan = planDecideMigration(root);
+	markStatuses(plan, pendingNums, provisionalNums);
 	const fromTable = plan.move.filter((m) => m.from === 'table').length;
 	const printLists = (): void => {
 		console.log(`  表から: ${fromTable} 件 ・ 本文から拾った: ${plan.fromText.length} 件 ・ 既にある (飛ばした): ${plan.skipped.length} 件`);
+		if (pendingNums.length > 0) console.log(`  答え待ち: ${pendingNums.join(' ・ ')}`);
+		if (provisionalNums.length > 0) console.log(`  仮に決めた: ${provisionalNums.join(' ・ ')}`);
 		console.log(`  A とみなした (本文に記録なし。192-A): ${plan.assumedA.length > 0 ? plan.assumedA.join(' ・ ') : 'なし'}`);
 		console.log(`  本文から拾った番号 (問いと案は記録なし。193-A): ${plan.fromText.length > 0 ? plan.fromText.join(' ・ ') : 'なし'}`);
 		if (plan.split.length > 0) console.log(`  字が割れた: ${plan.split.map((x) => `${x.number} (${x.letters})`).join(' ・ ')}`);

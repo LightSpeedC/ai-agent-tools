@@ -15,7 +15,7 @@ import path from 'node:path';
 import { DecisionsRel, ItemsRel, ParentPattern } from './check.ts';
 import { splitIssue } from './meta.ts';
 import { loadDecisions, newDecision } from './decide.ts';
-import { Failure, compareId } from './ops.ts';
+import { Failure, UsageError, compareId } from './ops.ts';
 import { UuidFileName, readProjectFile } from './numbers.ts';
 import { parseLegacyIssues } from './migrate.ts';
 import { getPlainText } from '../html2md/htmlutil.ts';
@@ -56,7 +56,24 @@ export type PlannedDecision = {
 	slug: string;
 	from: 'table' | 'text';
 	source: string;
+	/** 249-A: --pending ・ --provisional で名指しした番号の状態。無ければ 決めた */
+	status?: string;
 };
+
+/**
+ * 249-A: 名指しした旧番号に状態を付ける。計画に無い番号 ・ 両方に書いた番号は UsageError
+ */
+export function markStatuses(plan: DecideMigratePlan, pending: number[], provisional: number[]): void {
+	const both = pending.filter((n) => provisional.includes(n));
+	if (both.length > 0) throw new UsageError(`--pending と --provisional の両方に書いた番号がある: ${both.join(', ')}`);
+	const numbers = new Set(plan.move.map((m) => m.number));
+	const missing = [...pending, ...provisional].filter((n) => !numbers.has(n));
+	if (missing.length > 0) throw new UsageError(`移す計画に無い番号: ${missing.join(', ')} (既にある ・ 読めなかった番号は名指しできない)`);
+	for (const m of plan.move) {
+		if (pending.includes(m.number)) m.status = '答え待ち';
+		else if (provisional.includes(m.number)) m.status = '仮に決めた';
+	}
+}
 
 export type DecideMigratePlan = {
 	move: PlannedDecision[];
@@ -406,7 +423,7 @@ export function applyDecideMigration(root: string, plan: DecideMigratePlan): { w
 	for (const d of plan.move) {
 		const r = newDecision(root, {
 			parent: d.parent, title: d.title, options: d.options, chosen: d.chosen, slug: d.slug,
-			legacy: `:${project}:${d.legacy}`, body: d.body, decided: d.decided,
+			legacy: `:${project}:${d.legacy}`, body: d.body, decided: d.decided, status: d.status,
 		});
 		written.push({ id: r.id, rel: r.rel, legacy: d.legacy });
 	}

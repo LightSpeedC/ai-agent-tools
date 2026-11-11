@@ -167,6 +167,26 @@ console.log('--- dry-run');
 	check('既定 (引数なし) は --dry-run', run([], dir).out.includes('移す: 6 件'));
 }
 
+// ---- 249-A: --pending ・ --provisional ----
+
+console.log('--- 状態を付けて移す (249-A)');
+{
+	const dir = mkProject('proj-status');
+	const d = run(['--dry-run', '--pending', '10', '--provisional', '11,30'], dir);
+	check('--dry-run に、状態を付けて移す番号を出す', d.code === 0 && d.out.includes('答え待ち: 10') && d.out.includes('仮に決めた: 11 ・ 30'), d.out + d.err);
+	const r = run(['--apply', '--pending', '10', '--provisional', '11,30'], dir);
+	check('--apply は終了コード 0', r.code === 0, r.out + r.err);
+	const all = decisionFiles(dir).map((n) => read(dir, Decisions + n));
+	const of = (legacy: string): string => all.find((t) => t.includes(`legacy_ids: :proj-status:${legacy}`)) ?? '';
+	check('--pending の番号は status: 答え待ち で書く', /\nstatus: 答え待ち\n/.test(of('10-A')), of('10-A'));
+	check('--provisional の番号は status: 仮に決めた で書く (表からも本文からも)', /\nstatus: 仮に決めた\n/.test(of('11-B')) && /\nstatus: 仮に決めた\n/.test(of('30-A')), of('11-B') + of('30-A'));
+	check('名指ししない番号は status を書かない (決めた)', of('21-B') !== '' && !/\nstatus:/.test(of('21-B')), of('21-B'));
+	const ng = run(['--dry-run', '--pending', '99'], dir);
+	check('移す計画に無い番号を名指ししたら、終了コード 5', ng.code === 5, ng.out + ng.err);
+	const both = run(['--dry-run', '--pending', '10', '--provisional', '10'], dir);
+	check('同じ番号を両方に書いたら、終了コード 5', both.code === 5, both.out + both.err);
+}
+
 // ---- apply ----
 
 console.log('--- apply');
