@@ -107,6 +107,7 @@ $Suites = @(
 	@{ Name = 'text の名前'; Script = 'run-text-names-tests.ts' },
 	@{ Name = 'html2md の入力の文字コード'; Script = 'run-html2md-encoding-tests.ts' },
 	@{ Name = '共通の書き込み'; Script = 'run-write-atomic-tests.ts' },
+	@{ Name = 'issue (決定の状態)'; Script = 'run-issue-decide-status-tests.ts' },
 	# psh のテストだけ ts で書いてある。道具自体が PowerShell を呼ぶため、
 	# テストまで ps1 にすると道具が壊れたときにテストも動かせない。
 	# ExeTarget は Rust 版（計画 p260929-01）。同じテストを PSH_TEST_TARGET で当てる

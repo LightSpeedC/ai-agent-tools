@@ -43,7 +43,7 @@ import {
 	Failure, StateOf, UsageError, archiveDoneBefore, archiveGroup, archiveOne, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setState, showIssue, unarchiveGroup,
 } from './ops.ts';
 import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWritten, verifyWritten } from './migrate.ts';
-import { listDecisions, newDecision, searchDecisions, showDecision } from './decide.ts';
+import { listDecisions, newDecision, searchDecisions, setDecision, showDecision } from './decide.ts';
 import { DecideWrittenListRel, applyDecideMigration, planDecideMigration, recheckDecisions, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
 import { DecisionIdPattern, ParentPattern } from './check.ts';
 import { todayJst } from './ops.ts';
@@ -72,8 +72,10 @@ const Usage = [
 	'  issue archive --done-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]   その日より前に立てた済の課題を、グループを問わずまとめて動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 	'  issue decide new --parent <番号> --title <問い> --option <文> [--option <文> …] --chosen <A|B|…|A,C>',
-	'                  [--slug <件名>] [--refs <番号,…>] [--replaces <id,…>] [--legacy <:名前:旧番号,…>] [--body <本文>] [--root <dir>] [--json]',
+	'                  [--status 決めた|仮に決めた|答え待ち] [--slug <件名>] [--refs <番号,…>] [--replaces <id,…>] [--legacy <:名前:旧番号,…>] [--body <本文>] [--root <dir>] [--json]',
 	'                                                                 決定を decisions/ に記録する (id は <親>-d<連番>)',
+	'  issue decide set <id> [--status 決めた|仮に決めた|答え待ち] [--chosen <字>] [--root <dir>] [--json]',
+	'                                                                 決定の状態と選んだ字を変える (決めた日は今日になる)',
 	'  issue decide list [--parent <番号>] [--root <dir>] [--json]    決定の一覧',
 	'  issue decide show <id> [--root <dir>] [--json]                 決定を 1 件読む',
 	'  issue decide migrate [--dry-run [--recheck] | --apply | --undo] [--root <dir>] [--json]',
@@ -677,7 +679,7 @@ function runDecide(rest: string[]): number {
 	const args = rest.slice(1);
 	if (sub === 'new') {
 		const o = parseOptions(args, {
-			valued: ['--root', '--parent', '--title', '--chosen', '--slug', '--refs', '--replaces', '--legacy', '--body'], flags: ['--json'], positionals: 0, repeated: ['--option'],
+			valued: ['--root', '--parent', '--title', '--chosen', '--status', '--slug', '--refs', '--replaces', '--legacy', '--body'], flags: ['--json'], positionals: 0, repeated: ['--option'],
 		});
 		const parent = o.values.get('--parent');
 		const title = o.values.get('--title');
@@ -687,11 +689,23 @@ function runDecide(rest: string[]): number {
 		if (chosen === undefined) throw new UsageError('--chosen (選んだ案の字) が要る');
 		const root = existingRoot(o);
 		const r = newDecision(root, {
-			parent, title, chosen, options: o.repeated.get('--option') ?? [], slug: o.values.get('--slug'),
+			parent, title, chosen, options: o.repeated.get('--option') ?? [], slug: o.values.get('--slug'), status: o.values.get('--status'),
 			refs: o.values.get('--refs'), replaces: o.values.get('--replaces'), legacy: o.values.get('--legacy'), body: o.values.get('--body'),
 		});
 		if (o.flags.has('--json')) console.log(JSON.stringify({ id: r.id, file: r.rel }));
 		else console.log(`[OK] ${r.rel} を作った (${r.id})`);
+		return ExitOk;
+	}
+	if (sub === 'set') {
+		// 249-A: 決定の状態 (と選んだ字) を、あとから変える
+		const o = parseOptions(args, { valued: ['--root', '--status', '--chosen'], flags: ['--json'], positionals: 1 });
+		const id = o.positionals[0];
+		if (id === undefined) throw new UsageError('issue decide set <id> --status <状態> [--chosen <字>]');
+		if (o.values.get('--status') === undefined && o.values.get('--chosen') === undefined) throw new UsageError('--status か --chosen が要る');
+		const root = existingRoot(o);
+		const r = setDecision(root, id, { status: o.values.get('--status'), chosen: o.values.get('--chosen') });
+		if (o.flags.has('--json')) console.log(JSON.stringify(r));
+		else console.log(`[OK] ${id} を ${r.status}${r.chosen !== '' ? ` (${r.chosen})` : ''} にした`);
 		return ExitOk;
 	}
 	if (sub === 'list') {

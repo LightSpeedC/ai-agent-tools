@@ -34,7 +34,9 @@ export const DecisionNamePattern = /^([ipr]\d{6}-[0-9a-kLm-z]{2}-d[1-9]\d*)-(.+)
 /** 決定の親になれる番号 */
 export const ParentPattern = /^[ipr]\d{6}-[0-9a-kLm-z]{2}$/;
 /** 決定のメタ情報のキーの順 */
-export const DecisionKeyOrder = ['schema', 'id', 'title', 'parent', 'decided', 'chosen', 'refs', 'replaces', 'legacy_ids'] as const;
+export const DecisionKeyOrder = ['schema', 'id', 'title', 'parent', 'decided', 'chosen', 'status', 'refs', 'replaces', 'legacy_ids'] as const;
+/** 決定の状態 (249-A)。書いていなければ 決めた。仮に決めた ・ 答え待ち の chosen は、推す案 (仮に選んだ案) */
+export const DecisionStatuses = ['決めた', '仮に決めた', '答え待ち'] as const;
 const DecisionRequired = ['schema', 'id', 'title', 'parent', 'decided', 'chosen'] as const;
 /**
  * 決定の refs ・ replaces の 1 つ。別プロジェクトは :名前:番号 (153-A) か 名前:番号。
@@ -422,6 +424,8 @@ function checkDecisions(root: string, issueIds: Set<string>, add: Add): number {
 				add('error', 'chosen', rel, `chosen の案 (- ${c}: …) が本文に無い`);
 			}
 		}
+		const status = get('status');
+		if (status !== undefined && !(DecisionStatuses as readonly string[]).includes(status)) add('error', 'value', rel, `status が ${DecisionStatuses.join(' ・ ')} のどれでもない: ${status}`);
 		const list = (key: string, pattern: RegExp): string[] => {
 			const value = get(key);
 			if (value === undefined) return [];

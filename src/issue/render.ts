@@ -407,7 +407,10 @@ export function renderHtml(o: RenderOptions): RenderResult {
 		const notes: string[] = [];
 		if (newer.length > 0) notes.push(`→ ${newer.map(idLink).join(', ')} で覆した`);
 		if (older.length > 0) notes.push(`← ${older.map(idLink).join(', ')} を覆した`);
-		const summary = `<span class="dno">${escapeHtml(d.id)}</span>${escapeHtml(d.meta.title ?? '')} → ${chosenText}`
+		// 249-A: 決めた以外の決定は、状態を印にして出す (選んだ字は、推す案 ・ 仮に選んだ案)
+		const status = d.meta.status ?? '決めた';
+		const mark = status === '決めた' ? '' : ` <span class="badge ${status === '答え待ち' ? 'b-warn' : 'b-none'}">${escapeHtml(status)}</span>`;
+		const summary = `<span class="dno">${escapeHtml(d.id)}</span>${escapeHtml(d.meta.title ?? '')} → ${chosenText}${mark}`
 			+ (notes.length > 0 ? ` (${notes.join(' ・ ')})` : '');
 		const meta: string[] = [`決めた日 ${escapeHtml(d.meta.decided ?? '')}`];
 		const refs = splitIds(d.meta.refs);

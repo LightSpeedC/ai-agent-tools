@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-	DecisionIdPattern, DecisionNamePattern, DecisionRefPattern, DecisionsRel, LegacyIdPattern, OptionLine, ParentPattern, SlugMax, SlugPattern, listMdNames,
+	DecisionIdPattern, DecisionNamePattern, DecisionRefPattern, DecisionStatuses, DecisionsRel, LegacyIdPattern, OptionLine, ParentPattern, SlugMax, SlugPattern, listMdNames,
 } from './check.ts';
 import { splitIssue } from './meta.ts';
 import { Failure, UsageError, compareId, lineMatcher, numbersBaseFor, singleLine, slugFromTitle, todayJst } from './ops.ts';
@@ -57,7 +57,15 @@ export type DecideOptions = {
 	body?: string;
 	/** 決めた日 (yyyy-mm-dd)。省けば JST の今日。過去の決定の移行 (p261108-03) が、資料の作成日を渡す */
 	decided?: string;
+	/** 決定の状態 (249-A)。決めた (既定) なら書かない */
+	status?: string;
 };
+
+function checkStatus(status: string | undefined): string | undefined {
+	if (status === undefined) return undefined;
+	if (!(DecisionStatuses as readonly string[]).includes(status)) throw new UsageError(`--status は ${DecisionStatuses.join(' ・ ')} のどれか: ${status}`);
+	return status === '決めた' ? undefined : status;
+}
 
 /** decisions/ に決定を作る。何かを作る前に、引数をすべて確かめる */
 export function newDecision(root: string, o: DecideOptions): { id: string; rel: string } {
@@ -72,6 +80,7 @@ export function newDecision(root: string, o: DecideOptions): { id: string; rel: 
 		throw new UsageError(`--chosen は、案の字 (${Letters.slice(0, options.length).split('').join(' ・ ')}) のどれか。複数はカンマで区切る (A,C): ${o.chosen}`);
 	}
 	o = { ...o, chosen: picked.join(',') };
+	const status = checkStatus(o.status);
 	const refs = listValue(o.refs, '--refs', DecisionRefPattern);
 	const replaces = listValue(o.replaces, '--replaces', DecisionRefPattern);
 	const legacy = listValue(o.legacy, '--legacy', LegacyIdPattern);
@@ -94,6 +103,7 @@ export function newDecision(root: string, o: DecideOptions): { id: string; rel: 
 		{
 			if (hasFileWithId(root, id)) continue;
 			const lines = ['schema: 1', `id: ${id}`, `title: ${title}`, `parent: ${o.parent}`, `decided: ${today}`, `chosen: ${o.chosen}`];
+			if (status !== undefined) lines.push(`status: ${status}`);
 			if (refs !== undefined) lines.push(`refs: ${refs}`);
 			if (replaces !== undefined) lines.push(`replaces: ${replaces}`);
 			if (legacy !== undefined) lines.push(`legacy_ids: ${legacy}`);
@@ -190,6 +200,40 @@ export function searchDecisions(root: string, term: string, regex = false): { ki
 		if (matches.length > 0) hits.push({ kind: 'decision', id: d.id, parent: DecisionIdPattern.exec(d.id)?.[1] ?? '', title: d.meta.title ?? '', file: d.file, matches });
 	}
 	return hits;
+}
+
+/**
+ * 決定の状態と選んだ字を変える (249-A)。決めた日は今日にする。
+ * status は chosen の直後に置き、決めた なら行を消す。ほかの行と本文はそのまま
+ */
+export function setDecision(root: string, id: string, o: { status?: string; chosen?: string }): { id: string; status: string; chosen: string } {
+	const v = showDecision(root, id);
+	const newStatus = o.status === undefined ? undefined : (checkStatus(o.status) ?? '決めた');
+	let chosen = v.meta.chosen ?? '';
+	if (o.chosen !== undefined) {
+		const picked = o.chosen.split(',').map((s) => s.trim());
+		const keys = new Set(v.options.map((x) => x.key));
+		if (picked.some((c) => !keys.has(c)) || new Set(picked).size !== picked.length) {
+			throw new UsageError(`--chosen は、案の字 (${[...keys].join(' ・ ')}) のどれか。複数はカンマで区切る: ${o.chosen}`);
+		}
+		chosen = picked.join(',');
+	}
+	const status = newStatus ?? v.meta.status ?? '決めた';
+	const fm = v.text.indexOf('\n---\n', 4);
+	const head = v.text.slice(4, fm).split('\n').filter((l) => !/^status:/.test(l));
+	const out: string[] = [];
+	for (const l of head) {
+		if (/^decided:/.test(l)) { out.push(`decided: ${todayJst()}`); continue; }
+		if (/^chosen:/.test(l)) {
+			out.push(`chosen: ${chosen}`);
+			if (status !== '決めた') out.push(`status: ${status}`);
+			continue;
+		}
+		out.push(l);
+	}
+	const full = path.join(root, ...v.file.split('/'));
+	fs.writeFileSync(full, '---\n' + out.join('\n') + v.text.slice(fm));
+	return { id, status, chosen };
 }
 
 /** 決定を 1 件読む */
