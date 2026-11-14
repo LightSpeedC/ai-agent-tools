@@ -2,7 +2,7 @@
 
 ツールを直すときに回すテスト、期待値の作り直し、ビルド。使い方は [TOOLS-USAGE](../../TOOLS-USAGE.md) を見る。
 
-> 📅 作成: 2026-09-29 / 更新: 2026-11-14
+> 📅 作成: 2026-09-29 / 更新: 2026-11-15
 
 [^^](../../README.md) ／ [ローカルルール](local-rules.md)
 
@@ -55,6 +55,12 @@ UI_LOCK_TEST_TARGET="$(pwd -W)/src/ui-lock-rs/target/release/ui-lock.exe" node t
 ### オプションの書式
 
 <strong>道具の言語で決める。</strong>TypeScript ・ Rust の道具は Unix 形式（`--path` ・ `-r`）で、古い `-Path` 形式も受ける。**ps1 のスクリプトは PowerShell 形式**（`run-all-tests.ps1 -Online`）で、Unix 形式には寄せない。`--online` は PowerShell では位置引数として読まれるため、寄せるには引数を自前で読み替える必要があり、`CmdletBinding` の検査も効かなくなる。
+
+### src/ を直す前に、試験を変えたかを知らせるフック
+
+<strong>`src/` を Edit ・ Write する前に、`tools/40_test/` か `tests/` に未 commit の変更 (新しいファイルも含む) が無ければ、「試験を先に」と知らせる。</strong>止めはしない (課題 i261111-04 ・ 決定 266-A ・ 267-A)。共通ルール「テストを先に書く」を、直す前に思い出させるため。フック本体は `tools/10_setup/remind-test-first.ts`、登録は `.claude/settings.json` の `PreToolUse` (`$CLAUDE_PROJECT_DIR` から相対で指す)。試験は `run-remind-test-first-tests.ts`。
+
+<strong>体裁 ・ コメント ・ 資料だけの直しにも知らせが出る。</strong>フックは見分けられないので、その場合はそのまま進めてよい。試験を commit したあとは差分が無くなるので、次の `src/` の編集で、また知らせが出る。
 
 ## 2. 期待値（golden）の作り直し
 

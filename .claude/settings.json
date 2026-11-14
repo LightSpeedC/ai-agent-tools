@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/tools/10_setup/remind-test-first.ts\"",
+            "timeout": 15,
+            "statusMessage": "src/ の前に試験を変えたか確かめ中..."
+          }
+        ]
+      }
+    ]
+  }
+}

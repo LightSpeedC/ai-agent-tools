@@ -81,6 +81,8 @@ $Suites = @(
 	@{ Name = 'convert-audio'; Script = 'run-convert-audio-tests.ts' },
 	# 複数の場所から書き換えられるリポジトリの同期。裸のリポジトリと clone 2 つで、ロック ・ 衝突 ・ 時間切れまで見る
 	@{ Name = 'safe-push'; Script = 'run-safe-push-tests.ts'; TimeoutSec = 300 },
+	# src/ を直す前に試験を変えていなければ知らせるフック (i261111-04)。一時の git リポジトリで、知らせる・知らせない・壊れた入力・登録を見る
+	@{ Name = 'remind-test-first'; Script = 'run-remind-test-first-tests.ts' },
 	# 課題管理ツール issue のフェーズ 1: 課題ファイルの形と issue check。小さなプロジェクトを tmp/ に作って検査する
 	@{ Name = 'issue'; Script = 'run-issue-tests.ts' },
 	# 課題管理ツール issue のフェーズ 2 の前半: init ・ new (番号の予約と同時実行を含む) ・ show ・ list
