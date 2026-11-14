@@ -52,6 +52,9 @@ function usage(toStdout: boolean): void {
 	write('');
 	write('GitHub のトークンは、環境変数 GITHUB_TOKEN ・ GH_TOKEN か、gh auth token から読みます (5000 回/時)。');
 	write('無ければ認証なし (60 回/時)。引数では受けません (履歴やプロセスの一覧に残るため)。');
+	write('');
+	write('送り先は、環境変数 CHECK_MARKDOWN_ENDPOINT で差し替えられます (試験用)。ローカル');
+	write('(127.0.0.1 ・ localhost ・ ::1) の URL だけ受け、差し替え先にはトークンを付けません。');
 }
 
 /** トークンの読み先。値は返すが、画面には読み先の名前だけを出す (234-A) */
@@ -70,6 +73,26 @@ function ghToken(): { token: string; source: string } {
 		if (r.status === 0 && v !== '') { return { token: v, source: 'gh auth token' }; }
 	} catch { /* gh が無い */ }
 	return { token: '', source: 'なし (60 回/時)' };
+}
+
+const DefaultEndpoint = 'https://api.github.com/markdown';
+const EndpointEnv = 'CHECK_MARKDOWN_ENDPOINT';
+
+/**
+ * 送り先 (i261111-03、決定 265-A)。環境変数 CHECK_MARKDOWN_ENDPOINT があれば差し替える。
+ * 試験が、本物の GitHub の API へ送らずに、送る経路を通すための口。
+ * 差し替え先はローカル (127.0.0.1 ・ localhost ・ ::1) の http / https だけ。環境変数で
+ * 送り先を外へ向けて、トークンや本文を送らせないため。差し替え先にはトークンを付けない
+ */
+function resolveEndpoint(): { url: string; overridden: boolean } | { error: string } {
+	const raw = (process.env[EndpointEnv] ?? '').trim();
+	if (raw === '') { return { url: DefaultEndpoint, overridden: false }; }
+	let u: URL;
+	try { u = new URL(raw); } catch { return { error: '形が違います' }; }
+	if (u.protocol !== 'http:' && u.protocol !== 'https:') { return { error: 'http か https の URL だけ受けます' }; }
+	if (!['127.0.0.1', 'localhost', '[::1]'].includes(u.hostname)) { return { error: 'ローカル (127.0.0.1 ・ localhost ・ ::1) だけ受けます' }; }
+	if (u.username !== '' || u.password !== '') { return { error: 'ユーザー名やパスワードは付けられません' }; }
+	return { url: u.href, overridden: true };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -106,8 +129,17 @@ async function main(): Promise<number> {
 	const exclude = String(parsed.values['exclude']);
 	const delayMs = Number(parsed.values['delay-ms']);
 
+	// 何かを送る前に、送り先を確かめる
+	const endpoint = resolveEndpoint();
+	if ('error' in endpoint) {
+		console.error('[NG] 環境変数 ' + EndpointEnv + ' が使えません: ' + endpoint.error + '。');
+		console.error('     送り先を差し替えられるのは、試験のためのローカルの受け口だけです。外のサーバーへは向けられません。');
+		return ExitBadArgs;
+	}
+
 	console.log('=== Markdown の表示チェック（GitHub のレンダラ） ===');
-	const fromEnv = envToken();
+	if (endpoint.overridden) { console.log('  送り先: ' + endpoint.url + ' (環境変数 ' + EndpointEnv + ' で差し替え。トークンは付けない)'); }
+	const fromEnv = endpoint.overridden ? null : envToken();
 	if (fromEnv !== null) { console.log('  認証: ' + fromEnv.source); }
 
 	// 242-A: git の管理下では、.gitignore で外した md を送らない (名指ししたファイルは送る)
@@ -128,7 +160,7 @@ async function main(): Promise<number> {
 	}
 
 	console.log('  対象: ' + found.files.length + ' ファイル');
-	const auth = fromEnv ?? ghToken();
+	const auth = endpoint.overridden ? { token: '', source: 'なし (差し替え先にはトークンを付けない)' } : (fromEnv ?? ghToken());
 	const token = auth.token;
 	if (fromEnv === null) { console.log('  認証: ' + auth.source); }
 	console.log('');
@@ -150,7 +182,7 @@ async function main(): Promise<number> {
 
 		let html: string;
 		try {
-			const res = await fetch('https://api.github.com/markdown', {
+			const res = await fetch(endpoint.url, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify({ text: md, mode: 'gfm' }),

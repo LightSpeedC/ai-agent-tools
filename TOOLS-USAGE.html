@@ -396,6 +396,8 @@ html2md --root . --dry-run                # 書き出さず、結果と指摘だ
 
 	<p>認証なしは 60 回/時。トークンがあれば 5000 回/時になる。<strong>トークンは引数で受けない</strong> (シェルの履歴やプロセスの一覧に残るため。234-A)。環境変数 <code>GITHUB_TOKEN</code> ・ <code>GH_TOKEN</code> か、<code>gh auth token</code> から読み、読み先の名前だけを出す。<code>--token</code> を渡すと終了コード 2。</p>
 
+	<p><strong>送り先は、環境変数 <code>CHECK_MARKDOWN_ENDPOINT</code> で差し替えられる (試験用。i261111-03 の 265-A)。</strong>試験が、本物の GitHub の API へ md を送らずに、送る経路 (問題なし ・ <code>**</code> が残る ・ HTTP エラー) を通すための口。<strong>差し替え先はローカル (<code>127.0.0.1</code> ・ <code>localhost</code> ・ <code>::1</code>) の <code>http</code> / <code>https</code> だけ</strong>で、それ以外は何も送らずに終了コード 2。外のサーバーへ向けて、本文やトークンを送らせないため。<strong>差し替え先にはトークンを付けず、<code>gh auth token</code> も呼ばない。</strong>未設定なら、これまでどおり GitHub に送る。</p>
+
 	<div class="tablewrap">
 	<table>
 		<thead><tr><th>終了コード</th><th>意味</th></tr></thead>
