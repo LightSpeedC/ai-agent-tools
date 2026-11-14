@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-11-11
+> 📅 作成: 2026-09-04 / 更新: 2026-11-14
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -23,6 +23,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 13. [会話ログから公開用のページを作る（history2html）](#13-会話ログから公開用のページを作るhistory2html)
 14. [リポジトリを壊さずに GitHub と同期する（safe-push）](#14-リポジトリを壊さずに-github-と同期するsafe-push)
 15. [課題を管理する（issue）](#15-課題を管理するissue)
+16. [画面を使う作業を 1 つずつにする（ui-lock）](#16-画面を使う作業を-1-つずつにするui-lock)
 
 ## 1. 使えるコマンド
 
@@ -38,6 +39,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `psh` | PowerShell を呼び、出力を **UTF-8 に直して流す**（「PowerShell を呼ぶ（psh）」） |
 | `less` | UTF-8 セーフなページャー。DOS の `more` の文字化けを避ける（「ページングして読む（less）」） |
 | `psls` | プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（「プロセス一覧を見る（psls）」） |
+| `ui-lock` | 画面 ・ マウス ・ キーを使う作業を、全プロジェクトで 1 つずつにする（「画面を使う作業を 1 つずつにする（ui-lock）」） |
 | `spawn-server` | HTTP で受けたコマンドを、同じユーザーのまま**新しい窓で起動する**（「HTTP で受けたコマンドを新しい窓で起動する（spawn-server）」） |
 | `transcribe` | 音声を whisper.cpp で**書き起こす**。複数の音声を 1 回の起動でまとめて処理する（「音声を書き起こす（transcribe）」） |
 | `convert-audio` | 音声の形式を ffmpeg で**変える**（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」） |
@@ -896,5 +898,27 @@ issue decide show p261108-01-d1
 > <strong>複数の PC で使うプロジェクトは、移す PC を 1 台に決める。</strong>移す前に、全 PC で課題の編集を commit して push しておく。ほかの PC は、課題を触る前に、そのプロジェクトと ai-agent-tools ・ ai-agent-rules を pull し、`issue check` を流す。PC ごとに移すと、同じ課題が 2 度立つ。
 
 未・着手が 0 件のプロジェクトは急がない。次に課題を立てるときに、利用者に移行を依頼してもらえばよい。
+
+## 16. 画面を使う作業を 1 つずつにする（ui-lock）
+
+<strong>画面 ・ マウス ・ キー ・ 前面の窓を使う作業を、全プロジェクトで 1 つずつにする。</strong>画面の試験 ・ 利用者に見せる確認 ・ Chrome の操作 ・ Playwright の有頭ブラウザが対象。名前付きミューテックス `Local\ai-interactive-desktop` を取ってからコマンドを流し、終わったら放す。`bun:ffi` を使うため **Bun 専用**。
+
+```shell
+ui-lock run --timeout 10m -- bun tools/40_test/run-ui-tests.ts   # 取って流し、終わったら放す
+ui-lock run --also "Local\fm-ui-tests" -- cargo test --test ui    # 古い名前も一緒に取る (移行中)
+ui-lock status                                                     # 今の持ち主を見る
+```
+
+| オプション | 意味 |
+|---|---|
+| `--timeout <時間>` | 実行の上限。既定 `10m`。過ぎたら子のプロセスごと止めて放し、終了コード 4 |
+| `--wait <時間>` | 取れるまで待つ上限。既定 `60m`。過ぎたら持ち主を出して終了コード 3。待つ間は 1 分ごとに持ち主を出し、5 分ごとに Windows のトーストで知らせる |
+| `--also <名前>` | 一緒に取るロックの名前。何度でも書ける。1 つでも取れなければ全部を放して待つ (取り合いで固まらない) |
+
+時間は `30s` ・ `10m` ・ `1h` の形。終了コードは、子の終了コード ・ 1 (`status` で使用中) ・ 3 (待ちの上限) ・ 4 (実行の上限) ・ 5 (引数の誤り)。
+
+持ち主 (プロジェクト ・ worktree ・ コマンド ・ 開始時刻 ・ pid ・ 上限) は `%LOCALAPPDATA%\ai-interactive-desktop\owner.json` に書き、放すときに消す。持ち主が放さずに死んだときは、OS が次へ渡し、取った側が「放棄」と出す。
+
+Node ・ Rust ・ PowerShell のどれからでも、外側を `ui-lock run -- …` で包めば使える。
 
 [^^](README.md)

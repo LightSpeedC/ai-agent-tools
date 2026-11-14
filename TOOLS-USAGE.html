@@ -12,22 +12,23 @@
 		--link:#1a4fa0;
 		--accent:#12224d; --accent2:#2f5fbf; --soft:#f2f5fb;
 	}
-	/* 章のアクセント色（15 章 / 色相 280 → 0 を 20 度刻み） */
+	/* 章のアクセント色（16 章 / 色相 280 → 0 を 18.67 度刻み） */
 	.ch01{ --accent:hsl(280,78%,25%); --accent2:hsl(280,58%,55%); --soft:hsl(280,28%,95%); }
-	.ch02{ --accent:hsl(260,78%,25%); --accent2:hsl(260,58%,55%); --soft:hsl(260,28%,95%); }
-	.ch03{ --accent:hsl(240,78%,25%); --accent2:hsl(240,58%,55%); --soft:hsl(240,28%,95%); }
-	.ch04{ --accent:hsl(220,78%,25%); --accent2:hsl(220,58%,55%); --soft:hsl(220,28%,95%); }
-	.ch05{ --accent:hsl(200,78%,25%); --accent2:hsl(200,58%,55%); --soft:hsl(200,28%,95%); }
-	.ch06{ --accent:hsl(180,78%,25%); --accent2:hsl(180,58%,55%); --soft:hsl(180,28%,95%); }
-	.ch07{ --accent:hsl(160,78%,25%); --accent2:hsl(160,58%,55%); --soft:hsl(160,28%,95%); }
-	.ch08{ --accent:hsl(140,78%,25%); --accent2:hsl(140,58%,55%); --soft:hsl(140,28%,95%); }
-	.ch09{ --accent:hsl(120,78%,25%); --accent2:hsl(120,58%,55%); --soft:hsl(120,28%,95%); }
-	.ch10{ --accent:hsl(100,78%,25%); --accent2:hsl(100,58%,55%); --soft:hsl(100,28%,95%); }
-	.ch11{ --accent:hsl(80,78%,25%);  --accent2:hsl(80,58%,55%);  --soft:hsl(80,28%,95%); }
-	.ch12{ --accent:hsl(60,78%,25%);  --accent2:hsl(60,58%,55%);  --soft:hsl(60,28%,95%); }
-	.ch13{ --accent:hsl(40,78%,25%);  --accent2:hsl(40,58%,55%);  --soft:hsl(40,28%,95%); }
-	.ch14{ --accent:hsl(20,78%,25%);  --accent2:hsl(20,58%,55%);  --soft:hsl(20,28%,95%); }
-	.ch15{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
+	.ch02{ --accent:hsl(261.3,78%,25%); --accent2:hsl(261.3,58%,55%); --soft:hsl(261.3,28%,95%); }
+	.ch03{ --accent:hsl(242.7,78%,25%); --accent2:hsl(242.7,58%,55%); --soft:hsl(242.7,28%,95%); }
+	.ch04{ --accent:hsl(224,78%,25%); --accent2:hsl(224,58%,55%); --soft:hsl(224,28%,95%); }
+	.ch05{ --accent:hsl(205.3,78%,25%); --accent2:hsl(205.3,58%,55%); --soft:hsl(205.3,28%,95%); }
+	.ch06{ --accent:hsl(186.7,78%,25%); --accent2:hsl(186.7,58%,55%); --soft:hsl(186.7,28%,95%); }
+	.ch07{ --accent:hsl(168,78%,25%); --accent2:hsl(168,58%,55%); --soft:hsl(168,28%,95%); }
+	.ch08{ --accent:hsl(149.3,78%,25%); --accent2:hsl(149.3,58%,55%); --soft:hsl(149.3,28%,95%); }
+	.ch09{ --accent:hsl(130.7,78%,25%); --accent2:hsl(130.7,58%,55%); --soft:hsl(130.7,28%,95%); }
+	.ch10{ --accent:hsl(112,78%,25%); --accent2:hsl(112,58%,55%); --soft:hsl(112,28%,95%); }
+	.ch11{ --accent:hsl(93.3,78%,25%); --accent2:hsl(93.3,58%,55%); --soft:hsl(93.3,28%,95%); }
+	.ch12{ --accent:hsl(74.7,78%,25%); --accent2:hsl(74.7,58%,55%); --soft:hsl(74.7,28%,95%); }
+	.ch13{ --accent:hsl(56,78%,25%);  --accent2:hsl(56,58%,55%);  --soft:hsl(56,28%,95%); }
+	.ch14{ --accent:hsl(37.3,78%,25%); --accent2:hsl(37.3,58%,55%); --soft:hsl(37.3,28%,95%); }
+	.ch15{ --accent:hsl(18.7,78%,25%); --accent2:hsl(18.7,58%,55%); --soft:hsl(18.7,28%,95%); }
+	.ch16{ --accent:hsl(0,78%,25%);   --accent2:hsl(0,58%,55%);   --soft:hsl(0,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -175,7 +176,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-11</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-14</p>
 	</div>
 </div>
 
@@ -201,6 +202,7 @@
 		<li class="ch13"><a href="#ch13">会話ログから公開用のページを作る（history2html）</a></li>
 		<li class="ch14"><a href="#ch14">リポジトリを壊さずに GitHub と同期する（safe-push）</a></li>
 		<li class="ch15"><a href="#ch15">課題を管理する（issue）</a></li>
+		<li class="ch16"><a href="#ch16">画面を使う作業を 1 つずつにする（ui-lock）</a></li>
 	</ol>
 </div>
 
@@ -221,6 +223,7 @@
 			<tr><td class="nowrap"><code>psh</code></td><td>PowerShell を呼び、出力を <strong>UTF-8 に直して流す</strong>（「PowerShell を呼ぶ（psh）」）</td></tr>
 			<tr><td class="nowrap"><code>less</code></td><td>UTF-8 セーフなページャー。DOS の <code>more</code> の文字化けを避ける（「ページングして読む（less）」）</td></tr>
 			<tr><td class="nowrap"><code>psls</code></td><td>プロセス一覧をツリー表示する。物理メモリ使用量・キーワード絞り込み付き（「プロセス一覧を見る（psls）」）</td></tr>
+			<tr><td class="nowrap"><code>ui-lock</code></td><td>画面 ・ マウス ・ キーを使う作業を、全プロジェクトで 1 つずつにする（「画面を使う作業を 1 つずつにする（ui-lock）」）</td></tr>
 			<tr><td class="nowrap"><code>spawn-server</code></td><td>HTTP で受けたコマンドを、同じユーザーのまま<strong>新しい窓で起動する</strong>（「HTTP で受けたコマンドを新しい窓で起動する（spawn-server）」）</td></tr>
 			<tr><td class="nowrap"><code>transcribe</code></td><td>音声を whisper.cpp で<strong>書き起こす</strong>。複数の音声を 1 回の起動でまとめて処理する（「音声を書き起こす（transcribe）」）</td></tr>
 			<tr><td class="nowrap"><code>convert-audio</code></td><td>音声の形式を ffmpeg で<strong>変える</strong>（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」）</td></tr>
@@ -1142,6 +1145,31 @@ issue decide show p261108-01-d1</code></pre>
 		<p><strong>複数の PC で使うプロジェクトは、移す PC を 1 台に決める。</strong>移す前に、全 PC で課題の編集を commit して push しておく。ほかの PC は、課題を触る前に、そのプロジェクトと ai-agent-tools ・ ai-agent-rules を pull し、<code>issue check</code> を流す。PC ごとに移すと、同じ課題が 2 度立つ。</p>
 	</div>
 	<p>未・着手が 0 件のプロジェクトは急がない。次に課題を立てるときに、利用者に移行を依頼してもらえばよい。</p>
+</section>
+
+<section class="ch16" id="ch16">
+	<h1>画面を使う作業を 1 つずつにする（ui-lock）</h1>
+
+	<p><strong>画面 ・ マウス ・ キー ・ 前面の窓を使う作業を、全プロジェクトで 1 つずつにする。</strong>画面の試験 ・ 利用者に見せる確認 ・ Chrome の操作 ・ Playwright の有頭ブラウザが対象。名前付きミューテックス <code>Local\ai-interactive-desktop</code> を取ってからコマンドを流し、終わったら放す。<code>bun:ffi</code> を使うため <strong>Bun 専用</strong>。</p>
+
+<pre><code class="language-shell">ui-lock run --timeout 10m -- bun tools/40_test/run-ui-tests.ts   # 取って流し、終わったら放す
+ui-lock run --also "Local\fm-ui-tests" -- cargo test --test ui    # 古い名前も一緒に取る (移行中)
+ui-lock status                                                     # 今の持ち主を見る</code></pre>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>オプション</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>--timeout &lt;時間&gt;</code></td><td>実行の上限。既定 <code>10m</code>。過ぎたら子のプロセスごと止めて放し、終了コード 4</td></tr>
+			<tr><td class="nowrap"><code>--wait &lt;時間&gt;</code></td><td>取れるまで待つ上限。既定 <code>60m</code>。過ぎたら持ち主を出して終了コード 3。待つ間は 1 分ごとに持ち主を出し、5 分ごとに Windows のトーストで知らせる</td></tr>
+			<tr><td class="nowrap"><code>--also &lt;名前&gt;</code></td><td>一緒に取るロックの名前。何度でも書ける。1 つでも取れなければ全部を放して待つ (取り合いで固まらない)</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>時間は <code>30s</code> ・ <code>10m</code> ・ <code>1h</code> の形。終了コードは、子の終了コード ・ 1 (<code>status</code> で使用中) ・ 3 (待ちの上限) ・ 4 (実行の上限) ・ 5 (引数の誤り)。</p>
+	<p>持ち主 (プロジェクト ・ worktree ・ コマンド ・ 開始時刻 ・ pid ・ 上限) は <code>%LOCALAPPDATA%\ai-interactive-desktop\owner.json</code> に書き、放すときに消す。持ち主が放さずに死んだときは、OS が次へ渡し、取った側が「放棄」と出す。</p>
+	<p>Node ・ Rust ・ PowerShell のどれからでも、外側を <code>ui-lock run -- …</code> で包めば使える。</p>
 </section>
 
 </div>
