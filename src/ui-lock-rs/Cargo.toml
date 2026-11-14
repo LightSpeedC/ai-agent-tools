@@ -1,0 +1,19 @@
+[package]
+name = "ui-lock"
+version = "0.1.0"
+edition = "2021"
+description = "画面を使う作業を全プロジェクトで 1 つずつにする（src/ui-lock/main.ts の Rust 版）"
+publish = false
+
+[[bin]]
+name = "ui-lock"
+path = "src/main.rs"
+
+# 依存は持たない。Windows API は extern で直に宣言する
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

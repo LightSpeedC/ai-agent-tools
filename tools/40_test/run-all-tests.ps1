@@ -136,7 +136,7 @@ $Suites = @(
 	# node で走らせたときは「bun が必要です」で終わることだけ確かめる
 	@{ Name = 'psls'; Script = 'run-psls-tests.ts' },
 	# 画面を使う作業のロック。試験用の名前と置き場で、本物のロックに触らない
-	@{ Name = 'ui-lock'; Script = 'run-ui-lock-tests.ts' },
+	@{ Name = 'ui-lock'; Script = 'run-ui-lock-tests.ts'; ExeTarget = 'src\ui-lock-rs\target\release\ui-lock.exe'; ExeEnv = 'UI_LOCK_TEST_TARGET' },
 	# HTTP で受けたコマンドを新しい窓で起動する。テスト中に窓が一瞬開いて閉じる
 	@{ Name = 'spawn-server'; Script = 'run-spawn-server-tests.ts' },
 	# このリポジトリの HTML が共通ルール（戻るリンク ・ 目次 ・ 日付 ・ README からのリンク等）に沿っているか

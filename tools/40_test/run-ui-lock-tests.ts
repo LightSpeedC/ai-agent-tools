@@ -6,7 +6,9 @@
 	    UI_LOCK_NAME      ロックの名前
 	    UI_LOCK_DIR       owner.json の置き場
 	    UI_LOCK_NO_TOAST  1 ならトーストを出さない
-	ui-lock は bun:ffi 必須。node で走らせたときは「bun が必要です」で終わることだけを見る。
+	TS 版は、走らせた処理系 (bun は bun:ffi、node は koffi) で同じ試験を流す。
+	UI_LOCK_TEST_TARGET に Rust 版の exe を渡すと、exe を試す。そのときは TS 版とロックを
+	取り合えることも見る (同じ名前のロックを、別の実装どうしで守れること)。
 */
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -34,8 +36,15 @@ const lockName = 'Local\\ui-lock-test-' + process.pid;
 const env = { ...process.env, UI_LOCK_NAME: lockName, UI_LOCK_DIR: work, UI_LOCK_NO_TOAST: '1' };
 const ownerFile = path.join(work, 'owner.json');
 
+const target = process.env.UI_LOCK_TEST_TARGET || '';
+/** 試す実装の起動の形。exe なら exe そのもの、無ければ走らせた処理系で TS 版 */
+function cmdOf(args: string[]): [string, string[]] {
+	return target ? [target, args] : [runner, [tool, ...args]];
+}
+
 function run(args: string[]): { code: number; out: string; err: string } {
-	const r = spawnSync(runner, [tool, ...args], { encoding: 'utf8', env });
+	const [c, a] = cmdOf(args);
+	const r = spawnSync(c, a, { encoding: 'utf8', env });
 	return { code: r.status ?? -1, out: r.stdout ?? '', err: r.stderr ?? '' };
 }
 
@@ -58,7 +67,8 @@ function waitFor(cond: () => boolean, ms: number): Promise<boolean> {
 
 /** 背面で ui-lock を起こす。終わりの約束は起こした直後に作る (先に終わっても取りこぼさない) */
 function startHolder(args: string[], e: NodeJS.ProcessEnv): { pid: number; done: Promise<void> } {
-	const c = spawn(runner, [tool, ...args], { env: e, stdio: 'ignore' });
+	const [cmd, a] = cmdOf(args);
+	const c = spawn(cmd, a, { env: e, stdio: 'ignore' });
 	const done = new Promise<void>((resolve) => { c.on('exit', () => resolve()); c.on('error', () => resolve()); });
 	return { pid: c.pid ?? -1, done };
 }
@@ -66,10 +76,8 @@ function startHolder(args: string[], e: NodeJS.ProcessEnv): { pid: number; done:
 // 試験全体の上限。止まったまま残らないようにする
 setTimeout(() => { console.log('  [NG] 試験全体が 90 秒を超えた'); process.exit(1); }, 90000).unref();
 
-const isBun = typeof Bun !== 'undefined';
-
 console.log('');
-console.log('=== ui-lock のテスト ===');
+console.log('=== ui-lock のテスト (' + (target ? 'exe' : typeof Bun !== 'undefined' ? 'bun' : 'node') + ') ===');
 console.log('');
 
 {
@@ -78,11 +86,7 @@ console.log('');
 	yes('--help は使い方を出す', r.out.includes('ui-lock run'), r.out);
 }
 
-if (!isBun) {
-	const r = run(['status']);
-	eq('node では 2 で終わる', 2, r.code);
-	yes('node では bun が要ると出す', r.err.includes('bun が必要です'), r.err);
-} else {
+{
 	{
 		const r = run(['run']);
 		eq('-- の無い run は引数の誤り (5)', 5, r.code);
@@ -153,6 +157,19 @@ if (!isBun) {
 		const r = run(['run', '--wait', '5s', '--', ...sleeper(0)]);
 		eq('放棄されたロックは次が取れる', 0, r.code);
 		yes('放棄を知らせる', r.out.includes('放棄'), r.out);
+	}
+	if (target) {
+		// 別の実装どうし: TS 版 (走らせた処理系) が持つ間、exe は取れない。逆も同じ
+		const ts = spawn(runner, [tool, 'run', '--', ...sleeper(5000)], { env, stdio: 'ignore' });
+		const tsDone = new Promise<void>((resolve) => ts.on('exit', () => resolve()));
+		await waitFor(() => fs.existsSync(ownerFile), 5000);
+		eq('TS 版が持つ間、exe は待ちの上限で 3', 3, run(['run', '--wait', '2s', '--', ...sleeper(0)]).code);
+		await tsDone;
+		const exe = startHolder(['run', '--', ...sleeper(5000)], env);
+		await waitFor(() => fs.existsSync(ownerFile), 5000);
+		const r = spawnSync(runner, [tool, 'run', '--wait', '2s', '--', ...sleeper(0)], { encoding: 'utf8', env });
+		eq('exe が持つ間、TS 版は待ちの上限で 3', 3, r.status);
+		await exe.done;
 	}
 }
 

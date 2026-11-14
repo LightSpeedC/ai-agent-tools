@@ -2,7 +2,7 @@
 
 ツールを直すときに回すテスト、期待値の作り直し、ビルド。使い方は [TOOLS-USAGE](../../TOOLS-USAGE.md) を見る。
 
-> 📅 作成: 2026-09-29 / 更新: 2026-10-31
+> 📅 作成: 2026-09-29 / 更新: 2026-11-14
 
 [^^](../../README.md) ／ [ローカルルール](local-rules.md)
 
@@ -48,6 +48,8 @@ psh tools/40_test/run-all-tests.ps1 -Online
 ```shell
 # psh の Rust 版に当てる
 PSH_TEST_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts
+# ui-lock の Rust 版に当てる (TS 版とロックを取り合えることも見る)
+UI_LOCK_TEST_TARGET="$(pwd -W)/src/ui-lock-rs/target/release/ui-lock.exe" node tools/40_test/run-ui-lock-tests.ts
 ```
 
 ### オプションの書式
@@ -75,6 +77,7 @@ psh tools/40_test/run-tests.ps1 -Case anchor-badge -UpdateGolden  # 1 ケース�
 | 作るもの | 入口 | 出力先 |
 |---|---|---|
 | psh の Rust 版 | `build-psh-rs.cmd` | `src/psh-rs/target/release/psh.exe` |
+| ui-lock の Rust 版 | `build-ui-lock-rs.cmd` | `src/ui-lock-rs/target/release/ui-lock.exe` |
 
 **入口の名前はツール名と処理系で付ける**（`build-<ツール>-<処理系>.cmd`）。どれを作る入口か、名前で分かる。exe はどれも git に含めない。
 

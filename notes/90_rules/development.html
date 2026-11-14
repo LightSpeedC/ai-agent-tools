@@ -151,7 +151,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools の開発の手順</h1>
 		<p class="lead">ツールを直すときに回すテスト、期待値の作り直し、ビルド。使い方は <a href="../../TOOLS-USAGE.html">TOOLS-USAGE</a> を見る。</p>
-		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-10-31</p>
+		<p class="date">📅 作成: 2026-09-29 / 更新: 2026-11-14</p>
 	</div>
 </div>
 
@@ -205,7 +205,9 @@
 	<p>テストは既定で入口（<code>bin/</code>）を試す。別の実装を試すときは名指しする。</p>
 
 <pre><code class="language-shell"># psh の Rust 版に当てる
-PSH_TEST_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts</code></pre>
+PSH_TEST_TARGET="$(pwd -W)/src/psh-rs/target/release/psh.exe" node tools/40_test/run-psh-tests.ts
+# ui-lock の Rust 版に当てる (TS 版とロックを取り合えることも見る)
+UI_LOCK_TEST_TARGET="$(pwd -W)/src/ui-lock-rs/target/release/ui-lock.exe" node tools/40_test/run-ui-lock-tests.ts</code></pre>
 
 	<h2>オプションの書式</h2>
 
@@ -236,7 +238,9 @@ psh tools/40_test/run-tests.ps1 -Case anchor-badge -UpdateGolden  # 1 ケース�
 	<table>
 		<thead><tr><th>作るもの</th><th>入口</th><th>出力先</th></tr></thead>
 		<tbody>
-			<tr><td class="nowrap">psh の Rust 版</td><td class="nowrap"><code>build-psh-rs.cmd</code></td><td class="nowrap"><code>src/psh-rs/target/release/psh.exe</code></td></tr>		</tbody>
+			<tr><td class="nowrap">psh の Rust 版</td><td class="nowrap"><code>build-psh-rs.cmd</code></td><td class="nowrap"><code>src/psh-rs/target/release/psh.exe</code></td></tr>
+			<tr><td class="nowrap">ui-lock の Rust 版</td><td class="nowrap"><code>build-ui-lock-rs.cmd</code></td><td class="nowrap"><code>src/ui-lock-rs/target/release/ui-lock.exe</code></td></tr>
+		</tbody>
 	</table>
 	</div>
 

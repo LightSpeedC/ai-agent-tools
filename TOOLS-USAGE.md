@@ -901,7 +901,9 @@ issue decide show p261108-01-d1
 
 ## 16. 画面を使う作業を 1 つずつにする（ui-lock）
 
-<strong>画面 ・ マウス ・ キー ・ 前面の窓を使う作業を、全プロジェクトで 1 つずつにする。</strong>画面の試験 ・ 利用者に見せる確認 ・ Chrome の操作 ・ Playwright の有頭ブラウザが対象。名前付きミューテックス `Local\ai-interactive-desktop` を取ってからコマンドを流し、終わったら放す。`bun:ffi` を使うため **Bun 専用**。
+<strong>画面 ・ マウス ・ キー ・ 前面の窓を使う作業を、全プロジェクトで 1 つずつにする。</strong>画面の試験 ・ 利用者に見せる確認 ・ Chrome の操作 ・ Playwright の有頭ブラウザが対象。名前付きミューテックス `Local\ai-interactive-desktop` を取ってからコマンドを流し、終わったら放す。
+
+<strong>実装は 2 つある。</strong>入口は Rust 版 (`src/ui-lock-rs/target/release/ui-lock.exe`) があればそれを使い、無ければ TypeScript 版を bun (`bun:ffi`)、bun も無ければ node (`koffi`) で動かす。どれも同じロックと同じ `owner.json` を使うので、混ぜて使っても互いに守り合う。exe は `tools/20_build/build-ui-lock-rs.cmd` で作る (git には含めない)。
 
 ```shell
 ui-lock run --timeout 10m -- bun tools/40_test/run-ui-tests.ts   # 取って流し、終わったら放す

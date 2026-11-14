@@ -1,13 +1,25 @@
 #!/bin/sh
-# ui-lock: 画面 ・ マウス ・ キーを使う作業を、全プロジェクトで 1 つずつにする。中身は src/ui-lock/main.ts。
+# ui-lock: 画面 ・ マウス ・ キーを使う作業を、全プロジェクトで 1 つずつにする。
 #
-# bun:ffi で名前付きミューテックスを取るため、bun が要る (node 予備は無い)。
+# Rust 版（src/ui-lock-rs/target/release/ui-lock.exe）があればそれを使う（決定 256-A）。
+# 無ければ TypeScript 版（src/ui-lock/main.ts）を bun、bun も無ければ node で動かす。
+# exe は tools/20_build/build-ui-lock-rs.cmd で作る。git には含めない。
 dir=$(dirname "$0")
+
+if [ -f "$dir/../src/ui-lock-rs/target/release/ui-lock.exe" ]; then
+	exec "$dir/../src/ui-lock-rs/target/release/ui-lock.exe" "$@"
+	exit $?
+fi
 
 if command -v bun >/dev/null 2>&1; then
 	exec bun "$dir/../src/ui-lock/main.ts" "$@"
 	exit $?
 fi
 
-echo "[NG] bun が必要です" >&2
+if command -v node >/dev/null 2>&1; then
+	exec node "$dir/../src/ui-lock/main.ts" "$@"
+	exit $?
+fi
+
+echo "[NG] ui-lock.exe ・ bun ・ node のどれも見つかりません" >&2
 exit 2

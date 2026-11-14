@@ -5,10 +5,11 @@
 	持ち主が死ねば OS が放棄 (WAIT_ABANDONED) として次へ渡すので、取り残しが無い。
 	持ち主の記録は %LOCALAPPDATA%\ai-interactive-desktop\owner.json にも書く (status と待ちの表示に使う)。
 
-	ミューテックスは取ったスレッドが持つ。bun の主スレッドで取り、同じスレッドで放す。
+	Windows API は bun では bun:ffi、node では koffi で呼ぶ (決定 255-A)。Rust 版は src/ui-lock-rs (256-A)。
+	ミューテックスは取ったスレッドが持つ。主スレッドで取り、同じスレッドで放す。
 	待つ間は WaitForSingleObject(…, 0) を 1 秒ごとに試す (主スレッドを塞がない)。
 
-	終了コード: 0 ・ 子の終了コード / 1 status で使用中 / 2 bun が無い / 3 待ちの上限 / 4 実行の上限 / 5 引数の誤り
+	終了コード: 0 ・ 子の終了コード / 1 status で使用中 / 3 待ちの上限 / 4 実行の上限 / 5 引数の誤り
 */
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -16,7 +17,6 @@ import * as path from 'node:path';
 import { writeAtomic } from '../lib/write-atomic.ts';
 
 const EXIT_BUSY = 1;
-const EXIT_NO_BUN = 2;
 const EXIT_WAIT_TIMEOUT = 3;
 const EXIT_RUN_TIMEOUT = 4;
 const EXIT_BAD_ARGS = 5;
@@ -92,6 +92,7 @@ interface K32 {
 }
 
 async function loadK32(): Promise<{ k32: K32; wide: (s: string) => unknown }> {
+	if (typeof (globalThis as { Bun?: unknown }).Bun === 'undefined') return loadK32Koffi();
 	// 直に 'bun:ffi' と書くと node の型定義に無いため tsc が止まる。組み立ててから読む
 	const { dlopen, FFIType, ptr } = await import('bun' + ':ffi');
 	const { symbols } = dlopen('kernel32.dll', {
@@ -103,6 +104,19 @@ async function loadK32(): Promise<{ k32: K32; wide: (s: string) => unknown }> {
 	const keep: Buffer[] = [];
 	const wide = (s: string): unknown => { const b = Buffer.from(s + '\0', 'utf16le'); keep.push(b); return ptr(b); };
 	return { k32: symbols as unknown as K32, wide };
+}
+
+/** node では koffi で同じ 4 つを呼ぶ (決定 255-A)。ハンドルは koffi の外部ポインタのまま持ち回る */
+async function loadK32Koffi(): Promise<{ k32: K32; wide: (s: string) => unknown }> {
+	const koffi = (await import('koffi' as string)).default;
+	const lib = koffi.load('kernel32.dll');
+	const k32 = {
+		CreateMutexW: lib.func('void * __stdcall CreateMutexW(void *, int, const char16_t *)'),
+		WaitForSingleObject: lib.func('uint32 __stdcall WaitForSingleObject(void *, uint32)'),
+		ReleaseMutex: lib.func('int __stdcall ReleaseMutex(void *)'),
+		CloseHandle: lib.func('int __stdcall CloseHandle(void *)'),
+	};
+	return { k32: k32 as unknown as K32, wide: (s: string) => s };
 }
 
 class Locks {
@@ -269,7 +283,6 @@ async function run(args: string[]): Promise<number> {
 
 async function main(argv: string[]): Promise<number> {
 	if (argv.length === 0 || argv[0] === '--help' || argv[0] === '-h') { console.log(USAGE); return argv.length === 0 ? EXIT_BAD_ARGS : 0; }
-	if (typeof (globalThis as { Bun?: unknown }).Bun === 'undefined') { console.error('[NG] bun が必要です (bun:ffi でロックを取るため)'); return EXIT_NO_BUN; }
 	try {
 		if (argv[0] === 'status') return await status();
 		if (argv[0] === 'run') return await run(argv.slice(1));
