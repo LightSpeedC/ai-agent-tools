@@ -57,7 +57,7 @@ const Usage = [
 	'使い方:',
 	'  issue check [--root <dir>] [--json]                   課題ファイルと project-uuid.txt を検査する',
 	'  issue init [--root <dir>] [--new-id]                  project-uuid.txt を作る (古い project-id.txt があれば移す)',
-	'  issue new --title <題> --group <グループ> [--slug <件名>] [--from <報告元>] [--refs <番号,…>] [--body <本文>] [--root <dir>] [--json]',
+	'  issue new --title <題> --group <グループ> [--slug <件名>] [--from <報告元>] [--refs <番号,…>] [--body <本文>] [--root <dir>] [--json]   (--refs には chat の発言 #1923 も並べられる)',
 	'  issue show <id> [--root <dir>] [--json]               課題を 1 件読む',
 	'  issue list [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
 	'  issue search <語> [--regex] [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',

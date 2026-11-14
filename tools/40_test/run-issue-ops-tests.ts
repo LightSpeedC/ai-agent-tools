@@ -244,6 +244,15 @@ console.log('--- new');
 	check('--refs の形が違えば終了コード 5', newIssue(dir, ['--title', 'x', '--group', 'html2md', '--refs', '123']).code === 5);
 }
 {
+	// i261111-07 (262-A)。chat の依頼から課題を立てるとき、依頼の発言の番号を refs に残したい
+	const dir = std('new-refs-chat');
+	const r = newIssue(dir, [...Basic, '--refs', 'i261103-01,#1923']);
+	check('--refs は、chat の発言の番号 (#1923) も、課題番号と並べて書ける', r.code === 0 && read(dir, Todo + 'i261105-01-li-の中の表.md').includes('\nrefs: i261103-01, #1923\n'), r.out + r.err);
+	for (const bad of ['#', '#abc', '#1923a', '# 1923', '#0', '##1', 'public#1923']) {
+		check(`--refs の ${bad} は、chat の発言の番号の形でないので終了コード 5`, newIssue(dir, ['--title', 'x', '--group', 'html2md', '--refs', bad]).code === 5);
+	}
+}
+{
 	const dir = std('new-body');
 	newIssue(dir, [...Basic, '--body', '本文です']);
 	check('--body は、閉じの --- の次の空行のあとに書く', read(dir, Todo + 'i261105-01-li-の中の表.md').endsWith('---\n\n本文です\n'), read(dir, Todo + 'i261105-01-li-の中の表.md'));

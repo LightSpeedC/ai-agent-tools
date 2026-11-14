@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { Folders, ItemsRel, NamePattern, RefPattern, SlugMax, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
+import { Folders, ItemsRel, NamePattern, SlugMax, isRefForm, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
 import { splitIssue } from './meta.ts';
 import { OldIdFileName, UuidFileName, mainFolderName, copyUuid, maxReserved, numbersBaseOf, prune, readProjectFile, reserve, uuidFileText } from './numbers.ts';
 
@@ -152,7 +152,7 @@ export function newIssue(root: string, o: NewOptions): { id: string; rel: string
 	let refs: string | undefined;
 	if (o.refs !== undefined) {
 		const parts = o.refs.split(',').map((s) => s.trim());
-		if (parts.some((s) => !RefPattern.test(s))) throw new UsageError(`--refs の形が違う: ${o.refs} (番号をカンマで区切る)`);
+		if (parts.some((s) => !isRefForm(s))) throw new UsageError(`--refs の形が違う: ${o.refs} (番号をカンマで区切る。chat の発言は #1923 の形)`);
 		refs = parts.join(', ');
 	}
 	const slug = o.slug !== undefined ? o.slug : slugFromTitle(title);

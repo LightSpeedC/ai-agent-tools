@@ -288,6 +288,10 @@ for (const key of ['schema', 'id', 'title', 'group', 'created']) {
 	const dir = std('value-refs', { [Name1]: issueText({ refs: '123, ' }) });
 	check('refs の形が違えばエラー (value)', errorWith(checkRun(dir), 'value'));
 }
+{
+	const dir = std('value-refs-chat-bad', { [Name1]: issueText({ refs: 'i261103-02, #abc' }) });
+	check('refs の chat の発言の番号が #数字 でなければエラー (value)', errorWith(checkRun(dir), 'value'));
+}
 
 console.log('--- 警告で済むもの');
 {
@@ -345,6 +349,13 @@ console.log('--- refs');
 {
 	const dir = std('refs-other-project', { [Name1]: issueText({ refs: 'ai-chat-lite:i261101-04' }) });
 	check('refs の プロジェクト名:番号 は、外を読まないので確かめない', checkRun(dir).code === 0 && !checkRun(dir).out.includes('[refs]'), checkRun(dir).out);
+}
+{
+	const dir = std('refs-chat', {
+		[Name1]: issueText({ refs: 'i261103-02, #1923' }),
+		[Done + 'i261103-02-b.md']: issueText({ id: 'i261103-02' }),
+	});
+	check('refs の chat の発言の番号 (#1923) は、探す先が無いので、エラーにも警告にもならない', checkRun(dir).code === 0 && !checkRun(dir).out.includes('[refs]'), checkRun(dir).out);
 }
 
 console.log('--- 重複');

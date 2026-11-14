@@ -144,7 +144,7 @@
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
 		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-uuid.txt</code> の形と、番号の予約。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> ・ <code>decide</code> ・ <code>choice</code> まで。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-11</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-14</p>
 	</div>
 </div>
 
@@ -222,7 +222,7 @@ refs: p261103-01
 			<tr><td class="nowrap"><code>created</code></td><td>必須</td><td><code>yyyy-mm-dd</code> (実在する日付)</td><td>立てた日。変えない</td></tr>
 			<tr><td class="nowrap"><code>from</code></td><td>任意</td><td>文字列 (<code>プロジェクト名 #発言番号</code>)</td><td>他プロジェクトからの報告のときだけ書く</td></tr>
 			<tr><td class="nowrap"><code>confirmed</code></td><td><code>from</code> があるとき必須</td><td><code>true</code> / <code>false</code></td><td>報告元の確認。<code>true</code> になるまで、<code>done/</code> ・ <code>archived/</code> に置けない (済にできない)</td></tr>
-			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>カンマ区切りの番号 (<code>p261103-01, r261025-01</code>)</td><td>計画 ・ 調査 ・ 課題の番号。ほかのプロジェクトの番号は <code>プロジェクト名:番号</code></td></tr>
+			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>カンマ区切りの番号 (<code>p261103-01, r261025-01</code>)</td><td>計画 ・ 調査 ・ 課題の番号。ほかのプロジェクトの番号は <code>プロジェクト名:番号</code>。chat の発言の番号は <code>#1923</code> (<code>#</code> と 1 以上の数字だけ。ルーム付きは受けない)</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -371,7 +371,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 			<tr><td class="nowrap"><code>confirmed</code></td><td>エラー / 警告</td><td><code>from</code> があるのに <code>confirmed</code> が無い (エラー) ・ <code>done/</code> か <code>archived/</code> にあるのに <code>confirmed</code> が <code>true</code> でない (エラー) ・ <code>from</code> が無いのに <code>confirmed</code> がある (警告)</td></tr>
 			<tr><td class="nowrap"><code>key-order</code></td><td>警告</td><td>キーの順が、表の順と違う</td></tr>
 			<tr><td class="nowrap"><code>unknown-key</code></td><td>警告</td><td>知らないキーがある</td></tr>
-			<tr><td class="nowrap"><code>refs</code></td><td>警告</td><td><code>refs</code> の参照先が見つからない (課題は 4 つのフォルダのどれか、計画 ・ 調査 ・ アイデアは <code>notes/</code> のファイル名の先頭)。<code>プロジェクト名:番号</code> の形は、外を読まないので確かめない</td></tr>
+			<tr><td class="nowrap"><code>refs</code></td><td>警告</td><td><code>refs</code> の参照先が見つからない (課題は 4 つのフォルダのどれか、計画 ・ 調査 ・ アイデアは <code>notes/</code> のファイル名の先頭)。<code>プロジェクト名:番号</code> の形は、外を読まないので確かめない。<code>#1923</code> の形は、探す先が無いので確かめない</td></tr>
 			<tr><td class="nowrap"><code>slug-long</code></td><td>警告</td><td>件名が 30 文字を超える</td></tr>
 			<tr><td class="nowrap"><code>gitignore</code></td><td>警告</td><td><code>git check-ignore</code> で見て、<code>notes/40_issues/_issues.html</code> が Git の管理外になっていない (<code>.gitignore</code> に <code>_*</code> を足す)。git の管理の外 ・ git が無いときは、見られないので警告しない</td></tr>
 			<tr><td class="nowrap"><code>group</code></td><td>エラー / 警告</td><td><code>groups.txt</code> で同じ名前が重複している (エラー) ・ 課題の <code>group</code> が <code>groups.txt</code> に無い (警告)</td></tr>
@@ -397,7 +397,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><strong>id</strong> は、<code>i</code> ＋ 今日の日付 (JST の <code>yymmdd</code>) ＋ 連番。連番は、<strong>その日の既存の最大 (4 つのフォルダすべて) の次</strong>で、35 字 2 桁 (<code>09</code> の次は <code>0a</code>、<code>0k</code> の次は <code>0m</code>、<code>0z</code> の次は <code>10</code>)。その日の最初は <code>01</code></li>
 		<li><strong>件名</strong>は、<code>--slug</code> があればそれ、無ければ題から作る (使えない文字 ・ 空白は <code>-</code> に直し、30 文字までに切る)。<code>--slug</code> が使えない文字を含む ・ 30 文字を超える ・ 題からも作れない (記号だけ等) ときは終了コード 5</li>
 		<li><strong><code>groups.txt</code> があれば</strong>、<code>--group</code> がそこに並んでいる名前であること (誤字を防ぐため)。無ければ何でもよい</li>
-		<li><code>--from</code> があれば、<code>from</code> と <code>confirmed: false</code> を書く。<code>--refs</code> は番号をカンマで区切り、カンマのあとに空白 1 つで書く。形が違えば終了コード 5</li>
+		<li><code>--from</code> があれば、<code>from</code> と <code>confirmed: false</code> を書く。<code>--refs</code> は番号をカンマで区切り、カンマのあとに空白 1 つで書く。chat の発言の番号 (<code>#1923</code>) も並べて書ける。形が違えば終了コード 5</li>
 		<li>メタ情報は、決まりの順で書く。本文は、閉じの <code>---</code> の次の空行のあと。<code>--body</code> が無ければ空行だけ。UTF-8 (BOM 無し) ・ LF</li>
 		<li><code>project-uuid.txt</code> も古い <code>project-id.txt</code> も無ければ、<code>issue init</code> と同じに作る。<code>--root</code> で指したプロジェクトに <code>items/</code> が無くても作れる。<code>--root</code> が無く、プロジェクトが見つからなければ終了コード 5 (<code>issue init</code> を促す)</li>
 		<li><strong>番号の予約</strong>: 第 2 章「番号の予約」のとおり、<code>~/.ai-agent-tools/numbers/&lt;キー&gt;/ids/&lt;id&gt;/</code> に取る</li>

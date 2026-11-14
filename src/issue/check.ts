@@ -60,6 +60,10 @@ export const SlugMax = 30;
 export const ProjectIdPattern = /^[0-9a-f]{32}$/;
 /** 番号 (課題 ・ 計画 ・ 調査)。ほかのプロジェクトの番号は「プロジェクト名:番号」 */
 export const RefPattern = /^(?:[A-Za-z0-9_.-]+:)?([a-z]\d{6}-[0-9a-kLm-z]{2})$/;
+/** refs に並べられる chat の発言の番号 (#1923)。参照先を探す先が無いので、形だけ見る (i261111-07、262-A) */
+export const ChatRefPattern = /^#[1-9]\d*$/;
+/** refs の 1 つが、課題 ・ 計画 ・ 調査の番号か、chat の発言の番号の形か */
+export const isRefForm = (s: string): boolean => RefPattern.test(s) || ChatRefPattern.test(s);
 /** やることの行。直後に ( が続くものは、リンクの列挙 (- [文](先)) なので含めない */
 export const TodoLine = /^\s*- \[([^\]]*)\](?!\()/;
 const Required = ['schema', 'id', 'title', 'group', 'created'] as const;
@@ -283,9 +287,9 @@ function checkIssueFile(entry: Entry, groups: Set<string> | null, add: Add): Fil
 	const refsText = get('refs');
 	if (refsText !== undefined) {
 		const parts2 = refsText.split(',').map((s) => s.trim());
-		const bad = parts2.filter((s) => !RefPattern.test(s));
+		const bad = parts2.filter((s) => !isRefForm(s));
 		if (bad.length > 0) add('error', 'value', rel, `refs の形が違う: ${refsText}`);
-		else info.refs = parts2.filter((s) => !s.includes(':'));
+		else info.refs = parts2.filter((s) => !s.includes(':') && !ChatRefPattern.test(s));
 	}
 
 	// 報告元の確認
