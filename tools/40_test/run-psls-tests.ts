@@ -58,6 +58,7 @@ console.log('');
 	const r = run(['--help']);
 	assertEqual('--help は 0 で終わる', 0, r.code);
 	assertTrue('--help は使い方を出す', r.out.includes('プロセス一覧をツリー表示する'), r.out);
+	assertTrue('--help は --json の説明を出す (i261111-08)', r.out.includes('--json'), r.out);
 }
 
 if (!isBun) {
@@ -142,6 +143,48 @@ if (!isBun) {
 	{
 		const r = run(['--no-trim']);
 		assertTrue('--no-trim は正常終了する', r.code === 0, String(r.code));
+	}
+
+	// --json: 機械が読める出力 (i261111-08、決定 263-A ・ 264-A)。
+	// フラットな配列で、ツリー表示と同じ順 (親が子より前)。色・太字・凡例は出さない
+	{
+		type Row = { pid: number; ppid: number; name: string; exe: string; creation: string | null; cmdline: string | null; memBytes: number | null };
+		const r = run(['--json']);
+		assertEqual('--json: 終了 0', 0, r.code);
+		assertTrue('--json: 色・太字の制御文字を出さない', !r.out.includes('\x1b'), r.out.slice(0, 200));
+		let rows: Row[] = [];
+		let parsed = false;
+		try { rows = JSON.parse(r.out) as Row[]; parsed = Array.isArray(rows); } catch { /* 下の検査で落とす */ }
+		assertTrue('--json: 出力全体が JSON の配列として読める', parsed && rows.length > 0, r.out.slice(0, 200));
+
+		const keys = ['pid', 'ppid', 'name', 'exe', 'creation', 'cmdline', 'memBytes'];
+		assertTrue('--json: 各要素が pid ・ ppid ・ name ・ exe ・ creation ・ cmdline ・ memBytes だけを持つ', rows.every((e) => Object.keys(e).join(',') === keys.join(',')), JSON.stringify(rows.find((e) => Object.keys(e).join(',') !== keys.join(','))));
+		assertTrue('--json: pid ・ ppid は数 / name ・ exe は文字列', rows.every((e) => typeof e.pid === 'number' && typeof e.ppid === 'number' && typeof e.name === 'string' && typeof e.exe === 'string'), '');
+		assertTrue('--json: creation は JST の ISO 8601 (+09:00) か null', rows.every((e) => e.creation === null || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+09:00$/.test(e.creation)), JSON.stringify(rows.find((e) => e.creation !== null && !/\+09:00$/.test(e.creation))));
+		assertTrue('--json: cmdline は文字列か null / memBytes は数か null', rows.every((e) => (e.cmdline === null || typeof e.cmdline === 'string') && (e.memBytes === null || typeof e.memBytes === 'number')), '');
+
+		const self = rows.find((e) => e.pid === process.pid);
+		assertTrue('--json: このテストを走らせている bun が載っている', self !== undefined && /bun/i.test(self.name), JSON.stringify(self));
+		assertTrue('--json: psls 自身の ppid が、このテストの pid になっている (親子の取り方)', rows.some((e) => e.ppid === process.pid), '');
+		assertTrue('--json: exe は、既定でもフルパス (\\ を含む)', self !== undefined && self.exe.includes('\\'), JSON.stringify(self));
+		assertTrue('--json: cmdline を端末幅で切り詰めない (... で終わらない)', self !== undefined && self.cmdline !== null && !self.cmdline.endsWith('...'), JSON.stringify(self));
+
+		const index = new Map(rows.map((e, i) => [e.pid, i]));
+		const badOrder = rows.filter((e, i) => index.has(e.ppid) && e.ppid !== e.pid && (index.get(e.ppid) as number) > i);
+		assertEqual('--json: 親は子より前に並ぶ (ツリー表示と同じ順)', 0, badOrder.length);
+
+		// キーワードの絞り込みは --json でも効く (一致した行と、その祖先)
+		const k = run(['--json', 'bun']);
+		let krows: Row[] = [];
+		try { krows = JSON.parse(k.out) as Row[]; } catch { /* 下の検査で落とす */ }
+		assertTrue('--json bun: 絞り込んだ結果も JSON の配列で、このテストの bun を含む', k.code === 0 && krows.some((e) => e.pid === process.pid), k.out.slice(0, 200));
+		assertTrue('--json bun: 絞り込むと、全件より少ない', krows.length > 0 && krows.length < rows.length, `${krows.length} / ${rows.length}`);
+		// 無いはずの語でも、psls 自身のコマンド行に入るので、psls 自身と祖先だけが残る (空にはならない)
+		const word = 'zzz_no_such_process_zzz';
+		const knone = run(['--json', word]);
+		let nrows: Row[] = [];
+		try { nrows = JSON.parse(knone.out) as Row[]; } catch { /* 下の検査で落とす */ }
+		assertTrue('--json: 無い語で絞ると、その語を含む psls 自身と祖先だけが残る', knone.code === 0 && nrows.some((e) => e.cmdline !== null && e.cmdline.includes(word)) && nrows.length < rows.length / 2, `${nrows.length} / ${rows.length}`);
 	}
 
 	// コンソールの VT モード（ENABLE_VIRTUAL_TERMINAL_PROCESSING）を

@@ -176,7 +176,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-14</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-15</p>
 	</div>
 </div>
 
@@ -823,7 +823,8 @@ type README.md | less   # UTF-8 のまま化けずに読める</code></pre>
 	<p><strong>プロセスを親子関係のツリーで一覧する。</strong><code>bun:ffi</code> で Windows API を直接呼ぶため <strong>Bun 専用</strong>（<code>node</code> では「bun が必要です」で終わる）。</p>
 
 <pre><code class="language-shell">psls               # 全プロセスをツリーで見る
-psls claude.exe    # "claude.exe" を含む行だけに絞り込む（大小文字は区別しない）</code></pre>
+psls claude.exe    # "claude.exe" を含む行だけに絞り込む（大小文字は区別しない）
+psls --json bash   # 機械が読める JSON の配列で出す（フックやスクリプトから使う）</code></pre>
 
 	<div class="tablewrap">
 	<table>
@@ -833,11 +834,28 @@ psls claude.exe    # "claude.exe" を含む行だけに絞り込む（大小文�
 			<tr><td class="nowrap">キーワード（省略可）</td><td>含む行だけに絞り込む（大小文字は区別しない）。一致行は太字＋緑でハイライトし、ツリーの形を保つため祖先も残す</td></tr>
 			<tr><td class="nowrap"><code>-f</code>, <code>--full-path</code></td><td>exe 欄をフルパスで表示する（既定はファイル名のみ。同名別パスは <code>*1</code>・<code>*2</code> で区別し、末尾に対応表を出す）</td></tr>
 			<tr><td class="nowrap"><code>--no-trim</code></td><td>コマンド行を端末幅で切り詰めない</td></tr>
+			<tr><td class="nowrap"><code>--json</code></td><td>JSON の配列で出す（色 ・ 罫線 ・ 対応表は出さない。キーワードの絞り込みは同じく効く）。形は下の表のとおり</td></tr>
 		</tbody>
 	</table>
 	</div>
 
-	<p>取得できない項目（権限不足等）は <code>-</code>（コマンド行は <code>(-)</code>）にする。<strong>管理者として実行すると <code>SeDebugPrivilege</code> を自動で有効化し、より多くのプロセスの情報を取得できる</strong>（一般ユーザーでは無効化されずそのまま動く）。</p>
+	<p><strong><code>--json</code> は、フラットな配列を、ツリー表示と同じ順（親が子より前）に 1 要素 1 行で並べる。</strong>親子は <code>ppid</code> から組み立てる。<code>-f</code> ・ <code>--no-trim</code> は効かない（<code>exe</code> は常にフルパス、<code>cmdline</code> は切り詰めない）。</p>
+
+	<div class="tablewrap">
+	<table>
+		<thead><tr><th>キー</th><th>型</th><th>意味</th></tr></thead>
+		<tbody>
+			<tr><td class="nowrap"><code>pid</code> ・ <code>ppid</code></td><td>数</td><td>プロセス ID と、親のプロセス ID</td></tr>
+			<tr><td class="nowrap"><code>name</code></td><td>文字列</td><td>実行ファイル名（パス無し）</td></tr>
+			<tr><td class="nowrap"><code>exe</code></td><td>文字列</td><td>フルパス（取れなければ <code>name</code> と同じ）</td></tr>
+			<tr><td class="nowrap"><code>creation</code></td><td>文字列 または <code>null</code></td><td>起動時刻。JST の ISO 8601（<code>2026-11-15T00:04:46+09:00</code>）</td></tr>
+			<tr><td class="nowrap"><code>cmdline</code></td><td>文字列 または <code>null</code></td><td>コマンド行の全体（埋め込みの改行は空白に置き換え済み）</td></tr>
+			<tr><td class="nowrap"><code>memBytes</code></td><td>数 または <code>null</code></td><td>物理メモリ使用量（ワーキングセット、バイト）</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>取得できない項目（権限不足等）は、<code>--json</code> では <code>null</code>、表示では <code>-</code>（コマンド行は <code>(-)</code>）にする。<strong>管理者として実行すると <code>SeDebugPrivilege</code> を自動で有効化し、より多くのプロセスの情報を取得できる</strong>（一般ユーザーでは無効化されずそのまま動く）。</p>
 </section>
 
 <section class="ch09" id="ch09">

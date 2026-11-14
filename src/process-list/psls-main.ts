@@ -26,6 +26,7 @@ const Usage =
 	+ '\n'
 	+ '  -f, --full-path  exe 欄をフルパスで表示する（既定はファイル名のみ）\n'
 	+ '  --no-trim        コマンド行を端末幅で切り詰めない\n'
+	+ '  --json           機械が読める JSON の配列で出す (色・罫線・凡例なし。キーワードの絞り込みは効く)\n'
 	+ '  -h, --help       この説明を表示する\n';
 
 /**
@@ -311,6 +312,25 @@ function formatJst(date: Date): string {
 		+ ' ' + p2(jst.getUTCHours()) + ':' + p2(jst.getUTCMinutes()) + ':' + p2(jst.getUTCSeconds());
 }
 
+/** JST の ISO 8601 (yyyy-mm-ddThh:mm:ss+09:00) にする。--json の creation の形 (決定 264-A) */
+function formatIsoJst(date: Date): string {
+	return formatJst(date).replace(/\//g, '-').replace(' ', 'T') + '+09:00';
+}
+
+/** --json の出力 (決定 263-A)。フラットな配列を、ツリー表示と同じ順で 1 要素 1 行に並べる。空なら [] */
+function renderJson(byPid: Map<number, ProcessInfo>, visited: { pid: number }[]): string {
+	const rows = visited.map((v) => byPid.get(v.pid)).filter((p): p is ProcessInfo => p != null).map((p) => JSON.stringify({
+		pid: p.pid,
+		ppid: p.ppid,
+		name: p.name,
+		exe: p.exe,
+		creation: p.creation ? formatIsoJst(p.creation) : null,
+		cmdline: p.cmdline,
+		memBytes: p.mem,
+	}));
+	return rows.length === 0 ? '[]\n' : '[\n ' + rows.join(',\n ') + '\n]\n';
+}
+
 /** 経過時間を d日 hh:mm:ss（1日未満は日を省く）にする */
 function formatElapsed(ms: number): string {
 	let totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -538,6 +558,7 @@ async function main(argv: string[]): Promise<number> {
 		{ name: 'keyword', kind: 'string', positional: true },
 		{ name: 'full-path', kind: 'boolean', short: 'f' },
 		{ name: 'no-trim', kind: 'boolean' },
+		{ name: 'json', kind: 'boolean' },
 	], {});
 	if (parsed.help) { out(Usage); return ExitOk; }
 	if (parsed.error != null) { return fail(parsed.error); }
@@ -547,10 +568,12 @@ async function main(argv: string[]): Promise<number> {
 		return ExitNeedBun;
 	}
 
+	const json = parsed.values.json === true;
+
 	// Windows コンソールの VT100 エスケープ解釈（太字・色付け用）を明示的に
 	// 有効化する（Bun では既定で無効なことを実機で確認済み）。
-	// 出力し終わったら元へ戻す
-	const restoreConsole = await enableWindowsConsoleVt();
+	// 出力し終わったら元へ戻す。--json は色を付けないので、コンソールに触らない
+	const restoreConsole = json ? () => {} : await enableWindowsConsoleVt();
 
 	const { k32, ntdll, ptr } = await loadWin32();
 	const ptrOf = (b: Uint8Array) => Number(ptr(b));
@@ -568,6 +591,11 @@ async function main(argv: string[]): Promise<number> {
 	const now = Date.now();
 	const { visible, matched } = computeVisible(list, byPid, keyword, now);
 	const visited = visitOrder(children, roots, visible);
+	if (json) {
+		out(renderJson(byPid, visited));
+		restoreConsole();
+		return ExitOk;
+	}
 	const { labels, legend } = buildExeLabels(byPid, visited, fullPath);
 	const columns = process.stdout.columns ?? 160;
 	const lines = renderLines(byPid, visited, labels, matched, keyword, now, columns, noTrim);
