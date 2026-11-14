@@ -158,6 +158,86 @@ console.log('');
 		eq('放棄されたロックは次が取れる', 0, r.code);
 		yes('放棄を知らせる', r.out.includes('放棄'), r.out);
 	}
+	// ---- i261114-02: 子に UI_LOCK_HELD を渡し、包まれた中の ui-lock は素通しする (258-B) ----
+	{
+		const r = run(['run', '--', runner, '-e', 'process.exit(process.env.UI_LOCK_HELD ? 42 : 0)']);
+		eq('子に UI_LOCK_HELD を渡す', 42, r.code);
+		const [ic, ia] = cmdOf(['run', '--wait', '2s', '--', ...sleeper(0, 9)]);
+		const t0 = Date.now();
+		const n = run(['run', '--', ic, ...ia]);
+		eq('包まれた中の ui-lock は待たずに流す', 9, n.code);
+		yes('素通しは待たない', Date.now() - t0 < 6000, String(Date.now() - t0));
+	}
+	{
+		// 祖先でない pid を UI_LOCK_HELD に書いても、素通しにならない
+		const holder = startHolder(['run', '--', ...sleeper(5000)], env);
+		await waitFor(() => fs.existsSync(ownerFile), 5000);
+		const [c, a] = cmdOf(['run', '--wait', '2s', '--', ...sleeper(0)]);
+		const r = spawnSync(c, a, { encoding: 'utf8', env: { ...env, UI_LOCK_HELD: String(holder.pid) } });
+		eq('祖先でない UI_LOCK_HELD は素通しにしない (3)', 3, r.status);
+		await holder.done;
+	}
+
+	// ---- i261114-03: 利用者の画面操作を守る口 (259-A ・ 260-A ・ 261-A) ----
+	{
+		const fm = spawn(runner, ['-e', 'setTimeout(()=>{},20000)'], { stdio: 'ignore' });
+		const fmDone = new Promise<void>((resolve) => fm.on('exit', () => resolve()));
+		const h = run(['hold', '--kind', 'user', '--pid', String(fm.pid)]);
+		eq('hold は取れたら 0', 0, h.code);
+		const s = run(['status']);
+		eq('hold の間の status は 1', 1, s.code);
+		yes('status に利用者と出す', s.out.includes('利用者'), s.out);
+		const owner = JSON.parse(fs.readFileSync(ownerFile, 'utf8'));
+		eq('owner.json の kind は user', 'user', owner.kind);
+		eq('owner.json の forPid は fm の pid', fm.pid, owner.forPid);
+		eq('同じ pid の hold は 0 (持ったまま)', 0, run(['hold', '--kind', 'user', '--pid', String(fm.pid)]).code);
+		const w = run(['run', '--wait', '2s', '--', ...sleeper(0)]);
+		eq('利用者が持つ間、run は待ちの上限で 3', 3, w.code);
+		yes('待つ側に利用者が使用中と出す', w.out.includes('利用者が使用中'), w.out);
+		eq('ほかの pid の hold は 1', 1, run(['hold', '--kind', 'user', '--pid', String(process.pid)]).code);
+		eq('release は 0', 0, run(['release', '--pid', String(fm.pid)]).code);
+		eq('release の後の status は 0', 0, run(['status']).code);
+		yes('release で owner.json を消す', !fs.existsSync(ownerFile), '残っている');
+		// fm が消えたら放す
+		eq('もう一度 hold', 0, run(['hold', '--kind', 'user', '--pid', String(fm.pid)]).code);
+		spawnSync('taskkill', ['/PID', String(fm.pid), '/F']);
+		await fmDone;
+		const freed = await waitFor(() => run(['status']).code === 0, 5000);
+		yes('fm が消えたら放す', freed, 'まだ使用中');
+	}
+	{
+		// 試験が持つ間の hold は待たずに 1
+		const holder = startHolder(['run', '--', ...sleeper(4000)], env);
+		await waitFor(() => fs.existsSync(ownerFile), 5000);
+		const t0 = Date.now();
+		const h = run(['hold', '--kind', 'user', '--pid', String(process.pid)]);
+		eq('使用中の hold は 1', 1, h.code);
+		yes('使用中の hold は待たない', Date.now() - t0 < 3000, String(Date.now() - t0));
+		await holder.done;
+	}
+	if (typeof Bun !== 'undefined') {
+		// 待ちが上限を超えたら、持ち主の fm へ終了のイベントを立てる。fm 役は bun:ffi でイベントを待つ
+		const fmCode = `
+			const { dlopen, FFIType, ptr } = await import('bun:ffi');
+			const { symbols: k } = dlopen('kernel32.dll', {
+				CreateEventW: { args: [FFIType.ptr, FFIType.i32, FFIType.i32, FFIType.ptr], returns: FFIType.ptr },
+				WaitForSingleObject: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.u32 },
+			});
+			const name = Buffer.from(process.env.UI_LOCK_NAME + '-quit-' + process.pid + '\\0', 'utf16le');
+			const h = k.CreateEventW(null, 1, 0, ptr(name));
+			const end = Date.now() + 20000;
+			const tick = () => { if (k.WaitForSingleObject(h, 0) === 0) process.exit(77); if (Date.now() > end) process.exit(0); setTimeout(tick, 100); };
+			tick();`;
+		const fm = spawn(runner, ['-e', fmCode], { env, stdio: 'ignore' });
+		let fmExit = -1;
+		const fmDone = new Promise<void>((resolve) => fm.on('exit', (c) => { fmExit = c ?? -1; resolve(); }));
+		await new Promise((r) => setTimeout(r, 1000));
+		eq('fm 役の hold', 0, run(['hold', '--kind', 'user', '--pid', String(fm.pid)]).code);
+		const r = run(['run', '--wait', '15s', '--evict-user-after', '2s', '--', ...sleeper(0)]);
+		await fmDone;
+		eq('上限を超えたら fm に終了を知らせる', 77, fmExit);
+		eq('fm が終わったら取れる', 0, r.code);
+	}
 	if (target) {
 		// 別の実装どうし: TS 版 (走らせた処理系) が持つ間、exe は取れない。逆も同じ
 		const ts = spawn(runner, [tool, 'run', '--', ...sleeper(5000)], { env, stdio: 'ignore' });

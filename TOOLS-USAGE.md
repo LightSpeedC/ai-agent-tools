@@ -923,4 +923,19 @@ ui-lock status                                                     # 今の持�
 
 Node ・ Rust ・ PowerShell のどれからでも、外側を `ui-lock run -- …` で包めば使える。
 
+### 包まれた中から呼ぶ
+
+`run` は子に `UI_LOCK_HELD=<ui-lock の pid>` を渡す。包まれた中で別の道具が `ui-lock run` を呼ぶと、その pid が持ち主で、しかも自分の祖先 (プロセスの親をたどって確かめる) なら、取らずにそのまま流す。待って固まらない。
+
+### 利用者の画面操作を守る (hold ・ release)
+
+```shell
+ui-lock hold --kind user --pid 12345   # 利用者が使っている間、fm (pid 12345) のために取る
+ui-lock release --pid 12345            # 放す
+```
+
+`hold` は裏に持ち役を起こしてすぐ戻る。取れれば 0、試験などが持っていれば**待たずに 1**。同じ pid でもう一度呼んでも 0 (持ったまま)。持ち役は、`--pid` のプロセスが消えるか `release` を受けたら放す。`owner.json` の `kind` は `user`、`forPid` に fm の pid が入り、`status` と待つ側には「利用者が使用中」と出る。
+
+**利用者が持つ間に、待ちが `--evict-user-after` (既定 `10m`) を超えたら**、待つ側の `run` は名前付きイベント `Local\ai-interactive-desktop-quit-<fm の pid>` を立てる。fm はこのイベントを待ち、立ったら自分で終わる。終わり方 (保存 ・ 片付け) は fm が決める。
+
 [^^](README.md)

@@ -1171,6 +1171,17 @@ ui-lock status                                                     # 今の持�
 	<p>時間は <code>30s</code> ・ <code>10m</code> ・ <code>1h</code> の形。終了コードは、子の終了コード ・ 1 (<code>status</code> で使用中) ・ 3 (待ちの上限) ・ 4 (実行の上限) ・ 5 (引数の誤り)。</p>
 	<p>持ち主 (プロジェクト ・ worktree ・ コマンド ・ 開始時刻 ・ pid ・ 上限) は <code>%LOCALAPPDATA%\ai-interactive-desktop\owner.json</code> に書き、放すときに消す。持ち主が放さずに死んだときは、OS が次へ渡し、取った側が「放棄」と出す。</p>
 	<p>Node ・ Rust ・ PowerShell のどれからでも、外側を <code>ui-lock run -- …</code> で包めば使える。</p>
+
+	<h2>包まれた中から呼ぶ</h2>
+	<p><code>run</code> は子に <code>UI_LOCK_HELD=&lt;ui-lock の pid&gt;</code> を渡す。包まれた中で別の道具が <code>ui-lock run</code> を呼ぶと、その pid が持ち主で、しかも自分の祖先 (プロセスの親をたどって確かめる) なら、取らずにそのまま流す。待って固まらない。</p>
+
+	<h2>利用者の画面操作を守る (hold ・ release)</h2>
+
+<pre><code class="language-shell">ui-lock hold --kind user --pid 12345   # 利用者が使っている間、fm (pid 12345) のために取る
+ui-lock release --pid 12345            # 放す</code></pre>
+
+	<p><code>hold</code> は裏に持ち役を起こしてすぐ戻る。取れれば 0、試験などが持っていれば<strong>待たずに 1</strong>。同じ pid でもう一度呼んでも 0 (持ったまま)。持ち役は、<code>--pid</code> のプロセスが消えるか <code>release</code> を受けたら放す。<code>owner.json</code> の <code>kind</code> は <code>user</code>、<code>forPid</code> に fm の pid が入り、<code>status</code> と待つ側には「利用者が使用中」と出る。</p>
+	<p><strong>利用者が持つ間に、待ちが <code>--evict-user-after</code> (既定 <code>10m</code>) を超えたら</strong>、待つ側の <code>run</code> は名前付きイベント <code>Local\ai-interactive-desktop-quit-&lt;fm の pid&gt;</code> を立てる。fm はこのイベントを待ち、立ったら自分で終わる。終わり方 (保存 ・ 片付け) は fm が決める。</p>
 </section>
 
 </div>

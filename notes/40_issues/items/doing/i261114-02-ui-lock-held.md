@@ -9,3 +9,7 @@ confirmed: false
 ---
 
 包んだ子の中で別の道具が同じロックを取りに行くと、子が待って固まる。fm は owner.json の pid が祖先かを見て避けている。依頼の形: ui-lock run が子に UI_LOCK_HELD=<ui-lock の pid> を渡す。中の ui-lock run がそれを見たときの動き (素通し・祖先の確かめ方) は決める。
+
+## やること
+- [済] TS (bun ・ node) と Rust の両方に作る (258-B ・ 259-A ・ 260-A ・ 261-A)
+- [未] file-manager に知らせ、確かめてもらう
