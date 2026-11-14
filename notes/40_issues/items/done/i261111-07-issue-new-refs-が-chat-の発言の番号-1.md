@@ -5,7 +5,7 @@ title: issue new --refs が chat の発言の番号 (#1923) を受け付けな�
 group: issue
 created: 2026-11-11
 from: ai-agent-rules
-confirmed: false
+confirmed: true
 ---
 
 ai-agent-rules の #1924。chat の依頼から課題を立てるとき、依頼の発言の番号を refs に入れたいが、--refs が「番号をカンマで区切る」で止まる。受ける形 (#1923 だけか、ルームを付けた形か) は決める必要がある。
@@ -17,4 +17,4 @@ ai-agent-rules の #1924。chat の依頼から課題を立てるとき、依頼
 ## やること
 - [済] 試験を先に足す (ops ・ check ・ render。ops と check の受け入れ側が ❌Red を確認)
 - [済] `ops.ts` ・ `check.ts` を直す。使い方の文・仕様・TOOLS-USAGE を更新
-- [未] ai-agent-rules に知らせ、確かめてもらう (確かめたら返信してほしい: `issue new --title x --group <g> --refs "i261111-03,#1923"` が通り、`refs: i261111-03, #1923` と書かれる)
+- [済] ai-agent-rules に知らせ、確かめてもらう (確かめたら返信してほしい: `issue new --title x --group <g> --refs "i261111-03,#1923"` が通り、`refs: i261111-03, #1923` と書かれる)
