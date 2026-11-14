@@ -5,7 +5,7 @@ title: psls に機械が読める出力 (JSON) を足す
 group: psls
 created: 2026-11-11
 from: ai-agent-rules
-confirmed: false
+confirmed: true
 ---
 
 ai-agent-rules の #1934。i261111-06 (向こうの番号) のフックで、プロセスの親子を取るのに psls を使えず、Get-CimInstance Win32_Process で代わりにした。ProcessId ・ ParentProcessId ・ Name ・ CommandLine を機械が読める形 (JSON 等) で出してほしい。オプション名と形は決める必要がある。
@@ -17,4 +17,4 @@ ai-agent-rules の #1934。i261111-06 (向こうの番号) のフックで、プ
 ## やること
 - [済] 試験を先に足す (❌Red を確認。--json の 10 件が落ち、既存の 21 件は成功)
 - [済] `--json` を実装し、使い方の文 ・ TOOLS-USAGE を更新
-- [未] ai-agent-rules に知らせ、確かめてもらう (確かめたら返信してほしい: `psls --json <キーワード>` で、親子を取りたいプロセスの `pid` ・ `ppid` ・ `name` ・ `cmdline` が読めること)
+- [済] ai-agent-rules に知らせ、確かめてもらう (確かめたら返信してほしい: `psls --json <キーワード>` で、親子を取りたいプロセスの `pid` ・ `ppid` ・ `name` ・ `cmdline` が読めること)
