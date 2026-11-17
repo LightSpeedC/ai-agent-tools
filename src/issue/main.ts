@@ -301,7 +301,10 @@ function runSet(rest: string[]): number {
 	const hasFields = Object.keys(fields).length > 0;
 	if (state === undefined && !hasFields) throw new UsageError('--state (未 ・ 着手 ・ 済) か、--version ・ --released ・ --kind ・ --note が要る');
 	const root = existingRoot(o);
-	// 鍵を先に書く (--state で動かすと、ファイルの場所が変わるため)。値が空なら、その鍵を消す
+	// --state と一緒のときは、先に鍵の検査だけをする (値の誤り・読めないファイル)。そのあと状態を動かし、動いたら鍵を書く。
+	// どれかが失敗すれば、何も変えない (鍵だけ書かれて、状態は動かないことが無い)。値が空なら、その鍵を消す
+	if (hasFields && state !== undefined) setFields(root, id, fields, true);
+	const stateResult = state === undefined ? null : setState(root, id, state);
 	const written = hasFields ? setFields(root, id, fields) : null;
 	if (state === undefined) {
 		const w = written as NonNullable<typeof written>;
@@ -311,7 +314,7 @@ function runSet(rest: string[]): number {
 		autoRender(root);
 		return ExitOk;
 	}
-	const r = setState(root, id, state);
+	const r = stateResult as NonNullable<typeof stateResult>;
 	if (o.flags.has('--json')) {
 		console.log(JSON.stringify({ id: r.id, state: r.state, folder: r.folder, from: r.from, file: r.file, ...(written === null ? {} : { changed: written.changed }) }));
 	} else if (!r.moved) {

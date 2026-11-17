@@ -453,7 +453,7 @@ const FieldRel = (n: string): string => Todo + n;
 	check('複数行の note を書ける', r.code === 0, r.out + r.err);
 	const after = read(dir, FieldFile);
 	check('複数行の note は、| の塊 (次の行から 2 字下げ) で書く',
-		after.includes('note: |\n  1 行目\n  2 行目: コロンと "引用符" と \'一重\'\n    字下げの行\n  \n  空行のあと\n---\n'), after);
+		after.includes('note: |\n  1 行目\n  2 行目: コロンと "引用符" と \'一重\'\n    字下げの行\n\n  空行のあと\n---\n'), after);
 	let meta: Record<string, string> = {};
 	try { meta = JSON.parse(run(['show', 'i261103-01', '--root', dir, '--json'], dir).out).meta; } catch { /* 下で失敗にする */ }
 	check('読み戻すと、同じ文字列になる', meta.note === note, JSON.stringify(meta.note));
@@ -511,6 +511,42 @@ const FieldRel = (n: string): string => Todo + n;
 	let p: { id?: string; changed?: string[] } = {};
 	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
 	check('--json は、id と、書いた鍵 (changed) を出す', p.id === 'i261103-01' && JSON.stringify(p.changed) === JSON.stringify(['version']), r.out + r.err);
+}
+
+{
+	// レビュー指摘 1: --state が誤りなら、鍵も書かない (何も変えない)
+	const ok = issueText();
+	const dir = std('fields-state-fail', { [FieldFile]: ok });
+	const r1 = run(['set', 'i261103-01', '--root', dir, '--note', 'x', '--state', '完'], dir);
+	check('--state が知らない語なら、終了コード 5 で、鍵も書かない', r1.code === 5 && read(dir, FieldFile) === ok, r1.out + r1.err + '\n' + read(dir, FieldFile));
+	const r2 = run(['set', 'i261103-01', '--root', dir, '--released', '2026/11/17 11:30', '--state', '着手'], dir);
+	check('鍵の値が誤りなら、終了コード 5 で、状態も動かさない', r2.code === 5 && read(dir, FieldFile) === ok && !exists(dir, Doing + 'i261103-01-a.md'), r2.out + r2.err);
+	const withOpen = std('fields-state-open', { [FieldFile]: issueText({}, '\n本文\n\n## やること\n- [未] a\n') });
+	const r3 = run(['set', 'i261103-01', '--root', withOpen, '--note', 'x', '--state', '済'], withOpen);
+	check('やることが残っていて済にできなければ、終了コード 1 で、鍵も書かない (動かさない)', r3.code === 1 && read(withOpen, FieldFile) === issueText({}, '\n本文\n\n## やること\n- [未] a\n'), r3.out + r3.err);
+	const arch = std('fields-state-archived', { [Archived + 'i261103-01-a.md']: ok });
+	const r4 = run(['set', 'i261103-01', '--root', arch, '--note', 'x', '--state', '済'], arch);
+	check('archived/ の課題に --state 済 を付ければ、終了コード 1 で、鍵も書かない', r4.code === 1 && read(arch, Archived + 'i261103-01-a.md') === ok, r4.out + r4.err);
+	const r5 = run(['set', 'i261103-01', '--root', arch, '--note', 'x'], arch);
+	check('archived/ の課題にも、鍵だけなら書ける (状態を問わない。file-manager の依頼)', r5.code === 0 && read(arch, Archived + 'i261103-01-a.md').includes('note: x\n'), r5.out + r5.err);
+}
+{
+	// レビュー指摘 4: 塊の中の空行は、空行のままでも、2 字の空白だけの行でも読める (末尾の空白を消すエディタ対策)
+	const body = '---\nschema: 1\nid: i261103-01\ntitle: 題\ngroup: html2md\ncreated: 2026-11-03\nnote: |\n  段落 1\n\n  段落 2\n  \n  段落 3\nx_foo: bar\n---\n本文\n';
+	const dir = std('fields-blank', { [FieldFile]: body });
+	let meta: Record<string, string> = {};
+	try { meta = JSON.parse(run(['show', 'i261103-01', '--root', dir, '--json'], dir).out).meta; } catch { /* 下で失敗にする */ }
+	check('塊の中の空行 (空行のまま ・ 2 字の空白だけ) は、続きとして読む', meta.note === '段落 1\n\n段落 2\n\n段落 3' && meta.x_foo === 'bar', JSON.stringify(meta));
+	check('空行を含む塊も、issue check はエラーにしない (x_foo の警告だけ)', run(['check', '--root', dir], dir).code === 0 && !run(['check', '--root', dir], dir).out.includes('[meta]'), run(['check', '--root', dir], dir).out);
+	const rep = run(['set', 'i261103-01', '--root', dir, '--note', '新しい'], dir);
+	check('空行を含む塊を置き換えても、古い行が残らない', rep.code === 0 && read(dir, FieldFile) === body.replace(/note: \|[\s\S]*?(?=x_foo)/, 'note: 新しい\n'), rep.out + rep.err + '\n' + read(dir, FieldFile));
+	const dir2 = std('fields-blank-clear', { [FieldFile]: body });
+	const clr = run(['set', 'i261103-01', '--root', dir2, '--note', ''], dir2);
+	check('空行を含む塊を消しても、古い行が残らない', clr.code === 0 && read(dir2, FieldFile) === body.replace(/note: \|[\s\S]*?(?=x_foo)/, ''), clr.out + clr.err + '\n' + read(dir2, FieldFile));
+	// 塊のあとの空行は、塊に含めない (閉じの --- の前の空行は誤りのまま)
+	const trailing = '---\nschema: 1\nid: i261103-01\ntitle: 題\ngroup: html2md\ncreated: 2026-11-03\nnote: |\n  あ\n\n---\n本文\n';
+	const dir3 = std('fields-blank-trailing', { [FieldFile]: trailing });
+	check('塊のあとに続く行が無い空行は、塊に含めず、今までどおり誤り (空行は置けない)', run(['check', '--root', dir3], dir3).code === 1, run(['check', '--root', dir3], dir3).out);
 }
 
 console.log('--- list --missing');

@@ -254,7 +254,7 @@ refs: p261103-01
 		<li>先頭の行が <code>---</code>。次の <code>---</code> の行までがメタ情報。1 行 1 キー</li>
 		<li><code>キー: 値</code> の形。最初の <code>: </code> で分け、前後の空白を除く。キーは小文字の英数字と <code>_</code></li>
 		<li><strong>引用符 ・ コメント (<code>#</code>) ・ 入れ子は無い</strong>。<code>#</code> は値の一部 (<code>#1737</code> 等)</li>
-		<li><strong>複数行は <code>キー: |</code> の塊だけ</strong> (課題 i261117-03 の決定 269-A)。次の行から、2 字下げの行が続く間が値で、各行の先頭の 2 字を除いて改行でつなぐ。塊の中の空行は、2 字の空白だけの行で書く。値の末尾の改行は含まない。字下げの行が 1 つも無ければ、値が空の誤り。塊の中では <code>:</code> ・ 引用符 ・ <code>---</code> もそのまま書ける (2 字下げの行は、メタ情報の閉じの <code>---</code> と区別される)。塊でない鍵のあとの字下げの行は、今までどおり誤り</li>
+		<li><strong>複数行は <code>キー: |</code> の塊だけ</strong> (課題 i261117-03 の決定 269-A)。次の行から、2 字下げの行が続く間が値で、各行の先頭の 2 字を除いて改行でつなぐ。塊の中の空行は、空行のまま書く (2 字の空白だけの行も読める。末尾の空白を消すエディタを通っても壊れない)。空行は、そのあとに 2 字下げの行が続くときだけ塊に含め、塊のあとの空行は含めない (今までどおり誤り)。値の末尾の改行は含まない。字下げの行が 1 つも無ければ、値が空の誤り。塊の中では <code>:</code> ・ 引用符 ・ <code>---</code> もそのまま書ける (2 字下げの行は、メタ情報の閉じの <code>---</code> と区別される)。塊でない鍵のあとの字下げの行は、今までどおり誤り</li>
 		<li>値の型は 4 つだけ: 文字列 ・ 整数 ・ 真偽 (<code>true</code> / <code>false</code>) ・ 一覧 (カンマ区切りの文字列)。どのキーがどの型かは、上の表が決める</li>
 		<li>値が空のキーは書かない。任意のキーは、無ければ省く。空行はメタ情報の中に置けない</li>
 		<li>キーの順は上の表の順。順が違っても読めるが、警告する。知らないキーも読めるが、警告する</li>
@@ -440,7 +440,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><strong>4 つの鍵 (<code>version</code> ・ <code>released</code> ・ <code>kind</code> ・ <code>note</code>) を書く</strong> (課題 i261117-03。決定 269-A 〜 272-B)。<strong>その行だけを書き換え</strong>、知らない鍵 ・ 鍵の並び ・ 本文は変えない。フォルダも動かさない。commit はしない</li>
 		<li>新しい鍵は、鍵の順 (<code>refs</code> の後ろに <code>version</code> → <code>released</code> → <code>kind</code> → <code>note</code>) で、手前にある鍵の後ろへ入れる。書いてある鍵は、その行 (<code>|</code> の塊なら塊の全部) を置き換える。<strong>値が空 (<code>--version ""</code>) なら、その鍵を消す</strong>。無い鍵を空にしても何もしない。同じ値なら、ファイルを変えない</li>
 		<li><code>--note</code> は複数行にできる。1 行で、前後に空白が無く、<code>|</code> で始まらない値は 1 行で書き、そうでなければ <code>note: |</code> の塊で書く。読み戻すと、書いた文字列と同じ (末尾の改行 ・ 空白だけは落とす)。<code>--version</code> ・ <code>--kind</code> ・ <code>--released</code> に改行は書けない (終了コード 5)</li>
-		<li><code>--released</code> が <code>yyyy-mm-dd hh:mm</code> の実在する日時でなければ、書かずに終了コード 5。<code>--state</code> と一緒に指定でき、<strong>鍵を書いてから状態を動かす</strong></li>
+		<li><code>--released</code> が <code>yyyy-mm-dd hh:mm</code> の実在する日時でなければ、書かずに終了コード 5。<code>--state</code> と一緒に指定でき、<strong>先に鍵の検査だけをし、状態を動かしてから、鍵を書く</strong>。状態の指定が誤り ・ 済にできない ・ <code>archived/</code> にある ・ 鍵の値が誤りのどれでも、何も変えない (鍵だけ書かれて状態が動かない、がない)。<code>archived/</code> の課題にも、鍵だけなら書ける (状態を問わない。リリースの組み立てが版を書くため)</li>
 		<li>BOM か CR のあるファイル ・ メタ情報が読めないファイルは書き換えない (終了コード 1)。指定が 1 つも無ければ 5、id が見つからなければ 1</li>
 		<li>出力: <code>[OK] &lt;id&gt; の version ・ note を書いた (&lt;ファイル&gt;)</code>。変わらなければ「変更なし」。<code>--json</code> は <code>{ id, changed, file }</code> (<code>--state</code> と一緒なら、状態の JSON に <code>changed</code> を足す)</li>
 		<li><strong>前からある <code>--state</code> の動きは変わらない</strong> (下の節)</li>

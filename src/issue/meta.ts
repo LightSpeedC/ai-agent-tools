@@ -34,12 +34,12 @@ export function isRealDateTime(text: string): boolean {
 /**
  * 鍵に書く行 (「鍵: 値」か、| の塊) を作る (決定 269-A)。
  * 1 行で、前後に空白が無く、| で始まらない値は 1 行で書く。そうでなければ、次の行から 2 字下げの塊にする。
- * 塊の中の空行は、2 字の空白だけの行で書く。値の末尾の改行と空白は落とす
+ * 塊の中の空行は、空行のまま書く (読むときは、2 字の空白だけの行も受ける)。値の末尾の改行と空白は落とす
  */
 export function fieldLines(key: string, value: string): string[] {
 	const v = value.replace(/\r\n?/g, '\n').replace(/\s+$/, '');
 	if (!v.includes('\n') && v === v.trim() && !v.startsWith('|')) return [`${key}: ${v}`];
-	return [`${key}: |`, ...v.split('\n').map((l) => '  ' + l)];
+	return [`${key}: |`, ...v.split('\n').map((l) => (l === '' ? '' : '  ' + l))];
 }
 
 /** 状態の 3 段階。やること (- [未] 等) の状態に使う */
@@ -81,12 +81,17 @@ export function parsePairs(lines: string[], firstLine: number): Parsed {
 		}
 		const key = m[1];
 		let value = (m[2] ?? '').trim();
-		// 「キー: |」は塊。次の行から、2 字下げの行が続く間が値 (決定 269-A)。塊の中の空行は、2 字の空白だけの行
+		// 「キー: |」は塊。次の行から、2 字下げの行が続く間が値 (決定 269-A)
 		if (value === '|') {
+			// 塊の中の空行は、空行のままでも読む (末尾の空白を消すエディタを通っても壊れない)。
+			// 空行は、そのあとに 2 字下げの行が続くときだけ塊に含める (塊のあとの空行は、塊に含めない)
 			const block: string[] = [];
-			while (index + 1 < lines.length && lines[index + 1].startsWith('  ')) {
-				block.push(lines[index + 1].slice(2));
-				index++;
+			for (;;) {
+				let next = index + 1;
+				while (next < lines.length && lines[next] === '') next++;
+				if (next >= lines.length || !lines[next].startsWith('  ')) break;
+				for (let k = index + 1; k <= next; k++) block.push(lines[k].slice(2));
+				index = next;
 			}
 			value = block.join('\n');
 		}

@@ -552,7 +552,13 @@ export type FieldsResult = { id: string; changed: string[]; file: string };
 function blockEnd(lines: string[], at: number, limit: number): number {
 	let i = at + 1;
 	if (lines[at].replace(/\s+$/, '').endsWith(': |')) {
-		while (i < limit && lines[i].startsWith('  ')) i++;
+		// 塊の中の空行は、そのあとに 2 字下げの行が続くときだけ含める (meta.ts の parsePairs と同じ)
+		for (;;) {
+			let next = i;
+			while (next < limit && lines[next] === '') next++;
+			if (next >= limit || !lines[next].startsWith('  ')) break;
+			i = next + 1;
+		}
 	}
 	return i;
 }
@@ -561,7 +567,7 @@ function blockEnd(lines: string[], at: number, limit: number): number {
  * 4 つの鍵を書く。値が空文字なら、その鍵を消す。知らない鍵 ・ 鍵の並び ・ 本文は触らない (その行だけを書き換える)。
  * 新しい鍵は、鍵の順 (KeyOrder) で、手前にある鍵の後ろに入れる。BOM や CR のあるファイルは書き換えない
  */
-export function setFields(root: string, id: string, values: FieldValues): FieldsResult {
+export function setFields(root: string, id: string, values: FieldValues, dryRun = false): FieldsResult {
 	const entries = FieldKeys.filter((k) => values[k] !== undefined);
 	if (entries.length === 0) throw new UsageError('書く鍵が無い (--version ・ --released ・ --kind ・ --note)');
 	for (const key of entries) {
@@ -610,7 +616,8 @@ export function setFields(root: string, id: string, values: FieldValues): Fields
 		lines = [...lines.slice(0, at), ...newLines, ...lines.slice(at)];
 		changed.push(key);
 	}
-	if (changed.length > 0) fs.writeFileSync(abs, lines.join('\n'));
+	// dryRun は、値と対象のファイルの検査だけをして、書かない (--state と一緒のとき、状態を動かす前に誤りを見つける)
+	if (changed.length > 0 && !dryRun) fs.writeFileSync(abs, lines.join('\n'));
 	return { id, changed, file: rel };
 }
 

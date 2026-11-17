@@ -15,6 +15,8 @@ refs: #2007
 
 決めること: Machine と User の値の読み方 (レジストリ HKLM と HKCU の Environment の PSModulePath。REG_EXPAND_SZ なので %…% を展開する) と、2 つを並べる順。
 
+レビュー (11/18、子セッション tools-review): TS 版と Rust 版は、同じ条件で大小を問わず外し、窓と取り込みの 2 つの経路の両方に入っている。見たが指摘は 1 件だけ — 呼び出し元で PSModulePath に足した置き場が、psh 経由の 5.1 に届かなくなる。TOOLS-USAGE の psh の節に書いた (ps1 の中で足すか --pwsh を付ける)。
+
 ## やること
 - [済] TS 版 ・ Rust 版の spawn で、5.1 のとき PSModulePath を外す (--pwsh は外さない)。run-psh-tests の 14 を足す
 - [済] TOOLS-USAGE の psh の節に説明を足す

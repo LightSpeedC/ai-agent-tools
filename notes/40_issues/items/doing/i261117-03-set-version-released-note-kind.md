@@ -17,6 +17,8 @@ refs: #2039
 
 今ある動き: (1) issue set --state が、課題を隣のフォルダへ動かす・済にできない理由を出す・既に同じ状態なら動かさない (run-issue-edit-tests ・ run-issue-ops-tests の set の節)。(2) issue list が、既定で未・着手を id の順に出し、--state ・ --all ・ --group で絞る (run-issue-ops-tests の list の節)。(3) issue show が、全文と --json の meta を出す (同 show の節)。(4) issue check が、知らない鍵を警告にし、鍵の順と値の形を検査する (run-issue-tests)。(5) メタ情報の 1 行ごとの読み (引用符なし・空行は誤り・値が空は誤り・重複は誤り)。すべて、直したあとも同じ試験で ✅ (bun ・ node の両方)。
 
+レビュー (11/18、子セッション tools-review。設計とソースを読んだ。9 件): 直した 2 件 — (1) --state と鍵を一緒に指定して --state が誤り ・ 済にできない ・ archived のとき、鍵だけが書かれていた。先に鍵の検査 (dryRun) をし、状態を動かしてから鍵を書く順に直した (試験 5 件を足し ❌Red → ✅)。(4) 塊の中の空行が 2 字の空白だけの行で、末尾の空白を消すエディタで塊が切れる。空行のままでも読み、空行のまま書くように直した (試験を足し ❌Red → ✅)。直さない 7 件、条件を記録 — (2) 前からある「キー: |」の意味が変わる: 課題 ・ 決定を、このプロジェクトと file-manager で Grep して 0 件 (実測)。他のプロジェクトは数えていない。(3) 書き込みが原子的でない: setConfirmed ・ editTodo ・ setState も同じで、新しい弱点ではない。全部の書き込みをまとめて直す別の課題 i261118-01 に立てた。(5) 形の誤り (重複 ・ x-foo) のあるファイルにも書く: x-foo のような今は誤りの鍵を、残したまま書くための設計 (file-manager の確かめ方)。重複は最初の 1 つだけを書き換え、check が誤りのまま知らせる。(6) 前の鍵が無い場合: schema が必須で起きない。(7) version ・ kind の値の検査: 形を決めていない。--note -x は値として通ることを測った。(8) archived にも鍵だけは書ける: 状態を問わない依頼 (828-A) のため。仕様に書いた。(9) psh の PSModulePath: 足した置き場が届かなくなる動きを TOOLS-USAGE に書いた。
+
 ## やること
 - [済] 試験を先に足し ❌Red を見てから、meta ・ check ・ ops ・ main を直す (run-issue-tests ・ run-issue-ops-tests。bun ・ node とも ✅)
 - [済] 仕様 (課題ファイルの形と検査) と TOOLS-USAGE を更新する
