@@ -549,6 +549,64 @@ const FieldRel = (n: string): string => Todo + n;
 	check('塊のあとに続く行が無い空行は、塊に含めず、今までどおり誤り (空行は置けない)', run(['check', '--root', dir3], dir3).code === 1, run(['check', '--root', dir3], dir3).out);
 }
 
+console.log('--- 書き換えは原子的 (i261118-01。決定 273-A)');
+{
+	// 書き換えは、同じフォルダの一時ファイルに書いてから置き換える (共通の writeAtomic)。置き換わると、ファイルの識別子 (ino) が変わる。
+	// 一時ファイル (*.tmp) は残らない
+	const inoOf = (dir: string, rel: string): bigint => fs.statSync(path.join(dir, rel), { bigint: true }).ino;
+	const noTmp = (dir: string, rel: string): boolean => !listDir(dir, rel).some((n) => n.endsWith('.tmp'));
+
+	let dir = std('atomic-set', { [FieldFile]: issueText() });
+	let before = inoOf(dir, FieldFile);
+	run(['set', 'i261103-01', '--root', dir, '--version', '1'], dir);
+	check('issue set の鍵の書き込みは、置き換え (ino が変わる)。一時ファイルは残らない', inoOf(dir, FieldFile) !== before && noTmp(dir, Todo));
+
+	dir = std('atomic-confirm', { [FieldFile]: issueText({ from: 'p #1', confirmed: 'false' }) });
+	before = inoOf(dir, FieldFile);
+	run(['confirm', 'i261103-01', '--root', dir], dir);
+	check('issue confirm の書き込みは、置き換え', inoOf(dir, FieldFile) !== before && noTmp(dir, Todo));
+
+	dir = std('atomic-todo-add', { [FieldFile]: issueText() });
+	before = inoOf(dir, FieldFile);
+	run(['todo', 'i261103-01', '--root', dir, '--add', 'あ'], dir);
+	check('issue todo --add の書き込みは、置き換え', inoOf(dir, FieldFile) !== before && noTmp(dir, Todo));
+	before = inoOf(dir, FieldFile);
+	run(['todo', 'i261103-01', '--root', dir, '--done', '1'], dir);
+	check('issue todo --done の書き込みは、置き換え', inoOf(dir, FieldFile) !== before && noTmp(dir, Todo));
+
+	dir = std('atomic-decide', { [FieldFile]: issueText() });
+	run(['decide', 'new', '--root', dir, '--parent', 'i261103-01', '--title', '問い', '--option', 'あ', '--option', 'い', '--chosen', 'A', '--status', '答え待ち'], dir);
+	const decDir = 'notes/40_issues/decisions';
+	const decRel = decDir + '/' + listDir(dir, decDir).filter((n) => n.endsWith('.md'))[0];
+	before = inoOf(dir, decRel);
+	run(['decide', 'set', 'i261103-01-d1', '--root', dir, '--status', '決めた'], dir);
+	check('issue decide set の書き込みは、置き換え', inoOf(dir, decRel) !== before && noTmp(dir, decDir));
+
+	dir = std('atomic-render', { [FieldFile]: issueText() });
+	run(['render', '--root', dir], dir);
+	const htmlRel = 'notes/40_issues/_issues.html';
+	before = inoOf(dir, htmlRel);
+	fs.writeFileSync(path.join(dir, FieldFile), issueText({ title: '別の題' }));
+	run(['render', '--root', dir], dir);
+	check('issue render の書き込みは、置き換え', exists(dir, htmlRel) && inoOf(dir, htmlRel) !== before && noTmp(dir, 'notes/40_issues'));
+}
+
+console.log('--- 形の誤りが残っていれば、set が知らせる (i261118-02。決定 274-A)');
+{
+	const dup = issueText().replace(/\n---\n/, '\ngroup: 重複\n---\n');
+	const dir = std('warn-problems', { [FieldFile]: dup });
+	const r = run(['set', 'i261103-01', '--root', dir, '--version', '1'], dir);
+	check('重複の鍵があるファイルにも書き、終了コード 0 で、標準エラーに issue check を案内する', r.code === 0 && read(dir, FieldFile).includes('version: 1\n') && r.err.includes('[警告]') && r.err.includes('issue check'), r.out + '\n' + r.err);
+	const hy = std('warn-problems-hyphen', { [FieldFile]: issueText().replace(/\n---\n/, '\nx-foo: bar\n---\n') });
+	const r2 = run(['set', 'i261103-01', '--root', hy, '--version', '1'], hy);
+	check('x-foo (形の誤りの鍵) は残り、同じく知らせる', r2.code === 0 && read(hy, FieldFile).includes('\nx-foo: bar\n') && r2.err.includes('[警告]'), r2.out + '\n' + r2.err);
+	const clean = std('warn-problems-clean', { [FieldFile]: issueText() });
+	const r3 = run(['set', 'i261103-01', '--root', clean, '--version', '1'], clean);
+	check('誤りの無いファイルでは、知らせない', r3.code === 0 && !r3.err.includes('[警告]'), r3.out + '\n' + r3.err);
+	const r4 = run(['set', 'i261103-01', '--root', dir, '--version', '1', '--json'], dir);
+	check('--json でも、知らせは標準エラーで、標準出力は JSON のまま', r4.code === 0 && JSON.parse(r4.out).id === 'i261103-01', r4.out + '\n' + r4.err);
+}
+
 console.log('--- list --missing');
 {
 	const dir = std('missing', {

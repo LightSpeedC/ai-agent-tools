@@ -11,6 +11,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Folders, ItemsRel, NamePattern, SlugMax, isRefForm, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
 import { FieldKeys, KeyOrder, fieldLines, isRealDateTime, splitIssue } from './meta.ts';
+import { writeAtomic } from '../lib/write-atomic.ts';
 import { OldIdFileName, UuidFileName, mainFolderName, copyUuid, maxReserved, numbersBaseOf, prune, readProjectFile, reserve, uuidFileText } from './numbers.ts';
 
 /** 引数の誤り。終了コード 5 */
@@ -29,6 +30,14 @@ const Digits = '0123456789abcdefghijkmnopqrstuvwxyz';
 const Base = Digits.length;
 const Legacy = 'L';
 const NumberMax = Base * Base - 1;
+
+/**
+ * 既にあるファイルを、読んで直して書き戻すときの書き方 (課題 i261118-01。決定 273-A)。
+ * 同じフォルダの一時ファイルに書いてから置き換える。途中で落ちても、半分だけ書かれたファイルは残らない
+ */
+export function writeText(file: string, text: string): void {
+	writeAtomic(file, Buffer.from(text, 'utf8'));
+}
 
 function itemsDirOf(root: string): string {
 	return path.join(root, ...ItemsRel.split('/'));
@@ -90,7 +99,7 @@ export function initProject(root: string, newId: boolean): { rel: string; result
 	const projectId = current?.projectId ?? mainFolderName(root);
 	const uuid = crypto.randomUUID().replace(/-/g, '');
 	fs.mkdirSync(path.dirname(file), { recursive: true });
-	fs.writeFileSync(file, uuidFileText(uuid, projectId, current?.formerIds ?? []));
+	writeText(file, uuidFileText(uuid, projectId, current?.formerIds ?? []));
 	fs.rmSync(oldFile, { force: true });
 	// 前の uuid の予約を、新しい uuid の名前に写す (222-A)
 	if (current?.uuid) copyUuid(root, current.uuid, uuid, projectId);
@@ -488,7 +497,7 @@ export function editTodo(root: string, id: string, edit: TodoEdit): { todos: Tod
 		} else {
 			next = (raw.endsWith('\n') ? raw : raw + '\n') + `\n## やること\n- [未] ${text}\n`;
 		}
-		fs.writeFileSync(abs, next);
+		writeText(abs, next);
 		const todos = todoItemsOf(next.split('\n')).map((t) => t.item);
 		return { todos, changed: todos[todos.length - 1] };
 	}
@@ -500,7 +509,7 @@ export function editTodo(root: string, id: string, edit: TodoEdit): { todos: Tod
 	const target = items[edit.n - 1];
 	lines[target.index] = lines[target.index].replace(TodoItemLine, `$1${edit.state}$3$4`);
 	const next = lines.join('\n');
-	if (next !== raw) fs.writeFileSync(abs, next);
+	if (next !== raw) writeText(abs, next);
 	const todos = todoItemsOf(next.split('\n')).map((t) => t.item);
 	return { todos, changed: todos[edit.n - 1] };
 }
@@ -539,14 +548,14 @@ export function setConfirmed(root: string, id: string, value: boolean): ConfirmR
 	}
 	if (confirmedAt >= 0) lines[confirmedAt] = `confirmed: ${text}`;
 	else lines.splice(fromAt + 1, 0, `confirmed: ${text}`);
-	fs.writeFileSync(abs, lines.join('\n'));
+	writeText(abs, lines.join('\n'));
 	return { id, confirmed: value, from, changed: true, file: rel };
 }
 
 // ---- version ・ released ・ kind ・ note を書く (課題 i261117-03。決定 269-A 〜 272-B) ----
 
 export type FieldValues = Partial<Record<(typeof FieldKeys)[number], string>>;
-export type FieldsResult = { id: string; changed: string[]; file: string };
+export type FieldsResult = { id: string; changed: string[]; file: string; /** 書いたあとのメタ情報に残る、形の誤りの数 */ problems: number };
 
 /** key で始まる行から、その鍵の行の範囲 (| の塊なら、続く 2 字下げの行まで) の終わりの次を返す */
 function blockEnd(lines: string[], at: number, limit: number): number {
@@ -617,8 +626,11 @@ export function setFields(root: string, id: string, values: FieldValues, dryRun 
 		changed.push(key);
 	}
 	// dryRun は、値と対象のファイルの検査だけをして、書かない (--state と一緒のとき、状態を動かす前に誤りを見つける)
-	if (changed.length > 0 && !dryRun) fs.writeFileSync(abs, lines.join('\n'));
-	return { id, changed, file: rel };
+	const nextText = lines.join('\n');
+	if (changed.length > 0 && !dryRun) writeText(abs, nextText);
+	// 書いたあとのメタ情報に形の誤り (重複 ・ x-foo など) が残っているか。残っていても書く (その行だけを書き換える設計) が、呼び出し側が知らせる (決定 274-A)
+	const problems = splitIssue(nextText).parsed.problems.length;
+	return { id, changed, file: rel, problems };
 }
 
 // ---- 探す (search) ----

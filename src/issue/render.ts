@@ -11,7 +11,7 @@ import path from 'node:path';
 import { DecisionIdPattern, Folders, ItemsRel, NamePattern, listMdNames, type Folder } from './check.ts';
 import { loadDecisions, type DecisionView } from './decide.ts';
 import { splitIssue } from './meta.ts';
-import { Failure, StateOf, compareId, loadFile, todayJst } from './ops.ts';
+import { Failure, StateOf, compareId, loadFile, todayJst, writeText } from './ops.ts';
 import { BadgeOfState, escapeHtml, markdownToHtml } from './markdown.ts';
 
 export type RenderOptions = {
@@ -532,6 +532,6 @@ export function writeIfChanged(file: string, html: string): 'created' | 'updated
 	}
 	if (existing !== null && withoutGenerated(existing) === withoutGenerated(html)) return 'unchanged';
 	fs.mkdirSync(path.dirname(file), { recursive: true });
-	fs.writeFileSync(file, '﻿' + html);
+	writeText(file, '﻿' + html);
 	return existing === null ? 'created' : 'updated';
 }

@@ -11,7 +11,7 @@ import {
 	DecisionIdPattern, DecisionNamePattern, DecisionRefPattern, DecisionStatuses, DecisionsRel, LegacyIdPattern, OptionLine, ParentPattern, SlugMax, SlugPattern, listMdNames,
 } from './check.ts';
 import { splitIssue } from './meta.ts';
-import { Failure, UsageError, compareId, lineMatcher, numbersBaseFor, singleLine, slugFromTitle, todayJst } from './ops.ts';
+import { Failure, UsageError, compareId, lineMatcher, numbersBaseFor, singleLine, slugFromTitle, todayJst, writeText } from './ops.ts';
 import { maxReserved, reserve } from './numbers.ts';
 
 /** 案の字。--option を書いた順に振る */
@@ -232,7 +232,7 @@ export function setDecision(root: string, id: string, o: { status?: string; chos
 		out.push(l);
 	}
 	const full = path.join(root, ...v.file.split('/'));
-	fs.writeFileSync(full, '---\n' + out.join('\n') + v.text.slice(fm));
+	writeText(full, '---\n' + out.join('\n') + v.text.slice(fm));
 	return { id, status, chosen };
 }
 

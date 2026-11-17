@@ -306,6 +306,11 @@ function runSet(rest: string[]): number {
 	if (hasFields && state !== undefined) setFields(root, id, fields, true);
 	const stateResult = state === undefined ? null : setState(root, id, state);
 	const written = hasFields ? setFields(root, id, fields) : null;
+	// 形の誤り (重複 ・ x-foo など) が残るファイルにも、その行だけを書く設計。書いたうえで、確かめるよう知らせる (決定 274-A)。
+	// 標準エラーに出すので、--json の標準出力は変わらない
+	if (written !== null && written.problems > 0) {
+		console.error(`[警告] ${written.file}: メタ情報に形の誤りが ${written.problems} 件残っている。issue check で確かめる`);
+	}
 	if (state === undefined) {
 		const w = written as NonNullable<typeof written>;
 		if (o.flags.has('--json')) console.log(JSON.stringify({ id: w.id, changed: w.changed, file: w.file }));

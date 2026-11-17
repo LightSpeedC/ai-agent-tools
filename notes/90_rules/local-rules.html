@@ -20,6 +20,7 @@
 	.ch05{ --accent:hsl(93.3,78%,25%);  --accent2:hsl(93.3,58%,55%);  --soft:hsl(93.3,28%,95%); }
 	.ch06{ --accent:hsl(46.7,78%,25%);  --accent2:hsl(46.7,58%,55%);  --soft:hsl(46.7,28%,95%); }
 	.ch07{ --accent:hsl(0,78%,25%);     --accent2:hsl(0,58%,55%);     --soft:hsl(0,28%,95%); }
+	.ch08{ --accent:hsl(313.3,78%,25%); --accent2:hsl(313.3,58%,55%); --soft:hsl(313.3,28%,95%); }
 
 	*{ box-sizing:border-box; }
 	body{
@@ -154,7 +155,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools のローカルルール</h1>
 		<p class="lead">このプロジェクトでだけ通る決めごと。全プロジェクトに通ることは共通ルールにあり、ここには書かない。</p>
-		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-11-08</p>
+		<p class="date">📅 作成: 2026-09-12 / 更新: 2026-11-18</p>
 	</div>
 </div>
 
@@ -172,6 +173,7 @@
 		<li class="ch05"><a href="#ch05">書き出す道具は、中身が同じなら書かない</a></li>
 		<li class="ch06"><a href="#ch06">作業の区切りで commit と push をする</a></li>
 		<li class="ch07"><a href="#ch07">昼は関係する試験だけ、全件は夜 1 時に流す</a></li>
+		<li class="ch08"><a href="#ch08">作業の前後に tools-review にレビューを頼む</a></li>
 	</ol>
 </div>
 
@@ -422,6 +424,18 @@
 		<li><strong>昼の試験も 1 分を超えるときは、共通ルールのとおり進み具合を報告する</strong>。報告の cron は、試験が終わったら消す</li>
 		<li><strong>朝（その日の最初の作業の前）に、夜の結果を読んで報告する</strong>。流さなかった夜は、そう報告する。失敗があれば、その日の最初の作業にする</li>
 		<li><strong>commit と push は、関係する試験が通れば行う</strong>（第 6 章）。全件の結果を待たない</li>
+	</ul>
+</section>
+
+<section class="ch08" id="ch08">
+	<h1>作業の前後に tools-review にレビューを頼む</h1>
+	<p>適用条件: このプロジェクトで、課題を実装するとき（共通ルール「実装の前後のレビューを、別の子セッションにさせる」の対象）。</p>
+	<ul>
+		<li><strong>レビューを頼む子は <code>tools-review</code></strong>。いなければ作る（名前 <code>tools-review</code>、作業フォルダはこのプロジェクト、読むだけ）。いれば <code>SendMessage</code> で頼み、作り直さない</li>
+		<li><strong>実装の前に、課題と計画のレビューを頼む</strong>。渡すのは、課題の番号と、決まったこと（決定の番号）</li>
+		<li><strong>実装のあと、試験の前に、ソースのレビューを頼む</strong>。渡すのは、課題の番号と、変えたファイル（commit 前は <code>git diff</code> の範囲、commit 後は commit の番号）</li>
+		<li><strong>頼む文に書くもの</strong>: 見てほしい重点、読むだけであること、返し方（強く疑えるものと推測に分ける。場所と直し方の案を付ける）</li>
+		<li><strong>指摘の確かめ方・結果の書き場所・対象外は、共通ルールのとおり</strong></li>
 	</ul>
 </section>
 

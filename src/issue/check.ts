@@ -284,9 +284,14 @@ function checkIssueFile(entry: Entry, groups: Set<string> | null, add: Add): Fil
 	const created = get('created');
 	if (created !== undefined && !isRealDate(created)) add('error', 'value', rel, `created が実在する yyyy-mm-dd でない: ${created}`);
 
-	// 入った日時 (決定 272-B)。version ・ kind ・ note は、形を決めていないので値を検査しない
+	// 入った日時 (決定 272-B)。エラー
 	const released = get('released');
 	if (released !== undefined && !isRealDateTime(released)) add('error', 'value', rel, `released が実在する yyyy-mm-dd hh:mm でない: ${released}`);
+	// version と kind の形は、警告だけ (決定 275-A)。リリースの組み立てが書く値を止めず、誤字には気づけるようにする
+	const version = get('version');
+	if (version !== undefined && !/^\d+(\.\d+)*$/.test(version)) add('warning', 'value', rel, `version が数字とドットだけの形でない: ${version}`);
+	const kind = get('kind');
+	if (kind !== undefined && !/^[a-z][a-z0-9_-]*$/.test(kind)) add('warning', 'value', rel, `kind が小文字の英数字と - ・ _ の形でない: ${kind}`);
 
 	const refsText = get('refs');
 	if (refsText !== undefined) {

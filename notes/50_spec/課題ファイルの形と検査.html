@@ -144,7 +144,7 @@
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
 		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-uuid.txt</code> の形と、番号の予約。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> ・ <code>decide</code> ・ <code>choice</code> まで。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-17</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-18</p>
 	</div>
 </div>
 
@@ -223,9 +223,9 @@ refs: p261103-01
 			<tr><td class="nowrap"><code>from</code></td><td>任意</td><td>文字列 (<code>プロジェクト名 #発言番号</code>)</td><td>他プロジェクトからの報告のときだけ書く</td></tr>
 			<tr><td class="nowrap"><code>confirmed</code></td><td><code>from</code> があるとき必須</td><td><code>true</code> / <code>false</code></td><td>報告元の確認。<code>true</code> になるまで、<code>done/</code> ・ <code>archived/</code> に置けない (済にできない)</td></tr>
 			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>カンマ区切りの番号 (<code>p261103-01, r261025-01</code>)</td><td>計画 ・ 調査 ・ 課題の番号。ほかのプロジェクトの番号は <code>プロジェクト名:番号</code>。chat の発言の番号は <code>#1923</code> (<code>#</code> と 1 以上の数字だけ。ルーム付きは受けない)</td></tr>
-			<tr><td class="nowrap"><code>version</code></td><td>任意</td><td>文字列 (<code>0.0.1347</code>)</td><td>入った版。リリースの組み立てが書く (課題 i261117-03。決定 270-A)。形は検査しない</td></tr>
+			<tr><td class="nowrap"><code>version</code></td><td>任意</td><td>文字列 (<code>0.0.1347</code>)</td><td>入った版。リリースの組み立てが書く (課題 i261117-03。決定 270-A)。数字とドットだけ (<code>^\d+(\.\d+)*$</code>) でなければ警告 (決定 275-A)</td></tr>
 			<tr><td class="nowrap"><code>released</code></td><td>任意</td><td><code>yyyy-mm-dd hh:mm</code> (実在する日時。<code>2026-11-17 11:30</code>)</td><td>入った日時 (決定 272-B)。<code>created</code> と同じハイフン区切りに統一。スラッシュ区切りはエラー</td></tr>
-			<tr><td class="nowrap"><code>kind</code></td><td>任意</td><td>文字列 (<code>fix</code>)</td><td>種別。<code>fix</code> は不具合の直し。値は検査しない</td></tr>
+			<tr><td class="nowrap"><code>kind</code></td><td>任意</td><td>文字列 (<code>fix</code>)</td><td>種別。<code>fix</code> は不具合の直し。小文字の英数字と <code>-</code> ・ <code>_</code> (<code>^[a-z][a-z0-9_-]*$</code>) でなければ警告 (決定 275-A)</td></tr>
 			<tr><td class="nowrap"><code>note</code></td><td>任意</td><td>文字列。複数行は <code>note: |</code> の塊</td><td>利用者向けの説明 (1〜3 行)。書き方は次の「F2 の書き方の決まり」の塊</td></tr>
 		</tbody>
 	</table>
@@ -370,7 +370,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 			<tr><td class="nowrap"><code>encoding</code></td><td>エラー</td><td>BOM がある ・ CR (CRLF) がある</td></tr>
 			<tr><td class="nowrap"><code>meta</code></td><td>エラー</td><td>先頭が <code>---</code> でない ・ 閉じの <code>---</code> が無い ・ <code>キー: 値</code> の形でない行 ・ 値が空 ・ キーの重複 ・ メタ情報の中の空行</td></tr>
 			<tr><td class="nowrap"><code>key</code></td><td>エラー</td><td>必須のキーが無い</td></tr>
-			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>created</code> ・ <code>released</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>id</code> がファイル名の先頭と違う</td></tr>
+			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>created</code> ・ <code>released</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>version</code> ・ <code>kind</code> の形が違うのは、エラーではなく警告 (<code>value</code>。決定 275-A)。<code>id</code> がファイル名の先頭と違う</td></tr>
 			<tr><td class="nowrap"><code>duplicate</code></td><td>エラー</td><td>同じ <code>id</code> のファイルが複数ある (4 つのフォルダをまたぐ場合も)。別の PC やクラウドで、件名違いで同じ番号が立つと、git は競合を出さないので、ここで止める</td></tr>
 			<tr><td class="nowrap"><code>todo</code></td><td>エラー</td><td>やることの状態が 3 つ以外 ・ <code>done/</code> か <code>archived/</code> にあるのに、<code>未</code> か <code>着手</code> のやることが残っている</td></tr>
 			<tr><td class="nowrap"><code>confirmed</code></td><td>エラー / 警告</td><td><code>from</code> があるのに <code>confirmed</code> が無い (エラー) ・ <code>done/</code> か <code>archived/</code> にあるのに <code>confirmed</code> が <code>true</code> でない (エラー) ・ <code>from</code> が無いのに <code>confirmed</code> がある (警告)</td></tr>
@@ -442,6 +442,8 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li><code>--note</code> は複数行にできる。1 行で、前後に空白が無く、<code>|</code> で始まらない値は 1 行で書き、そうでなければ <code>note: |</code> の塊で書く。読み戻すと、書いた文字列と同じ (末尾の改行 ・ 空白だけは落とす)。<code>--version</code> ・ <code>--kind</code> ・ <code>--released</code> に改行は書けない (終了コード 5)</li>
 		<li><code>--released</code> が <code>yyyy-mm-dd hh:mm</code> の実在する日時でなければ、書かずに終了コード 5。<code>--state</code> と一緒に指定でき、<strong>先に鍵の検査だけをし、状態を動かしてから、鍵を書く</strong>。状態の指定が誤り ・ 済にできない ・ <code>archived/</code> にある ・ 鍵の値が誤りのどれでも、何も変えない (鍵だけ書かれて状態が動かない、がない)。<code>archived/</code> の課題にも、鍵だけなら書ける (状態を問わない。リリースの組み立てが版を書くため)</li>
 		<li>BOM か CR のあるファイル ・ メタ情報が読めないファイルは書き換えない (終了コード 1)。指定が 1 つも無ければ 5、id が見つからなければ 1</li>
+		<li><strong>書き換えは原子的</strong> (課題 i261118-01。決定 273-A)。<code>set</code> ・ <code>confirm</code> ・ <code>todo</code> ・ <code>decide set</code> ・ <code>render</code> が既にあるファイルを書き直すときは、同じフォルダの一時ファイル (<code>*.tmp</code>) に書いてから置き換える (共通の <code>writeAtomic</code>)。途中で落ちても、半分だけ書かれたファイルは残らない。同じ課題に同時に書く 2 つの操作が、互いの変更を消すことは防がない (読んでから書くまでの錠は持たない)</li>
+		<li><strong>形の誤り (重複 ・ <code>x-foo</code> など) がメタ情報に残っていても、その行だけを書き換える</strong> (<code>x-foo</code> を残すため)。書いたあと、標準エラーに <code>[警告] &lt;ファイル&gt;: メタ情報に形の誤りが N 件残っている。issue check で確かめる</code> を出す (決定 274-A。終了コードは 0。<code>--json</code> の標準出力は変わらない)</li>
 		<li>出力: <code>[OK] &lt;id&gt; の version ・ note を書いた (&lt;ファイル&gt;)</code>。変わらなければ「変更なし」。<code>--json</code> は <code>{ id, changed, file }</code> (<code>--state</code> と一緒なら、状態の JSON に <code>changed</code> を足す)</li>
 		<li><strong>前からある <code>--state</code> の動きは変わらない</strong> (下の節)</li>
 	</ul>

@@ -328,6 +328,22 @@ console.log('--- version ・ released ・ kind ・ note (課題 i261117-03。決
 	check('塊でない鍵のあとの字下げの行は、今までどおりエラー (meta)', errorWith(checkRun(dir), 'meta'), checkRun(dir).out);
 }
 
+console.log('--- version ・ kind の形 (課題 i261118-02。決定 275-A: 警告だけ)');
+for (const [name, over, expectWarn] of [
+	['version が数字とドット', { version: '0.0.1347' }, false],
+	['version に v が付く', { version: 'v0.0.1347' }, true],
+	['version に空白が入る', { version: '0.0 1' }, true],
+	['kind が小文字の英数字', { kind: 'fix' }, false],
+	['kind に ハイフンと下線', { kind: 'new-feature_2' }, false],
+	['kind に大文字', { kind: 'Fix' }, true],
+	['kind に日本語', { kind: '直し' }, true],
+] as [string, Record<string, string>, boolean][]) {
+	const dir = std('form-' + name, { [Name1]: issueText(over) });
+	const r = checkRun(dir);
+	if (expectWarn) check(`${name} なら警告 (value)。エラーではない`, warnWith(r, 'value'), r.out);
+	else check(`${name} は、警告もエラーも出ない`, r.code === 0 && !r.out.includes('[警告]'), r.out);
+}
+
 console.log('--- 警告で済むもの');
 {
 	const text = issueText().replace('title: li の中の表を、表のまま出す\ngroup: html2md\n', 'group: html2md\ntitle: li の中の表を、表のまま出す\n');
