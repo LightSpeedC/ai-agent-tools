@@ -521,6 +521,8 @@ psh --pwsh -c "$PSVersionTable.PSVersion"  # pwsh（7）で走らせる
 
 オプションを付けなければ第 1 引数を ps1 のパスとして実行する。引数は `-File` と同じ規則で渡る（`-` で始まる語は引数の名前、それ以外は値。値の `$` や `;` は展開されない）。<strong>いずれも `-NoProfile -ExecutionPolicy Bypass` が付く。</strong>終了コードは PowerShell のものをそのまま返す。
 
+<strong>5.1（既定）を呼ぶときは、環境変数 `PSModulePath` を子に渡さない。</strong>pwsh（7）の窓から呼ぶと 7 の置き場が混ざった値を 5.1 が受け継ぎ、`Get-FileHash` などが見つからなくなることがあるため。変数が無ければ 5.1 は Machine と User の値から自分で組み立てる。`--pwsh` のときは外さない。
+
 ### PowerShell は UTF-8（65001）で動く
 
 <strong>ps1 の中で外部コマンドの出力を変数に取り込むと、PowerShell は自分のコンソールのコードページで文字列にする。</strong>932 ならこのリポジトリのツールが出す UTF-8 が化け、65001 なら SJIS が化ける。取り込んだあとに化けたものは、psh の読み分けでは直せない。

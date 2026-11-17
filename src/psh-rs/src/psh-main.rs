@@ -169,6 +169,24 @@ fn build_file_call(script: &Path, rest: &[OsString]) -> String {
 
 /// 標準出力へ書く。窓に直接書くときは Rust の標準ライブラリが UTF-16 で書くため、
 /// コードページに関係なく化けない。リダイレクトされていれば UTF-8 のバイト列のまま
+/*
+	5.1 (powershell) を呼ぶときは PSModulePath を子に渡さない (課題 i261117-01。決定 i261117-01-d1)。
+	pwsh (7) の窓から呼ぶと、7 の置き場が混ざった値を 5.1 が受け継ぎ、Get-FileHash などが
+	見つからなくなることがある。変数が無ければ 5.1 は Machine と User の値から自分で組み立てる。
+	pwsh (7) を呼ぶとき (--pwsh) は外さない。TypeScript 版の childEnv と同じ。
+*/
+fn strip_psmodulepath(cmd: &mut Command, exe: &str) {
+	if exe != "powershell" {
+		return;
+	}
+	// Windows の環境変数は大小を区別しないので、綴りの違うものも外す
+	for (k, _) in std::env::vars_os() {
+		if k.to_string_lossy().eq_ignore_ascii_case("psmodulepath") {
+			cmd.env_remove(&k);
+		}
+	}
+}
+
 fn write_out(s: &str) {
 	let mut o = std::io::stdout().lock();
 	let _ = o.write_all(s.as_bytes());
@@ -234,7 +252,10 @@ fn main() -> ExitCode {
 			ps_args.push("-File".into());
 			ps_args.extend(args.iter().cloned());
 		}
-		return match Command::new(exe).args(&ps_args).status() {
+		let mut tcmd = Command::new(exe);
+		tcmd.args(&ps_args);
+		strip_psmodulepath(&mut tcmd, exe);
+		return match tcmd.status() {
 			Ok(s) => match s.code() {
 				Some(c) => ExitCode::from((c & 0xff) as u8),
 				None => ExitCode::from(EXIT_BAD_ARGS),
@@ -282,6 +303,7 @@ fn main() -> ExitCode {
 	let mut cmd = Command::new(exe);
 	let stdin = if std::io::stdin().is_terminal() { Stdio::null() } else { Stdio::inherit() };
 	cmd.args(&ps_args).stdin(stdin);
+	strip_psmodulepath(&mut cmd, exe);
 	#[cfg(windows)]
 	{
 		use std::os::windows::process::CommandExt;

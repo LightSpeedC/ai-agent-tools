@@ -166,6 +166,26 @@ function buildFileCall(script: string, rest: string[]): string {
 }
 
 /*
+	子に渡す環境変数。
+
+	5.1 (powershell) を呼ぶときは PSModulePath を外す (課題 i261117-01。決定 i261117-01-d1)。
+	pwsh (7) の窓から呼ぶと、7 の置き場が混ざった値を 5.1 が受け継ぎ、Get-FileHash などが
+	見つからなくなることがある。変数が無ければ 5.1 は Machine と User の値から自分で組み立てる
+	(実測: Documents\WindowsPowerShell\Modules と Machine の 2 つになる)。
+	pwsh (7) を呼ぶとき (--pwsh) は外さない。
+*/
+function childEnv(exe: string): NodeJS.ProcessEnv {
+	const env: NodeJS.ProcessEnv = { ...process.env };
+	if (exe === 'powershell') {
+		// Windows の環境変数は大小を区別しないので、綴りの違うものも外す
+		for (const k of Object.keys(env)) {
+			if (k.toLowerCase() === 'psmodulepath') { delete env[k]; }
+		}
+	}
+	return env;
+}
+
+/*
 	PowerShell を走らせて、出た分をすべて受け取る。
 
 	shell: false（既定）で起動する。配列のまま渡るので、空白や記号を含む
@@ -183,7 +203,7 @@ function run(exe: string, args: string[]): Promise<RunResult> {
 	return new Promise((resolve) => {
 		// 自分専用のコンソールで起動する（上の Utf8Setup の説明を参照）
 		const stdin = process.stdin.isTTY ? 'ignore' : 'inherit';
-		const child = spawn(exe, args, { windowsHide: true, stdio: [stdin, 'pipe', 'pipe'] });
+		const child = spawn(exe, args, { windowsHide: true, stdio: [stdin, 'pipe', 'pipe'], env: childEnv(exe) });
 		const out: Buffer[] = [];
 		const err: Buffer[] = [];
 
@@ -206,7 +226,7 @@ function run(exe: string, args: string[]): Promise<RunResult> {
 */
 function runInTerminal(exe: string, args: string[]): Promise<number> {
 	return new Promise((resolve) => {
-		const child = spawn(exe, args, { stdio: 'inherit' });
+		const child = spawn(exe, args, { stdio: 'inherit', env: childEnv(exe) });
 		child.on('error', (e: Error) => {
 			console.error('[NG] ' + exe + ' を起動できません: ' + e.message);
 			resolve(ExitBadArgs);

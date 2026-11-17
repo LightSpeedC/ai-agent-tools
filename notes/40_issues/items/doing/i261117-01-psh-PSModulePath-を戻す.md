@@ -14,3 +14,8 @@ refs: #2007
 調べた結果 (11/17): psh には TS 版 (src/psh/psh-main.ts) と Rust 版 (src/psh-rs/src/psh-main.rs) があり、どちらにも PSModulePath の扱いは無い (src/ を PSModulePath で検索して 0 件)。直すなら両方と、試験 run-psh-tests が要る。自分では PSModulePath の混ざる現象を再現していない (未確認)。
 
 決めること: Machine と User の値の読み方 (レジストリ HKLM と HKCU の Environment の PSModulePath。REG_EXPAND_SZ なので %…% を展開する) と、2 つを並べる順。
+
+## やること
+- [済] TS 版 ・ Rust 版の spawn で、5.1 のとき PSModulePath を外す (--pwsh は外さない)。run-psh-tests の 14 を足す
+- [済] TOOLS-USAGE の psh の節に説明を足す
+- [未] 依頼元 (20260824-local-llm-llama-cp) へ報告し、確認を待つ

@@ -53,9 +53,9 @@ function hasPwsh(): boolean {
 }
 
 /** psh を呼ぶ。PSH_TEST_TARGET があればその exe、無ければ psh-main.ts をいま走っている処理系で */
-function run(args: string[], input?: string): { code: number; out: string; err: string } {
+function run(args: string[], input?: string, env?: NodeJS.ProcessEnv): { code: number; out: string; err: string } {
 	// input を渡すと標準入力はパイプになる。渡さなくても spawnSync は空のパイプを渡す（端末ではない）
-	const opt = { encoding: 'utf8' as const, input, timeout: 60000 };
+	const opt = { encoding: 'utf8' as const, input, timeout: 60000, env };
 	const r = target.length > 0
 		? spawnSync(target, args, opt)
 		: spawnSync(process.argv[0], [tool, ...args], opt);
@@ -114,6 +114,27 @@ if (hasPwsh()) {
 	assertTrue('8 --pwsh でも ps1 を実行できる', r.out.includes('日本語の出力です'), JSON.stringify(r.out.slice(0, 60)));
 } else {
 	console.log('  [--] 8 --pwsh は pwsh が無いので確かめない');
+}
+
+/*
+	14. 5.1 を呼ぶときは、PSModulePath を子に渡さない (課題 i261117-01。決定 i261117-01-d1)
+
+	pwsh (7) の窓から 5.1 を呼ぶと、7 の置き場が混ざった PSModulePath を 5.1 が受け継ぎ、
+	Get-FileHash などが見つからなくなることがある。変数が無ければ 5.1 は
+	Machine と User の値から自分で組み立てるので、外して渡す。--pwsh のときは外さない。
+	目印の置き場を入れた PSModulePath を渡し、子の側で見えるかを見る。
+*/
+const marker = 'C:\\psh-test-marker\\Modules';
+const envMarked: NodeJS.ProcessEnv = { ...process.env, PSModulePath: marker + ';' + (process.env.PSModulePath ?? '') };
+r = run(['-c', '$env:PSModulePath'], undefined, envMarked);
+assertTrue('14 5.1 に混ざった PSModulePath を渡さない', !r.out.includes(marker), JSON.stringify(r.out.slice(0, 200)));
+assertTrue('14 5.1 は自分で PSModulePath を組み立てる', r.out.includes('WindowsPowerShell'), JSON.stringify(r.out.slice(0, 200)));
+r = run([path.join(cases, 'hello.ps1')], undefined, envMarked);
+assertEqual('14 ps1 でも終了コード', 0, r.code);
+
+if (hasPwsh()) {
+	r = run(['--pwsh', '-c', '$env:PSModulePath'], undefined, envMarked);
+	assertTrue('14 --pwsh は PSModulePath を外さない', r.out.includes(marker), JSON.stringify(r.out.slice(0, 200)));
 }
 
 // 5. PowerShell 自身の出力（UTF-8）と、そこから呼んだ .NET 製 exe の出力（CP932）が
