@@ -144,7 +144,7 @@
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
 		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-uuid.txt</code> の形と、番号の予約。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> ・ <code>decide</code> ・ <code>choice</code> まで。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-14</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-17</p>
 	</div>
 </div>
 
@@ -223,6 +223,10 @@ refs: p261103-01
 			<tr><td class="nowrap"><code>from</code></td><td>任意</td><td>文字列 (<code>プロジェクト名 #発言番号</code>)</td><td>他プロジェクトからの報告のときだけ書く</td></tr>
 			<tr><td class="nowrap"><code>confirmed</code></td><td><code>from</code> があるとき必須</td><td><code>true</code> / <code>false</code></td><td>報告元の確認。<code>true</code> になるまで、<code>done/</code> ・ <code>archived/</code> に置けない (済にできない)</td></tr>
 			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>カンマ区切りの番号 (<code>p261103-01, r261025-01</code>)</td><td>計画 ・ 調査 ・ 課題の番号。ほかのプロジェクトの番号は <code>プロジェクト名:番号</code>。chat の発言の番号は <code>#1923</code> (<code>#</code> と 1 以上の数字だけ。ルーム付きは受けない)</td></tr>
+			<tr><td class="nowrap"><code>version</code></td><td>任意</td><td>文字列 (<code>0.0.1347</code>)</td><td>入った版。リリースの組み立てが書く (課題 i261117-03。決定 270-A)。形は検査しない</td></tr>
+			<tr><td class="nowrap"><code>released</code></td><td>任意</td><td><code>yyyy-mm-dd hh:mm</code> (実在する日時。<code>2026-11-17 11:30</code>)</td><td>入った日時 (決定 272-B)。<code>created</code> と同じハイフン区切りに統一。スラッシュ区切りはエラー</td></tr>
+			<tr><td class="nowrap"><code>kind</code></td><td>任意</td><td>文字列 (<code>fix</code>)</td><td>種別。<code>fix</code> は不具合の直し。値は検査しない</td></tr>
+			<tr><td class="nowrap"><code>note</code></td><td>任意</td><td>文字列。複数行は <code>note: |</code> の塊</td><td>利用者向けの説明 (1〜3 行)。書き方は次の「F2 の書き方の決まり」の塊</td></tr>
 		</tbody>
 	</table>
 	</div>
@@ -249,7 +253,8 @@ refs: p261103-01
 	<ul>
 		<li>先頭の行が <code>---</code>。次の <code>---</code> の行までがメタ情報。1 行 1 キー</li>
 		<li><code>キー: 値</code> の形。最初の <code>: </code> で分け、前後の空白を除く。キーは小文字の英数字と <code>_</code></li>
-		<li><strong>引用符 ・ コメント (<code>#</code>) ・ 複数行 ・ 入れ子は無い</strong>。<code>#</code> は値の一部 (<code>#1737</code> 等)</li>
+		<li><strong>引用符 ・ コメント (<code>#</code>) ・ 入れ子は無い</strong>。<code>#</code> は値の一部 (<code>#1737</code> 等)</li>
+		<li><strong>複数行は <code>キー: |</code> の塊だけ</strong> (課題 i261117-03 の決定 269-A)。次の行から、2 字下げの行が続く間が値で、各行の先頭の 2 字を除いて改行でつなぐ。塊の中の空行は、2 字の空白だけの行で書く。値の末尾の改行は含まない。字下げの行が 1 つも無ければ、値が空の誤り。塊の中では <code>:</code> ・ 引用符 ・ <code>---</code> もそのまま書ける (2 字下げの行は、メタ情報の閉じの <code>---</code> と区別される)。塊でない鍵のあとの字下げの行は、今までどおり誤り</li>
 		<li>値の型は 4 つだけ: 文字列 ・ 整数 ・ 真偽 (<code>true</code> / <code>false</code>) ・ 一覧 (カンマ区切りの文字列)。どのキーがどの型かは、上の表が決める</li>
 		<li>値が空のキーは書かない。任意のキーは、無ければ省く。空行はメタ情報の中に置けない</li>
 		<li>キーの順は上の表の順。順が違っても読めるが、警告する。知らないキーも読めるが、警告する</li>
@@ -365,7 +370,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 			<tr><td class="nowrap"><code>encoding</code></td><td>エラー</td><td>BOM がある ・ CR (CRLF) がある</td></tr>
 			<tr><td class="nowrap"><code>meta</code></td><td>エラー</td><td>先頭が <code>---</code> でない ・ 閉じの <code>---</code> が無い ・ <code>キー: 値</code> の形でない行 ・ 値が空 ・ キーの重複 ・ メタ情報の中の空行</td></tr>
 			<tr><td class="nowrap"><code>key</code></td><td>エラー</td><td>必須のキーが無い</td></tr>
-			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>created</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>id</code> がファイル名の先頭と違う</td></tr>
+			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>created</code> ・ <code>released</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>id</code> がファイル名の先頭と違う</td></tr>
 			<tr><td class="nowrap"><code>duplicate</code></td><td>エラー</td><td>同じ <code>id</code> のファイルが複数ある (4 つのフォルダをまたぐ場合も)。別の PC やクラウドで、件名違いで同じ番号が立つと、git は競合を出さないので、ここで止める</td></tr>
 			<tr><td class="nowrap"><code>todo</code></td><td>エラー</td><td>やることの状態が 3 つ以外 ・ <code>done/</code> か <code>archived/</code> にあるのに、<code>未</code> か <code>着手</code> のやることが残っている</td></tr>
 			<tr><td class="nowrap"><code>confirmed</code></td><td>エラー / 警告</td><td><code>from</code> があるのに <code>confirmed</code> が無い (エラー) ・ <code>done/</code> か <code>archived/</code> にあるのに <code>confirmed</code> が <code>true</code> でない (エラー) ・ <code>from</code> が無いのに <code>confirmed</code> がある (警告)</td></tr>
@@ -411,8 +416,9 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li>出力: 1 行目に <code>&lt;id&gt;  &lt;状態&gt; (&lt;フォルダ&gt;/)  &lt;相対パス&gt;</code>、続けてファイルの全文。<code>archived/</code> の課題は、状態が 済 で、フォルダが <code>archived/</code></li>
 		<li><code>--json</code>: <code>id</code> ・ <code>state</code> (未 ・ 着手 ・ 済) ・ <code>folder</code> ・ <code>file</code> ・ <code>meta</code> (キーと値) ・ <code>body</code> ・ <code>todos</code> (<code>{ state, text }</code> の配列)</li>
 	</ul>
-	<h2><code>issue list [--state 未,着手,済,archived | --all] [--group &lt;g&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
+	<h2><code>issue list [--state 未,着手,済,archived | --all] [--group &lt;g&gt;] [--missing &lt;鍵,…&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
 	<ul>
+		<li><strong><code>--missing &lt;鍵,…&gt;</code> は、その鍵のどれかを持たない課題だけに絞る</strong> (課題 i261117-03。決定 271-A)。鍵は <code>version</code> ・ <code>released</code> ・ <code>kind</code> ・ <code>note</code> をカンマで区切る (例: <code>--missing version,note</code>)。<code>--state</code> ・ <code>--all</code> ・ <code>--group</code> と一緒に使える。鍵が空 ・ 4 つ以外なら終了コード 5。件数の行は絞った後の件数</li>
 		<li><strong>既定は未・着手</strong> (<code>todo/</code> と <code>doing/</code> だけを読む)。<code>--state</code> は、未 ・ 着手 ・ 済 (<code>done/</code>) ・ <code>archived</code> をカンマで区切る。<code>--all</code> は 4 つすべて。<code>--state</code> と <code>--all</code> は同時に使えない。知らない語は終了コード 5</li>
 		<li><code>--group</code> で、グループが一致するものだけに絞る</li>
 		<li><strong>id の順</strong>に並べる (日付、次に 36 進数の連番。文字コード順ではない: <code>L</code> は <code>0</code> 〜 <code>9</code> と <code>a</code> 〜 <code>k</code> の後)。フォルダには関わらない</li>
@@ -428,6 +434,16 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li>出力: <code>list</code> と同じ 1 行 ＋ 一致した行 (<code>    L&lt;行番号&gt;: &lt;行&gt;</code>。<strong>1 件の課題につき 3 行まで、1 行は 120 文字まで</strong>) ＋ 最後の行が <code>N 件</code>。<code>--json</code> は、課題の配列に <code>matches</code> (<code>{ line, text }</code> の配列。全件) を足したもの</li>
 		<li>メタ情報が読めない課題は、飛ばして標準エラーに警告を出す。見つからなければ <code>0 件</code> で終了コード 0</li>
 		<li><strong>決定も探す</strong> (196-A): <code>decisions/</code> の全部の決定 (親の課題の状態によらない) から、同じ決まりで探し、課題の後ろに <code>&lt;id&gt;  決定 (親 &lt;親の番号&gt;)  &lt;問い&gt;</code> と一致した行を出す。<code>N 件</code> は課題と決定の合計。<code>--state</code> ・ <code>--all</code> は課題だけに効く。<strong><code>--group</code> を付けたときは、決定を探さない</strong> (グループは課題の持ち物)。<code>--json</code> では、決定は <code>{ kind: "decision", id, parent, title, file, matches }</code> で、課題の後ろに並ぶ</li>
+	</ul>
+	<h2><code>issue set &lt;id&gt; [--version &lt;版&gt;] [--released &lt;yyyy-mm-dd hh:mm&gt;] [--kind &lt;種別&gt;] [--note &lt;説明&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
+	<ul>
+		<li><strong>4 つの鍵 (<code>version</code> ・ <code>released</code> ・ <code>kind</code> ・ <code>note</code>) を書く</strong> (課題 i261117-03。決定 269-A 〜 272-B)。<strong>その行だけを書き換え</strong>、知らない鍵 ・ 鍵の並び ・ 本文は変えない。フォルダも動かさない。commit はしない</li>
+		<li>新しい鍵は、鍵の順 (<code>refs</code> の後ろに <code>version</code> → <code>released</code> → <code>kind</code> → <code>note</code>) で、手前にある鍵の後ろへ入れる。書いてある鍵は、その行 (<code>|</code> の塊なら塊の全部) を置き換える。<strong>値が空 (<code>--version ""</code>) なら、その鍵を消す</strong>。無い鍵を空にしても何もしない。同じ値なら、ファイルを変えない</li>
+		<li><code>--note</code> は複数行にできる。1 行で、前後に空白が無く、<code>|</code> で始まらない値は 1 行で書き、そうでなければ <code>note: |</code> の塊で書く。読み戻すと、書いた文字列と同じ (末尾の改行 ・ 空白だけは落とす)。<code>--version</code> ・ <code>--kind</code> ・ <code>--released</code> に改行は書けない (終了コード 5)</li>
+		<li><code>--released</code> が <code>yyyy-mm-dd hh:mm</code> の実在する日時でなければ、書かずに終了コード 5。<code>--state</code> と一緒に指定でき、<strong>鍵を書いてから状態を動かす</strong></li>
+		<li>BOM か CR のあるファイル ・ メタ情報が読めないファイルは書き換えない (終了コード 1)。指定が 1 つも無ければ 5、id が見つからなければ 1</li>
+		<li>出力: <code>[OK] &lt;id&gt; の version ・ note を書いた (&lt;ファイル&gt;)</code>。変わらなければ「変更なし」。<code>--json</code> は <code>{ id, changed, file }</code> (<code>--state</code> と一緒なら、状態の JSON に <code>changed</code> を足す)</li>
+		<li><strong>前からある <code>--state</code> の動きは変わらない</strong> (下の節)</li>
 	</ul>
 	<h2><code>issue set &lt;id&gt; --state 未|着手|済 [--root &lt;dir&gt;] [--json]</code></h2>
 	<ul>

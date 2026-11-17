@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { KeyOrder, States, parsePairs, splitIssue } from './meta.ts';
+import { KeyOrder, States, isRealDateTime, parsePairs, splitIssue } from './meta.ts';
 import { OldIdFileName, UuidFileName, mainFolderName } from './numbers.ts';
 
 export type Level = 'error' | 'warning';
@@ -283,6 +283,10 @@ function checkIssueFile(entry: Entry, groups: Set<string> | null, add: Add): Fil
 
 	const created = get('created');
 	if (created !== undefined && !isRealDate(created)) add('error', 'value', rel, `created が実在する yyyy-mm-dd でない: ${created}`);
+
+	// 入った日時 (決定 272-B)。version ・ kind ・ note は、形を決めていないので値を検査しない
+	const released = get('released');
+	if (released !== undefined && !isRealDateTime(released)) add('error', 'value', rel, `released が実在する yyyy-mm-dd hh:mm でない: ${released}`);
 
 	const refsText = get('refs');
 	if (refsText !== undefined) {

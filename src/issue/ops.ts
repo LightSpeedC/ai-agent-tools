@@ -10,7 +10,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Folders, ItemsRel, NamePattern, SlugMax, isRefForm, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
-import { splitIssue } from './meta.ts';
+import { FieldKeys, KeyOrder, fieldLines, isRealDateTime, splitIssue } from './meta.ts';
 import { OldIdFileName, UuidFileName, mainFolderName, copyUuid, maxReserved, numbersBaseOf, prune, readProjectFile, reserve, uuidFileText } from './numbers.ts';
 
 /** 引数の誤り。終了コード 5 */
@@ -251,8 +251,11 @@ export function showIssue(root: string, id: string): IssueView {
 
 export type ListItem = { id: string; state: string; folder: Folder; group: string; title: string; created: string; file: string };
 
-/** 指定のフォルダの課題を、id の順に並べて返す。メタ情報が読めないものは飛ばし、warn で知らせる */
-export function listIssues(root: string, folders: Folder[], group: string | null, warn: (message: string) => void): ListItem[] {
+/**
+ * 指定のフォルダの課題を、id の順に並べて返す。メタ情報が読めないものは飛ばし、warn で知らせる。
+ * missing の鍵のどれかを持たない課題だけに絞る (決定 271-A。空なら絞らない)
+ */
+export function listIssues(root: string, folders: Folder[], group: string | null, warn: (message: string) => void, missing: string[] = []): ListItem[] {
 	const items: ListItem[] = [];
 	for (const folder of folders) {
 		for (const name of listMdNames(path.join(itemsDirOf(root), folder))) {
@@ -272,6 +275,7 @@ export function listIssues(root: string, folders: Folder[], group: string | null
 			}
 			const get = (k: string): string => parts.parsed.pairs.find((p) => p.key === k)?.value ?? '';
 			if (group !== null && get('group') !== group) continue;
+			if (missing.length > 0 && !missing.some((k) => get(k) === '')) continue;
 			items.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), file: loaded.rel });
 		}
 	}
@@ -537,6 +541,77 @@ export function setConfirmed(root: string, id: string, value: boolean): ConfirmR
 	else lines.splice(fromAt + 1, 0, `confirmed: ${text}`);
 	fs.writeFileSync(abs, lines.join('\n'));
 	return { id, confirmed: value, from, changed: true, file: rel };
+}
+
+// ---- version ・ released ・ kind ・ note を書く (課題 i261117-03。決定 269-A 〜 272-B) ----
+
+export type FieldValues = Partial<Record<(typeof FieldKeys)[number], string>>;
+export type FieldsResult = { id: string; changed: string[]; file: string };
+
+/** key で始まる行から、その鍵の行の範囲 (| の塊なら、続く 2 字下げの行まで) の終わりの次を返す */
+function blockEnd(lines: string[], at: number, limit: number): number {
+	let i = at + 1;
+	if (lines[at].replace(/\s+$/, '').endsWith(': |')) {
+		while (i < limit && lines[i].startsWith('  ')) i++;
+	}
+	return i;
+}
+
+/**
+ * 4 つの鍵を書く。値が空文字なら、その鍵を消す。知らない鍵 ・ 鍵の並び ・ 本文は触らない (その行だけを書き換える)。
+ * 新しい鍵は、鍵の順 (KeyOrder) で、手前にある鍵の後ろに入れる。BOM や CR のあるファイルは書き換えない
+ */
+export function setFields(root: string, id: string, values: FieldValues): FieldsResult {
+	const entries = FieldKeys.filter((k) => values[k] !== undefined);
+	if (entries.length === 0) throw new UsageError('書く鍵が無い (--version ・ --released ・ --kind ・ --note)');
+	for (const key of entries) {
+		const v = (values[key] ?? '').replace(/\r\n?/g, '\n').replace(/\s+$/, '');
+		if (key !== 'note' && v.includes('\n')) throw new UsageError(`--${key} に改行は書けない (複数行にできるのは --note だけ)`);
+		if (key === 'released' && v !== '' && !isRealDateTime(v)) throw new UsageError(`--released が実在する yyyy-mm-dd hh:mm でない: ${v} (例: 2026-11-17 11:30)`);
+	}
+	const located = locateIssue(root, id);
+	const rel = `${ItemsRel}/${located.folder}/${located.name}`;
+	const abs = path.join(itemsDirOf(root), located.folder, located.name);
+	const raw = fs.readFileSync(abs, 'utf8');
+	if (raw.startsWith('﻿') || raw.includes('\r')) throw new Failure(`${rel} に BOM か CR (CRLF) がある。issue check で確かめて直してから (書き換えない)`);
+	if (splitIssue(raw).broken) throw new Failure(`${rel} のメタ情報を読めない。issue check で確かめて直してから (書き換えない)`);
+
+	let lines = raw.split('\n');
+	const changed: string[] = [];
+	for (const key of entries) {
+		const text = (values[key] ?? '').replace(/\r\n?/g, '\n').replace(/\s+$/, '');
+		// note は、行頭の空白も値のうち (塊で書く)。ほかは前後の空白を落とす
+		const value = key === 'note' ? text : text.trim();
+		const end = lines.indexOf('---', 1);
+		// いま書いてある鍵の範囲
+		let start = -1;
+		for (let i = 1; i < end; i++) if (lines[i].startsWith(key + ':')) { start = i; break; }
+		const newLines = value === '' ? [] : fieldLines(key, value);
+		if (start >= 0) {
+			const stop = blockEnd(lines, start, end);
+			const old = lines.slice(start, stop);
+			if (old.join('\n') === newLines.join('\n')) continue;
+			lines = [...lines.slice(0, start), ...newLines, ...lines.slice(stop)];
+			changed.push(key);
+			continue;
+		}
+		if (newLines.length === 0) continue;
+		// 手前にある鍵 (鍵の順で前のもの) の、いちばん後ろの次へ入れる
+		const order = (KeyOrder as readonly string[]).indexOf(key);
+		let at = end;
+		let found = -1;
+		for (let i = 1; i < end; i++) {
+			const m = /^([a-z][a-z0-9_]*):/.exec(lines[i]);
+			if (m === null) continue;
+			const o = (KeyOrder as readonly string[]).indexOf(m[1]);
+			if (o >= 0 && o < order) found = blockEnd(lines, i, end);
+		}
+		if (found >= 0) at = found;
+		lines = [...lines.slice(0, at), ...newLines, ...lines.slice(at)];
+		changed.push(key);
+	}
+	if (changed.length > 0) fs.writeFileSync(abs, lines.join('\n'));
+	return { id, changed, file: rel };
 }
 
 // ---- 探す (search) ----

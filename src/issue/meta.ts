@@ -3,14 +3,44 @@
 	仕様は notes/50_spec/課題ファイルの形と検査.html、決めた経緯は計画 p261103-01。
 
 	YAML の部分集合に絞った自作の形で、パーサは使わない。
-	引用符 ・ コメント ・ 複数行 ・ 入れ子は無い。最初の「: 」で分け、値の前後の空白を除く。
+	引用符 ・ コメント ・ 入れ子は無い。最初の「: 」で分け、値の前後の空白を除く。
+	複数行は「キー: |」の塊だけ (次の行から 2 字下げ。課題 i261117-03 の決定 269-A)。
 */
 
 /**
  * メタ情報のキーの順（仕様のキー項目の表の順）。CLI はこの順で書く。
  * 状態 (state) は持たない。状態は置いてあるフォルダで決まる (計画 p261103-01 の 126-A)
  */
-export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs'] as const;
+export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'] as const;
+
+/**
+ * issue set で書ける 4 つの鍵 (課題 i261117-03。決定 270-A: refs の後ろに、この順で置く)。
+ * 入った版 ・ 入った日時 ・ 種別 ・ 利用者向けの説明 (1〜3 行。複数行は | の塊)
+ */
+export const FieldKeys = ['version', 'released', 'kind', 'note'] as const;
+
+/** released の形 (決定 272-B): yyyy-mm-dd hh:mm。実在する日時だけ */
+export function isRealDateTime(text: string): boolean {
+	const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(text);
+	if (m === null) return false;
+	const y = Number(m[1]);
+	const mo = Number(m[2]);
+	const d = Number(m[3]);
+	if (Number(m[4]) > 23 || Number(m[5]) > 59) return false;
+	const date = new Date(Date.UTC(y, mo - 1, d));
+	return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+}
+
+/**
+ * 鍵に書く行 (「鍵: 値」か、| の塊) を作る (決定 269-A)。
+ * 1 行で、前後に空白が無く、| で始まらない値は 1 行で書く。そうでなければ、次の行から 2 字下げの塊にする。
+ * 塊の中の空行は、2 字の空白だけの行で書く。値の末尾の改行と空白は落とす
+ */
+export function fieldLines(key: string, value: string): string[] {
+	const v = value.replace(/\r\n?/g, '\n').replace(/\s+$/, '');
+	if (!v.includes('\n') && v === v.trim() && !v.startsWith('|')) return [`${key}: ${v}`];
+	return [`${key}: |`, ...v.split('\n').map((l) => '  ' + l)];
+}
 
 /** 状態の 3 段階。やること (- [未] 等) の状態に使う */
 export const States = ['未', '着手', '済'] as const;
@@ -37,32 +67,42 @@ export function parsePairs(lines: string[], firstLine: number): Parsed {
 	const problems: string[] = [];
 	const brokenKeys = new Set<string>();
 	const seen = new Set<string>();
-	lines.forEach((raw, index) => {
+	for (let index = 0; index < lines.length; index++) {
+		const raw = lines[index];
 		const line = firstLine + index;
 		if (raw === '') {
 			problems.push(`${line} 行目: 空行は置けない`);
-			return;
+			continue;
 		}
 		const m = PairLine.exec(raw);
 		if (m === null) {
 			problems.push(`${line} 行目: 「キー: 値」の形でない`);
-			return;
+			continue;
 		}
 		const key = m[1];
-		const value = (m[2] ?? '').trim();
+		let value = (m[2] ?? '').trim();
+		// 「キー: |」は塊。次の行から、2 字下げの行が続く間が値 (決定 269-A)。塊の中の空行は、2 字の空白だけの行
+		if (value === '|') {
+			const block: string[] = [];
+			while (index + 1 < lines.length && lines[index + 1].startsWith('  ')) {
+				block.push(lines[index + 1].slice(2));
+				index++;
+			}
+			value = block.join('\n');
+		}
 		if (value === '') {
 			problems.push(`${line} 行目: ${key} の値が空`);
 			brokenKeys.add(key);
-			return;
+			continue;
 		}
 		if (seen.has(key)) {
 			problems.push(`${line} 行目: ${key} が重複している`);
 			brokenKeys.add(key);
-			return;
+			continue;
 		}
 		seen.add(key);
 		pairs.push({ key, value, line });
-	});
+	}
 	return { pairs, problems, brokenKeys };
 }
 

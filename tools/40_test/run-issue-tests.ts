@@ -42,7 +42,7 @@ const Done = Items + 'done/';
 const Archived = Items + 'archived/';
 
 /** メタ情報の既定の並び（仕様のキー項目の表の順。state は持たない） */
-const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs'];
+const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'];
 const Defaults: Record<string, string> = {
 	schema: '1', id: 'i261103-01', title: 'li の中の表を、表のまま出す', group: 'html2md', created: '2026-11-03',
 };
@@ -291,6 +291,41 @@ for (const key of ['schema', 'id', 'title', 'group', 'created']) {
 {
 	const dir = std('value-refs-chat-bad', { [Name1]: issueText({ refs: 'i261103-02, #abc' }) });
 	check('refs の chat の発言の番号が #数字 でなければエラー (value)', errorWith(checkRun(dir), 'value'));
+}
+
+console.log('--- version ・ released ・ kind ・ note (課題 i261117-03。決定 269-A 〜 272-B)');
+{
+	const dir = std('keys-ok', { [Name1]: issueText({ version: '0.0.1347', released: '2026-11-17 11:30', kind: 'fix', note: '|\n  1 行目\n  2 行目: コロン "引用符"' }) });
+	const r = checkRun(dir);
+	check('4 つの鍵 (note は | の塊) があっても、問題なし。警告 (unknown-key ・ key-order) も出ない', r.code === 0 && r.out.includes('問題なし') && !r.out.includes('[警告]'), r.out);
+}
+{
+	const dir = std('keys-order', { [Name1]: issueText().replace(/\n---\n/,'\nnote: あ\nversion: 1\n---\n') });
+	check('note が version より前なら警告 (key-order)', warnWith(checkRun(dir), 'key-order'), checkRun(dir).out);
+}
+{
+	const dir = std('keys-released-slash', { [Name1]: issueText({ released: '2026/11/17 11:30' }) });
+	check('released がスラッシュ区切りならエラー (value)', errorWith(checkRun(dir), 'value'), checkRun(dir).out);
+}
+{
+	const dir = std('keys-released-real', { [Name1]: issueText({ released: '2026-02-30 11:30' }) });
+	check('released が実在しない日時ならエラー (value)', errorWith(checkRun(dir), 'value'), checkRun(dir).out);
+}
+{
+	const dir = std('keys-released-time', { [Name1]: issueText({ released: '2026-11-17 24:00' }) });
+	check('released の時刻が 24:00 ならエラー (value)', errorWith(checkRun(dir), 'value'), checkRun(dir).out);
+}
+{
+	const dir = std('keys-block-empty', { [Name1]: issueText({ note: '|' }) });
+	check('note: | のあとに行が無ければエラー (meta。値が空)', errorWith(checkRun(dir), 'meta'), checkRun(dir).out);
+}
+{
+	const dir = std('keys-block-dup', { [Name1]: issueText({ note: '|\n  あ' }).replace(/\n---\n/, '\nnote: い\n---\n') });
+	check('note が重複すればエラー (meta)', errorWith(checkRun(dir), 'meta'), checkRun(dir).out);
+}
+{
+	const dir = std('keys-indent-without-block', { [Name1]: issueText({ kind: 'fix' }).replace('kind: fix', 'kind: fix\n  字下げだけの行') });
+	check('塊でない鍵のあとの字下げの行は、今までどおりエラー (meta)', errorWith(checkRun(dir), 'meta'), checkRun(dir).out);
 }
 
 console.log('--- 警告で済むもの');

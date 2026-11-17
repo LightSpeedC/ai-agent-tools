@@ -42,7 +42,7 @@ const Done = Items + 'done/';
 const Archived = Items + 'archived/';
 const Today = '2026-11-05';
 
-const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs'];
+const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'];
 const Defaults: Record<string, string> = {
 	schema: '1', id: 'i261103-01', title: '題', group: 'html2md', created: '2026-11-03',
 };
@@ -408,6 +408,127 @@ function ids(out: string): string[] {
 {
 	const dir = std('list-args');
 	check('list に知らないオプションを渡せば終了コード 5', run(['list', '--root', dir, '--bogus'], dir).code === 5);
+}
+
+// ---- set で version ・ released ・ kind ・ note を書く (課題 i261117-03。決定 269-A 〜 272-B) ----
+
+console.log('--- set の version ・ released ・ kind ・ note');
+const FieldFile = Todo + 'i261103-01-a.md';
+const FieldRel = (n: string): string => Todo + n;
+{
+	// 知らない鍵 (x_foo) を持つ課題に version を書いても、x_foo が残る
+	const text = issueText({ refs: '#1923', x_foo: 'bar' });
+	const dir = std('fields-unknown', { [FieldFile]: text });
+	const r = run(['set', 'i261103-01', '--root', dir, '--version', '0.0.1347'], dir);
+	const after = read(dir, FieldFile);
+	check('--version を書ける (終了コード 0)', r.code === 0, r.out + r.err);
+	check('知らない鍵 x_foo が残る', after.includes('\nx_foo: bar\n'), after);
+	check('version は refs の後ろ (鍵の順の位置) に入り、ほかの行は変わらない',
+		after === text.replace('refs: #1923\n', 'refs: #1923\nversion: 0.0.1347\n'), after);
+	const again = run(['set', 'i261103-01', '--root', dir, '--version', '0.0.1347'], dir);
+	check('同じ値をもう一度書いても、ファイルは変わらない', again.code === 0 && read(dir, FieldFile) === after, again.out + again.err);
+}
+{
+	// 4 つを一度に。鍵の順は version → released → kind → note
+	const dir = std('fields-all', { [FieldFile]: issueText({ refs: '#1923' }) });
+	const r = run(['set', 'i261103-01', '--root', dir, '--note', '右下の表示が v0.0.1347: … の形に。', '--kind', 'fix', '--released', '2026-11-17 11:30', '--version', '0.0.1347'], dir);
+	const after = read(dir, FieldFile);
+	check('4 つを一度に書ける', r.code === 0, r.out + r.err);
+	check('鍵の順は refs → version → released → kind → note',
+		after.includes('refs: #1923\nversion: 0.0.1347\nreleased: 2026-11-17 11:30\nkind: fix\nnote: 右下の表示が v0.0.1347: … の形に。\n---\n'), after);
+	const j = run(['show', 'i261103-01', '--root', dir, '--json'], dir);
+	let meta: Record<string, string> = {};
+	try { meta = JSON.parse(j.out).meta; } catch { /* 下で失敗にする */ }
+	check('show --json の meta に 4 つの鍵が出る',
+		meta.version === '0.0.1347' && meta.released === '2026-11-17 11:30' && meta.kind === 'fix' && meta.note === '右下の表示が v0.0.1347: … の形に。', j.out);
+	const t = run(['show', 'i261103-01', '--root', dir], dir);
+	check('show の表示に 4 つの鍵が出る', t.out.includes('version: 0.0.1347') && t.out.includes('released: 2026-11-17 11:30') && t.out.includes('kind: fix') && t.out.includes('note:'), t.out);
+	check('書いたあとの issue check は、警告も出ない', run(['check', '--root', dir], dir).out.includes('問題なし') && !run(['check', '--root', dir], dir).out.includes('[警告]'), run(['check', '--root', dir], dir).out);
+}
+{
+	// note の複数行 ・ コロン ・ 引用符は、読み戻して同じ文字列になる
+	const note = '1 行目\n2 行目: コロンと "引用符" と \'一重\'\n  字下げの行\n\n空行のあと';
+	const dir = std('fields-note', { [FieldFile]: issueText() });
+	const r = run(['set', 'i261103-01', '--root', dir, '--note', note], dir);
+	check('複数行の note を書ける', r.code === 0, r.out + r.err);
+	const after = read(dir, FieldFile);
+	check('複数行の note は、| の塊 (次の行から 2 字下げ) で書く',
+		after.includes('note: |\n  1 行目\n  2 行目: コロンと "引用符" と \'一重\'\n    字下げの行\n  \n  空行のあと\n---\n'), after);
+	let meta: Record<string, string> = {};
+	try { meta = JSON.parse(run(['show', 'i261103-01', '--root', dir, '--json'], dir).out).meta; } catch { /* 下で失敗にする */ }
+	check('読み戻すと、同じ文字列になる', meta.note === note, JSON.stringify(meta.note));
+	check('書いたあとの issue check は、エラーも警告も出ない', run(['check', '--root', dir], dir).code === 0 && !run(['check', '--root', dir], dir).out.includes('[警告]'), run(['check', '--root', dir], dir).out);
+}
+{
+	// 1 行でも、塊にしないと読み戻せない値は塊で書く
+	for (const note of ['|', '| 先頭が縦線', ' 先頭に空白']) {
+		const dir = std('fields-note-edge', { [FieldFile]: issueText() });
+		run(['set', 'i261103-01', '--root', dir, '--note', note], dir);
+		let meta: Record<string, string> = {};
+		try { meta = JSON.parse(run(['show', 'i261103-01', '--root', dir, '--json'], dir).out).meta; } catch { /* 下で失敗にする */ }
+		check(`note が ${JSON.stringify(note)} でも、読み戻すと同じ文字列になる`, meta.note === note, JSON.stringify(meta.note) + ' / ' + read(dir, FieldFile));
+	}
+}
+{
+	// 値を空にすると鍵を消す (塊の行もすべて消える)。ほかの行は変わらない
+	const base = issueText({ refs: '#1923', x_foo: 'bar' });
+	const dir = std('fields-clear', { [FieldFile]: base });
+	run(['set', 'i261103-01', '--root', dir, '--version', '0.0.1', '--note', 'あ\nい'], dir);
+	const r = run(['set', 'i261103-01', '--root', dir, '--version', '', '--note', ''], dir);
+	check('値を空にして、鍵を消せる', r.code === 0 && read(dir, FieldFile) === base, r.out + r.err + '\n' + read(dir, FieldFile));
+	const none = run(['set', 'i261103-01', '--root', dir, '--kind', ''], dir);
+	check('無い鍵を空にしても、エラーにならず、ファイルも変わらない', none.code === 0 && read(dir, FieldFile) === base, none.out + none.err);
+}
+{
+	const dir = std('fields-replace', { [FieldFile]: issueText({ version: '0.0.1', note: '古い\n複数行', x_foo: 'bar' }).replace('note: 古い\n複数行', 'note: |\n  古い\n  複数行') });
+	const r = run(['set', 'i261103-01', '--root', dir, '--note', '新しい 1 行'], dir);
+	const after = read(dir, FieldFile);
+	check('書いてある note (塊) を、新しい値に置き換える (古い塊の行は残らない)', r.code === 0 && after.includes('note: 新しい 1 行\nx_foo: bar\n---\n') && !after.includes('古い') && !after.includes('複数行') && after.includes('x_foo: bar\n'), r.out + r.err + '\n' + after);
+}
+{
+	const dir = std('fields-bad', { [FieldFile]: issueText() });
+	const before = read(dir, FieldFile);
+	const bad = run(['set', 'i261103-01', '--root', dir, '--released', '2026/11/17 11:30'], dir);
+	check('released がスラッシュ区切りなら終了コード 5 (書かない)', bad.code === 5 && read(dir, FieldFile) === before, bad.out + bad.err);
+	check('released が実在しない日時なら終了コード 5', run(['set', 'i261103-01', '--root', dir, '--released', '2026-02-30 11:30'], dir).code === 5);
+	check('version に改行を含めれば終了コード 5', run(['set', 'i261103-01', '--root', dir, '--version', '1\n2'], dir).code === 5);
+	check('何も指定しなければ終了コード 5', run(['set', 'i261103-01', '--root', dir], dir).code === 5);
+	check('見つからない id は終了コード 1', run(['set', 'i261103-99', '--root', dir, '--version', '1'], dir).code === 1);
+}
+{
+	const dir = std('fields-state', { [FieldFile]: issueText() });
+	const r = run(['set', 'i261103-01', '--root', dir, '--version', '0.0.2', '--state', '着手'], dir);
+	check('--state と一緒に指定でき、書いてから動かす', r.code === 0 && read(dir, Doing + 'i261103-01-a.md').includes('version: 0.0.2\n') && !exists(dir, FieldFile), r.out + r.err);
+}
+{
+	const dir = std('fields-bom', { [FieldFile]: '﻿' + issueText() });
+	const r = run(['set', 'i261103-01', '--root', dir, '--version', '1'], dir);
+	check('BOM のあるファイルは書き換えない (終了コード 1)', r.code === 1 && read(dir, FieldFile) === '﻿' + issueText(), r.out + r.err);
+}
+{
+	const dir = std('fields-json', { [FieldFile]: issueText() });
+	const r = run(['set', 'i261103-01', '--root', dir, '--version', '0.0.3', '--json'], dir);
+	let p: { id?: string; changed?: string[] } = {};
+	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
+	check('--json は、id と、書いた鍵 (changed) を出す', p.id === 'i261103-01' && JSON.stringify(p.changed) === JSON.stringify(['version']), r.out + r.err);
+}
+
+console.log('--- list --missing');
+{
+	const dir = std('missing', {
+		[FieldRel('i261103-01-a.md')]: issueText({ id: 'i261103-01', version: '0.0.1', note: 'あ' }),
+		[FieldRel('i261103-02-b.md')]: issueText({ id: 'i261103-02', version: '0.0.2' }),
+		[FieldRel('i261103-03-c.md')]: issueText({ id: 'i261103-03', note: 'う' }),
+		[Doing + 'i261103-04-d.md']: issueText({ id: 'i261103-04' }),
+		[Done + 'i261103-05-e.md']: issueText({ id: 'i261103-05' }),
+	});
+	check('--missing note は、note を持たない課題 (未・着手)', ids(run(['list', '--root', dir, '--missing', 'note'], dir).out).join(',') === 'i261103-02,i261103-04');
+	check('--missing version は、version を持たない課題', ids(run(['list', '--root', dir, '--missing', 'version'], dir).out).join(',') === 'i261103-03,i261103-04');
+	check('--missing version,note は、どちらかを持たない課題 (複数はカンマ区切り)', ids(run(['list', '--root', dir, '--missing', 'version,note'], dir).out).join(',') === 'i261103-02,i261103-03,i261103-04');
+	check('--state ・ --all と一緒に使える', ids(run(['list', '--root', dir, '--missing', 'note', '--all'], dir).out).join(',') === 'i261103-02,i261103-04,i261103-05');
+	check('件数の行は、絞った後の件数', run(['list', '--root', dir, '--missing', 'note'], dir).out.split('\n').pop() === '2 件');
+	check('知らない鍵を渡せば終了コード 5', run(['list', '--root', dir, '--missing', 'priority'], dir).code === 5);
+	check('--missing に鍵が無ければ終了コード 5', run(['list', '--root', dir, '--missing', ''], dir).code === 5);
 }
 
 console.log('');

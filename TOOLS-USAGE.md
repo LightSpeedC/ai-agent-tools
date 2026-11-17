@@ -864,11 +864,12 @@ created: 2026-11-01
 | コマンド | 何をするか |
 |---|---|
 | `issue new --title <題> --group <グループ>` | 課題を立てる。番号は自動で振る。`--refs` には課題 ・ 計画 ・ 調査の番号のほか、chat の発言の番号 (`#1923`) も並べられる |
-| `issue list` | 未・着手の一覧 (`--state` ・ `--all` で変える) |
+| `issue list` | 未・着手の一覧 (`--state` ・ `--all` で変える)。`--missing version,note` なら、その鍵のどれかを持たない課題だけ |
 | `issue show <id>` | 1 件を読む |
 | `issue search <語>` | 本文から探す。決定も探す (親の課題が archived でも。`--group` を付けたら課題だけ)。既定は語の部分一致。`--regex` を付けると正規表現で探す (`"表\|幅"` 等)。どちらも英字の大小を区別しない |
 | `issue todo <id> --add <文>` | やることを足す。`--done <n>` ・ `--doing <n>` ・ `--undone <n>` で n 番目の状態を変える |
 | `issue set <id> --state 済` | 課題の状態を変える (フォルダを動かす) |
+| `issue set <id> --version <版> --released "2026-11-17 11:30" --kind fix --note "説明"` | version ・ released ・ kind ・ note を書く (その行だけ。知らない鍵は残る。値が空ならその鍵を消す)。`--note` は複数行にでき、`note: \|` の塊で書く。`released` はハイフン区切りの `yyyy-mm-dd hh:mm` だけ |
 | `issue confirm <id>` | 報告元の確認が取れたことを記録する |
 | `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす。`issue archive <番号>` なら、済の課題 1 件だけを動かす。`issue archive --done-before <yyyy-mm-dd>` なら、その日より前に立てた済の課題をまとめて動かす (`--dry-run` で先に一覧を見る)。保管したグループにも、`issue new` で立てられる |
 | `issue check` | 課題ファイルを検査する。commit の前に流す |
