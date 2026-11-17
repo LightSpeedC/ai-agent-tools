@@ -5,7 +5,7 @@ title: psh が 5.1 の powershell を呼ぶ前に、PSModulePath を Machine と
 group: 他プロジェクトからの要求
 created: 2026-11-17
 from: 20260824-local-llm-llama-cp #2007
-confirmed: false
+confirmed: true
 refs: #2007
 ---
 
@@ -20,4 +20,4 @@ refs: #2007
 ## やること
 - [済] TS 版 ・ Rust 版の spawn で、5.1 のとき PSModulePath を外す (--pwsh は外さない)。run-psh-tests の 14 を足す
 - [済] TOOLS-USAGE の psh の節に説明を足す
-- [未] 依頼元 (20260824-local-llm-llama-cp) へ報告し、確認を待つ
+- [済] 依頼元 (20260824-local-llm-llama-cp) へ報告し、確認を待つ
