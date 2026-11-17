@@ -5,7 +5,7 @@ title: TOOLS-USAGE の見出し「15. 課題を管理する（issue）」を、�
 group: 他プロジェクトからの要求
 created: 2026-11-17
 from: ai-agent-rules #2030
-confirmed: false
+confirmed: true
 refs: #2030, #2028
 ---
 
@@ -17,4 +17,4 @@ refs: #2030, #2028
 
 ## やること
 - [済] TOOLS-USAGE.html の見出し ・ 目次 ・ 一覧表の引用を、半角かっこの「課題を管理する (issue)」に直し、html2md で .md を作り直した (check-markdown ・ check-html-rules は問題なし)
-- [未] ai-agent-rules に知らせ、確かめてもらう (番号は .md の生成物にだけ付くこと、アンカーが変わることも伝える。確かめたら返信してほしい: TOOLS-USAGE の見出しが「課題を管理する (issue)」になっていること)
+- [済] ai-agent-rules に知らせ、確かめてもらう (番号は .md の生成物にだけ付くこと、アンカーが変わることも伝える。確かめたら返信してほしい: TOOLS-USAGE の見出しが「課題を管理する (issue)」になっていること)
