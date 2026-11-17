@@ -176,7 +176,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-15</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-17</p>
 	</div>
 </div>
 
@@ -201,7 +201,7 @@
 		<li class="ch12"><a href="#ch12">音声の形式を変える（convert-audio）</a></li>
 		<li class="ch13"><a href="#ch13">会話ログから公開用のページを作る（history2html）</a></li>
 		<li class="ch14"><a href="#ch14">リポジトリを壊さずに GitHub と同期する（safe-push）</a></li>
-		<li class="ch15"><a href="#ch15">課題を管理する（issue）</a></li>
+		<li class="ch15"><a href="#ch15">課題を管理する (issue)</a></li>
 		<li class="ch16"><a href="#ch16">画面を使う作業を 1 つずつにする（ui-lock）</a></li>
 	</ol>
 </div>
@@ -229,7 +229,7 @@
 			<tr><td class="nowrap"><code>convert-audio</code></td><td>音声の形式を ffmpeg で<strong>変える</strong>（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」）</td></tr>
 			<tr><td class="nowrap"><code>history2html</code></td><td>会話ログ（<code>etc/history/jsonl</code>）から、<strong>伏せ字を掛けた公開用のページ</strong>を作る（「会話ログから公開用のページを作る（history2html）」）</td></tr>
 			<tr><td class="nowrap"><code>safe-push</code></td><td>複数のセッション ・ PC ・ クラウドから書き換えられるリポジトリを、<strong>commit → pull --rebase → push の一続きで、壊さずに</strong> GitHub と同期する（「リポジトリを壊さずに GitHub と同期する（safe-push）」）</td></tr>
-			<tr><td class="nowrap"><code>issue</code></td><td>課題を 1 件 1 ファイルで持ち、<strong>立てる・状態を変える・検査する・旧方式から移す</strong>（「課題を管理する（issue）」）</td></tr>
+			<tr><td class="nowrap"><code>issue</code></td><td>課題を 1 件 1 ファイルで持ち、<strong>立てる・状態を変える・検査する・旧方式から移す</strong> (「課題を管理する (issue)」)</td></tr>
 			<tr><td class="nowrap"><code>cloud-session-start</code></td><td>クラウドのセッションで、<strong>共通ルールと共有ツールを隣に置き、PATH と git の author を整える</strong>（「クラウドのセッションを準備する（cloud-session-start）」）</td></tr>
 		</tbody>
 	</table>
@@ -1072,7 +1072,7 @@ safe-push "&lt;リポジトリ&gt;" common-rules.md rules  # 名指しのパス�
 </section>
 
 <section class="ch15" id="ch15">
-	<h1 id="issue">課題を管理する（issue）</h1>
+	<h1 id="issue">課題を管理する (issue)</h1>
 
 	<p><strong>課題を 1 件 1 ファイルの Markdown で持ち、<code>issue</code> コマンドで読み書きする。</strong>これまでの <code>notes/40_issues/issues.html</code> (1 ファイルに全件) に代わる方式である。<code>issue</code> は、作業フォルダから親をたどって <code>notes/40_issues/items/</code> を探す。ほかのプロジェクトは読み書きしない。</p>
 

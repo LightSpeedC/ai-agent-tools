@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-11-15
+> 📅 作成: 2026-09-04 / 更新: 2026-11-17
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -22,7 +22,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 12. [音声の形式を変える（convert-audio）](#12-音声の形式を変えるconvert-audio)
 13. [会話ログから公開用のページを作る（history2html）](#13-会話ログから公開用のページを作るhistory2html)
 14. [リポジトリを壊さずに GitHub と同期する（safe-push）](#14-リポジトリを壊さずに-github-と同期するsafe-push)
-15. [課題を管理する（issue）](#15-課題を管理するissue)
+15. [課題を管理する (issue)](#15-課題を管理する-issue)
 16. [画面を使う作業を 1 つずつにする（ui-lock）](#16-画面を使う作業を-1-つずつにするui-lock)
 
 ## 1. 使えるコマンド
@@ -45,7 +45,7 @@ HTML と Markdown、文字コード、公開前の検査。自プロジェクト
 | `convert-audio` | 音声の形式を ffmpeg で**変える**（WAV を mp3 にする等）（「音声の形式を変える（convert-audio）」） |
 | `history2html` | 会話ログ（`etc/history/jsonl`）から、**伏せ字を掛けた公開用のページ**を作る（「会話ログから公開用のページを作る（history2html）」） |
 | `safe-push` | 複数のセッション ・ PC ・ クラウドから書き換えられるリポジトリを、**commit → pull --rebase → push の一続きで、壊さずに** GitHub と同期する（「リポジトリを壊さずに GitHub と同期する（safe-push）」） |
-| `issue` | 課題を 1 件 1 ファイルで持ち、**立てる・状態を変える・検査する・旧方式から移す**（「課題を管理する（issue）」） |
+| `issue` | 課題を 1 件 1 ファイルで持ち、**立てる・状態を変える・検査する・旧方式から移す** (「課題を管理する (issue)」) |
 | `cloud-session-start` | クラウドのセッションで、**共通ルールと共有ツールを隣に置き、PATH と git の author を整える**（「クラウドのセッションを準備する（cloud-session-start）」） |
 
 `check-markdown` は<strong>推測せず実物で判定する。</strong>Markdown を GitHub のレンダラに投げ、実際に返る HTML を見る。ローカルの理屈と実物の表示は一致しないことがある。
@@ -805,7 +805,7 @@ safe-push "<リポジトリ>" common-rules.md rules  # 名指しのパスだけ�
 > [!IMPORTANT]
 > <strong>終了コードに 2 を使わない。</strong>Stop フックは終了コード 2 を「終わらずに続ける」と読む。ほかのツールは引数の誤りを 2 にしているが、このツールはフックから呼ばれるので変えてある。
 
-## 15. 課題を管理する（issue）
+## 15. 課題を管理する (issue)
 
 <strong>課題を 1 件 1 ファイルの Markdown で持ち、`issue` コマンドで読み書きする。</strong>これまでの `notes/40_issues/issues.html` (1 ファイルに全件) に代わる方式である。`issue` は、作業フォルダから親をたどって `notes/40_issues/items/` を探す。ほかのプロジェクトは読み書きしない。
 
