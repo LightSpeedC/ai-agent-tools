@@ -38,14 +38,15 @@ console.log('');
 let r = list([]);
 check('-List は 0 で終わる', r.code === 0, r.out);
 check('既定の一覧に html2md が入る', r.out.includes('html2md'), r.out);
-check('既定では check-markdown を含まない', !r.out.includes('check-markdown'), r.out);
-check('既定では check-contrast を含まない', !r.out.includes('check-contrast'), r.out);
+// 既定の一覧には check-markdown 自身の単体試験 (名前は check-markdown) が入る。見分けるのは Online 用の行 (… (-Online))
+check('既定では check-markdown (-Online) を含まない', !r.out.includes('check-markdown (-Online)'), r.out);
+check('既定では check-contrast (-Online) を含まない', !r.out.includes('check-contrast (-Online)'), r.out);
 
 // -Online
 r = list(['-Online']);
 check('-Online でも 0 で終わる', r.code === 0, r.out);
-check('-Online で check-markdown を含む', r.out.includes('check-markdown'), r.out);
-check('-Online で check-contrast を含む', r.out.includes('check-contrast'), r.out);
+check('-Online で check-markdown (-Online) を含む', r.out.includes('check-markdown (-Online)'), r.out);
+check('-Online で check-contrast (-Online) を含む', r.out.includes('check-contrast (-Online)'), r.out);
 
 console.log('');
 if (fail === 0) {
