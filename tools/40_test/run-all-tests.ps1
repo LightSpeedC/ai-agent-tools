@@ -22,6 +22,9 @@
 	-IfChanged は、前の回に記録した commit (_run-all-times.json の commit) と
 	いまの HEAD が同じなら、流さずに終わる (終了コード 0)。夜のタスクスケジューラ用 (ローカルルール第 7 章)。
 	commit していない変更は、更新に数えない。
+
+	-IfChanged のときは、出力を画面と、tools/40_test/_nightly-logs/ のログ (run-with-log.ps1、30 日分) の
+	両方へ残す。夜に落ちたとき、落ちた理由を後から読める (i261119-01 の 276-A)。
 #>
 [CmdletBinding()]
 param(
@@ -148,7 +151,9 @@ $Suites = @(
 	# 型チェック。bun も node も型を見ないため、ここでしか食い違いが出ない
 	@{ Name = '型チェック'; Script = 'run-tsc-tests.ps1' },
 	# run-all-tests.ps1 自身の -Online (一覧を出すだけで、API もブラウザも使わない)
-	@{ Name = 'run-all-tests の -Online'; Script = 'run-all-tests-online-tests.ts' }
+	@{ Name = 'run-all-tests の -Online'; Script = 'run-all-tests-online-tests.ts' },
+	# 夜の全件の出力を、画面とログのファイルの両方へ残す (i261119-01 の 276-A)
+	@{ Name = 'run-with-log'; Script = 'run-with-log-tests.ts' }
 )
 
 # -Online のときだけ回す、外の道具を使う検査 (i260910-03、68-A)。
@@ -238,6 +243,26 @@ try {
 if ($IfChanged -and $HeadCommit -ne '' -and $null -ne $Previous -and $Previous.commit -eq $HeadCommit) {
 	Write-Host ('=== ' + (Get-Date).ToString('MM/dd HH:mm') + ' 前の回 (' + $Previous.finished + ') から更新が無いので、流しません ===') -ForegroundColor Cyan
 	exit 0
+}
+
+# 夜の全件 (-IfChanged) は、出力を画面とログの両方へ残す (i261119-01 の 276-A、決定 i261119-01-d1)。
+# 残さないと、落ちても落ちた名前しか分からない。自分自身を run-with-log.ps1 の子として流し直す
+if ($IfChanged -and $env:RUN_ALL_TESTS_LOGGING -ne '1') {
+	$forward = '-IfChanged'
+	if ($Online) { $forward += ' -Online' }
+	$env:RUN_ALL_TESTS_LOGGING = '1'
+	try {
+		& (Join-Path $PSScriptRoot 'run-with-log.ps1') -Script $PSCommandPath -ArgumentLine $forward -LogDir (Join-Path $PSScriptRoot '_nightly-logs') -KeepDays 30
+		exit $LASTEXITCODE
+	} catch {
+		if ($global:RunWithLogStarted) {
+			# 子はもう流れている。流し直すと、全件が同時に 2 組走る。子の終了コード (分からなければ 1) で終える
+			Write-Host ('出力の記録の途中で失敗しました (流し直しません): ' + $_.Exception.Message) -ForegroundColor Red
+			exit $(if ($null -ne $global:RunWithLogExitCode) { [int]$global:RunWithLogExitCode } else { 1 })
+		}
+		# 子を起動する前の失敗 (置き場が作れない等) は、記録なしで流す
+		Write-Host ('出力の記録を始められません (記録なしで続けます): ' + $_.Exception.Message) -ForegroundColor Yellow
+	}
 }
 
 function Write-Progress-File([string]$current) {
