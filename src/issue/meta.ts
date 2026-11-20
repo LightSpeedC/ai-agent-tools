@@ -11,7 +11,13 @@
  * メタ情報のキーの順（仕様のキー項目の表の順）。CLI はこの順で書く。
  * 状態 (state) は持たない。状態は置いてあるフォルダで決まる (計画 p261103-01 の 126-A)
  */
-export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'] as const;
+export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'started', 'done', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'] as const;
+
+/**
+ * 着手にした日時 ・ 済にした日時 (課題 i261120-01。決定 278-A ・ 279-A)。yyyy-mm-dd hh:mm (JST)。
+ * issue set --state が書く。issue set --started ・ --done でも書ける (決定 285-A)
+ */
+export const StampKeys = ['started', 'done'] as const;
 
 /**
  * issue set で書ける 4 つの鍵 (課題 i261117-03。決定 270-A: refs の後ろに、この順で置く)。

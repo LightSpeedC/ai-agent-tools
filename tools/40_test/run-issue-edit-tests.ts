@@ -107,7 +107,9 @@ console.log('--- set');
 	const dir = std('set-basic', { [Todo + A]: issueText() });
 	const before = read(dir, Todo + A);
 	const r = run(['set', 'i261103-01', '--state', '着手'], dir);
-	check('set --state 着手: todo/ から doing/ へ動かす (中身は変えない)', r.code === 0 && !exists(dir, Todo + A) && read(dir, Doing + A) === before, r.out + r.err);
+	// started を書く (課題 i261120-01。決定 279-A)。ほかの行は変えない。時刻は 現在の JST (ISSUE_TEST_NOW を固定していないので、形だけ見る)
+	const moved = read(dir, Doing + A);
+	check('set --state 着手: todo/ から doing/ へ動かす (started を 1 行足すほかは変えない)', r.code === 0 && !exists(dir, Todo + A) && moved.replace(/^started: \d{4}-\d{2}-\d{2} \d{2}:\d{2}\n/m, '') === before && /^started: \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/m.test(moved), r.out + r.err);
 	check('set の出力に、id と、動かした先 (todo/ → doing/) が出る', r.out.includes('i261103-01') && r.out.includes('todo/') && r.out.includes('doing/'), r.out);
 	check('set の出力に、絶対パスを出さない', !r.out.includes(dir) && !r.out.split('\\').join('/').includes(dir.split('\\').join('/')), r.out);
 	check('動かしたあとのプロジェクトは、issue check が通る', run(['check'], dir).code === 0, run(['check'], dir).out);
@@ -170,7 +172,8 @@ console.log('--- set');
 	git(dir, 'commit', '-q', '-m', 'init');
 	const r = run(['set', 'i261103-01', '--state', '着手'], dir);
 	const status = git(dir, 'status', '--porcelain');
-	check('git の管理下なら git mv で動かす (ステージされた rename になる)', r.code === 0 && /^R {2}.*todo\/i261103-01-a\.md -> .*doing\/i261103-01-a\.md$/m.test(status), r.out + r.err + ' / ' + status);
+	// rename は stage 済、started の書き込みは stage 前 (RM。課題 i261120-01)
+	check('git の管理下なら git mv で動かす (ステージされた rename になる)', r.code === 0 && /^RM .*todo\/i261103-01-a\.md -> .*doing\/i261103-01-a\.md$/m.test(status), r.out + r.err + ' / ' + status);
 }
 
 // ---- todo ----

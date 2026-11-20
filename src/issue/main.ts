@@ -43,7 +43,7 @@ import {
 	Failure, StateOf, UsageError, archiveDoneBefore, archiveGroup, archiveOne, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setFields, setState, showIssue, unarchiveGroup,
 	type FieldValues,
 } from './ops.ts';
-import { FieldKeys } from './meta.ts';
+import { FieldKeys, StampKeys } from './meta.ts';
 import { WrittenListRel, applyMigration, applyOverrides, planMigration, removeWritten, verifyWritten } from './migrate.ts';
 import { listDecisions, newDecision, searchDecisions, setDecision, showDecision } from './decide.ts';
 import { DecideWrittenListRel, applyDecideMigration, markStatuses, planDecideMigration, recheckDecisions, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
@@ -63,8 +63,8 @@ const Usage = [
 	'  issue show <id> [--root <dir>] [--json]               課題を 1 件読む',
 	'  issue list [--state 未,着手,済,archived | --all] [--group <g>] [--missing <鍵,…>] [--root <dir>] [--json]   (--missing は version ・ released ・ kind ・ note のどれかを持たない課題)',
 	'  issue search <語> [--regex] [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
-	'  issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>] [--root <dir>] [--json]',
-	'                                                                 状態を変える (隣のフォルダへ動かす) ・ 鍵を書く (値が空なら鍵を消す。note の複数行は | の塊で書く)',
+	'  issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>] [--started <yyyy-mm-dd hh:mm>] [--done <yyyy-mm-dd hh:mm>] [--root <dir>] [--json]',
+	'                                                                 状態を変える (隣のフォルダへ動かす。着手にすると started を、済にすると done を JST で書く) ・ 鍵を書く (値が空なら鍵を消す。note の複数行は | の塊で書く)',
 	'  issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]',
 	'  issue confirm <id> [--undo] [--root <dir>] [--json]            報告元の確認 (confirmed) を true にする (--undo で false)',
 	'  issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]',
@@ -72,7 +72,7 @@ const Usage = [
 	'  issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]',
 	'                                                                 _issues.html を作り直して、既定のアプリで開く',
 	'  issue archive <group|番号> [--root <dir>] [--json]             グループの全件が済なら、archived/ へ動かす。番号なら済の課題 1 件だけを動かす',
-	'  issue archive --done-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]   その日より前に立てた済の課題を、グループを問わずまとめて動かす',
+	'  issue archive --done-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]   済にした日 (done。無ければ立てた日) がその日より前の済の課題を、グループを問わずまとめて動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 	'  issue decide new --parent <番号> --title <問い> --option <文> [--option <文> …] --chosen <A|B|…|A,C>',
 	'                  [--status 決めた|仮に決めた|答え待ち] [--slug <件名>] [--refs <番号,…>] [--replaces <id,…>] [--legacy <:名前:旧番号,…>] [--body <本文>] [--root <dir>] [--json]',
@@ -290,16 +290,16 @@ function requireId(o: Options, usage: string): string {
 }
 
 function runSet(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root', '--state', '--version', '--released', '--kind', '--note'], flags: ['--json'], positionals: 1 });
-	const id = requireId(o, 'issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>]');
+	const o = parseOptions(rest, { valued: ['--root', '--state', '--version', '--released', '--kind', '--note', '--started', '--done'], flags: ['--json'], positionals: 1 });
+	const id = requireId(o, 'issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>] [--started <yyyy-mm-dd hh:mm>] [--done <yyyy-mm-dd hh:mm>]');
 	const state = o.values.get('--state');
 	const fields: FieldValues = {};
-	for (const k of FieldKeys) {
+	for (const k of [...FieldKeys, ...StampKeys]) {
 		const v = o.values.get('--' + k);
 		if (v !== undefined) fields[k] = v;
 	}
 	const hasFields = Object.keys(fields).length > 0;
-	if (state === undefined && !hasFields) throw new UsageError('--state (未 ・ 着手 ・ 済) か、--version ・ --released ・ --kind ・ --note が要る');
+	if (state === undefined && !hasFields) throw new UsageError('--state (未 ・ 着手 ・ 済) か、--version ・ --released ・ --kind ・ --note ・ --started ・ --done が要る');
 	const root = existingRoot(o);
 	// --state と一緒のときは、先に鍵の検査だけをする (値の誤り・読めないファイル)。そのあと状態を動かし、動いたら鍵を書く。
 	// どれかが失敗すれば、何も変えない (鍵だけ書かれて、状態は動かないことが無い)。値が空なら、その鍵を消す
@@ -320,8 +320,9 @@ function runSet(rest: string[]): number {
 		return ExitOk;
 	}
 	const r = stateResult as NonNullable<typeof stateResult>;
+	if (r.warning !== undefined) console.error(`[警告] ${id}: ${r.warning}`);
 	if (o.flags.has('--json')) {
-		console.log(JSON.stringify({ id: r.id, state: r.state, folder: r.folder, from: r.from, file: r.file, ...(written === null ? {} : { changed: written.changed }) }));
+		console.log(JSON.stringify({ id: r.id, state: r.state, folder: r.folder, from: r.from, file: r.file, stamps: r.stamps, ...(written === null ? {} : { changed: written.changed }) }));
 	} else if (!r.moved) {
 		console.log(`[OK] ${id} は既に ${r.state} (${r.folder}/)。動かさない`);
 	} else {
@@ -533,7 +534,7 @@ function runArchiveBefore(rest: string[]): number {
 		console.log(JSON.stringify({ before, dryRun, moved: r.moved, count: r.moved.length, skipped: r.skipped }));
 	} else {
 		const verb = dryRun ? '動かす (--dry-run。まだ動かしていない)' : 'archived/ へ動かした';
-		console.log(`[OK] ${before} より前に立てた済の課題 ${r.moved.length} 件を${verb}${r.moved.length > 0 ? ': ' + r.moved.join(' ・ ') : ''}`);
+		console.log(`[OK] ${before} より前 (済にした日。done が無ければ立てた日) の済の課題 ${r.moved.length} 件を${verb}${r.moved.length > 0 ? ': ' + r.moved.join(' ・ ') : ''}`);
 		for (const s of r.skipped) console.log(`[飛ばした] ${s.id}: ${s.reason}`);
 	}
 	if (!dryRun && r.moved.length > 0) autoRender(root, true);

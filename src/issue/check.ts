@@ -287,6 +287,18 @@ function checkIssueFile(entry: Entry, groups: Set<string> | null, add: Add): Fil
 	// 入った日時 (決定 272-B)。エラー
 	const released = get('released');
 	if (released !== undefined && !isRealDateTime(released)) add('error', 'value', rel, `released が実在する yyyy-mm-dd hh:mm でない: ${released}`);
+	// 着手にした日時 ・ 済にした日時 (課題 i261120-01。決定 284-A)。形の誤りはエラー。
+	// done/ ・ archived/ 以外にある課題が done を持つ・created より前の日付は、警告
+	const started = get('started');
+	const doneAt = get('done');
+	if (started !== undefined && !isRealDateTime(started)) add('error', 'value', rel, `started が実在する yyyy-mm-dd hh:mm でない: ${started}`);
+	if (doneAt !== undefined && !isRealDateTime(doneAt)) add('error', 'value', rel, `done が実在する yyyy-mm-dd hh:mm でない: ${doneAt}`);
+	if (doneAt !== undefined && !isDone) add('warning', 'done-folder', rel, `done があるのに ${entry.folder}/ にある (済から戻したなら、done は消える。issue set --done "" で消せる)`);
+	for (const [key, value] of [['started', started], ['done', doneAt]] as const) {
+		if (value !== undefined && isRealDateTime(value) && created !== undefined && isRealDate(created) && value.slice(0, 10) < created) {
+			add('warning', 'before-created', rel, `${key} (${value}) が created (${created}) より前`);
+		}
+	}
 	// version と kind の形は、警告だけ (決定 275-A)。リリースの組み立てが書く値を止めず、誤字には気づけるようにする
 	const version = get('version');
 	if (version !== undefined && !/^\d+(\.\d+)*$/.test(version)) add('warning', 'value', rel, `version が数字とドットだけの形でない: ${version}`);

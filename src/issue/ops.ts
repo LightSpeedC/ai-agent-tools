@@ -10,7 +10,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Folders, ItemsRel, NamePattern, SlugMax, isRefForm, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
-import { FieldKeys, KeyOrder, fieldLines, isRealDateTime, splitIssue } from './meta.ts';
+import { FieldKeys, KeyOrder, StampKeys, fieldLines, isRealDateTime, splitIssue } from './meta.ts';
 import { writeAtomic } from '../lib/write-atomic.ts';
 import { OldIdFileName, UuidFileName, mainFolderName, copyUuid, maxReserved, numbersBaseOf, prune, readProjectFile, reserve, uuidFileText } from './numbers.ts';
 
@@ -52,6 +52,18 @@ export function todayJst(): string {
 	const parts = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
 	const v = (t: string): string => parts.find((p) => p.type === t)?.value ?? '';
 	return v('year') + '-' + v('month') + '-' + v('day');
+}
+
+/**
+ * いまの日時 (JST) の yyyy-mm-dd hh:mm。試験だけが、環境変数 ISSUE_TEST_NOW (yyyy-mm-dd hh:mm) で固定する。
+ * ISSUE_TEST_TODAY だけがあれば、日付はそれ、時刻はいまの時刻にする
+ */
+export function nowJst(): string {
+	const fixed = process.env.ISSUE_TEST_NOW;
+	if (fixed !== undefined && isRealDateTime(fixed)) return fixed;
+	const parts = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+	const v = (t: string): string => parts.find((p) => p.type === t)?.value ?? '';
+	return todayJst() + ' ' + v('hour').padStart(2, '0') + ':' + v('minute').padStart(2, '0');
 }
 
 function nnOf(n: number): string {
@@ -328,9 +340,34 @@ function moveIssueFile(root: string, fromRel: string, toRel: string): void {
 /** set で使える状態 (archived は archive で動かす) */
 export const SetTargets: Record<string, Folder> = { 未: 'todo', 着手: 'doing', 済: 'done' };
 
-export type SetResult = { id: string; state: string; folder: Folder; from: { state: string; folder: Folder }; file: string; moved: boolean };
+export type SetResult = {
+	id: string; state: string; folder: Folder; from: { state: string; folder: Folder }; file: string; moved: boolean;
+	/** 動かしたときに書いた・消した日時の鍵 (started ・ done) */
+	stamps: string[];
+	/** 日時を書けなかった理由 (状態は動かした)。読み書きできないファイル (BOM ・ CR など) のとき */
+	warning?: string;
+};
 
-/** 課題の状態を変える (ファイルを隣のフォルダへ動かす)。済にするときは、条件を満たさなければ拒否する */
+/**
+ * 動かしたときに書く・消す日時 (課題 i261120-01。決定 278-A ・ 279-A ・ 282-A)。
+ * 着手へ: started が無ければ書く (最初の着手日。再着手で上書きしない)。済から戻すなら done を消す。
+ * 済へ: done を書く。未へ戻すとき、済からなら done を消す。started は消さない
+ */
+function stampsFor(text: string, from: Folder, target: Folder): FieldValues {
+	const parts = splitIssue(text);
+	const get = (k: string): string | undefined => parts.broken ? undefined : parts.parsed.pairs.find((p) => p.key === k)?.value;
+	const out: FieldValues = {};
+	if (target === 'done') out.done = nowJst();
+	if (target === 'doing' && get('started') === undefined) out.started = nowJst();
+	if (target !== 'done' && (from === 'done') && get('done') !== undefined) out.done = '';
+	return out;
+}
+
+/**
+ * 課題の状態を変える (ファイルを隣のフォルダへ動かす)。済にするときは、条件を満たさなければ拒否する。
+ * 動かしたあとに、started ・ done を書く (動かしてから書く: 失敗しても状態は動いたまま。git mv は名前の変更だけを
+ * stage するので、日時の書き込みは stage 前の変更として残る)
+ */
 export function setState(root: string, id: string, state: string): SetResult {
 	const target = SetTargets[state];
 	if (target === undefined) throw new UsageError(`--state に使えない語: ${state} (未 ・ 着手 ・ 済。archived は issue archive で動かす)`);
@@ -338,13 +375,30 @@ export function setState(root: string, id: string, state: string): SetResult {
 	const from = { state: StateOf[cur.folder], folder: cur.folder };
 	if (cur.folder === 'archived') throw new Failure(`${id} は archived/ にある。グループを戻す issue unarchive <group> のあとで動かす`);
 	const toRel = `${ItemsRel}/${target}/${cur.name}`;
-	if (cur.folder === target) return { id, state, folder: target, from, file: toRel, moved: false };
+	if (cur.folder === target) return { id, state, folder: target, from, file: toRel, moved: false, stamps: [] };
+	// 読めなくても (済にしないなら) 動かせた今までの動きを保つ。日時は、読めたときだけ書く
+	let text = '';
+	try {
+		text = loadFile(root, cur.folder, cur.name).text;
+	} catch (e) {
+		if (target === 'done') throw e;
+	}
 	if (target === 'done') {
-		const reasons = doneBlockers(loadFile(root, cur.folder, cur.name).text);
+		const reasons = doneBlockers(text);
 		if (reasons.length > 0) throw new Failure(`${id} を済にできない: ${reasons.join(' ・ ')}`);
 	}
+	const plan = stampsFor(text, cur.folder, target);
 	moveIssueFile(root, `${ItemsRel}/${cur.folder}/${cur.name}`, toRel);
-	return { id, state, folder: target, from, file: toRel, moved: true };
+	const result: SetResult = { id, state, folder: target, from, file: toRel, moved: true, stamps: [] };
+	if (Object.keys(plan).length > 0) {
+		try {
+			result.stamps = setFields(root, id, plan).changed;
+		} catch (e) {
+			if (!(e instanceof Failure)) throw e;
+			result.warning = `${Object.keys(plan).join(' ・ ')} を書けなかった (状態は動かした): ${e.message}`;
+		}
+	}
+	return result;
 }
 
 function groupOf(text: string): string | null {
@@ -421,13 +475,18 @@ export function archiveOne(root: string, id: string): GroupMoveResult {
 }
 
 /**
- * その日より前に立てた (created < before) 済の課題を、グループを問わず archived/ へ動かす (216-A)。
- * 済になった日は課題ファイルに残らないため、立てた日 (created) で選ぶ。済の条件を満たさない課題は飛ばす。dryRun なら動かさない
+ * その日より前の済の課題を、グループを問わず archived/ へ動かす (216-A)。
+ * 済にした日 (done の日付) があればそれで、無ければ立てた日 (created) で選ぶ (課題 i261120-01 の決定 280-B。i261109-04-d3 を置き換える)。
+ * 済の条件を満たさない課題は飛ばす。dryRun なら動かさない
  */
 export function archiveDoneBefore(root: string, before: string, dryRun: boolean): { moved: string[]; skipped: { id: string; reason: string }[] } {
 	const { members } = loadAll(root, ['done']);
 	const get = (text: string, k: string): string => new RegExp(`^${k}:[ \\t]*(.*)$`, 'm').exec(text.replace(/\r/g, ''))?.[1].trim() ?? '';
-	const targets = members.filter((m) => { const c = get(m.text, 'created'); return c !== '' && c < before; }).sort((a, b) => compareId(a.id, b.id));
+	const targets = members.filter((m) => {
+		const d = get(m.text, 'done').slice(0, 10);
+		const c = d !== '' ? d : get(m.text, 'created');
+		return c !== '' && c < before;
+	}).sort((a, b) => compareId(a.id, b.id));
 	const moved: string[] = [];
 	const skipped: { id: string; reason: string }[] = [];
 	for (const m of targets) {
@@ -554,7 +613,11 @@ export function setConfirmed(root: string, id: string, value: boolean): ConfirmR
 
 // ---- version ・ released ・ kind ・ note を書く (課題 i261117-03。決定 269-A 〜 272-B) ----
 
-export type FieldValues = Partial<Record<(typeof FieldKeys)[number], string>>;
+/** 書ける鍵: version ・ released ・ kind ・ note と、started ・ done (課題 i261120-01) */
+const WritableKeys = [...FieldKeys, ...StampKeys] as const;
+export type FieldValues = Partial<Record<(typeof WritableKeys)[number], string>>;
+/** 値が yyyy-mm-dd hh:mm (実在する日時) の鍵 */
+const DateTimeKeys: readonly string[] = ['released', ...StampKeys];
 export type FieldsResult = { id: string; changed: string[]; file: string; /** 書いたあとのメタ情報に残る、形の誤りの数 */ problems: number };
 
 /** key で始まる行から、その鍵の行の範囲 (| の塊なら、続く 2 字下げの行まで) の終わりの次を返す */
@@ -577,12 +640,12 @@ function blockEnd(lines: string[], at: number, limit: number): number {
  * 新しい鍵は、鍵の順 (KeyOrder) で、手前にある鍵の後ろに入れる。BOM や CR のあるファイルは書き換えない
  */
 export function setFields(root: string, id: string, values: FieldValues, dryRun = false): FieldsResult {
-	const entries = FieldKeys.filter((k) => values[k] !== undefined);
-	if (entries.length === 0) throw new UsageError('書く鍵が無い (--version ・ --released ・ --kind ・ --note)');
+	const entries = WritableKeys.filter((k) => values[k] !== undefined);
+	if (entries.length === 0) throw new UsageError('書く鍵が無い (--version ・ --released ・ --kind ・ --note ・ --started ・ --done)');
 	for (const key of entries) {
 		const v = (values[key] ?? '').replace(/\r\n?/g, '\n').replace(/\s+$/, '');
 		if (key !== 'note' && v.includes('\n')) throw new UsageError(`--${key} に改行は書けない (複数行にできるのは --note だけ)`);
-		if (key === 'released' && v !== '' && !isRealDateTime(v)) throw new UsageError(`--released が実在する yyyy-mm-dd hh:mm でない: ${v} (例: 2026-11-17 11:30)`);
+		if (DateTimeKeys.includes(key) && v.trim() !== '' && !isRealDateTime(v.trim())) throw new UsageError(`--${key} が実在する yyyy-mm-dd hh:mm でない: ${v} (例: 2026-11-17 11:30)`);
 	}
 	const located = locateIssue(root, id);
 	const rel = `${ItemsRel}/${located.folder}/${located.name}`;
