@@ -176,7 +176,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-17</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-20</p>
 	</div>
 </div>
 
@@ -1125,10 +1125,13 @@ created: 2026-11-01
 			<tr><td class="nowrap"><code>issue show &lt;id&gt;</code></td><td>1 件を読む</td></tr>
 			<tr><td class="nowrap"><code>issue search &lt;語&gt;</code></td><td>本文から探す。決定も探す (親の課題が archived でも。<code>--group</code> を付けたら課題だけ)。既定は語の部分一致。<code>--regex</code> を付けると正規表現で探す (<code>"表|幅"</code> 等)。どちらも英字の大小を区別しない</td></tr>
 			<tr><td class="nowrap"><code>issue todo &lt;id&gt; --add &lt;文&gt;</code></td><td>やることを足す。<code>--done &lt;n&gt;</code> ・ <code>--doing &lt;n&gt;</code> ・ <code>--undone &lt;n&gt;</code> で n 番目の状態を変える</td></tr>
-			<tr><td class="nowrap"><code>issue set &lt;id&gt; --state 済</code></td><td>課題の状態を変える (フォルダを動かす)</td></tr>
+			<tr><td class="nowrap"><code>issue set &lt;id&gt; --state 済</code></td><td>課題の状態を変える (フォルダを動かす)。着手にすると <code>started</code> を、済にすると <code>done</code> を、JST の <code>yyyy-mm-dd hh:mm</code> で書く (<code>started</code> は最初の 1 回だけ。済から戻すと <code>done</code> を消す。すでに済なら上書きしない)。<code>git mv</code> は rename だけを stage するので、日時の書き込みは stage 前の変更 (<code>RM</code>) として残る</td></tr>
+			<tr><td class="nowrap"><code>issue set &lt;id&gt; --done "2026-11-18 17:45" --started "2026-11-17 09:00"</code></td><td><code>done</code> ・ <code>started</code> を手で書く (値が空なら消す。形は <code>yyyy-mm-dd hh:mm</code>)</td></tr>
+			<tr><td class="nowrap"><code>issue stats [--since &lt;日&gt;] [--until &lt;日&gt;] [--json]</code></td><td>日別に 立てた ・ 着手にした ・ 済にした ・ 残り の数を出す (消化の速さを測る)。残りは、<code>done</code> の無い済も数える近似。その件数は末尾 (<code>--json</code> では <code>undatedDone</code>) に出る</td></tr>
+			<tr><td class="nowrap"><code>issue backfill-done [--dry-run | --apply]</code></td><td>既存の済の <code>done</code> を、git の履歴 (済のフォルダに最後に入った commit の author の日時) から埋める。既定は <code>--dry-run</code>。一度に 10 件以上が現れた commit (移行) の分は飛ばす</td></tr>
 			<tr><td class="nowrap"><code>issue set &lt;id&gt; --version &lt;版&gt; --released "2026-11-17 11:30" --kind fix --note "説明"</code></td><td>version ・ released ・ kind ・ note を書く (その行だけ。知らない鍵は残る。値が空ならその鍵を消す)。<code>--note</code> は複数行にでき、<code>note: |</code> の塊で書く。<code>released</code> はハイフン区切りの <code>yyyy-mm-dd hh:mm</code> だけ</td></tr>
 			<tr><td class="nowrap"><code>issue confirm &lt;id&gt;</code></td><td>報告元の確認が取れたことを記録する</td></tr>
-			<tr><td class="nowrap"><code>issue archive &lt;グループ&gt;</code></td><td>全件が済のグループを <code>archived/</code> へ動かす。<code>issue archive &lt;番号&gt;</code> なら、済の課題 1 件だけを動かす。<code>issue archive --done-before &lt;yyyy-mm-dd&gt;</code> なら、その日より前に立てた済の課題をまとめて動かす (<code>--dry-run</code> で先に一覧を見る)。保管したグループにも、<code>issue new</code> で立てられる</td></tr>
+			<tr><td class="nowrap"><code>issue archive &lt;グループ&gt;</code></td><td>全件が済のグループを <code>archived/</code> へ動かす。<code>issue archive &lt;番号&gt;</code> なら、済の課題 1 件だけを動かす。<code>issue archive --done-before &lt;yyyy-mm-dd&gt;</code> なら、済にした日 (<code>done</code>。無ければ立てた日) がその日より前の済の課題をまとめて動かす (<code>--dry-run</code> で先に一覧を見る)。保管したグループにも、<code>issue new</code> で立てられる</td></tr>
 			<tr><td class="nowrap"><code>issue check</code></td><td>課題ファイルを検査する。commit の前に流す</td></tr>
 			<tr><td class="nowrap"><code>issue render</code> ・ <code>issue view</code></td><td>一覧の HTML を作る (<code>view</code> は作って開く)。<code>--out</code> ・ id ・ <code>--group</code> を渡さない <code>render</code> は、<code>_issues.html</code> と保管の <code>_issues-archive.html</code> の両方を作り直す (中身が同じなら書かない。240-A)。<code>--all</code> は <code>_issues.html</code> に保管も含める指定。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る</td></tr>
 			<tr><td class="nowrap"><code>issue choice next</code></td><td>選択肢の通し番号 (<code>202-A</code> の <code>202</code>) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない)。予約のほか、決定の <code>legacy_ids</code> と、決定の題の頭の番号 (<code>243: …</code>) も、使った番号として数える</td></tr>

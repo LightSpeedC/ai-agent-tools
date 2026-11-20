@@ -44,10 +44,12 @@ export function computeStats(root: string, since: string | null, until: string |
 		const created = get('created');
 		const started = get('started');
 		const done = get('done');
+		// 済ではない課題 (todo/ ・ doing/) に残った done は、無いものとして数える (済から戻した課題を、済に数えない。check が警告する)
+		const isDone = m.folder === 'done' || m.folder === 'archived';
 		const row: Row = {
 			created: created !== undefined && isRealDay(created) ? created : null,
 			started: started !== undefined && isRealDateTime(started) ? started.slice(0, 10) : null,
-			done: done !== undefined && isRealDateTime(done) ? done.slice(0, 10) : null,
+			done: isDone && done !== undefined && isRealDateTime(done) ? done.slice(0, 10) : null,
 		};
 		if ((m.folder === 'done' || m.folder === 'archived') && row.done === null) undatedDone++;
 		rows.push(row);

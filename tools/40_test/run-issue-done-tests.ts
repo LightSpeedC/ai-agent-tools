@@ -321,6 +321,84 @@ console.log('--- backfill-done');
 	check('--skip-commit が無ければ、その commit の日時を書く', r2.code === 0 && read(dir, Done + 'i261105-01-x.md').includes('done: 2026-11-10 10:00\n'), r2.out + r2.err);
 }
 
+// ---- レビュー指摘 (tools-review) ----
+
+console.log('--- レビュー指摘');
+{
+	// 指摘 2: --state と一緒に渡した鍵の値が誤りなら、状態も日時も動かさない (done ・ started の形も、先に見る)
+	const text = issueText();
+	for (const bad of [['--released', '2026-13-01 10:00'], ['--done', '2026-11-18'], ['--started', '2026/11/18 10:00']]) {
+		const dir = std('review-2', { [Todo + A]: text });
+		const r = run(['set', 'i261103-01', '--state', '済', ...bad], dir);
+		check(`--state 済 と ${bad[0]} の誤った値を一緒に渡せば、終了コード 5 で、何も動かさず書かない`, r.code === 5 && read(dir, Todo + A) === text && !exists(dir, Done + A), r.out + r.err);
+	}
+}
+{
+	// 指摘 3: 日時を書けなかったら、理由が何でも、状態は動かしたまま警告 (終了コード 0)
+	const dir = std('review-3', { [Todo + A]: issueText() });
+	const file = path.join(dir, Todo + A);
+	fs.chmodSync(file, 0o444);
+	const r = run(['set', 'i261103-01', '--state', '済'], dir);
+	fs.chmodSync(path.join(dir, Done + A), 0o666);
+	check('書き込めないファイルでも、状態は動かし、終了コード 0 で警告を出す', r.code === 0 && exists(dir, Done + A) && !exists(dir, Todo + A), r.out + r.err);
+}
+{
+	// 指摘 6: 済ではない課題 (todo/ ・ doing/) に残った done は、済にした数に入れず、残りから外さない
+	const dir = std('review-6', { [Todo + A]: issueText({ created: '2026-11-03', done: '2026-11-04 10:00' }) });
+	const r = run(['stats', '--since', '2026-11-03', '--until', '2026-11-05', '--json'], dir);
+	let p: { days?: { date: string; done: number; remaining: number }[] } = {};
+	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
+	check('未の課題が done を持っていても、済にした数に入れず、残りに数える', p.days?.every((d) => d.done === 0 && d.remaining === 1) === true, r.out + r.err);
+}
+{
+	// 指摘 1 ・ 4 ・ 9: backfill-done の日時の選び方
+	const dir = std('review-backfill');
+	const put = (rel: string, text: string): void => { fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); fs.writeFileSync(path.join(dir, rel), text); };
+	const commit = (msg: string, author: string, committer: string = author): void => {
+		git(dir, ['add', '-A']);
+		git(dir, ['commit', '-q', '-m', msg], { GIT_AUTHOR_DATE: author, GIT_COMMITTER_DATE: committer });
+	};
+	git(dir, ['init', '-q', '-b', 'develop']);
+	// q: 済 (11-10) → 着手へ戻す (11-12) → 再び済 (11-18)。正しいのは最後の 11-18
+	put(Doing + 'i261105-01-q.md', issueText({ id: 'i261105-01', created: '2026-11-05' }));
+	commit('q', '2026-11-09T09:00:00+09:00');
+	fs.mkdirSync(path.join(dir, Done), { recursive: true });
+	git(dir, ['mv', Doing + 'i261105-01-q.md', Done + 'i261105-01-q.md']);
+	commit('q done', '2026-11-10T09:00:00+09:00');
+	fs.mkdirSync(path.join(dir, Doing), { recursive: true });
+	git(dir, ['mv', Done + 'i261105-01-q.md', Doing + 'i261105-01-q.md']);
+	commit('q back', '2026-11-12T09:00:00+09:00');
+	fs.mkdirSync(path.join(dir, Done), { recursive: true });
+	git(dir, ['mv', Doing + 'i261105-01-q.md', Done + 'i261105-01-q.md']);
+	commit('q done again', '2026-11-18T12:00:00+09:00');
+	// r: 済に入って、あとで archived/ へ (入った日は済の日のまま)
+	put(Done + 'i261105-02-r.md', issueText({ id: 'i261105-02', created: '2026-11-05' }));
+	commit('r', '2026-11-13T09:00:00+09:00');
+	fs.mkdirSync(path.join(dir, Archived), { recursive: true });
+	git(dir, ['mv', Done + 'i261105-02-r.md', Archived + 'i261105-02-r.md']);
+	commit('r archived', '2026-11-16T09:00:00+09:00');
+	// s: author の日時と committer の日時が違う (rebase ・ amend 後)。author の日時を使う
+	put(Done + 'i261105-03-s.md', issueText({ id: 'i261105-03', created: '2026-11-05' }));
+	commit('s', '2026-11-19T10:00:00+09:00', '2026-11-25T10:00:00+09:00');
+	// 10 件が、着手から済へ、名前の変更として検出されない形 (中身を全部変えて) で動いた commit。移行ではない
+	for (let i = 1; i <= 10; i++) put(Doing + `i261106-${String(i).padStart(2, '0')}-m.md`, issueText({ id: `i261106-${String(i).padStart(2, '0')}`, created: '2026-11-06' }, '\n' + 'あいうえお\n'.repeat(30)));
+	commit('m', '2026-11-20T09:00:00+09:00');
+	for (let i = 1; i <= 10; i++) {
+		const n = String(i).padStart(2, '0');
+		fs.rmSync(path.join(dir, Doing + `i261106-${n}-m.md`));
+		put(Done + `i261106-${n}-m.md`, issueText({ id: `i261106-${n}`, created: '2026-11-06' }, '\n' + 'zzzzzzzzzz\n'.repeat(30)));
+	}
+	commit('m done', '2026-11-21T09:00:00+09:00');
+	const r = run(['backfill-done', '--dry-run', '--json'], dir);
+	let p: { plan?: { id: string; done: string }[]; skipped?: { id: string }[] } = {};
+	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
+	const got = (id: string): string => p.plan?.find((x) => x.id === id)?.done ?? 'なし';
+	check('済 → 着手 → 済 なら、最後に済に入った commit の日時 (11-18)', got('i261105-01') === '2026-11-18 12:00', r.out);
+	check('done/ → archived/ は、入り直しに数えない (済に入った日のまま)', got('i261105-02') === '2026-11-13 09:00', r.out);
+	check('author の日時を使う (committer の日時は rebase ・ amend で変わる)', got('i261105-03') === '2026-11-19 10:00', r.out);
+	check('名前の変更として検出されなくても、前からある課題をまとめて済にした commit は、移行とみなさない', got('i261106-01') === '2026-11-21 09:00' && !(p.skipped ?? []).some((s) => s.id.startsWith('i261106-')), r.out);
+}
+
 console.log('');
 console.log(`=== issue (done ・ started): ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 fs.rmSync(work, { recursive: true, force: true });

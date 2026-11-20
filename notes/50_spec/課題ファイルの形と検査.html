@@ -144,7 +144,7 @@
 	<div class="inner">
 		<h1>課題ファイルの形と検査の仕様 (ai-agent-tools)</h1>
 		<p class="lead">課題管理ツール <code>issue</code> が読み ・ 検査する、課題ファイルと <code>project-uuid.txt</code> の形と、番号の予約。いまは、読み込み ・ <code>issue check</code> ・ <code>init</code> ・ <code>new</code> ・ <code>show</code> ・ <code>list</code> ・ <code>search</code> ・ <code>set</code> ・ <code>todo</code> ・ <code>confirm</code> ・ <code>archive</code> ・ <code>unarchive</code> ・ <code>render</code> ・ <code>decide</code> ・ <code>choice</code> まで。</p>
-		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-18</p>
+		<p class="date">📅 作成: 2026-11-03 / 更新: 2026-11-20</p>
 	</div>
 </div>
 
@@ -220,6 +220,8 @@ refs: p261103-01
 			<tr><td class="nowrap"><code>title</code></td><td>必須</td><td>1 行の文字列</td><td>最初の <code>: </code> で分けるので、値の中にコロンがあってもよい</td></tr>
 			<tr><td class="nowrap"><code>group</code></td><td>必須</td><td>文字列</td><td>章 (グループ) の名前。<code>groups.txt</code> があれば、そこに並んでいる名前</td></tr>
 			<tr><td class="nowrap"><code>created</code></td><td>必須</td><td><code>yyyy-mm-dd</code> (実在する日付)</td><td>立てた日。変えない</td></tr>
+			<tr><td class="nowrap"><code>started</code></td><td>任意</td><td><code>yyyy-mm-dd hh:mm</code> (JST。実在する日時)</td><td>最初に着手にした日時 (課題 i261120-01。決定 279-A)。<code>issue set --state 着手</code> が、無ければ書く。<strong>再び着手にしても上書きしない</strong>。済や未へ戻しても消さない</td></tr>
+			<tr><td class="nowrap"><code>done</code></td><td>任意</td><td><code>yyyy-mm-dd hh:mm</code> (JST。実在する日時)</td><td>済にした日時 (決定 278-A)。<code>issue set --state 済</code> が書く (<code>set</code> を流した時刻。作業が終わった時刻ではない)。済から未・着手へ戻すと消える (決定 282-A)。<code>archive</code> ・ <code>unarchive</code> は書かず、変えない。既存の済は <code>issue backfill-done</code> が履歴から埋める (近似)。<code>--done</code> ・ <code>--started</code> で手で直せる (決定 285-A)</td></tr>
 			<tr><td class="nowrap"><code>from</code></td><td>任意</td><td>文字列 (<code>プロジェクト名 #発言番号</code>)</td><td>他プロジェクトからの報告のときだけ書く</td></tr>
 			<tr><td class="nowrap"><code>confirmed</code></td><td><code>from</code> があるとき必須</td><td><code>true</code> / <code>false</code></td><td>報告元の確認。<code>true</code> になるまで、<code>done/</code> ・ <code>archived/</code> に置けない (済にできない)</td></tr>
 			<tr><td class="nowrap"><code>refs</code></td><td>任意</td><td>カンマ区切りの番号 (<code>p261103-01, r261025-01</code>)</td><td>計画 ・ 調査 ・ 課題の番号。ほかのプロジェクトの番号は <code>プロジェクト名:番号</code>。chat の発言の番号は <code>#1923</code> (<code>#</code> と 1 以上の数字だけ。ルーム付きは受けない)</td></tr>
@@ -370,10 +372,12 @@ issue check --json           # 結果を JSON で出す</code></pre>
 			<tr><td class="nowrap"><code>encoding</code></td><td>エラー</td><td>BOM がある ・ CR (CRLF) がある</td></tr>
 			<tr><td class="nowrap"><code>meta</code></td><td>エラー</td><td>先頭が <code>---</code> でない ・ 閉じの <code>---</code> が無い ・ <code>キー: 値</code> の形でない行 ・ 値が空 ・ キーの重複 ・ メタ情報の中の空行</td></tr>
 			<tr><td class="nowrap"><code>key</code></td><td>エラー</td><td>必須のキーが無い</td></tr>
-			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>created</code> ・ <code>released</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>version</code> ・ <code>kind</code> の形が違うのは、エラーではなく警告 (<code>value</code>。決定 275-A)。<code>id</code> がファイル名の先頭と違う</td></tr>
+			<tr><td class="nowrap"><code>value</code></td><td>エラー</td><td>値の形が違う (<code>schema</code> ・ <code>id</code> ・ <code>created</code> ・ <code>started</code> ・ <code>done</code> ・ <code>released</code> ・ <code>confirmed</code> ・ <code>refs</code>)。<code>version</code> ・ <code>kind</code> の形が違うのは、エラーではなく警告 (<code>value</code>。決定 275-A)。<code>id</code> がファイル名の先頭と違う</td></tr>
 			<tr><td class="nowrap"><code>duplicate</code></td><td>エラー</td><td>同じ <code>id</code> のファイルが複数ある (4 つのフォルダをまたぐ場合も)。別の PC やクラウドで、件名違いで同じ番号が立つと、git は競合を出さないので、ここで止める</td></tr>
 			<tr><td class="nowrap"><code>todo</code></td><td>エラー</td><td>やることの状態が 3 つ以外 ・ <code>done/</code> か <code>archived/</code> にあるのに、<code>未</code> か <code>着手</code> のやることが残っている</td></tr>
 			<tr><td class="nowrap"><code>confirmed</code></td><td>エラー / 警告</td><td><code>from</code> があるのに <code>confirmed</code> が無い (エラー) ・ <code>done/</code> か <code>archived/</code> にあるのに <code>confirmed</code> が <code>true</code> でない (エラー) ・ <code>from</code> が無いのに <code>confirmed</code> がある (警告)</td></tr>
+			<tr><td class="nowrap"><code>done-folder</code></td><td>警告</td><td><code>done/</code> ・ <code>archived/</code> 以外にある課題が <code>done</code> を持つ (決定 284-A)</td></tr>
+			<tr><td class="nowrap"><code>before-created</code></td><td>警告</td><td><code>started</code> ・ <code>done</code> の日付が <code>created</code> より前 (同じ日は警告しない)</td></tr>
 			<tr><td class="nowrap"><code>key-order</code></td><td>警告</td><td>キーの順が、表の順と違う</td></tr>
 			<tr><td class="nowrap"><code>unknown-key</code></td><td>警告</td><td>知らないキーがある</td></tr>
 			<tr><td class="nowrap"><code>refs</code></td><td>警告</td><td><code>refs</code> の参照先が見つからない (課題は 4 つのフォルダのどれか、計画 ・ 調査 ・ アイデアは <code>notes/</code> のファイル名の先頭)。<code>プロジェクト名:番号</code> の形は、外を読まないので確かめない。<code>#1923</code> の形は、探す先が無いので確かめない</td></tr>
@@ -435,9 +439,9 @@ issue check --json           # 結果を JSON で出す</code></pre>
 		<li>メタ情報が読めない課題は、飛ばして標準エラーに警告を出す。見つからなければ <code>0 件</code> で終了コード 0</li>
 		<li><strong>決定も探す</strong> (196-A): <code>decisions/</code> の全部の決定 (親の課題の状態によらない) から、同じ決まりで探し、課題の後ろに <code>&lt;id&gt;  決定 (親 &lt;親の番号&gt;)  &lt;問い&gt;</code> と一致した行を出す。<code>N 件</code> は課題と決定の合計。<code>--state</code> ・ <code>--all</code> は課題だけに効く。<strong><code>--group</code> を付けたときは、決定を探さない</strong> (グループは課題の持ち物)。<code>--json</code> では、決定は <code>{ kind: "decision", id, parent, title, file, matches }</code> で、課題の後ろに並ぶ</li>
 	</ul>
-	<h2><code>issue set &lt;id&gt; [--version &lt;版&gt;] [--released &lt;yyyy-mm-dd hh:mm&gt;] [--kind &lt;種別&gt;] [--note &lt;説明&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
+	<h2><code>issue set &lt;id&gt; [--version &lt;版&gt;] [--released &lt;yyyy-mm-dd hh:mm&gt;] [--kind &lt;種別&gt;] [--note &lt;説明&gt;] [--started &lt;yyyy-mm-dd hh:mm&gt;] [--done &lt;yyyy-mm-dd hh:mm&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
 	<ul>
-		<li><strong>4 つの鍵 (<code>version</code> ・ <code>released</code> ・ <code>kind</code> ・ <code>note</code>) を書く</strong> (課題 i261117-03。決定 269-A 〜 272-B)。<strong>その行だけを書き換え</strong>、知らない鍵 ・ 鍵の並び ・ 本文は変えない。フォルダも動かさない。commit はしない</li>
+		<li><strong>6 つの鍵 (<code>version</code> ・ <code>released</code> ・ <code>kind</code> ・ <code>note</code> ・ <code>started</code> ・ <code>done</code>) を書く</strong> (課題 i261117-03。決定 269-A 〜 272-B。<code>started</code> ・ <code>done</code> は課題 i261120-01 の決定 285-A: 値の形は <code>released</code> と同じ <code>yyyy-mm-dd hh:mm</code>。<code>archived/</code> の課題にも書ける。<code>--state</code> が書いた値は、同時に渡した <code>--started</code> ・ <code>--done</code> で上書きされる)。<strong>その行だけを書き換え</strong>、知らない鍵 ・ 鍵の並び ・ 本文は変えない。フォルダも動かさない。commit はしない</li>
 		<li>新しい鍵は、鍵の順 (<code>refs</code> の後ろに <code>version</code> → <code>released</code> → <code>kind</code> → <code>note</code>) で、手前にある鍵の後ろへ入れる。書いてある鍵は、その行 (<code>|</code> の塊なら塊の全部) を置き換える。<strong>値が空 (<code>--version ""</code>) なら、その鍵を消す</strong>。無い鍵を空にしても何もしない。同じ値なら、ファイルを変えない</li>
 		<li><code>--note</code> は複数行にできる。1 行で、前後に空白が無く、<code>|</code> で始まらない値は 1 行で書き、そうでなければ <code>note: |</code> の塊で書く。読み戻すと、書いた文字列と同じ (末尾の改行 ・ 空白だけは落とす)。<code>--version</code> ・ <code>--kind</code> ・ <code>--released</code> に改行は書けない (終了コード 5)</li>
 		<li><code>--released</code> が <code>yyyy-mm-dd hh:mm</code> の実在する日時でなければ、書かずに終了コード 5。<code>--state</code> と一緒に指定でき、<strong>先に鍵の検査だけをし、状態を動かしてから、鍵を書く</strong>。状態の指定が誤り ・ 済にできない ・ <code>archived/</code> にある ・ 鍵の値が誤りのどれでも、何も変えない (鍵だけ書かれて状態が動かない、がない)。<code>archived/</code> の課題にも、鍵だけなら書ける (状態を問わない。リリースの組み立てが版を書くため)</li>
@@ -449,10 +453,10 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	</ul>
 	<h2><code>issue set &lt;id&gt; --state 未|着手|済 [--root &lt;dir&gt;] [--json]</code></h2>
 	<ul>
-		<li><strong>状態を変える = ファイルを、隣のフォルダへ動かすこと</strong> (<code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code>)。<strong>git の管理下 (追跡中) なら <code>git mv</code></strong> で動かし、ステージされた rename になる。そうでなければ名前を変えるだけ。中身は変えない。commit はしない (動かす commit は、本文の変更と別にする)</li>
+		<li><strong>状態を変える = ファイルを、隣のフォルダへ動かすこと</strong> (<code>todo/</code> ・ <code>doing/</code> ・ <code>done/</code>)。<strong>git の管理下 (追跡中) なら <code>git mv</code></strong> で動かし、ステージされた rename になる。そうでなければ名前を変えるだけ。commit はしない。<strong>動かしたあとに、日時を書く</strong> (課題 i261120-01。決定 278-A ・ 279-A ・ 282-A。JST の <code>yyyy-mm-dd hh:mm</code>): 着手へ動かすと、<code>started</code> が無ければ書く (最初の着手日。再着手で上書きしない)。済へ動かすと <code>done</code> を書く。済から未・着手へ戻すと <code>done</code> を消す (<code>started</code> は残す)。<strong>すでにその状態なら動かさず、<code>done</code> も上書きしない</strong>。<code>git mv</code> は名前の変更だけを stage するので、日時の書き込みは stage 前の変更として残る (<code>git status</code> では <code>RM</code>)。日時を書けなければ (BOM ・ CR ・ メタ情報が読めない)、状態は動かしたまま、標準エラーに <code>[警告]</code> を出す (終了コードは 0)</li>
 		<li><strong>済にするときは、条件を満たさなければ、動かさずに終了コード 1</strong> (理由を出す): やること (未 ・ 着手) が残っている ・ <code>from</code> があるのに <code>confirmed</code> が <code>true</code> でない</li>
 		<li>既にその状態なら、何もせず終了コード 0 (「既に」と出す)。<code>archived/</code> の課題は動かさない (終了コード 1。<code>issue unarchive</code> を促す)。<code>--state</code> に <code>archived</code> や知らない語は終了コード 5。<code>--state</code> が無い ・ id の形が違うときも 5、見つからなければ 1</li>
-		<li>出力: <code>[OK] &lt;id&gt; を &lt;旧&gt; から &lt;新&gt; へ動かした (todo/ → doing/)</code>。<code>--json</code> は <code>{ id, state, folder, from: { state, folder }, file }</code></li>
+		<li>出力: <code>[OK] &lt;id&gt; を &lt;旧&gt; から &lt;新&gt; へ動かした (todo/ → doing/)</code>。<code>--json</code> は <code>{ id, state, folder, from: { state, folder }, file, stamps }</code> (<code>stamps</code> は、書いた・消した日時の鍵)</li>
 	</ul>
 	<h2><code>issue todo &lt;id&gt; [--add &lt;文&gt; | --done &lt;n&gt; | --doing &lt;n&gt; | --undone &lt;n&gt;] [--root &lt;dir&gt;] [--json]</code></h2>
 	<ul>
@@ -523,13 +527,29 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<ul>
 		<li><strong><code>archive</code></strong>: グループの全件が済 (<code>done/</code>) なら、その課題を <code>archived/</code> へ動かす (追跡中なら <code>git mv</code>)。<strong>1 件でも満たさなければ (未・着手が残っている ・ 済の条件を満たさない ・ メタ情報を読めない課題がある)、1 件も動かさず終了コード 1</strong> (その id を出す)。課題が 1 件も無いグループは 1。既に全件が <code>archived/</code> なら、終了コード 0 (「既に」と出す)</li>
 		<li><strong><code>archive &lt;番号&gt;</code></strong> (214-A): 済 (<code>done/</code>) の課題 1 件だけを <code>archived/</code> へ動かす。グループの残りは待たない。未・着手 ・ 済の条件を満たさない ・ 無い番号は、動かさず終了コード 1。既に <code>archived/</code> なら終了コード 0 (「既に」と出す)。<code>--json</code> は <code>{ id, group, moved, count }</code>。番号 (<code>i</code> ＋ <code>yymmdd-nn</code>) の形かどうかで、グループ名と分ける</li>
-		<li><strong><code>archive --done-before &lt;yyyy-mm-dd&gt; [--dry-run]</code></strong> (216-A): その日より前に立てた (<code>created</code> がその日より前の) 済 (<code>done/</code>) の課題を、グループを問わずまとめて <code>archived/</code> へ動かす。<strong>済になった日は課題ファイルに残らないため、立てた日で選ぶ</strong>。済の条件を満たさない課題は動かさず <code>[飛ばした] &lt;id&gt;: &lt;理由&gt;</code> と出す (終了コード 0)。<code>--dry-run</code> は動かさずに一覧だけを出す。日付の形が違う ・ グループや番号と一緒に渡す、は終了コード 5。<code>--json</code> は <code>{ before, dryRun, moved, count, skipped }</code></li>
+		<li><strong><code>archive --done-before &lt;yyyy-mm-dd&gt; [--dry-run]</code></strong> (216-A): その日より前の済 (<code>done/</code>) の課題を、グループを問わずまとめて <code>archived/</code> へ動かす。<strong>済にした日 (<code>done</code> の日付) があればそれで、無ければ立てた日 (<code>created</code>) で選ぶ</strong> (課題 i261120-01 の決定 280-B。i261109-04-d3 の「立てた日で選ぶ」を置き換える。<code>done</code> の無い課題は、これまでと同じ結果)。<code>archive</code> ・ <code>unarchive</code> は、<code>done</code> を書かず、変えない。済の条件を満たさない課題は動かさず <code>[飛ばした] &lt;id&gt;: &lt;理由&gt;</code> と出す (終了コード 0)。<code>--dry-run</code> は動かさずに一覧だけを出す。日付の形が違う ・ グループや番号と一緒に渡す、は終了コード 5。<code>--json</code> は <code>{ before, dryRun, moved, count, skipped }</code></li>
 		<li><strong><code>unarchive</code></strong>: <code>archived/</code> のグループの課題を、<code>done/</code> へ戻す。無ければ終了コード 1</li>
 		<li><strong><code>issue new</code> は、保管 (<code>archived/</code>) の有無によらず、どのグループにも立てられる</strong> (i261109-04-d4。112-A ・ 215-A を改めた)。保管はグループに課題を立てる妨げにしない</li>
 		<li>出力: <code>[OK] グループ &lt;g&gt; の N 件を archived/ へ動かした: &lt;id&gt; ・ …</code>。<code>--json</code> は <code>{ group, moved, count }</code></li>
 	</ul>
 	<ul>
 		<li>この小節の操作は、すべて<strong>作業ツリーのファイルを変えるだけで、commit しない</strong></li>
+	</ul>
+	<h2><code>issue stats [--since &lt;yyyy-mm-dd&gt;] [--until &lt;yyyy-mm-dd&gt;] [--root &lt;dir&gt;] [--json]</code> (日別の集計)</h2>
+	<ul>
+		<li>課題 i261120-01 の決定 283-A。日別に <strong>立てた</strong> (<code>created</code> がその日) ・ <strong>着手にした</strong> (<code>started</code> の日付がその日) ・ <strong>済にした</strong> (<code>done</code> の日付がその日) ・ <strong>残り</strong> を出す。4 つのフォルダ (<code>archived/</code> も) の全課題が対象。書き換えない</li>
+		<li><strong>残り</strong> = その日の終わりに、<code>created</code> がその日以前で、かつ (<code>done</code> が無い か <code>done</code> の日付がその日より後) の数。<strong>状態の履歴は持たないので、戻した課題は今の状態で数える近似</strong>。同じ日に立てて済にした課題は、その日の残りに入らない</li>
+		<li><strong><code>done</code> が無いのに済 (<code>done/</code> ・ <code>archived/</code>) の課題は、残りに数える</strong> (済にした日が分からないため)。その件数を、テキストでは末尾の行に、<code>--json</code> では <code>undatedDone</code> に出す。<code>issue backfill-done</code> で減らせる</li>
+		<li>範囲: <code>--since</code> の既定は <code>created</code> ・ <code>started</code> ・ <code>done</code> のいちばん古い日付、<code>--until</code> の既定は今日 (JST)。1 日 1 行で、件数が 0 の日も出す。日付の形が違う ・ 実在しない ・ <code>--since</code> が <code>--until</code> より後は終了コード 5。メタ情報を読めない課題があれば、集計せず終了コード 1</li>
+		<li>出力: <code>日付 ・ 立てた ・ 着手 ・ 済 ・ 残り</code> の表。<code>--json</code> は <code>{ since, until, days: [{ date, created, started, done, remaining }], undatedDone }</code></li>
+	</ul>
+	<h2><code>issue backfill-done [--dry-run | --apply] [--skip-commit &lt;hash,…&gt;] [--root &lt;dir&gt;] [--json]</code> (既存の済の移行)</h2>
+	<ul>
+		<li>課題 i261120-01 の決定 281-A。済 (<code>done/</code> ・ <code>archived/</code>) で <code>done</code> の無い課題に、<code>done</code> を git の履歴から書く。<code>started</code> は埋めない。既に <code>done</code> がある課題は変えない</li>
+		<li>値は、課題のファイルが <code>done/</code> ・ <code>archived/</code> に<strong>最後に入った commit</strong> の日時 (<strong>author date</strong>。committer date は rebase ・ amend で変わる。JST の <code>yyyy-mm-dd hh:mm</code>)。済 → 着手 → 済と戻したなら、入り直した commit。<code>done/</code> → <code>archived/</code> は入り直しに数えない。<code>set --state 済</code> を流した時刻より後になりうる近似。名前の変更 (<code>git log -M</code>) を追う</li>
+		<li><strong>飛ばすもの</strong> (<code>[飛ばした] &lt;id&gt;: &lt;理由&gt;</code>): 一度に 10 件以上が、それまでの履歴に無かった名前で済のフォルダに現れた commit (移行とみなす。同じ commit で消えた同名 ・ 前の commit にある同名は、移動とみなして数えない。<code>issues.html</code> から 1 件 1 ファイルへ移した日は、済にした日ではない) ・ <code>--skip-commit</code> で名指しした commit (hash の先頭の一致。カンマで複数) ・ 履歴に無い課題 (未追跡 ・ 名前を変えた) ・ 書き換えられない課題 (BOM ・ CR)</li>
+		<li>既定は <code>--dry-run</code> (書く予定を出すだけ)。<code>--apply</code> は書き、<strong>書いたあとに読み戻して確かめ、だめなら、書いた分をすべて元に戻して終了コード 1</strong>。<code>--dry-run</code> と <code>--apply</code> を一緒に渡せば終了コード 5。書いたあとに <code>_issues.html</code> を作り直す。commit はしない</li>
+		<li>出力: <code>[OK] done を書いた: N 件</code> と 1 件 1 行 (<code>&lt;id&gt;  &lt;日時&gt;  (commit &lt;hash&gt;)</code>)。<code>--json</code> は <code>{ mode, plan: [{ id, done, commit }], skipped: [{ id, reason }], count }</code></li>
 	</ul>
 	<h2><code>issue decide new ・ list ・ show</code> (決定の記録)</h2>
 <pre><code class="language-text">issue decide new --parent &lt;番号&gt; --title &lt;問い&gt; --option &lt;文&gt; [--option &lt;文&gt; …] --chosen &lt;A|B|…&gt;

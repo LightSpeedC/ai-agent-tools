@@ -61,9 +61,13 @@ export function todayJst(): string {
 export function nowJst(): string {
 	const fixed = process.env.ISSUE_TEST_NOW;
 	if (fixed !== undefined && isRealDateTime(fixed)) return fixed;
-	const parts = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+	// 日付と時刻は、1 つの Date から取る (別々に取ると、0 時をまたいだとき日付と時刻がずれる)
+	const now = new Date();
+	const parts = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
 	const v = (t: string): string => parts.find((p) => p.type === t)?.value ?? '';
-	return todayJst() + ' ' + v('hour').padStart(2, '0') + ':' + v('minute').padStart(2, '0');
+	const day = process.env.ISSUE_TEST_TODAY;
+	const date = day !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : `${v('year')}-${v('month')}-${v('day')}`;
+	return date + ' ' + v('hour').padStart(2, '0') + ':' + v('minute').padStart(2, '0');
 }
 
 function nnOf(n: number): string {
@@ -394,8 +398,10 @@ export function setState(root: string, id: string, state: string): SetResult {
 		try {
 			result.stamps = setFields(root, id, plan).changed;
 		} catch (e) {
-			if (!(e instanceof Failure)) throw e;
-			result.warning = `${Object.keys(plan).join(' ・ ')} を書けなかった (状態は動かした): ${e.message}`;
+			// 理由を問わず (BOM ・ CR ・ EACCES ・ EBUSY)、状態は動いたので、警告にする。
+			// もう一度 --state を流しても、動かないので書けない。書くなら --done / --started
+			const key = Object.keys(plan)[0];
+			result.warning = `${Object.keys(plan).join(' ・ ')} を書けなかった (状態は動かした): ${(e as Error).message} (直したあと、issue set ${id} --${key} "<yyyy-mm-dd hh:mm>" で書く)`;
 		}
 	}
 	return result;
