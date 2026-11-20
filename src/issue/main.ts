@@ -49,6 +49,8 @@ import { listDecisions, newDecision, searchDecisions, setDecision, showDecision 
 import { DecideWrittenListRel, applyDecideMigration, markStatuses, planDecideMigration, recheckDecisions, removeDecideWritten, verifyDecideWritten } from './decide-migrate.ts';
 import { DecisionIdPattern, ParentPattern } from './check.ts';
 import { todayJst } from './ops.ts';
+import { computeStats, isRealDay } from './stats.ts';
+import { applyBackfill, planBackfill } from './backfill.ts';
 import { nextChoice } from './numbers.ts';
 
 const ExitOk = 0;
@@ -65,6 +67,8 @@ const Usage = [
 	'  issue search <語> [--regex] [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
 	'  issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>] [--started <yyyy-mm-dd hh:mm>] [--done <yyyy-mm-dd hh:mm>] [--root <dir>] [--json]',
 	'                                                                 状態を変える (隣のフォルダへ動かす。着手にすると started を、済にすると done を JST で書く) ・ 鍵を書く (値が空なら鍵を消す。note の複数行は | の塊で書く)',
+	'  issue stats [--since <yyyy-mm-dd>] [--until <yyyy-mm-dd>] [--root <dir>] [--json]   日別に 立てた ・ 着手にした ・ 済にした ・ 残り の数を出す (既定は、いちばん古い日付から今日まで)',
+	'  issue backfill-done [--dry-run | --apply] [--skip-commit <hash,…>] [--root <dir>] [--json]   済 (done/ ・ archived/) で done の無い課題に、git の履歴 (done/ ・ archived/ に現れた commit の日時、JST) から done を書く (既定は --dry-run。一度に 10 件以上が現れた commit は、移行とみなして飛ばす。書いたあとに確かめ、だめなら戻す)',
 	'  issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]',
 	'  issue confirm <id> [--undo] [--root <dir>] [--json]            報告元の確認 (confirmed) を true にする (--undo で false)',
 	'  issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]',
@@ -541,6 +545,51 @@ function runArchiveBefore(rest: string[]): number {
 	return ExitOk;
 }
 
+/** stats [--since <日>] [--until <日>] [--json] (課題 i261120-01。決定 283-A) */
+function runStats(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--since', '--until'], flags: ['--json'], positionals: 0 });
+	const day = (name: string): string | null => {
+		const v = o.values.get(name);
+		if (v === undefined) return null;
+		if (!isRealDay(v)) throw new UsageError(`${name} の日付は、実在する yyyy-mm-dd で渡す: ${v}`);
+		return v;
+	};
+	const since = day('--since');
+	const until = day('--until');
+	if (since !== null && until !== null && since > until) throw new UsageError(`--since (${since}) が --until (${until}) より後`);
+	const r = computeStats(existingRoot(o), since, until);
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify(r));
+		return ExitOk;
+	}
+	console.log('日付          立てた  着手  済  残り');
+	for (const d of r.days) {
+		console.log(`${d.date}  ${String(d.created).padStart(6)}  ${String(d.started).padStart(4)}  ${String(d.done).padStart(2)}  ${String(d.remaining).padStart(4)}`);
+	}
+	if (r.undatedDone > 0) console.log(`済 (done/ ・ archived/) だが done が無い課題: ${r.undatedDone} 件 (済にした日が分からないため、残りに数えている)`);
+	return ExitOk;
+}
+
+/** backfill-done [--dry-run | --apply] [--skip-commit <hash,…>] [--json] (課題 i261120-01。決定 281-A) */
+function runBackfillDone(rest: string[]): number {
+	const o = parseOptions(rest, { valued: ['--root', '--skip-commit'], flags: ['--json', '--dry-run', '--apply'], positionals: 0 });
+	if (o.flags.has('--dry-run') && o.flags.has('--apply')) throw new UsageError('--dry-run と --apply は一緒に渡せない');
+	const apply = o.flags.has('--apply');
+	const root = existingRoot(o);
+	const skip = (o.values.get('--skip-commit') ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '');
+	const r = planBackfill(root, skip);
+	if (apply && r.plan.length > 0) applyBackfill(root, r.plan);
+	if (o.flags.has('--json')) {
+		console.log(JSON.stringify({ mode: apply ? 'apply' : 'dry-run', plan: r.plan.map((p) => ({ id: p.id, done: p.done, commit: p.commit })), skipped: r.skipped, count: r.plan.length }));
+	} else {
+		console.log(`[OK] done を${apply ? '書いた' : '書く (--dry-run。まだ書いていない。書くには --apply)'}: ${r.plan.length} 件`);
+		for (const p of r.plan) console.log(`  ${p.id}  ${p.done}  (commit ${p.commit})`);
+		for (const s of r.skipped) console.log(`[飛ばした] ${s.id}: ${s.reason}`);
+	}
+	if (apply && r.plan.length > 0) autoRender(root, true);
+	return ExitOk;
+}
+
 /** 課題の番号 (i + yymmdd-nn)。archive に渡されたのが番号かグループ名かを分ける */
 const IdArgPattern = /^i\d{6}-[0-9a-zA-Z]{2}$/;
 
@@ -891,6 +940,8 @@ const commands: Record<string, (rest: string[]) => number> = {
 	confirm: runConfirm,
 	render: runRender,
 	view: runView,
+	stats: runStats,
+	'backfill-done': runBackfillDone,
 	archive: (rest) => runGroupMove(rest, 'archive'),
 	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
 	migrate: runMigrate,

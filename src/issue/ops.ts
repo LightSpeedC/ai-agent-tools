@@ -410,7 +410,7 @@ function groupOf(text: string): string | null {
 type Member = { folder: Folder; name: string; id: string; text: string };
 
 /** 4 つのフォルダの課題を読む。メタ情報が読めない課題は、unreadable に入れる */
-function loadAll(root: string, folders: Folder[]): { members: (Member & { group: string })[]; unreadable: string[] } {
+export function loadAll(root: string, folders: Folder[]): { members: (Member & { group: string })[]; unreadable: string[] } {
 	const members: (Member & { group: string })[] = [];
 	const unreadable: string[] = [];
 	for (const folder of folders) {

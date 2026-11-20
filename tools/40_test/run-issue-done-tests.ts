@@ -271,6 +271,7 @@ console.log('--- backfill-done');
 	put(Done + 'i261114-01-z.md', issueText({ id: 'i261114-01', created: '2026-11-14' }));
 	commit('z', '2026-11-14T10:00:00+09:00');
 	// commit 5 (11-15 12:00 JST): w は archived/ へ直接 (todo → archived。済として現れた日)
+	fs.mkdirSync(path.join(dir, Archived), { recursive: true });
 	git(dir, ['mv', Todo + 'i261105-03-w.md', Archived + 'i261105-03-w.md']);
 	commit('w archived', '2026-11-15T12:00:00+09:00');
 	// すでに done がある済は、上書きしない
