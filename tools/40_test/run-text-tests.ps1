@@ -68,7 +68,7 @@ function New-RawFile {
 	if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force $dir | Out-Null }
 	$hex = ($Bytes | ForEach-Object { '{0:X2}' -f $_ }) -join ' '
 	Set-Content -LiteralPath $Path -Value $hex -Encoding ascii -NoNewline
-	Invoke-Utf8Lines $ConvExe $Path --from hex -MergeStderr | Out-Null
+	Invoke-Utf8Lines $ConvExe @($Path, '--from', 'hex') -MergeStderr | Out-Null
 }
 
 function Get-Bytes { param([string]$Path) return [System.IO.File]::ReadAllBytes($Path) }
@@ -76,7 +76,7 @@ function Get-Bytes { param([string]$Path) return [System.IO.File]::ReadAllBytes(
 # text.exe を実行し、出力（UTF-8 文字列）と終了コードを返す
 function Run-Text {
 	param([string[]]$Arguments)
-	$lines = @(Invoke-Utf8Lines $Exe @Arguments -MergeStderr)
+	$lines = @(Invoke-Utf8Lines $Exe $Arguments -MergeStderr)
 	$code = $LASTEXITCODE
 	return [pscustomobject]@{ Out = ($lines -join "`n"); Code = $code }
 }

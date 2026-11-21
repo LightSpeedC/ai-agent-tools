@@ -83,17 +83,22 @@ if (process.platform === 'win32') {
 	fs.mkdirSync(dir, { recursive: true });
 	// 子の出力は、窓のエンコーディングによらず UTF-8 のバイトで書く。日本語は文字コードで作る (ps1 に BOM が無くても読める)
 	fs.writeFileSync(path.join(dir, 'child.ps1'), '$o = [Console]::OpenStandardOutput(); $b = [Text.Encoding]::UTF8.GetBytes([string][char]0x65E5 + [string][char]0x672C + "`n" + "second`n"); $o.Write($b, 0, $b.Length); exit 3\n');
+	fs.writeFileSync(path.join(dir, 'args.ps1'), 'foreach ($a in $args) { [Console]::Out.WriteLine("<" + $a + ">") }\n');
 	fs.writeFileSync(path.join(dir, 'child.cmd'), '@echo off\r\necho cmd-%~1\r\nexit /b 4\r\n');
 	const helper = path.join(here, 'invoke-utf8.ps1').replace(/'/g, "''");
 	const script = `. '${helper}'; ` +
 		`$a = @(Invoke-Utf8Lines '${path.join(dir, 'child.ps1').replace(/'/g, "''")}'); $ca = $LASTEXITCODE; ` +
 		`$b = @(Invoke-Utf8Lines '${path.join(dir, 'child.cmd').replace(/'/g, "''")}' 'x y'); $cb = $LASTEXITCODE; ` +
 		`Write-Output ('ps1=' + ($a.Count) + ',' + (($a[0].ToCharArray() | ForEach-Object { [int]$_ }) -join ':') + ',' + $a[1] + ',' + $ca); ` +
-		`Write-Output ('cmd=' + $b.Count + ',' + $b[0] + ',' + $cb)`;
+		`Write-Output ('cmd=' + $b.Count + ',' + $b[0] + ',' + $cb); ` +
+		// 1 字の - で始まる引数 (-mx ・ -h ・ -f) が、部品の引数の名前に取り違えられず、そのまま子に届く。配列で渡す形と、空の文字列
+		`$c = @(Invoke-Utf8Lines '${path.join(dir, 'args.ps1').replace(/'/g, "''")}' @('-mx', '-h', '-f', '--read', '', 'a b') -MergeStderr); ` +
+		`Write-Output ('args=' + ($c -join '|'))`;
 	const r = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', '$old = [Console]::OutputEncoding; try { [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(932); ' + script + ' } finally { [Console]::OutputEncoding = $old }'], { cwd: root, encoding: 'utf8', timeout: 120000 });
 	const out = (r.stdout ?? '') + (r.stderr ?? '');
 	check('.ps1 の子: UTF-8 の日本語 (日本 = 26085:26412) を化けずに読み、2 行で、終了コード 3', out.includes('ps1=2,26085:26412,second,3'), out);
 	check('.cmd の子: 空白を含む引数を 1 つとして渡し、終了コード 4', out.includes('cmd=1,cmd-x y,4'), out);
+	check('- 1 字で始まる引数 (-mx ・ -h ・ -f) と空の文字列が、そのまま子に届く', out.includes('args=<-mx>|<-h>|<-f>|<--read>|<>|<a b>'), out);
 	fs.rmSync(dir, { recursive: true, force: true });
 }
 

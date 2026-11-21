@@ -336,7 +336,7 @@ foreach ($c in $cases) {
 	if ($ExtraFiles.ContainsKey($c.Name)) {
 		foreach ($n in $ExtraFiles[$c.Name]) { $exeArgs += '--extra'; $exeArgs += $n }
 	}
-	$exeLines = @(Invoke-Utf8Lines $Exe @exeArgs -MergeStderr)
+	$exeLines = @(Invoke-Utf8Lines $Exe $exeArgs -MergeStderr)
 	$exeCode = $LASTEXITCODE
 	[System.IO.File]::WriteAllText((Join-Path $work 'exe.log'), (($exeLines -join "`n") + "`n"), $utf8)
 	# 既定は 0（指摘なし）。1（指摘あり）を許すケースは $ExpectedExitCode に名指しする。
