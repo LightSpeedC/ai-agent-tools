@@ -296,6 +296,39 @@ function Write-Result([string]$Mark, [string]$Text) {
 	Write-Host ('  {0} {1}' -f $Mark, $Text)
 }
 
+<#
+	対象を起動し、標準出力と標準エラーを UTF-8 として読んで、ログのファイルへ書く。終了コードを返す (i261119-01)。
+	`& $Exe @args *> file` は、子の出力を窓の出力エンコーディング ([Console]::OutputEncoding) で読む。
+	素の Windows PowerShell 5.1 (夜 1 時のタスク) では CP932 なので、UTF-8 の日本語が化け、★ の行を拾えない。
+	窓のコードページは変えない (共通ルール)。子の出力だけを UTF-8 として読む (psh は窓の側を UTF-8 にしているので、前は通っていた)。
+	.cmd は cmd.exe 経由で起動する。
+#>
+function Invoke-Utf8Logged([string]$FilePath, [string[]]$ArgumentList, [string]$LogPath) {
+	function Quote([string]$s) { '"' + $s + '"' }
+	$psi = New-Object System.Diagnostics.ProcessStartInfo
+	$quoted = ($ArgumentList | ForEach-Object { Quote $_ }) -join ' '
+	if ($FilePath -match '\.(cmd|bat)$') {
+		$psi.FileName = $env:ComSpec
+		$psi.Arguments = '/c "' + (Quote $FilePath) + ' ' + $quoted + '"'
+	} else {
+		$psi.FileName = $FilePath
+		$psi.Arguments = $quoted
+	}
+	$psi.UseShellExecute = $false
+	$psi.CreateNoWindow = $true
+	$psi.RedirectStandardOutput = $true
+	$psi.RedirectStandardError = $true
+	$psi.StandardOutputEncoding = $utf8
+	$psi.StandardErrorEncoding = $utf8
+	$p = [System.Diagnostics.Process]::Start($psi)
+	# 両方を非同期に読む (片方だけ読むと、もう一方のパイプが埋まって子が止まる)
+	$outTask = $p.StandardOutput.ReadToEndAsync()
+	$errTask = $p.StandardError.ReadToEndAsync()
+	$p.WaitForExit()
+	[System.IO.File]::WriteAllText($LogPath, $outTask.Result + $errTask.Result, $utf8)
+	return $p.ExitCode
+}
+
 Write-Host ''
 Write-Host '=== html2md のテスト ===' -ForegroundColor Cyan
 
@@ -333,8 +366,7 @@ foreach ($c in $cases) {
 	if ($ExtraFiles.ContainsKey($c.Name)) {
 		foreach ($n in $ExtraFiles[$c.Name]) { $exeArgs += '--extra'; $exeArgs += $n }
 	}
-	& $Exe @exeArgs *> (Join-Path $work 'exe.log')
-	$exeCode = $LASTEXITCODE
+	$exeCode = Invoke-Utf8Logged $Exe $exeArgs (Join-Path $work 'exe.log')
 	# 既定は 0（指摘なし）。1（指摘あり）を許すケースは $ExpectedExitCode に名指しする。
 	# 素通りにすると、フィクスチャ側の意図しないリンク切れ等が「成功」のまま埋もれる
 	$expectExit = if ($ExpectedExitCode.ContainsKey($c.Name)) { $ExpectedExitCode[$c.Name] } else { 0 }

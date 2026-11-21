@@ -94,6 +94,8 @@ $Suites = @(
 	@{ Name = 'issue (更新の操作)'; Script = 'run-issue-edit-tests.ts' },
 	# 課題管理ツール issue の済にした日 (done) ・ 着手にした日 (started): set の書き込み ・ check ・ archive --done-before ・ stats ・ backfill-done (i261120-01)
 	@{ Name = 'issue (done)'; Script = 'run-issue-done-tests.ts' },
+	# html2md の golden 試験 (run-tests.ps1) を、素の Windows PowerShell 5.1 で流しても全ケースが通ること (i261119-01。夜 1 時のタスクが素で流す)
+	@{ Name = 'html2md (素の PowerShell)'; Script = 'run-html2md-plain-powershell-tests.ts'; TimeoutSec = 300 },
 	# 課題管理ツール issue のフェーズ 3a: render (Markdown → HTML ・ 画像 ・ --standalone ・ 同じ中身なら書かない)
 	@{ Name = 'issue (render)'; Script = 'run-issue-render-tests.ts' },
 	# 課題管理ツール issue のフェーズ 3b: view (開く) ・ 更新の操作の最後の自動の作り直し ・ check の .gitignore の検査
