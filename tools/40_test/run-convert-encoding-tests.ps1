@@ -62,7 +62,7 @@ function New-RawFile {
 	)
 	$hex = ($Bytes | ForEach-Object { '{0:X2}' -f $_ }) -join ' '
 	Set-Content -LiteralPath $Path -Value $hex -Encoding ascii -NoNewline
-	& $Exe $Path --from hex *> $null
+	Invoke-Utf8Lines $Exe $Path --from hex -MergeStderr | Out-Null
 }
 
 function Get-Bytes {
@@ -118,7 +118,7 @@ function Invoke-Exe {
 	# 停止エラーになる。想定内の [NG] 出力で落ちないよう一時的に Continue にする。
 	$old = $ErrorActionPreference
 	$ErrorActionPreference = 'Continue'
-	$out = & $Exe @Arguments 2>&1
+	$out = @(Invoke-Utf8Lines $Exe @Arguments -MergeStderr)
 	$code = $LASTEXITCODE
 	$ErrorActionPreference = $old
 	$script:LastExeOutput = ($out | Out-String).Trim()
@@ -181,6 +181,9 @@ if (-not (Test-Path -LiteralPath $Exe)) {
 	Write-Host ('対象がありません: ' + $Exe) -ForegroundColor Red
 	exit 2
 }
+
+# 外のプログラムの出力を UTF-8 として読む部品 (窓のエンコーディングで読むと、素の PowerShell で日本語が化ける。i261119-01)
+. (Join-Path $PSScriptRoot 'invoke-utf8.ps1')
 
 if (Test-Path -LiteralPath $Work) { Remove-Item -LiteralPath $Work -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
@@ -568,7 +571,7 @@ Write-Host '[読み取り]' -ForegroundColor Cyan
 $p = New-Case 'c27.txt'
 New-TextFile $p $Body $EncSjis
 $before = Get-Bytes $p
-$out = (& $Exe $p --read) -join "`n"
+$out = (Invoke-Utf8Lines $Exe $p --read) -join "`n"
 Assert-Equal '27 中身が返る' $Body $out
 $after = Get-Bytes $p
 Assert-True '27 書き換えない' (Test-SameBytes $before $after) ('' + $after.Length + ' バイト')
@@ -576,13 +579,13 @@ Assert-True '27 書き換えない' (Test-SameBytes $before $after) ('' + $after
 # 28. UTF-16 LE のファイルを --read  →  中身が返る
 $p = New-Case 'c28.txt'
 New-TextFile $p $Body $EncUtf16Le
-$out = (& $Exe $p --read) -join "`n"
+$out = (Invoke-Utf8Lines $Exe $p --read) -join "`n"
 Assert-Equal '28 中身が返る' $Body $out
 
 # 29. BOM 付き UTF-8 を --read  →  BOM が混ざらない
 $p = New-Case 'c29.txt'
 New-TextFile $p $Body $EncUtf8Bom
-$out = (& $Exe $p --read) -join "`n"
+$out = (Invoke-Utf8Lines $Exe $p --read) -join "`n"
 Assert-Equal '29 BOM が混ざらない' $Body $out
 
 # 30. 判定できないファイルを --read  →  終了コード 3
@@ -658,7 +661,7 @@ Write-Host '[16 進での表示]' -ForegroundColor Cyan
 $p = New-Case 'c46.txt'
 New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
 $before = Get-Bytes $p
-$out = (& $Exe $p --dump).Trim()
+$out = (Invoke-Utf8Lines $Exe $p --dump).Trim()
 Assert-Equal '46 16 進が返る' '41 80 42' $out
 $after = Get-Bytes $p
 Assert-True '46 書き換えない' (Test-SameBytes $before $after) ('' + $after.Length + ' バイト')
@@ -666,19 +669,19 @@ Assert-True '46 書き換えない' (Test-SameBytes $before $after) ('' + $after
 # 47. --offset 1 --bytes 1  →  2 バイト目だけ
 $p = New-Case 'c47.txt'
 New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
-$out = (& $Exe $p --dump --offset 1 --bytes 1).Trim()
+$out = (Invoke-Utf8Lines $Exe $p --dump --offset 1 --bytes 1).Trim()
 Assert-Equal '47 範囲を絞る' '80' $out
 
 # 48. --bytes がファイルを超える  →  ある分だけ
 $p = New-Case 'c48.txt'
 New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
-$out = (& $Exe $p --dump --offset 2 --bytes 99).Trim()
+$out = (Invoke-Utf8Lines $Exe $p --dump --offset 2 --bytes 99).Trim()
 Assert-Equal '48 ある分だけ' '42' $out
 
 # 49. --offset がファイルを超える  →  何も返らない。終了コード 0
 $p = New-Case 'c49.txt'
 New-RawFile $p ([byte[]](0x41, 0x80, 0x42))
-$out = (@(& $Exe $p --dump --offset 99) -join '').Trim()
+$out = (@(Invoke-Utf8Lines $Exe $p --dump --offset 99) -join '').Trim()
 Assert-Equal '49 終了コード' 0 $LASTEXITCODE
 Assert-Equal '49 何も返らない' '' $out
 
@@ -688,7 +691,7 @@ $p = New-Case 'c50.txt'
 $orig = @()
 for ($k = 0; $k -lt 20; $k++) { $orig += [byte]($k * 7 % 256) }
 New-RawFile $p ([byte[]]$orig)
-$hex = ((& $Exe $p --dump) -join "`n")   # 複数行をそのまま 1 文字列に
+$hex = ((Invoke-Utf8Lines $Exe $p --dump) -join "`n")   # 複数行をそのまま 1 文字列に
 $q = New-Case 'c50out.txt'
 Set-Content -LiteralPath $q -Value $hex -Encoding ascii -NoNewline
 [void](Invoke-Exe @($q, '--from', 'hex'))
@@ -700,7 +703,7 @@ Assert-True '50 折り返しをまたいで戻る' $same ('' + $b.Length + ' バ
 # 50b. 16 バイトを超えると折り返す  →  2 行になる
 $p = New-Case 'c50b.txt'
 New-RawFile $p ([byte[]]$orig)
-$lines = @(& $Exe $p --dump)
+$lines = @(Invoke-Utf8Lines $Exe $p --dump)
 Assert-Equal '50b 20 バイトで 2 行' 2 $lines.Count
 Assert-Equal '50b 1 行目は 16 バイト' 16 ($lines[0].Trim() -split '\s+').Count
 
@@ -789,7 +792,7 @@ New-TextFile (Join-Path $Tree 'tmp\ignored.ps1') ($L1 + "`n") $EncUtf8Bom       
 New-TextFile (Join-Path $Tree '_secret.ps1')     ($L1 + "`n") $EncUtf8Bom             # 先頭 _ は除外
 New-RawFile  (Join-Path $Tree 'bin.dat') @(0x00, 0x01, 0x02, 0xFF, 0x00)              # バイナリは除外
 
-$infoOut = (& $Exe $Tree --info 2>&1 | Out-String)
+$infoOut = (Invoke-Utf8Lines $Exe $Tree --info -MergeStderr | Out-String)
 Assert-Equal 'c1 --info の終了コード（違反があっても 0）' 0 (Invoke-Exe @($Tree, '--info'))
 Assert-True 'c1 --info は規約どおりのものも出す' ($infoOut -match 'ok\.ps1') 'ok.ps1 が出る'
 Assert-True 'c1 --info は違反も出す' ($infoOut -match 'bad\.ps1') 'bad.ps1 が出る'
@@ -798,7 +801,7 @@ Assert-True 'c2 tmp は見ない' (-not ($infoOut -match 'ignored\.ps1')) 'ignor
 Assert-True 'c2 先頭 _ は見ない' (-not ($infoOut -match '_secret')) '_secret.ps1 が出ない'
 Assert-True 'c2 バイナリは見ない' (-not ($infoOut -match 'bin\.dat')) 'bin.dat が出ない'
 
-$checkOut = (& $Exe $Tree --check 2>&1 | Out-String)
+$checkOut = (Invoke-Utf8Lines $Exe $Tree --check -MergeStderr | Out-String)
 Assert-Equal 'c3 --check の終了コード（違反あり）' 1 (Invoke-Exe @($Tree, '--check'))
 Assert-True 'c3 --check は違反だけ出す（ok は出ない）' (-not ($checkOut -match 'ok\.ps1')) 'ok.ps1 が出ない'
 Assert-True 'c3 --check に bad.ps1' ($checkOut -match 'bad\.ps1') '出る'
@@ -817,20 +820,20 @@ New-TextFile (Join-Path $Tree 'ascii.cmd') ("@echo off`r`n") $EncUtf8
 Assert-Equal 'c7 純 ASCII の cmd は違反にしない' 0 (Invoke-Exe @($Tree, '--check'))
 
 # 1 ファイルに渡したときの表示は変えない
-$one = (& $Exe (Join-Path $Tree 'ok.cmd') --info 2>&1 | Out-String)
+$one = (Invoke-Utf8Lines $Exe (Join-Path $Tree 'ok.cmd') --info -MergeStderr | Out-String)
 Assert-True 'c5 1 ファイルの --info は従来どおり' ($one -cmatch 'sjis' -and $one -cmatch 'crlf=') '組と改行の数が出る'
 
 # 絞り込み
-$incOut = (& $Exe $Tree --check --include '*.html' 2>&1 | Out-String)
+$incOut = (Invoke-Utf8Lines $Exe $Tree --check --include '*.html' -MergeStderr | Out-String)
 Assert-True 'c6 --include で絞れる' (-not ($incOut -match '\.ts')) 'ts は出ない'
-$excOut = (& $Exe $Tree --info --exclude-dir 'sub' 2>&1 | Out-String)
+$excOut = (Invoke-Utf8Lines $Exe $Tree --info --exclude-dir 'sub' -MergeStderr | Out-String)
 Assert-True 'c6 --exclude-dir が効く' (-not ($excOut -match 'bad\.ts')) 'sub の中が出ない'
 # カンマ区切りでまとめて書ける（text find と同じ語彙）
-$twoOut = (& $Exe $Tree --info --include '*.html,*.cmd' 2>&1 | Out-String)
+$twoOut = (Invoke-Utf8Lines $Exe $Tree --info --include '*.html,*.cmd' -MergeStderr | Out-String)
 Assert-True 'c6 --include はカンマ区切り（html）' ($twoOut -match 'ok\.html') 'html が出る'
 Assert-True 'c6 --include はカンマ区切り（cmd）' ($twoOut -match 'ok\.cmd') 'cmd が出る'
 Assert-True 'c6 --include はカンマ区切り（外は出ない）' (-not ($twoOut -match 'ok\.ps1')) 'ps1 は出ない'
-$excFile = (& $Exe $Tree --info --exclude 'ok.*' 2>&1 | Out-String)
+$excFile = (Invoke-Utf8Lines $Exe $Tree --info --exclude 'ok.*' -MergeStderr | Out-String)
 Assert-True 'c6 --exclude でファイルを外す' (-not ($excFile -match 'ok\.ps1')) 'ok.ps1 が出ない'
 
 # ---------------------------------------------------------------
@@ -842,7 +845,7 @@ Write-Host '[表示は小文字に揃える]' -ForegroundColor Cyan
 # PowerShell の -match は既定で大小を区別しないため、ここは -cmatch で見る
 $p = New-Case 'low1.txt'
 New-TextFile $p ($L1 + "`r`n" + $L2 + "`r`n") $EncSjis
-$lowOut = (& $Exe $p --info 2>&1 | Out-String)
+$lowOut = (Invoke-Utf8Lines $Exe $p --info -MergeStderr | Out-String)
 Assert-True 'l1 組が小文字で出る' ($lowOut -cmatch 'sjis') $lowOut.Trim()
 Assert-True 'l1 大文字では出ない' (-not ($lowOut -cmatch 'SJIS')) '大文字の SJIS が無い'
 Assert-True 'l2 改行のラベルも小文字' ($lowOut -cmatch 'crlf=2') $lowOut.Trim()
@@ -851,7 +854,7 @@ Assert-True 'l2 大文字のラベルは出ない' (-not ($lowOut -cmatch 'CRLF=
 # 変換した行も小文字
 $p = New-Case 'low2.txt'
 New-TextFile $p ($L1 + "`n") $EncUtf8
-$lowConv = (& $Exe $p --to ps1 2>&1 | Out-String)
+$lowConv = (Invoke-Utf8Lines $Exe $p --to ps1 -MergeStderr | Out-String)
 Assert-True 'l3 変換の行が小文字' ($lowConv -cmatch 'utf8bom\+crlf') $lowConv.Trim()
 
 # エラーメッセージの組名も小文字。
@@ -861,7 +864,7 @@ $p = New-Case 'low3.txt'
 New-TextFile $p "困った✓です`n" $EncUtf8
 $oldEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
-$lowErr = (& $Exe $p --to sjis 2>&1 | Out-String)
+$lowErr = (Invoke-Utf8Lines $Exe $p --to sjis -MergeStderr | Out-String)
 $ErrorActionPreference = $oldEap
 Assert-True 'l4 エラーの組名も小文字' ($lowErr -cmatch 'sjis で表現できない') $lowErr.Trim()
 
@@ -874,19 +877,19 @@ Write-Host '[純 ASCII は ascii と表示する]' -ForegroundColor Cyan
 # 判定（--from に渡せる組）は utf8 のままで、ascii という組は増やさない
 $p = New-Case 'asc1.cmd'
 New-TextFile $p "@echo off`r`n" $EncUtf8
-$ascOut = (& $Exe $p --info 2>&1 | Out-String)
+$ascOut = (Invoke-Utf8Lines $Exe $p --info -MergeStderr | Out-String)
 Assert-True 'a1 --info は ascii と出す' ($ascOut -cmatch 'ascii') $ascOut.Trim()
 
 # 日本語が入れば ascii ではない
 $p = New-Case 'asc2.txt'
 New-TextFile $p ($L1 + "`n") $EncUtf8
-$ascOut2 = (& $Exe $p --info 2>&1 | Out-String)
+$ascOut2 = (Invoke-Utf8Lines $Exe $p --info -MergeStderr | Out-String)
 Assert-True 'a2 日本語入りは ascii にしない' (-not ($ascOut2 -cmatch 'ascii')) $ascOut2.Trim()
 
 # 変換した行の変換元も ascii と出る
 $p = New-Case 'asc3.txt'
 New-TextFile $p "abc`n" $EncUtf8
-$ascConv = (& $Exe $p --to ps1 2>&1 | Out-String)
+$ascConv = (Invoke-Utf8Lines $Exe $p --to ps1 -MergeStderr | Out-String)
 Assert-True 'a3 変換の行も ascii' ($ascConv -cmatch 'ascii\+lf') $ascConv.Trim()
 
 # 組が増えたわけではないので --from ascii は受けない
@@ -925,13 +928,13 @@ Remove-Item -LiteralPath (Join-Path $Tree2 'cr.txt') -Force
 # 文字コードは見る（BOM 付きの txt は違反）
 New-TextFile (Join-Path $Tree2 'bom.txt') ($L1 + "`r`n") $EncUtf8Bom
 Assert-Equal 'x5 BOM 付きの txt は違反' 1 (Invoke-Exe @($Tree2, '--check'))
-$x5Out = (& $Exe $Tree2 --check 2>&1 | Out-String)
+$x5Out = (Invoke-Utf8Lines $Exe $Tree2 --check -MergeStderr | Out-String)
 Assert-True 'x5 あるべき組に改行を書かない' ($x5Out -cmatch 'txt は utf8(?!\+)') $x5Out.Trim()
 Remove-Item -LiteralPath (Join-Path $Tree2 'bom.txt') -Force
 
 # あるべき組の呼び名は拡張子。用途名の無いものも「既定」ではなく拡張子で出す
 New-TextFile (Join-Path $Tree2 'b.ts') ($L1 + "`r`n") $EncUtf8
-$x6Out = (& $Exe $Tree2 --check 2>&1 | Out-String)
+$x6Out = (Invoke-Utf8Lines $Exe $Tree2 --check -MergeStderr | Out-String)
 Assert-True 'x6 拡張子の名前で出す' ($x6Out -cmatch 'ts は utf8\+lf') $x6Out.Trim()
 
 # ---------------------------------------------------------------

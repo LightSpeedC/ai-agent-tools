@@ -35,6 +35,10 @@ if ([Console]::IsInputRedirected) {
 	[Console]::SetIn((New-Object System.IO.StreamReader([Console]::OpenStandardInput(), $utf8)))
 }
 
+
+# 外のプログラムの出力を UTF-8 として読む部品 (窓のエンコーディングで読むと、素の PowerShell で日本語が化ける。i261119-01)
+. (Join-Path $PSScriptRoot 'invoke-utf8.ps1')
+
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 # 既定は移植版（ランチャー経由）。C# 版を見るときは -Target で名指しする
 $Exe = if ($Target) { $Target } else { Join-Path $Root 'bin\text.cmd' }
@@ -64,7 +68,7 @@ function New-RawFile {
 	if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force $dir | Out-Null }
 	$hex = ($Bytes | ForEach-Object { '{0:X2}' -f $_ }) -join ' '
 	Set-Content -LiteralPath $Path -Value $hex -Encoding ascii -NoNewline
-	& $ConvExe $Path --from hex *> $null
+	Invoke-Utf8Lines $ConvExe $Path --from hex -MergeStderr | Out-Null
 }
 
 function Get-Bytes { param([string]$Path) return [System.IO.File]::ReadAllBytes($Path) }
@@ -72,12 +76,8 @@ function Get-Bytes { param([string]$Path) return [System.IO.File]::ReadAllBytes(
 # text.exe を実行し、出力（UTF-8 文字列）と終了コードを返す
 function Run-Text {
 	param([string[]]$Arguments)
-	$old = $ErrorActionPreference
-	$ErrorActionPreference = 'Continue'
-	$out = & $Exe @Arguments 2>&1
+	$lines = @(Invoke-Utf8Lines $Exe @Arguments -MergeStderr)
 	$code = $LASTEXITCODE
-	$ErrorActionPreference = $old
-	$lines = $out | ForEach-Object { if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() } else { $_ } }
 	return [pscustomobject]@{ Out = ($lines -join "`n"); Code = $code }
 }
 
