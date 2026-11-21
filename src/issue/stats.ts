@@ -3,6 +3,8 @@
 	状態の履歴は持たない。課題ファイルの created ・ started ・ done の日付だけから数える。
 	残りは、その日の終わりに「立てた日 <= その日 かつ (done が無い か done の日付 > その日)」の数。
 	済から戻した課題は、今の状態 (done が消えている) で数える近似になる。
+	done の無い済 (移行 commit の課題等) は、残りに数えない (決定 286-A。283-A を置き換える)。済にした日が分からないため、
+	それより前の日の残りは、実際より少なめに出る。件数は undatedDone。
 */
 import { Failure, UsageError, loadAll, todayJst } from './ops.ts';
 import { isRealDateTime, splitIssue } from './meta.ts';
@@ -12,7 +14,7 @@ export type StatsResult = {
 	since: string;
 	until: string;
 	days: StatsDay[];
-	/** 済 (done/ ・ archived/) なのに done が無い課題の数。残りに数えている (済にした日が分からないため) */
+	/** 済 (done/ ・ archived/) なのに done が無い課題の数。残りに数えない (済にした日が分からないため。その前の日の残りは少なめになる) */
 	undatedDone: number;
 };
 
@@ -30,7 +32,8 @@ function addDay(day: string, n: number): string {
 	return d.toISOString().slice(0, 10);
 }
 
-type Row = { created: string | null; started: string | null; done: string | null };
+/** undated: 済 (done/ ・ archived/) なのに done が無い (済にした日が分からない。残りに数えない。決定 286-A) */
+type Row = { created: string | null; started: string | null; done: string | null; undated: boolean };
 
 /** since ・ until は yyyy-mm-dd。null なら、既定 (いちばん古い日付 ・ 今日) */
 export function computeStats(root: string, since: string | null, until: string | null): StatsResult {
@@ -50,8 +53,9 @@ export function computeStats(root: string, since: string | null, until: string |
 			created: created !== undefined && isRealDay(created) ? created : null,
 			started: started !== undefined && isRealDateTime(started) ? started.slice(0, 10) : null,
 			done: isDone && done !== undefined && isRealDateTime(done) ? done.slice(0, 10) : null,
+			undated: false,
 		};
-		if ((m.folder === 'done' || m.folder === 'archived') && row.done === null) undatedDone++;
+		if (isDone && row.done === null) { row.undated = true; undatedDone++; }
 		rows.push(row);
 	}
 	const end = until ?? todayJst();
@@ -72,6 +76,7 @@ export function computeStats(root: string, since: string | null, until: string |
 			if (r.created === day) created++;
 			if (r.started === day) started++;
 			if (r.done === day) done++;
+			if (r.undated) continue;
 			if (r.created !== null && r.created <= day && (r.done === null || r.done > day)) remaining++;
 		}
 		days.push({ date: day, created, started, done, remaining });

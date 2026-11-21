@@ -539,7 +539,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 	<ul>
 		<li>課題 i261120-01 の決定 283-A。日別に <strong>立てた</strong> (<code>created</code> がその日) ・ <strong>着手にした</strong> (<code>started</code> の日付がその日) ・ <strong>済にした</strong> (<code>done</code> の日付がその日) ・ <strong>残り</strong> を出す。4 つのフォルダ (<code>archived/</code> も) の全課題が対象。書き換えない</li>
 		<li><strong>残り</strong> = その日の終わりに、<code>created</code> がその日以前で、かつ (<code>done</code> が無い か <code>done</code> の日付がその日より後) の数。<strong>状態の履歴は持たないので、戻した課題は今の状態で数える近似</strong>。同じ日に立てて済にした課題は、その日の残りに入らない</li>
-		<li><strong><code>done</code> が無いのに済 (<code>done/</code> ・ <code>archived/</code>) の課題は、残りに数える</strong> (済にした日が分からないため)。その件数を、テキストでは末尾の行に、<code>--json</code> では <code>undatedDone</code> に出す。<code>issue backfill-done</code> で減らせる</li>
+		<li><strong><code>done</code> が無いのに済 (<code>done/</code> ・ <code>archived/</code>) の課題は、済として数え、残りには数えない</strong> (決定 286-A。283-A の「残りに数える」を置き換える)。済にした日が分からないので、<strong>その前の日 (移行 commit より前など) の残りは、実際より少なめに出る</strong>。その件数を、テキストでは末尾の行に、<code>--json</code> では <code>undatedDone</code> に出す。<code>issue backfill-done</code> で減らせる</li>
 		<li>範囲: <code>--since</code> の既定は <code>created</code> ・ <code>started</code> ・ <code>done</code> のいちばん古い日付、<code>--until</code> の既定は今日 (JST)。1 日 1 行で、件数が 0 の日も出す。日付の形が違う ・ 実在しない ・ <code>--since</code> が <code>--until</code> より後は終了コード 5。メタ情報を読めない課題があれば、集計せず終了コード 1</li>
 		<li>出力: <code>日付 ・ 立てた ・ 着手 ・ 済 ・ 残り</code> の表。<code>--json</code> は <code>{ since, until, days: [{ date, created, started, done, remaining }], undatedDone }</code></li>
 	</ul>

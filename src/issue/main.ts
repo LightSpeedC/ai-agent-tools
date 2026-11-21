@@ -566,7 +566,7 @@ function runStats(rest: string[]): number {
 	for (const d of r.days) {
 		console.log(`${d.date}  ${String(d.created).padStart(6)}  ${String(d.started).padStart(4)}  ${String(d.done).padStart(2)}  ${String(d.remaining).padStart(4)}`);
 	}
-	if (r.undatedDone > 0) console.log(`済 (done/ ・ archived/) だが done が無い課題: ${r.undatedDone} 件 (済にした日が分からないため、残りに数えている)`);
+	if (r.undatedDone > 0) console.log(`済 (done/ ・ archived/) だが done が無い課題: ${r.undatedDone} 件 (済にした日が分からないため、残りに数えない。その前の日の残りは少なめに出る)`);
 	return ExitOk;
 }
 

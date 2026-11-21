@@ -870,7 +870,7 @@ created: 2026-11-01
 | `issue todo <id> --add <文>` | やることを足す。`--done <n>` ・ `--doing <n>` ・ `--undone <n>` で n 番目の状態を変える |
 | `issue set <id> --state 済` | 課題の状態を変える (フォルダを動かす)。着手にすると `started` を、済にすると `done` を、JST の `yyyy-mm-dd hh:mm` で書く (`started` は最初の 1 回だけ。済から戻すと `done` を消す。すでに済なら上書きしない)。`git mv` は rename だけを stage するので、日時の書き込みは stage 前の変更 (`RM`) として残る |
 | `issue set <id> --done "2026-11-18 17:45" --started "2026-11-17 09:00"` | `done` ・ `started` を手で書く (値が空なら消す。形は `yyyy-mm-dd hh:mm`) |
-| `issue stats [--since <日>] [--until <日>] [--json]` | 日別に 立てた ・ 着手にした ・ 済にした ・ 残り の数を出す (消化の速さを測る)。残りは、`done` の無い済も数える近似。その件数は末尾 (`--json` では `undatedDone`) に出る |
+| `issue stats [--since <日>] [--until <日>] [--json]` | 日別に 立てた ・ 着手にした ・ 済にした ・ 残り の数を出す (消化の速さを測る)。残りは、`done` の無い済 (移行前の分など) を数えない近似で、その前の日の残りは少なめに出る。その件数は末尾 (`--json` では `undatedDone`) に出る |
 | `issue backfill-done [--dry-run \| --apply]` | 既存の済の `done` を、git の履歴 (済のフォルダに最後に入った commit の author の日時) から埋める。既定は `--dry-run`。一度に 10 件以上が現れた commit (移行) の分は飛ばす |
 | `issue set <id> --version <版> --released "2026-11-17 11:30" --kind fix --note "説明"` | version ・ released ・ kind ・ note を書く (その行だけ。知らない鍵は残る。値が空ならその鍵を消す)。`--note` は複数行にでき、`note: \|` の塊で書く。`released` はハイフン区切りの `yyyy-mm-dd hh:mm` だけ |
 | `issue confirm <id>` | 報告元の確認が取れたことを記録する |
