@@ -11,7 +11,7 @@
  * メタ情報のキーの順（仕様のキー項目の表の順）。CLI はこの順で書く。
  * 状態 (state) は持たない。状態は置いてあるフォルダで決まる (計画 p261103-01 の 126-A)
  */
-export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'] as const;
+export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'closed', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'] as const;
 
 /**
  * issue set で書ける 4 つの鍵 (課題 i261117-03。決定 270-A: refs の後ろに、この順で置く)。

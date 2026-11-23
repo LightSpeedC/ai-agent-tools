@@ -456,6 +456,26 @@ const fromTrue = issueText({ from: 'project-a #1', confirmed: 'true' });
 	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
 	check('--json は { id, confirmed, from, changed, file } を出す', p.id === 'i261103-01' && p.confirmed === true && p.from === 'project-a #1' && p.changed === true && p.file === Todo + A, r.out);
 }
+{
+	const dir = std('set-closed', { [Doing + A]: issueText() });
+	const rDone = run(['set', 'i261103-01', '--state', '済'], dir);
+	const doneText = read(dir, Done + A);
+	check('set --state 済: frontmatter に closed: 今日の日付 が自動付与される', rDone.code === 0 && doneText.includes(`closed: ${Today}`), doneText);
+	check('done 移動後の issue check が警告・エラーなしで通る', run(['check'], dir).code === 0, run(['check'], dir).out);
+	const rList = run(['list', '--state', '済', '--json'], dir);
+	let listJson: { id?: string; closed?: string }[] = [];
+	try { listJson = JSON.parse(rList.out); } catch {}
+	check('list --json で closed が参照できる', listJson.length === 1 && listJson[0].closed === Today, rList.out);
+	const rListText = run(['list', '--state', '済'], dir);
+	check('list のテキスト出力にも closed が表示される', rListText.out.includes(Today), rListText.out);
+	const rSearch = run(['search', Today, '--state', '済', '--json'], dir);
+	let searchJson: { id?: string; closed?: string }[] = [];
+	try { searchJson = JSON.parse(rSearch.out); } catch {}
+	check('search --json で closed が参照でき、検索にもヒットする', searchJson.length === 1 && searchJson[0].closed === Today, rSearch.out);
+	const rBack = run(['set', 'i261103-01', '--state', '着手'], dir);
+	const backText = read(dir, Doing + A);
+	check('set --state 着手: frontmatter から closed: が削除される', rBack.code === 0 && !backText.includes('closed:'), backText);
+}
 
 console.log('');
 console.log(`=== issue (更新の操作): ${pass} 件成功 ・ ${fail} 件失敗 ===`);

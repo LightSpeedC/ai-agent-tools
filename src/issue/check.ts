@@ -284,6 +284,12 @@ function checkIssueFile(entry: Entry, groups: Set<string> | null, add: Add): Fil
 	const created = get('created');
 	if (created !== undefined && !isRealDate(created)) add('error', 'value', rel, `created が実在する yyyy-mm-dd でない: ${created}`);
 
+	const closed = get('closed');
+	if (closed !== undefined) {
+		if (!isRealDate(closed)) add('error', 'value', rel, `closed が実在する yyyy-mm-dd でない: ${closed}`);
+		if (!isDone) add('warning', 'closed', rel, `closed は済 (done/ ・ archived/) の課題だけに置く (${entry.folder}/ にある)`);
+	}
+
 	// 入った日時 (決定 272-B)。エラー
 	const released = get('released');
 	if (released !== undefined && !isRealDateTime(released)) add('error', 'value', rel, `released が実在する yyyy-mm-dd hh:mm でない: ${released}`);

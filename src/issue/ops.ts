@@ -258,7 +258,7 @@ export function showIssue(root: string, id: string): IssueView {
 	return { id, state: StateOf[loaded.folder], folder: loaded.folder, file: loaded.rel, meta, body: parts.body, todos, text: loaded.text };
 }
 
-export type ListItem = { id: string; state: string; folder: Folder; group: string; title: string; created: string; file: string };
+export type ListItem = { id: string; state: string; folder: Folder; group: string; title: string; created: string; closed?: string; file: string };
 
 /**
  * 指定のフォルダの課題を、id の順に並べて返す。メタ情報が読めないものは飛ばし、warn で知らせる。
@@ -285,7 +285,8 @@ export function listIssues(root: string, folders: Folder[], group: string | null
 			const get = (k: string): string => parts.parsed.pairs.find((p) => p.key === k)?.value ?? '';
 			if (group !== null && get('group') !== group) continue;
 			if (missing.length > 0 && !missing.some((k) => get(k) === '')) continue;
-			items.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), file: loaded.rel });
+			const closed = get('closed');
+			items.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), ...(closed !== '' ? { closed } : {}), file: loaded.rel });
 		}
 	}
 	return items.sort((a, b) => compareId(a.id, b.id));
@@ -330,6 +331,38 @@ export const SetTargets: Record<string, Folder> = { 未: 'todo', 着手: 'doing'
 
 export type SetResult = { id: string; state: string; folder: Folder; from: { state: string; folder: Folder }; file: string; moved: boolean };
 
+/** done 移動時の closed 付与、todo/doing 戻り時の closed 削除 */
+function updateClosedField(abs: string, closedDate: string | null): void {
+	const raw = fs.readFileSync(abs, 'utf8');
+	if (raw.startsWith('﻿') || raw.includes('\r')) return;
+	if (splitIssue(raw).broken) return;
+	const lines = raw.split('\n');
+	const end = lines.indexOf('---', 1);
+	if (end < 0) return;
+	const closedAt = lines.findIndex((l, idx) => idx > 0 && idx < end && /^closed:/.test(l));
+	if (closedDate !== null) {
+		if (closedAt >= 0) {
+			if (lines[closedAt] === `closed: ${closedDate}`) return;
+			lines[closedAt] = `closed: ${closedDate}`;
+		} else {
+			const closedOrder = KeyOrder.indexOf('closed');
+			let insertAt = 1;
+			for (let i = 1; i < end; i++) {
+				const m = /^([a-z][a-z0-9_]*):/.exec(lines[i]);
+				if (m !== null) {
+					const ord = (KeyOrder as readonly string[]).indexOf(m[1]);
+					if (ord >= 0 && ord < closedOrder) insertAt = i + 1;
+				}
+			}
+			lines.splice(insertAt, 0, `closed: ${closedDate}`);
+		}
+	} else {
+		if (closedAt < 0) return;
+		lines.splice(closedAt, 1);
+	}
+	writeText(abs, lines.join('\n'));
+}
+
 /** 課題の状態を変える (ファイルを隣のフォルダへ動かす)。済にするときは、条件を満たさなければ拒否する */
 export function setState(root: string, id: string, state: string): SetResult {
 	const target = SetTargets[state];
@@ -344,6 +377,9 @@ export function setState(root: string, id: string, state: string): SetResult {
 		if (reasons.length > 0) throw new Failure(`${id} を済にできない: ${reasons.join(' ・ ')}`);
 	}
 	moveIssueFile(root, `${ItemsRel}/${cur.folder}/${cur.name}`, toRel);
+	const destAbs = path.join(itemsDirOf(root), target, cur.name);
+	if (target === 'done') updateClosedField(destAbs, todayJst());
+	else if (target === 'todo' || target === 'doing') updateClosedField(destAbs, null);
 	return { id, state, folder: target, from, file: toRel, moved: true };
 }
 
@@ -684,7 +720,8 @@ export function searchIssues(root: string, term: string, folders: Folder[], grou
 				if (hit(line)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, SnippetMax).join('') });
 			});
 			if (matches.length === 0) continue;
-			hits.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), file: loaded.rel, matches });
+			const closed = get('closed');
+			hits.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), ...(closed !== '' ? { closed } : {}), file: loaded.rel, matches });
 		}
 	}
 	return hits.sort((a, b) => compareId(a.id, b.id));
