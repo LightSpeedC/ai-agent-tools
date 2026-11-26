@@ -1,6 +1,6 @@
 /*
-	issue (課題管理ツール) の「済にした日 (done) ・ 着手にした日 (started)」のテスト (課題 i261120-01。決定 278-A 〜 285-A)。
-	set の書き込み ・ set --done / --started ・ check ・ archive --done-before ・ stats ・ backfill-done。
+	issue (課題管理ツール) の「済にした日 (closed) ・ 着手にした日 (started)」のテスト (課題 i261120-01。決定 278-A 〜 285-A)。
+	set の書き込み ・ set --closed / --started ・ check ・ archive --closed-before ・ stats ・ backfill-closed。
 	期待値は、課題と決定から先に手で書いた (実装の出力から作っていない)。
 	本物のプロジェクトには触らない。tmp/ の下に、ケースごとの小さなプロジェクトを作る。
 	時刻は環境変数 ISSUE_TEST_NOW (yyyy-mm-dd hh:mm、JST) で固定する。
@@ -31,7 +31,7 @@ const A = 'i261103-01-a.md';
 const Now1 = '2026-11-20 10:30';
 const Now2 = '2026-11-21 08:05';
 
-const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'started', 'done', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'];
+const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'started', 'closed', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'];
 function issueText(over: Record<string, string | null> = {}, body: string = '\n本文\n'): string {
 	const all: Record<string, string | null> = { schema: '1', id: 'i261103-01', title: '題', group: 'html2md', created: '2026-11-03', ...over };
 	const keys = [...KeyOrder.filter((k) => k in all), ...Object.keys(all).filter((k) => !KeyOrder.includes(k))];
@@ -66,30 +66,30 @@ function read(dir: string, rel: string): string {
 }
 function exists(dir: string, rel: string): boolean { return fs.existsSync(path.join(dir, rel)); }
 
-// ---- set --state で started ・ done を書く (決定 278-A ・ 279-A ・ 282-A) ----
+// ---- set --state で started ・ closed を書く (決定 278-A ・ 279-A ・ 282-A) ----
 
-console.log('--- set --state で started ・ done を書く');
+console.log('--- set --state で started ・ closed を書く');
 {
 	const dir = std('set-flow', { [Todo + A]: issueText() });
 	const r1 = run(['set', 'i261103-01', '--state', '着手'], dir);
 	check('未 → 着手: started を JST の yyyy-mm-dd hh:mm で書く (created の後ろ)', r1.code === 0 && read(dir, Doing + A) === issueText({ started: Now1 }), r1.out + r1.err + '\n' + read(dir, Doing + A));
 	const r2 = run(['set', 'i261103-01', '--state', '済'], dir, { ISSUE_TEST_NOW: Now2 });
-	check('着手 → 済: done を書く。started は残る', r2.code === 0 && read(dir, Done + A) === issueText({ started: Now1, done: Now2 }), r2.out + r2.err + '\n' + read(dir, Done + A));
+	check('着手 → 済: closed を書く。started は残る', r2.code === 0 && read(dir, Done + A) === issueText({ started: Now1, closed: Now2 }), r2.out + r2.err + '\n' + read(dir, Done + A));
 	const r3 = run(['set', 'i261103-01', '--state', '済'], dir, { ISSUE_TEST_NOW: '2026-11-25 09:00' });
-	check('済 → 済: done を上書きしない (動かさない)', r3.code === 0 && read(dir, Done + A) === issueText({ started: Now1, done: Now2 }), r3.out + r3.err);
+	check('済 → 済: closed を上書きしない (動かさない)', r3.code === 0 && read(dir, Done + A) === issueText({ started: Now1, closed: Now2 }), r3.out + r3.err);
 	const r4 = run(['set', 'i261103-01', '--state', '着手'], dir, { ISSUE_TEST_NOW: '2026-11-26 09:00' });
-	check('済 → 着手: done を消す。started は最初の着手日のまま残る (上書きしない)', r4.code === 0 && read(dir, Doing + A) === issueText({ started: Now1 }), r4.out + r4.err + '\n' + read(dir, Doing + A));
+	check('済 → 着手: closed を消す。started は最初の着手日のまま残る (上書きしない)', r4.code === 0 && read(dir, Doing + A) === issueText({ started: Now1 }), r4.out + r4.err + '\n' + read(dir, Doing + A));
 	const r5 = run(['set', 'i261103-01', '--state', '未'], dir);
 	check('着手 → 未: started を変えない', r5.code === 0 && read(dir, Todo + A) === issueText({ started: Now1 }), r5.out + r5.err);
 	const r6 = run(['set', 'i261103-01', '--state', '済'], dir, { ISSUE_TEST_NOW: Now2 });
-	check('未 → 済 (直接): done だけ書く。started は残る', r6.code === 0 && read(dir, Done + A) === issueText({ started: Now1, done: Now2 }), r6.out + r6.err);
+	check('未 → 済 (直接): closed だけ書く。started は残る', r6.code === 0 && read(dir, Done + A) === issueText({ started: Now1, closed: Now2 }), r6.out + r6.err);
 	const r7 = run(['set', 'i261103-01', '--state', '未'], dir);
-	check('済 → 未: done を消す。started は残る', r7.code === 0 && read(dir, Todo + A) === issueText({ started: Now1 }), r7.out + r7.err);
+	check('済 → 未: closed を消す。started は残る', r7.code === 0 && read(dir, Todo + A) === issueText({ started: Now1 }), r7.out + r7.err);
 }
 {
 	const dir = std('set-direct', { [Todo + A]: issueText() });
 	const r = run(['set', 'i261103-01', '--state', '済'], dir);
-	check('started の無い課題を未 → 済: done だけ書き、started は作らない', r.code === 0 && read(dir, Done + A) === issueText({ done: Now1 }), r.out + r.err + '\n' + read(dir, Done + A));
+	check('started の無い課題を未 → 済: closed だけ書き、started は作らない', r.code === 0 && read(dir, Done + A) === issueText({ closed: Now1 }), r.out + r.err + '\n' + read(dir, Done + A));
 }
 {
 	const dir = std('set-none', { [Doing + A]: issueText({ started: '2026-11-10 09:00' }) });
@@ -101,113 +101,132 @@ console.log('--- set --state で started ・ done を書く');
 	const body = '\n本文\n\n## やること\n- [未] a\n';
 	const dir = std('set-blocked', { [Doing + A]: issueText({}, body) });
 	const r = run(['set', 'i261103-01', '--state', '済'], dir);
-	check('やることが残って済にできなければ、終了コード 1 で、done を書かない', r.code === 1 && read(dir, Doing + A) === issueText({}, body) && !exists(dir, Done + A), r.out + r.err);
+	check('やることが残って済にできなければ、終了コード 1 で、closed を書かない', r.code === 1 && read(dir, Doing + A) === issueText({}, body) && !exists(dir, Done + A), r.out + r.err);
 }
 {
 	// BOM のあるファイルは書き換えない。状態は動かし、警告を出す (今ある動き: 動かすだけの set を失敗させない)
 	const dir = std('set-bom', { [Todo + A]: '﻿' + issueText() });
 	const r = run(['set', 'i261103-01', '--state', '済'], dir);
-	check('BOM のあるファイルは、状態を動かし、done は書かず、警告を出す', r.code === 0 && read(dir, Done + A) === '﻿' + issueText() && (r.err + r.out).includes('done'), r.out + r.err);
+	check('BOM のあるファイルは、状態を動かし、closed は書かず、警告を出す', r.code === 0 && read(dir, Done + A) === '﻿' + issueText() && (r.err + r.out).includes('closed'), r.out + r.err);
 }
 {
-	// --state 済 と --done を一緒に: 指定した値が勝つ
+	// --state 済 と --closed を一緒に: 指定した値が勝つ
 	const dir = std('set-explicit', { [Todo + A]: issueText() });
-	const r = run(['set', 'i261103-01', '--state', '済', '--done', '2026-11-18 17:45'], dir);
-	check('--state 済 と --done を一緒に渡せば、--done の値が書かれる', r.code === 0 && read(dir, Done + A) === issueText({ done: '2026-11-18 17:45' }), r.out + r.err + '\n' + read(dir, Done + A));
+	const r = run(['set', 'i261103-01', '--state', '済', '--closed', '2026-11-18 17:45'], dir);
+	check('--state 済 と --closed を一緒に渡せば、--closed の値が書かれる', r.code === 0 && read(dir, Done + A) === issueText({ closed: '2026-11-18 17:45' }), r.out + r.err + '\n' + read(dir, Done + A));
 }
 {
-	// git の管理下: 動かしたあとの状態 (rename は stage 済、done の書き込みは stage 前)
+	// git の管理下: 動かしたあとの状態 (rename は stage 済、closed の書き込みは stage 前)
 	const dir = std('set-git', { [Doing + A]: issueText({ started: '2026-11-10 09:00' }) });
 	git(dir, ['init', '-q', '-b', 'develop']);
 	git(dir, ['add', '-A']);
 	git(dir, ['commit', '-q', '-m', 'init']);
 	const r = run(['set', 'i261103-01', '--state', '済'], dir);
 	const status = git(dir, ['status', '--porcelain']);
-	check('git の管理下: rename は stage 済で、done の書き込みは stage 前 (RM)', r.code === 0 && /^RM .*doing\/i261103-01-a\.md -> .*done\/i261103-01-a\.md$/m.test(status), r.out + r.err + ' / ' + status);
+	check('git の管理下: rename は stage 済で、closed の書き込みは stage 前 (RM)', r.code === 0 && /^RM .*doing\/i261103-01-a\.md -> .*done\/i261103-01-a\.md$/m.test(status), r.out + r.err + ' / ' + status);
 }
 
-// ---- set --done / --started (決定 285-A) ----
+// ---- set --closed / --started (決定 285-A) ----
 
-console.log('--- set --done / --started');
+console.log('--- set --closed / --started');
 {
-	const dir = std('fields', { [Done + A]: issueText({ done: Now1 }) });
-	const r1 = run(['set', 'i261103-01', '--done', '2026-11-18 17:45', '--started', '2026-11-17 09:00'], dir);
-	check('--done と --started を書ける (鍵の順: created → started → done)', r1.code === 0 && read(dir, Done + A) === issueText({ started: '2026-11-17 09:00', done: '2026-11-18 17:45' }), r1.out + r1.err + '\n' + read(dir, Done + A));
-	const r2 = run(['set', 'i261103-01', '--done', '', '--started', ''], dir);
+	const dir = std('fields', { [Done + A]: issueText({ closed: Now1 }) });
+	const r1 = run(['set', 'i261103-01', '--closed', '2026-11-18 17:45', '--started', '2026-11-17 09:00'], dir);
+	check('--closed と --started を書ける (鍵の順: created → started → closed)', r1.code === 0 && read(dir, Done + A) === issueText({ started: '2026-11-17 09:00', closed: '2026-11-18 17:45' }), r1.out + r1.err + '\n' + read(dir, Done + A));
+	const r2 = run(['set', 'i261103-01', '--closed', '', '--started', ''], dir);
 	check('値が空なら鍵を消す', r2.code === 0 && read(dir, Done + A) === issueText(), r2.out + r2.err + '\n' + read(dir, Done + A));
 	const before = read(dir, Done + A);
-	check('done が yyyy-mm-dd だけなら終了コード 5 (書かない)', run(['set', 'i261103-01', '--done', '2026-11-18'], dir).code === 5 && read(dir, Done + A) === before);
+	check('closed が実在しない日付なら終了コード 5 (書かない)', run(['set', 'i261103-01', '--closed', '2026-02-30'], dir).code === 5 && read(dir, Done + A) === before);
+	check('started が yyyy-mm-dd だけなら終了コード 5', run(['set', 'i261103-01', '--started', '2026-11-18'], dir).code === 5);
+	check('closed は yyyy-mm-dd だけでも書ける (287-D。日付だけの既存値を受ける)', run(['set', 'i261103-01', '--closed', '2026-11-18'], dir).code === 0 && read(dir, Done + A) === issueText({ closed: '2026-11-18' }));
+	run(['set', 'i261103-01', '--closed', ''], dir);
 	check('started が実在しない日時なら終了コード 5', run(['set', 'i261103-01', '--started', '2026-02-30 10:00'], dir).code === 5);
-	check('done に改行を含めれば終了コード 5', run(['set', 'i261103-01', '--done', '2026-11-18 10:00\n2'], dir).code === 5);
+	check('closed に改行を含めれば終了コード 5', run(['set', 'i261103-01', '--closed', '2026-11-18 10:00\n2'], dir).code === 5);
 }
 {
 	// archived/ の課題にも書ける (移行で埋められなかった分を手で直す)
 	const dir = std('fields-archived', { [Archived + A]: issueText() });
-	const r = run(['set', 'i261103-01', '--done', '2026-11-08 12:00'], dir);
-	check('archived/ の課題にも --done を書ける', r.code === 0 && read(dir, Archived + A) === issueText({ done: '2026-11-08 12:00' }), r.out + r.err);
+	const r = run(['set', 'i261103-01', '--closed', '2026-11-08 12:00'], dir);
+	check('archived/ の課題にも --closed を書ける', r.code === 0 && read(dir, Archived + A) === issueText({ closed: '2026-11-08 12:00' }), r.out + r.err);
 }
 
-// ---- archive ・ unarchive は done を書かず変えない (今ある動き) ----
+// ---- archive ・ unarchive は closed を書かず変えない (今ある動き) ----
 
 console.log('--- archive ・ unarchive');
 {
-	const dir = std('archive-keep', { [Done + A]: issueText({ done: Now1 }), [Done + 'i261103-02-b.md']: issueText({ id: 'i261103-02' }) });
+	const dir = std('archive-keep', { [Done + A]: issueText({ closed: Now1 }), [Done + 'i261103-02-b.md']: issueText({ id: 'i261103-02' }) });
 	const r1 = run(['archive', 'html2md'], dir);
-	check('archive は、done を変えず、無い課題にも書かない', r1.code === 0 && read(dir, Archived + A) === issueText({ done: Now1 }) && read(dir, Archived + 'i261103-02-b.md') === issueText({ id: 'i261103-02' }), r1.out + r1.err);
+	check('archive は、closed を変えず、無い課題にも書かない', r1.code === 0 && read(dir, Archived + A) === issueText({ closed: Now1 }) && read(dir, Archived + 'i261103-02-b.md') === issueText({ id: 'i261103-02' }), r1.out + r1.err);
 	const r2 = run(['unarchive', 'html2md'], dir, { ISSUE_TEST_NOW: Now2 });
-	check('unarchive は、done を変えず、無い課題にも書かない', r2.code === 0 && read(dir, Done + A) === issueText({ done: Now1 }) && read(dir, Done + 'i261103-02-b.md') === issueText({ id: 'i261103-02' }), r2.out + r2.err);
+	check('unarchive は、closed を変えず、無い課題にも書かない', r2.code === 0 && read(dir, Done + A) === issueText({ closed: Now1 }) && read(dir, Done + 'i261103-02-b.md') === issueText({ id: 'i261103-02' }), r2.out + r2.err);
 }
 
 // ---- check (決定 284-A) ----
 
 console.log('--- check');
 {
-	const dir = std('check-ok', { [Done + A]: issueText({ started: '2026-11-04 09:00', done: '2026-11-05 10:00' }) });
+	const dir = std('check-ok', { [Done + A]: issueText({ started: '2026-11-04 09:00', closed: '2026-11-05 10:00' }) });
 	const r = run(['check'], dir);
-	check('正しい started ・ done は、エラーも警告も出ない', r.code === 0 && !r.out.includes('[警告]') && !r.out.includes('[meta]'), r.out + r.err);
+	check('正しい started ・ closed は、エラーも警告も出ない', r.code === 0 && !r.out.includes('[警告]') && !r.out.includes('[meta]'), r.out + r.err);
 }
 {
-	const dir = std('check-bad-form', { [Done + A]: issueText({ done: '2026-11-05' }), [Done + 'i261103-02-b.md']: issueText({ id: 'i261103-02', started: '2026-02-30 10:00' }) });
+	const dir = std('check-bad-form', { [Done + A]: issueText({ closed: '2026-02-30' }), [Done + 'i261103-02-b.md']: issueText({ id: 'i261103-02', started: '2026-11-05' }) });
 	const r = run(['check'], dir);
-	check('done が yyyy-mm-dd だけ ・ started が実在しない日時は、エラー (終了コード 1)', r.code === 1 && r.out.includes('done') && r.out.includes('started'), r.out + r.err);
+	check('closed が実在しない日付 ・ started が yyyy-mm-dd だけは、エラー (終了コード 1)', r.code === 1 && r.out.includes('closed') && r.out.includes('started'), r.out + r.err);
 }
 {
-	const dir = std('check-folder', { [Todo + A]: issueText({ done: '2026-11-05 10:00' }) });
+	const dir = std('check-date-only', { [Done + A]: issueText({ closed: '2026-11-05' }) });
 	const r = run(['check'], dir);
-	check('done/ ・ archived/ 以外にある課題が done を持てば、警告 (終了コード 0)', r.code === 0 && r.out.includes('done') && r.out.includes('[警告]'), r.out + r.err);
+	check('closed が yyyy-mm-dd だけでも (日付だけの既存値)、エラーも警告も出ない', r.code === 0 && !r.out.includes('[警告]') && !r.out.includes('[meta]') && !r.out.includes('[value]'), r.out + r.err);
 }
 {
-	const dir = std('check-before-created', { [Done + A]: issueText({ started: '2026-11-02 09:00', done: '2026-11-01 10:00' }) });
+	const dir = std('check-folder', { [Todo + A]: issueText({ closed: '2026-11-05 10:00' }) });
 	const r = run(['check'], dir);
-	check('done や started が created より前なら、警告 (終了コード 0)', r.code === 0 && r.out.includes('created') && (r.out.match(/\[警告\]/g) ?? []).length >= 2, r.out + r.err);
+	check('done/ ・ archived/ 以外にある課題が closed を持てば、警告 (終了コード 0)', r.code === 0 && r.out.includes('closed') && r.out.includes('[警告]'), r.out + r.err);
 }
 {
-	const dir = std('check-same-day', { [Done + A]: issueText({ started: '2026-11-03 00:00', done: '2026-11-03 00:01' }) });
+	const dir = std('check-before-created', { [Done + A]: issueText({ started: '2026-11-02 09:00', closed: '2026-11-01 10:00' }) });
+	const r = run(['check'], dir);
+	check('closed や started が created より前なら、警告 (終了コード 0)', r.code === 0 && r.out.includes('created') && (r.out.match(/\[警告\]/g) ?? []).length >= 2, r.out + r.err);
+}
+{
+	const dir = std('check-same-day', { [Done + A]: issueText({ started: '2026-11-03 00:00', closed: '2026-11-03 00:01' }) });
 	const r = run(['check'], dir);
 	check('created と同じ日なら警告を出さない', r.code === 0 && !r.out.includes('[警告]'), r.out + r.err);
 }
 
-// ---- archive --done-before (決定 280-B) ----
+// ---- archive --closed-before (決定 280-B) ----
 
-console.log('--- archive --done-before');
+console.log('--- archive --closed-before');
 {
 	const dir = std('before', {
-		// done があれば done で選ぶ: 立てたのは前でも、済にしたのが 11-10 なら、11-05 より前ではない
-		[Done + 'i261001-01-old-created.md']: issueText({ id: 'i261001-01', created: '2026-10-01', done: '2026-11-10 09:00' }),
+		// closed があれば closed で選ぶ: 立てたのは前でも、済にしたのが 11-10 なら、11-05 より前ではない
+		[Done + 'i261001-01-old-created.md']: issueText({ id: 'i261001-01', created: '2026-10-01', closed: '2026-11-10 09:00' }),
 		// 立てたのは後でも、済にしたのが 11-01 なら動かす
-		[Done + 'i261110-01-new-created.md']: issueText({ id: 'i261110-01', created: '2026-11-10', done: '2026-11-11 09:00' }).replace('2026-11-11 09:00', '2026-11-10 09:00'),
-		// done が無ければ created で選ぶ (今までと同じ)
+		[Done + 'i261110-01-new-created.md']: issueText({ id: 'i261110-01', created: '2026-11-10', closed: '2026-11-11 09:00' }).replace('2026-11-11 09:00', '2026-11-10 09:00'),
+		// closed が無ければ created で選ぶ (今までと同じ)
 		[Done + 'i261101-01-no-done-old.md']: issueText({ id: 'i261101-01', created: '2026-11-01' }),
 		[Done + 'i261108-01-no-done-new.md']: issueText({ id: 'i261108-01', created: '2026-11-08' }),
-		// 立てた日と済にした日が逆 (check は警告) でも、done で選ぶ
-		[Done + 'i261120-01-reversed.md']: issueText({ id: 'i261120-01', created: '2026-11-20', done: '2026-11-01 09:00' }),
+		// 立てた日と済にした日が逆 (check は警告) でも、closed で選ぶ
+		[Done + 'i261120-01-reversed.md']: issueText({ id: 'i261120-01', created: '2026-11-20', closed: '2026-11-01 09:00' }),
 	});
-	const r = run(['archive', '--done-before', '2026-11-05', '--json'], dir);
+	const r = run(['archive', '--closed-before', '2026-11-05', '--json'], dir);
 	let p: { moved?: string[] } = {};
 	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
-	check('done があれば done で、無ければ created で選ぶ', JSON.stringify(p.moved) === JSON.stringify(['i261101-01', 'i261120-01']), r.out + r.err);
-	const edge = run(['archive', '--done-before', '2026-11-10', '--dry-run', '--json'], dir);
-	check('境界: done の日が before と同じ日なら動かさない (before より前だけ)', !edge.out.includes('i261110-01') && !edge.out.includes('i261001-01'), edge.out);
+	check('closed があれば closed で、無ければ created で選ぶ', JSON.stringify(p.moved) === JSON.stringify(['i261101-01', 'i261120-01']), r.out + r.err);
+	const edge = run(['archive', '--closed-before', '2026-11-10', '--dry-run', '--json'], dir);
+	check('境界: closed の日が before と同じ日なら動かさない (before より前だけ)', !edge.out.includes('i261110-01') && !edge.out.includes('i261001-01'), edge.out);
+}
+{
+	// 日付だけの closed (今までの値) も、同じ日の日時 (hh:mm 付き) と同じ扱い
+	const dir = std('before-date-only', {
+		[Done + 'i261001-01-a.md']: issueText({ id: 'i261001-01', created: '2026-10-01', closed: '2026-11-03' }),
+		[Done + 'i261001-02-b.md']: issueText({ id: 'i261001-02', created: '2026-10-01', closed: '2026-11-05' }),
+	});
+	const r = run(['archive', '--closed-before', '2026-11-05', '--json'], dir);
+	let p: { moved?: string[] } = {};
+	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
+	check('日付だけの closed も、頭 10 文字で選ぶ (11-03 は動かし、11-05 は境界で動かさない)', JSON.stringify(p.moved) === JSON.stringify(['i261001-01']), r.out + r.err);
 }
 
 // ---- stats (決定 283-A) ----
@@ -215,23 +234,23 @@ console.log('--- archive --done-before');
 console.log('--- stats');
 {
 	const dir = std('stats', {
-		[Done + 'i261101-01-a.md']: issueText({ id: 'i261101-01', created: '2026-11-01', started: '2026-11-02 09:00', done: '2026-11-04 18:00' }),
+		[Done + 'i261101-01-a.md']: issueText({ id: 'i261101-01', created: '2026-11-01', started: '2026-11-02 09:00', closed: '2026-11-04 18:00' }),
 		[Todo + 'i261101-02-b.md']: issueText({ id: 'i261101-02', created: '2026-11-01' }),
-		[Done + 'i261103-01-c.md']: issueText({ id: 'i261103-01', created: '2026-11-03', done: '2026-11-03 12:00' }),
+		[Done + 'i261103-01-c.md']: issueText({ id: 'i261103-01', created: '2026-11-03', closed: '2026-11-03 12:00' }),
 		[Archived + 'i261102-01-d.md']: issueText({ id: 'i261102-01', created: '2026-11-02' }),
 	});
 	const r = run(['stats', '--since', '2026-11-01', '--until', '2026-11-05', '--json'], dir);
-	let p: { since?: string; until?: string; days?: { date: string; created: number; started: number; done: number; remaining: number }[]; undatedDone?: number } = {};
+	let p: { since?: string; until?: string; days?: { date: string; created: number; started: number; closed: number; remaining: number }[]; undatedClosed?: number } = {};
 	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
-	const row = (d: string): string => { const x = p.days?.find((v) => v.date === d); return x === undefined ? 'なし' : `${x.created},${x.started},${x.done},${x.remaining}`; };
+	const row = (d: string): string => { const x = p.days?.find((v) => v.date === d); return x === undefined ? 'なし' : `${x.created},${x.started},${x.closed},${x.remaining}`; };
 	check('範囲は since から until まで、1 日 1 行 (5 行)', p.since === '2026-11-01' && p.until === '2026-11-05' && p.days?.length === 5, r.out + r.err);
 	check('11-01: 立てた 2 ・ 着手 0 ・ 済 0 ・ 残り 2', row('2026-11-01') === '2,0,0,2', row('2026-11-01'));
-	// 決定 286-A (283-A を置き換える): done の無い済 (done/ ・ archived/) は、残りに数えない (済として数え、件数は undatedDone)
-	check('11-02: 立てた 1 ・ 着手 1 ・ 済 0 ・ 残り 2 (done の無い済 i261102-01 は残りに数えない)', row('2026-11-02') === '1,1,0,2', row('2026-11-02'));
+	// 決定 286-A (283-A を置き換える): closed の無い済 (done/ ・ archived/) は、残りに数えない (済として数え、件数は undatedClosed)
+	check('11-02: 立てた 1 ・ 着手 1 ・ 済 0 ・ 残り 2 (closed の無い済 i261102-01 は残りに数えない)', row('2026-11-02') === '1,1,0,2', row('2026-11-02'));
 	check('11-03: 立てた 1 ・ 済 1 ・ 残り 2 (同じ日に立てて済にした課題は、その日の終わりには残らない)', row('2026-11-03') === '1,0,1,2', row('2026-11-03'));
 	check('11-04: 済 1 ・ 残り 1', row('2026-11-04') === '0,0,1,1', row('2026-11-04'));
 	check('11-05: 残り 1', row('2026-11-05') === '0,0,0,1', row('2026-11-05'));
-	check('done が無いのに済 (done/ ・ archived/) の課題の数を undatedDone に出す (1 件: i261102-01)', p.undatedDone === 1, r.out);
+	check('closed が無いのに済 (done/ ・ archived/) の課題の数を undatedClosed に出す (1 件: i261102-01)', p.undatedClosed === 1, r.out);
 	const t = run(['stats', '--since', '2026-11-02', '--until', '2026-11-03'], dir);
 	check('テキストは、日付 ・ 立てた ・ 着手 ・ 済 ・ 残りの表', t.code === 0 && /2026-11-02\s+1\s+1\s+0\s+2/.test(t.out) && /2026-11-03\s+1\s+0\s+1\s+2/.test(t.out) && !t.out.includes('2026-11-01') && t.out.includes('残りに数えない'), t.out + t.err);
 	check('since が until より後なら終了コード 5', run(['stats', '--since', '2026-11-05', '--until', '2026-11-01'], dir).code === 5);
@@ -239,12 +258,21 @@ console.log('--- stats');
 	const all = run(['stats', '--json'], dir);
 	let q: { since?: string; until?: string } = {};
 	try { q = JSON.parse(all.out); } catch { /* 下で失敗にする */ }
-	check('since の既定は、いちばん古い日付 (created ・ started ・ done の最小)、until の既定は今日 (JST)', q.since === '2026-11-01' && q.until === '2026-11-20', all.out + all.err);
+	check('since の既定は、いちばん古い日付 (created ・ started ・ closed の最小)、until の既定は今日 (JST)', q.since === '2026-11-01' && q.until === '2026-11-20', all.out + all.err);
+}
+{
+	// 日付だけの closed は、その日の済にした数に入る (頭 10 文字)。closed の無い済に数えない
+	const dir = std('stats-date-only', { [Done + 'i261101-01-a.md']: issueText({ id: 'i261101-01', created: '2026-11-01', closed: '2026-11-03' }) });
+	const r = run(['stats', '--since', '2026-11-01', '--until', '2026-11-04', '--json'], dir);
+	let p: { days?: { date: string; closed: number; remaining: number }[]; undatedClosed?: number } = {};
+	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
+	const d3 = p.days?.find((x) => x.date === '2026-11-03');
+	check('日付だけの closed も、その日の済にした数に入り、undatedClosed に入らない', d3?.closed === 1 && d3?.remaining === 0 && p.undatedClosed === 0, r.out + r.err);
 }
 
-// ---- backfill-done (決定 281-A) ----
+// ---- backfill-closed (決定 281-A) ----
 
-console.log('--- backfill-done');
+console.log('--- backfill-closed');
 {
 	const dir = std('backfill');
 	const commit = (msg: string, when: string): void => {
@@ -264,10 +292,10 @@ console.log('--- backfill-done');
 	commit('migrate', '2026-11-07T09:00:00+09:00');
 	// commit 2 (11-10 23:30 JST): x が済へ
 	git(dir, ['mv', Doing + 'i261105-01-x.md', Done + 'i261105-01-x.md']);
-	commit('x done', '2026-11-10T23:30:00+09:00');
+	commit('x closed', '2026-11-10T23:30:00+09:00');
 	// commit 3 (UTC の 11-12 20:00 = JST の 11-13 05:00): y が済へ
 	git(dir, ['mv', Doing + 'i261105-02-y.md', Done + 'i261105-02-y.md']);
-	commit('y done', '2026-11-12T20:00:00+00:00');
+	commit('y closed', '2026-11-12T20:00:00+00:00');
 	// commit 4 (11-14 10:00 JST): 済のまま新しく入る 1 件 (一括ではない)
 	put(Done + 'i261114-01-z.md', issueText({ id: 'i261114-01', created: '2026-11-14' }));
 	commit('z', '2026-11-14T10:00:00+09:00');
@@ -275,37 +303,37 @@ console.log('--- backfill-done');
 	fs.mkdirSync(path.join(dir, Archived), { recursive: true });
 	git(dir, ['mv', Todo + 'i261105-03-w.md', Archived + 'i261105-03-w.md']);
 	commit('w archived', '2026-11-15T12:00:00+09:00');
-	// すでに done がある済は、上書きしない
-	put(Done + 'i261117-01-has.md', issueText({ id: 'i261117-01', created: '2026-11-17', done: '2026-11-17 09:00' }));
+	// すでに closed がある済は、上書きしない
+	put(Done + 'i261117-01-has.md', issueText({ id: 'i261117-01', created: '2026-11-17', closed: '2026-11-17 09:00' }));
 	commit('has', '2026-11-17T09:00:00+09:00');
 	// 追跡されていない済 (履歴に無い)
 	put(Done + 'i261116-01-untracked.md', issueText({ id: 'i261116-01', created: '2026-11-16' }));
 
 	const before = git(dir, ['status', '--porcelain']);
-	const dry = run(['backfill-done', '--dry-run', '--json'], dir);
-	let p: { mode?: string; plan?: { id: string; done: string }[]; skipped?: { id: string; reason: string }[] } = {};
+	const dry = run(['backfill-closed', '--dry-run', '--json'], dir);
+	let p: { mode?: string; plan?: { id: string; closed: string }[]; skipped?: { id: string; reason: string }[] } = {};
 	try { p = JSON.parse(dry.out); } catch { /* 下で失敗にする */ }
-	const plan = (p.plan ?? []).map((x) => `${x.id}=${x.done}`).sort().join(',');
+	const plan = (p.plan ?? []).map((x) => `${x.id}=${x.closed}`).sort().join(',');
 	check('--dry-run: 一括 (10 件) の commit の分は入らず、済になった commit の日時 (JST) が並ぶ',
 		dry.code === 0 && plan === 'i261105-01=2026-11-10 23:30,i261105-02=2026-11-13 05:00,i261105-03=2026-11-15 12:00,i261114-01=2026-11-14 10:00', dry.out + dry.err);
 	check('--dry-run: 一括の 10 件と、履歴に無い 1 件は、飛ばした理由つきで出る', (p.skipped ?? []).filter((s) => s.id.startsWith('i261101-')).length === 10 && (p.skipped ?? []).some((s) => s.id === 'i261116-01'), dry.out);
 	check('--dry-run は、何も書かない (git status が変わらない)', git(dir, ['status', '--porcelain']) === before);
-	check('既定 (--dry-run も --apply も無い) は --dry-run と同じで、書かない', run(['backfill-done'], dir).code === 0 && git(dir, ['status', '--porcelain']) === before);
+	check('既定 (--dry-run も --apply も無い) は --dry-run と同じで、書かない', run(['backfill-closed'], dir).code === 0 && git(dir, ['status', '--porcelain']) === before);
 
-	const ap = run(['backfill-done', '--apply'], dir);
+	const ap = run(['backfill-closed', '--apply'], dir);
 	check('--apply は、終了コード 0', ap.code === 0, ap.out + ap.err);
-	check('--apply: 済になった commit の日時を done に書く (x)', read(dir, Done + 'i261105-01-x.md') === issueText({ id: 'i261105-01', created: '2026-11-05', done: '2026-11-10 23:30' }), read(dir, Done + 'i261105-01-x.md'));
-	check('--apply: UTC の commit は JST に直して書く (y)', read(dir, Done + 'i261105-02-y.md').includes('done: 2026-11-13 05:00\n'));
-	check('--apply: archived/ にも書く (w)', read(dir, Archived + 'i261105-03-w.md').includes('done: 2026-11-15 12:00\n'));
-	check('--apply: 一括の分には書かない', !read(dir, Done + 'i261101-01-bulk.md').includes('done:'));
-	check('--apply: すでにある done は変えない', read(dir, Done + 'i261117-01-has.md') === issueText({ id: 'i261117-01', created: '2026-11-17', done: '2026-11-17 09:00' }));
+	check('--apply: 済になった commit の日時を closed に書く (x)', read(dir, Done + 'i261105-01-x.md') === issueText({ id: 'i261105-01', created: '2026-11-05', closed: '2026-11-10 23:30' }), read(dir, Done + 'i261105-01-x.md'));
+	check('--apply: UTC の commit は JST に直して書く (y)', read(dir, Done + 'i261105-02-y.md').includes('closed: 2026-11-13 05:00\n'));
+	check('--apply: archived/ にも書く (w)', read(dir, Archived + 'i261105-03-w.md').includes('closed: 2026-11-15 12:00\n'));
+	check('--apply: 一括の分には書かない', !read(dir, Done + 'i261101-01-bulk.md').includes('closed:'));
+	check('--apply: すでにある closed は変えない', read(dir, Done + 'i261117-01-has.md') === issueText({ id: 'i261117-01', created: '2026-11-17', closed: '2026-11-17 09:00' }));
 	check('--apply: started は書かない', !read(dir, Done + 'i261105-01-x.md').includes('started:'));
 	check('--apply のあとの issue check は、エラーを出さない', run(['check'], dir).code === 0, run(['check'], dir).out);
-	const again = run(['backfill-done', '--apply', '--json'], dir);
+	const again = run(['backfill-closed', '--apply', '--json'], dir);
 	let q: { plan?: unknown[] } = {};
 	try { q = JSON.parse(again.out); } catch { /* 下で失敗にする */ }
 	check('--apply をもう一度流しても、書くものが無い (冪等)', again.code === 0 && q.plan?.length === 0, again.out + again.err);
-	check('--dry-run と --apply を一緒に渡せば終了コード 5', run(['backfill-done', '--dry-run', '--apply'], dir).code === 5);
+	check('--dry-run と --apply を一緒に渡せば終了コード 5', run(['backfill-closed', '--dry-run', '--apply'], dir).code === 5);
 }
 {
 	// --skip-commit: 指定した commit で済になった分は、書かない
@@ -316,19 +344,19 @@ console.log('--- backfill-done');
 	git(dir, ['add', '-A']);
 	git(dir, ['commit', '-q', '-m', 'x'], { GIT_AUTHOR_DATE: '2026-11-10T10:00:00+09:00', GIT_COMMITTER_DATE: '2026-11-10T10:00:00+09:00' });
 	const hash = git(dir, ['rev-parse', 'HEAD']);
-	const r = run(['backfill-done', '--apply', '--skip-commit', hash.slice(0, 7)], dir);
-	check('--skip-commit に渡した commit の分は書かない', r.code === 0 && !read(dir, Done + 'i261105-01-x.md').includes('done:'), r.out + r.err);
-	const r2 = run(['backfill-done', '--apply'], dir);
-	check('--skip-commit が無ければ、その commit の日時を書く', r2.code === 0 && read(dir, Done + 'i261105-01-x.md').includes('done: 2026-11-10 10:00\n'), r2.out + r2.err);
+	const r = run(['backfill-closed', '--apply', '--skip-commit', hash.slice(0, 7)], dir);
+	check('--skip-commit に渡した commit の分は書かない', r.code === 0 && !read(dir, Done + 'i261105-01-x.md').includes('closed:'), r.out + r.err);
+	const r2 = run(['backfill-closed', '--apply'], dir);
+	check('--skip-commit が無ければ、その commit の日時を書く', r2.code === 0 && read(dir, Done + 'i261105-01-x.md').includes('closed: 2026-11-10 10:00\n'), r2.out + r2.err);
 }
 
 // ---- レビュー指摘 (tools-review) ----
 
 console.log('--- レビュー指摘');
 {
-	// 指摘 2: --state と一緒に渡した鍵の値が誤りなら、状態も日時も動かさない (done ・ started の形も、先に見る)
+	// 指摘 2: --state と一緒に渡した鍵の値が誤りなら、状態も日時も動かさない (closed ・ started の形も、先に見る)
 	const text = issueText();
-	for (const bad of [['--released', '2026-13-01 10:00'], ['--done', '2026-11-18'], ['--started', '2026/11/18 10:00']]) {
+	for (const bad of [['--released', '2026-13-01 10:00'], ['--closed', '2026-02-30'], ['--started', '2026/11/18 10:00']]) {
 		const dir = std('review-2', { [Todo + A]: text });
 		const r = run(['set', 'i261103-01', '--state', '済', ...bad], dir);
 		check(`--state 済 と ${bad[0]} の誤った値を一緒に渡せば、終了コード 5 で、何も動かさず書かない`, r.code === 5 && read(dir, Todo + A) === text && !exists(dir, Done + A), r.out + r.err);
@@ -344,15 +372,15 @@ console.log('--- レビュー指摘');
 	check('書き込めないファイルでも、状態は動かし、終了コード 0 で警告を出す', r.code === 0 && exists(dir, Done + A) && !exists(dir, Todo + A), r.out + r.err);
 }
 {
-	// 指摘 6: 済ではない課題 (todo/ ・ doing/) に残った done は、済にした数に入れず、残りから外さない
-	const dir = std('review-6', { [Todo + A]: issueText({ created: '2026-11-03', done: '2026-11-04 10:00' }) });
+	// 指摘 6: 済ではない課題 (todo/ ・ doing/) に残った closed は、済にした数に入れず、残りから外さない
+	const dir = std('review-6', { [Todo + A]: issueText({ created: '2026-11-03', closed: '2026-11-04 10:00' }) });
 	const r = run(['stats', '--since', '2026-11-03', '--until', '2026-11-05', '--json'], dir);
-	let p: { days?: { date: string; done: number; remaining: number }[] } = {};
+	let p: { days?: { date: string; closed: number; remaining: number }[] } = {};
 	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
-	check('未の課題が done を持っていても、済にした数に入れず、残りに数える', p.days?.every((d) => d.done === 0 && d.remaining === 1) === true, r.out + r.err);
+	check('未の課題が closed を持っていても、済にした数に入れず、残りに数える', p.days?.every((d) => d.closed === 0 && d.remaining === 1) === true, r.out + r.err);
 }
 {
-	// 指摘 1 ・ 4 ・ 9: backfill-done の日時の選び方
+	// 指摘 1 ・ 4 ・ 9: backfill-closed の日時の選び方
 	const dir = std('review-backfill');
 	const put = (rel: string, text: string): void => { fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); fs.writeFileSync(path.join(dir, rel), text); };
 	const commit = (msg: string, author: string, committer: string = author): void => {
@@ -365,13 +393,13 @@ console.log('--- レビュー指摘');
 	commit('q', '2026-11-09T09:00:00+09:00');
 	fs.mkdirSync(path.join(dir, Done), { recursive: true });
 	git(dir, ['mv', Doing + 'i261105-01-q.md', Done + 'i261105-01-q.md']);
-	commit('q done', '2026-11-10T09:00:00+09:00');
+	commit('q closed', '2026-11-10T09:00:00+09:00');
 	fs.mkdirSync(path.join(dir, Doing), { recursive: true });
 	git(dir, ['mv', Done + 'i261105-01-q.md', Doing + 'i261105-01-q.md']);
 	commit('q back', '2026-11-12T09:00:00+09:00');
 	fs.mkdirSync(path.join(dir, Done), { recursive: true });
 	git(dir, ['mv', Doing + 'i261105-01-q.md', Done + 'i261105-01-q.md']);
-	commit('q done again', '2026-11-18T12:00:00+09:00');
+	commit('q closed again', '2026-11-18T12:00:00+09:00');
 	// r: 済に入って、あとで archived/ へ (入った日は済の日のまま)
 	put(Done + 'i261105-02-r.md', issueText({ id: 'i261105-02', created: '2026-11-05' }));
 	commit('r', '2026-11-13T09:00:00+09:00');
@@ -389,11 +417,11 @@ console.log('--- レビュー指摘');
 		fs.rmSync(path.join(dir, Doing + `i261106-${n}-m.md`));
 		put(Done + `i261106-${n}-m.md`, issueText({ id: `i261106-${n}`, created: '2026-11-06' }, '\n' + 'zzzzzzzzzz\n'.repeat(30)));
 	}
-	commit('m done', '2026-11-21T09:00:00+09:00');
-	const r = run(['backfill-done', '--dry-run', '--json'], dir);
-	let p: { plan?: { id: string; done: string }[]; skipped?: { id: string }[] } = {};
+	commit('m closed', '2026-11-21T09:00:00+09:00');
+	const r = run(['backfill-closed', '--dry-run', '--json'], dir);
+	let p: { plan?: { id: string; closed: string }[]; skipped?: { id: string }[] } = {};
 	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
-	const got = (id: string): string => p.plan?.find((x) => x.id === id)?.done ?? 'なし';
+	const got = (id: string): string => p.plan?.find((x) => x.id === id)?.closed ?? 'なし';
 	check('済 → 着手 → 済 なら、最後に済に入った commit の日時 (11-18)', got('i261105-01') === '2026-11-18 12:00', r.out);
 	check('done/ → archived/ は、入り直しに数えない (済に入った日のまま)', got('i261105-02') === '2026-11-13 09:00', r.out);
 	check('author の日時を使う (committer の日時は rebase ・ amend で変わる)', got('i261105-03') === '2026-11-19 10:00', r.out);
@@ -401,6 +429,6 @@ console.log('--- レビュー指摘');
 }
 
 console.log('');
-console.log(`=== issue (done ・ started): ${pass} 件成功 ・ ${fail} 件失敗 ===`);
+console.log(`=== issue (closed ・ started): ${pass} 件成功 ・ ${fail} 件失敗 ===`);
 fs.rmSync(work, { recursive: true, force: true });
 process.exit(fail === 0 ? 0 : 1);

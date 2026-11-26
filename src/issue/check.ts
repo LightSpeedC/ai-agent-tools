@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { KeyOrder, States, isRealDateTime, parsePairs, splitIssue } from './meta.ts';
+import { KeyOrder, States, isRealClosed, isRealDateTime, parsePairs, splitIssue } from './meta.ts';
 import { OldIdFileName, UuidFileName, mainFolderName } from './numbers.ts';
 
 export type Level = 'error' | 'warning';
@@ -288,14 +288,14 @@ function checkIssueFile(entry: Entry, groups: Set<string> | null, add: Add): Fil
 	const released = get('released');
 	if (released !== undefined && !isRealDateTime(released)) add('error', 'value', rel, `released が実在する yyyy-mm-dd hh:mm でない: ${released}`);
 	// 着手にした日時 ・ 済にした日時 (課題 i261120-01。決定 284-A)。形の誤りはエラー。
-	// done/ ・ archived/ 以外にある課題が done を持つ・created より前の日付は、警告
+	// done/ ・ archived/ 以外にある課題が closed を持つ・created より前の日付は、警告
 	const started = get('started');
-	const doneAt = get('done');
+	const closedAt = get('closed');
 	if (started !== undefined && !isRealDateTime(started)) add('error', 'value', rel, `started が実在する yyyy-mm-dd hh:mm でない: ${started}`);
-	if (doneAt !== undefined && !isRealDateTime(doneAt)) add('error', 'value', rel, `done が実在する yyyy-mm-dd hh:mm でない: ${doneAt}`);
-	if (doneAt !== undefined && !isDone) add('warning', 'done-folder', rel, `done があるのに ${entry.folder}/ にある (済から戻したなら、done は消える。issue set --done "" で消せる)`);
-	for (const [key, value] of [['started', started], ['done', doneAt]] as const) {
-		if (value !== undefined && isRealDateTime(value) && created !== undefined && isRealDate(created) && value.slice(0, 10) < created) {
+	if (closedAt !== undefined && !isRealClosed(closedAt)) add('error', 'value', rel, `closed が実在する yyyy-mm-dd hh:mm (または yyyy-mm-dd) でない: ${closedAt}`);
+	if (closedAt !== undefined && !isDone) add('warning', 'closed-folder', rel, `closed があるのに ${entry.folder}/ にある (済から戻したなら、closed は消える。issue set --closed "" で消せる)`);
+	for (const [key, value] of [['started', started], ['closed', closedAt]] as const) {
+		if (value !== undefined && (key === 'closed' ? isRealClosed(value) : isRealDateTime(value)) && created !== undefined && isRealDate(created) && value.slice(0, 10) < created) {
 			add('warning', 'before-created', rel, `${key} (${value}) が created (${created}) より前`);
 		}
 	}

@@ -1,5 +1,5 @@
 /*
-	issue backfill-done: 既にある済の課題 (done/ ・ archived/) の done を、git の履歴から埋める。
+	issue backfill-closed: 既にある済の課題 (done/ ・ archived/) の closed を、git の履歴から埋める。
 	課題 i261120-01 の決定 281-A。
 	- 済になった日時は、課題のファイルが done/ ・ archived/ に最初に現れた commit の日時 (JST)。set --state 済 を流した時刻の近似
 	- 一度に BulkMin 件以上が、無かったところから done/ ・ archived/ に現れた commit は、移行 (issues.html からの migrate 等) とみなして飛ばす。
@@ -17,7 +17,7 @@ import { Failure, loadAll, setFields, writeText } from './ops.ts';
 /** 一度にこの件数以上が、無かったところから済のフォルダに現れた commit は、移行とみなす */
 export const BulkMin = 10;
 
-export type BackfillItem = { id: string; done: string; commit: string; file: string };
+export type BackfillItem = { id: string; closed: string; commit: string; file: string };
 export type BackfillSkip = { id: string; reason: string };
 export type BackfillPlan = { plan: BackfillItem[]; skipped: BackfillSkip[] };
 
@@ -89,7 +89,7 @@ function readHistory(root: string): { last: Map<string, Appeared>; addedBy: Map<
 	return { last, addedBy };
 }
 
-/** done の無い済の課題ごとに、書く値を決める。書かない課題は、理由つきで skipped に入れる */
+/** closed の無い済の課題ごとに、書く値を決める。書かない課題は、理由つきで skipped に入れる */
 export function planBackfill(root: string, skipCommits: string[]): BackfillPlan {
 	const { members, unreadable } = loadAll(root, ['done', 'archived']);
 	if (unreadable.length > 0) throw new Failure(`メタ情報を読めない課題がある: ${unreadable.join(' ・ ')} (issue check で確かめる)`);
@@ -98,21 +98,21 @@ export function planBackfill(root: string, skipCommits: string[]): BackfillPlan 
 	const skipped: BackfillSkip[] = [];
 	for (const m of members) {
 		const parts = splitIssue(m.text);
-		if (!parts.broken && parts.parsed.pairs.some((p) => p.key === 'done')) continue;
+		if (!parts.broken && parts.parsed.pairs.some((p) => p.key === 'closed')) continue;
 		const at = last.get(m.name);
 		if (at === undefined) { skipped.push({ id: m.id, reason: '履歴に無い (未追跡か、commit 前か、名前を変えた)' }); continue; }
 		const bulk = at.isNew ? (addedBy.get(at.commit) ?? 0) : 0;
 		if (bulk >= BulkMin) { skipped.push({ id: m.id, reason: `一度に ${bulk} 件が現れた commit ${at.commit.slice(0, 7)} (移行とみなす。済にした日ではない)` }); continue; }
 		if (skipCommits.some((s) => s !== '' && at.commit.startsWith(s))) { skipped.push({ id: m.id, reason: `--skip-commit で指定された commit ${at.commit.slice(0, 7)}` }); continue; }
-		const done = jstOf(at.date);
+		const closed = jstOf(at.date);
 		try {
-			setFields(root, m.id, { done }, true);
+			setFields(root, m.id, { closed }, true);
 		} catch (e) {
 			if (!(e instanceof Failure)) throw e;
 			skipped.push({ id: m.id, reason: `書き換えられない: ${e.message}` });
 			continue;
 		}
-		plan.push({ id: m.id, done, commit: at.commit.slice(0, 7), file: `${ItemsRel}/${m.folder}/${m.name}` });
+		plan.push({ id: m.id, closed, commit: at.commit.slice(0, 7), file: `${ItemsRel}/${m.folder}/${m.name}` });
 	}
 	plan.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 	return { plan, skipped };
@@ -121,7 +121,7 @@ export function planBackfill(root: string, skipCommits: string[]): BackfillPlan 
 /** plan を書く。書いたあとに読み戻して確かめ、だめなら書いた分をすべて元に戻して Failure */
 export function applyBackfill(root: string, plan: BackfillItem[]): void {
 	const originals = new Map<string, string>();
-	// 戻せなかった課題は、メッセージに並べる (一部だけ done が残ったことを、知らせるため)
+	// 戻せなかった課題は、メッセージに並べる (一部だけ closed が残ったことを、知らせるため)
 	const restore = (): string[] => {
 		const failed: string[] = [];
 		for (const [file, text] of originals) {
@@ -133,17 +133,17 @@ export function applyBackfill(root: string, plan: BackfillItem[]): void {
 		for (const item of plan) {
 			const abs = path.join(root, ...item.file.split('/'));
 			originals.set(item.file, fs.readFileSync(abs, 'utf8'));
-			setFields(root, item.id, { done: item.done });
+			setFields(root, item.id, { closed: item.closed });
 		}
 		for (const item of plan) {
 			const parts = splitIssue(fs.readFileSync(path.join(root, ...item.file.split('/')), 'utf8'));
 			const before = splitIssue(originals.get(item.file) ?? '');
-			const ok = !parts.broken && parts.parsed.pairs.find((p) => p.key === 'done')?.value === item.done && parts.parsed.problems.length <= before.parsed.problems.length;
-			if (!ok) throw new Failure(`${item.id} の done を読み戻せない (書いた分を元に戻した)`);
+			const ok = !parts.broken && parts.parsed.pairs.find((p) => p.key === 'closed')?.value === item.closed && parts.parsed.problems.length <= before.parsed.problems.length;
+			if (!ok) throw new Failure(`${item.id} の closed を読み戻せない (書いた分を元に戻した)`);
 		}
 	} catch (e) {
 		const failed = restore();
-		if (failed.length > 0) throw new Failure(`${(e as Error).message} / 元に戻せなかった課題 (done が残っている。issue set <id> --done "" で消す): ${failed.join(' ・ ')}`);
+		if (failed.length > 0) throw new Failure(`${(e as Error).message} / 元に戻せなかった課題 (closed が残っている。issue set <id> --closed "" で消す): ${failed.join(' ・ ')}`);
 		throw e;
 	}
 }

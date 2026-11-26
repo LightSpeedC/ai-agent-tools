@@ -11,13 +11,13 @@
  * メタ情報のキーの順（仕様のキー項目の表の順）。CLI はこの順で書く。
  * 状態 (state) は持たない。状態は置いてあるフォルダで決まる (計画 p261103-01 の 126-A)
  */
-export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'started', 'done', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'] as const;
+export const KeyOrder = ['schema', 'id', 'title', 'group', 'created', 'started', 'closed', 'from', 'confirmed', 'refs', 'version', 'released', 'kind', 'note'] as const;
 
 /**
  * 着手にした日時 ・ 済にした日時 (課題 i261120-01。決定 278-A ・ 279-A)。yyyy-mm-dd hh:mm (JST)。
- * issue set --state が書く。issue set --started ・ --done でも書ける (決定 285-A)
+ * issue set --state が書く。issue set --started ・ --closed でも書ける (決定 285-A)
  */
-export const StampKeys = ['started', 'done'] as const;
+export const StampKeys = ['started', 'closed'] as const;
 
 /**
  * issue set で書ける 4 つの鍵 (課題 i261117-03。決定 270-A: refs の後ろに、この順で置く)。
@@ -35,6 +35,14 @@ export function isRealDateTime(text: string): boolean {
 	if (Number(m[4]) > 23 || Number(m[5]) > 59) return false;
 	const date = new Date(Date.UTC(y, mo - 1, d));
 	return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+}
+
+/**
+ * closed の形 (決定 287-D): yyyy-mm-dd hh:mm。今までの値の yyyy-mm-dd (日付だけ) も、有効のまま受ける。
+ * 日付は、どちらの形でも頭 10 文字で比べる
+ */
+export function isRealClosed(text: string): boolean {
+	return isRealDateTime(/^\d{4}-\d{2}-\d{2}$/.test(text) ? text + ' 00:00' : text);
 }
 
 /**

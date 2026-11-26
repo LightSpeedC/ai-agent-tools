@@ -92,7 +92,7 @@ $Suites = @(
 	@{ Name = 'issue (操作)'; Script = 'run-issue-ops-tests.ts' },
 	# 課題管理ツール issue のフェーズ 2 の後半: set (git mv と「済」の拒否) ・ todo ・ search ・ archive ・ unarchive
 	@{ Name = 'issue (更新の操作)'; Script = 'run-issue-edit-tests.ts' },
-	# 課題管理ツール issue の済にした日 (done) ・ 着手にした日 (started): set の書き込み ・ check ・ archive --done-before ・ stats ・ backfill-done (i261120-01)
+	# 課題管理ツール issue の済にした日 (closed) ・ 着手にした日 (started): set の書き込み ・ check ・ archive --closed-before ・ stats ・ backfill-closed (i261120-01。決定 287-D)
 	@{ Name = 'issue (done)'; Script = 'run-issue-done-tests.ts' },
 	# ps1 の試験 (html2md ・ text ・ convert-encoding) を、素の Windows PowerShell 5.1 (bun ・ node の入口) と psh の両方で流して、全件が通ること (i261119-01。夜 1 時のタスクが素で流す)
 	@{ Name = 'ps1 の試験 (素の PowerShell ・ psh)'; Script = 'run-plain-powershell-tests.ts'; TimeoutSec = 900 },

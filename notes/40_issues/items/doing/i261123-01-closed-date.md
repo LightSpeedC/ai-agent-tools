@@ -22,6 +22,6 @@ file-manager からの依頼。
 
 ## 決定の記録 (2026-11-26)
 
-- 287-A: 「済にした日」は `done` に一本化する (i261120-01)。`closed` のキーは持たない。依頼の趣旨 (done へ移したときに日付を自動で書く・戻したら消す・list / search で参照する) は、`done` (JST の `yyyy-mm-dd hh:mm`) で満たした。
-- 288-A: 取り込みは枝の側で衝突を解いた。develop の `closed` の実装 (KeyOrder・setState・list / search の表示・check の検査) は、`done` の実装に寄せた。
-- 依頼元 (file-manager) には、キー名が `closed` でなく `done` になり、日付だけでなく時刻 (hh:mm) も入ることを伝え、確認を取る。確認が取れるまで済にしない。
+- 287-D: 「済にした日」のキーは `closed` に一本化し、`done` は作らない (i261120-01 の枝で足した `done` は `closed` に改名)。値は日時 `yyyy-mm-dd hh:mm` (JST) で、日付だけ (`yyyy-mm-dd`) の既存値も有効のまま受ける。依頼の趣旨 (済へ移したときに自動で書く・戻したら消す・list / search で参照する) は、`closed` で満たした。(先に出た 287-A の「done に一本化」は、利用者の見直しで 287-D に置き換わった)
+- 288-A: 取り込みは枝の側で衝突を解く。develop の `closed` の実装 (KeyOrder・setState・list / search の表示・check の検査) と、枝の日時の実装 (started ・ stats ・ backfill ・ archive) を `closed` の 1 つにまとめた。
+- 依頼元 (file-manager) には、値が日付だけでなく時刻 (hh:mm) も入ることを伝え、確認を取る。確認が取れるまで済にしない。

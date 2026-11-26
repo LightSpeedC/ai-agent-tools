@@ -117,27 +117,27 @@ console.log('--- set');
 	check('set --state 未: doing/ から todo/ へ戻せる', back.code === 0 && exists(dir, Todo + A) && !exists(dir, Doing + A), back.out + back.err);
 }
 {
-	const dir = std('set-done', { [Doing + A]: issueText() });
+	const dir = std('set-closed', { [Doing + A]: issueText() });
 	const r = run(['set', 'i261103-01', '--state', '済'], dir);
 	check('set --state 済: やることが無く、報告元も無ければ、done/ へ動かせる', r.code === 0 && exists(dir, Done + A), r.out + r.err);
 }
 {
-	const dir = std('set-done-todo', { [Doing + A]: issueText({}, '\n## やること\n- [済] a\n- [未] b\n') });
+	const dir = std('set-closed-todo', { [Doing + A]: issueText({}, '\n## やること\n- [済] a\n- [未] b\n') });
 	const r = run(['set', 'i261103-01', '--state', '済'], dir);
 	check('やること (未) が残っていれば、済にできない (終了コード 1。ファイルは動かない)', r.code === 1 && exists(dir, Doing + A) && !exists(dir, Done + A), r.out + r.err);
 	check('拒否の理由に「やること」が出る', (r.out + r.err).includes('やること'), r.out + r.err);
 }
 {
-	const dir = std('set-done-doing-todo', { [Doing + A]: issueText({}, '\n## やること\n- [着手] a\n') });
+	const dir = std('set-closed-doing-todo', { [Doing + A]: issueText({}, '\n## やること\n- [着手] a\n') });
 	check('やること (着手) が残っていても、済にできない', run(['set', 'i261103-01', '--state', '済'], dir).code === 1);
 }
 {
-	const dir = std('set-done-confirmed', { [Doing + A]: issueText({ from: 'project-a #1', confirmed: 'false' }) });
+	const dir = std('set-closed-confirmed', { [Doing + A]: issueText({ from: 'project-a #1', confirmed: 'false' }) });
 	const r = run(['set', 'i261103-01', '--state', '済'], dir);
 	check('報告元の確認 (confirmed) が true でなければ、済にできない (理由に confirmed が出る)', r.code === 1 && exists(dir, Doing + A) && (r.out + r.err).includes('confirmed'), r.out + r.err);
 }
 {
-	const dir = std('set-done-confirmed-ok', { [Doing + A]: issueText({ from: 'project-a #1', confirmed: 'true' }, '\n## やること\n- [済] a\n') });
+	const dir = std('set-closed-confirmed-ok', { [Doing + A]: issueText({ from: 'project-a #1', confirmed: 'true' }, '\n## やること\n- [済] a\n') });
 	check('報告元の確認が true で、やることが全部済なら、済にできる', run(['set', 'i261103-01', '--state', '済'], dir).code === 0 && exists(dir, Done + A));
 }
 {
@@ -460,24 +460,24 @@ const fromTrue = issueText({ from: 'project-a #1', confirmed: 'true' });
 	check('--json は { id, confirmed, from, changed, file } を出す', p.id === 'i261103-01' && p.confirmed === true && p.from === 'project-a #1' && p.changed === true && p.file === Todo + A, r.out);
 }
 {
-	const dir = std('set-done', { [Doing + A]: issueText() });
+	const dir = std('set-closed', { [Doing + A]: issueText() });
 	const rDone = run(['set', 'i261103-01', '--state', '済'], dir);
 	const doneText = read(dir, Done + A);
-	check('set --state 済: frontmatter に done: 今日の日付 (yyyy-mm-dd hh:mm) が自動付与される', rDone.code === 0 && new RegExp(`^done: ${Today} \\d\\d:\\d\\d$`, 'm').test(doneText) && !doneText.includes('closed:'), doneText);
+	check('set --state 済: frontmatter に closed: 今日の日付 (yyyy-mm-dd hh:mm) が自動付与される', rDone.code === 0 && new RegExp(`^closed: ${Today} \\d\\d:\\d\\d$`, 'm').test(doneText) && !doneText.includes('done:'), doneText);
 	check('done 移動後の issue check が警告・エラーなしで通る', run(['check'], dir).code === 0, run(['check'], dir).out);
 	const rList = run(['list', '--state', '済', '--json'], dir);
-	let listJson: { id?: string; done?: string }[] = [];
+	let listJson: { id?: string; closed?: string }[] = [];
 	try { listJson = JSON.parse(rList.out); } catch {}
-	check('list --json で done が参照できる', listJson.length === 1 && (listJson[0].done ?? '').startsWith(Today), rList.out);
+	check('list --json で closed が参照できる', listJson.length === 1 && (listJson[0].closed ?? '').startsWith(Today), rList.out);
 	const rListText = run(['list', '--state', '済'], dir);
-	check('list のテキスト出力にも done が表示される', rListText.out.includes(Today), rListText.out);
+	check('list のテキスト出力にも closed が表示される', rListText.out.includes(Today), rListText.out);
 	const rSearch = run(['search', '本文', '--state', '済', '--json'], dir);
-	let searchJson: { id?: string; done?: string }[] = [];
+	let searchJson: { id?: string; closed?: string }[] = [];
 	try { searchJson = JSON.parse(rSearch.out); } catch {}
-	check('search --json で done が参照できる', searchJson.length === 1 && (searchJson[0].done ?? '').startsWith(Today), rSearch.out);
+	check('search --json で closed が参照できる', searchJson.length === 1 && (searchJson[0].closed ?? '').startsWith(Today), rSearch.out);
 	const rBack = run(['set', 'i261103-01', '--state', '着手'], dir);
 	const backText = read(dir, Doing + A);
-	check('set --state 着手: frontmatter から done: が削除される', rBack.code === 0 && !backText.includes('done:'), backText);
+	check('set --state 着手: frontmatter から closed: が削除される', rBack.code === 0 && !backText.includes('closed:'), backText);
 }
 
 console.log('');

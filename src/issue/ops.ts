@@ -10,7 +10,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Folders, ItemsRel, NamePattern, SlugMax, isRefForm, SlugPattern, TodoLine, listMdNames, type Folder } from './check.ts';
-import { FieldKeys, KeyOrder, StampKeys, fieldLines, isRealDateTime, splitIssue } from './meta.ts';
+import { FieldKeys, KeyOrder, StampKeys, fieldLines, isRealClosed, isRealDateTime, splitIssue } from './meta.ts';
 import { writeAtomic } from '../lib/write-atomic.ts';
 import { OldIdFileName, UuidFileName, mainFolderName, copyUuid, maxReserved, numbersBaseOf, prune, readProjectFile, reserve, uuidFileText } from './numbers.ts';
 
@@ -274,7 +274,7 @@ export function showIssue(root: string, id: string): IssueView {
 	return { id, state: StateOf[loaded.folder], folder: loaded.folder, file: loaded.rel, meta, body: parts.body, todos, text: loaded.text };
 }
 
-export type ListItem = { id: string; state: string; folder: Folder; group: string; title: string; created: string; done?: string; file: string };
+export type ListItem = { id: string; state: string; folder: Folder; group: string; title: string; created: string; closed?: string; file: string };
 
 /**
  * 指定のフォルダの課題を、id の順に並べて返す。メタ情報が読めないものは飛ばし、warn で知らせる。
@@ -301,8 +301,8 @@ export function listIssues(root: string, folders: Folder[], group: string | null
 			const get = (k: string): string => parts.parsed.pairs.find((p) => p.key === k)?.value ?? '';
 			if (group !== null && get('group') !== group) continue;
 			if (missing.length > 0 && !missing.some((k) => get(k) === '')) continue;
-			const done = get('done');
-			items.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), ...(done !== '' ? { done } : {}), file: loaded.rel });
+			const closed = get('closed');
+			items.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), ...(closed !== '' ? { closed } : {}), file: loaded.rel });
 		}
 	}
 	return items.sort((a, b) => compareId(a.id, b.id));
@@ -347,7 +347,7 @@ export const SetTargets: Record<string, Folder> = { 未: 'todo', 着手: 'doing'
 
 export type SetResult = {
 	id: string; state: string; folder: Folder; from: { state: string; folder: Folder }; file: string; moved: boolean;
-	/** 動かしたときに書いた・消した日時の鍵 (started ・ done) */
+	/** 動かしたときに書いた・消した日時の鍵 (started ・ closed) */
 	stamps: string[];
 	/** 日時を書けなかった理由 (状態は動かした)。読み書きできないファイル (BOM ・ CR など) のとき */
 	warning?: string;
@@ -355,22 +355,22 @@ export type SetResult = {
 
 /**
  * 動かしたときに書く・消す日時 (課題 i261120-01。決定 278-A ・ 279-A ・ 282-A)。
- * 着手へ: started が無ければ書く (最初の着手日。再着手で上書きしない)。済から戻すなら done を消す。
- * 済へ: done を書く。未へ戻すとき、済からなら done を消す。started は消さない
+ * 着手へ: started が無ければ書く (最初の着手日。再着手で上書きしない)。済から戻すなら closed を消す。
+ * 済へ: closed を書く。未へ戻すとき、済からなら closed を消す。started は消さない
  */
 function stampsFor(text: string, from: Folder, target: Folder): FieldValues {
 	const parts = splitIssue(text);
 	const get = (k: string): string | undefined => parts.broken ? undefined : parts.parsed.pairs.find((p) => p.key === k)?.value;
 	const out: FieldValues = {};
-	if (target === 'done') out.done = nowJst();
+	if (target === 'done') out.closed = nowJst();
 	if (target === 'doing' && get('started') === undefined) out.started = nowJst();
-	if (target !== 'done' && (from === 'done') && get('done') !== undefined) out.done = '';
+	if (target !== 'done' && (from === 'done') && get('closed') !== undefined) out.closed = '';
 	return out;
 }
 
 /**
  * 課題の状態を変える (ファイルを隣のフォルダへ動かす)。済にするときは、条件を満たさなければ拒否する。
- * 動かしたあとに、started ・ done を書く (動かしてから書く: 失敗しても状態は動いたまま。git mv は名前の変更だけを
+ * 動かしたあとに、started ・ closed を書く (動かしてから書く: 失敗しても状態は動いたまま。git mv は名前の変更だけを
  * stage するので、日時の書き込みは stage 前の変更として残る)
  */
 export function setState(root: string, id: string, state: string): SetResult {
@@ -400,7 +400,7 @@ export function setState(root: string, id: string, state: string): SetResult {
 			result.stamps = setFields(root, id, plan).changed;
 		} catch (e) {
 			// 理由を問わず (BOM ・ CR ・ EACCES ・ EBUSY)、状態は動いたので、警告にする。
-			// もう一度 --state を流しても、動かないので書けない。書くなら --done / --started
+			// もう一度 --state を流しても、動かないので書けない。書くなら --closed / --started
 			const key = Object.keys(plan)[0];
 			result.warning = `${Object.keys(plan).join(' ・ ')} を書けなかった (状態は動かした): ${(e as Error).message} (直したあと、issue set ${id} --${key} "<yyyy-mm-dd hh:mm>" で書く)`;
 		}
@@ -483,14 +483,14 @@ export function archiveOne(root: string, id: string): GroupMoveResult {
 
 /**
  * その日より前の済の課題を、グループを問わず archived/ へ動かす (216-A)。
- * 済にした日 (done の日付) があればそれで、無ければ立てた日 (created) で選ぶ (課題 i261120-01 の決定 280-B。i261109-04-d3 を置き換える)。
+ * 済にした日 (closed の日付) があればそれで、無ければ立てた日 (created) で選ぶ (課題 i261120-01 の決定 280-B。i261109-04-d3 を置き換える)。
  * 済の条件を満たさない課題は飛ばす。dryRun なら動かさない
  */
-export function archiveDoneBefore(root: string, before: string, dryRun: boolean): { moved: string[]; skipped: { id: string; reason: string }[] } {
+export function archiveClosedBefore(root: string, before: string, dryRun: boolean): { moved: string[]; skipped: { id: string; reason: string }[] } {
 	const { members } = loadAll(root, ['done']);
 	const get = (text: string, k: string): string => new RegExp(`^${k}:[ \\t]*(.*)$`, 'm').exec(text.replace(/\r/g, ''))?.[1].trim() ?? '';
 	const targets = members.filter((m) => {
-		const d = get(m.text, 'done').slice(0, 10);
+		const d = get(m.text, 'closed').slice(0, 10);
 		const c = d !== '' ? d : get(m.text, 'created');
 		return c !== '' && c < before;
 	}).sort((a, b) => compareId(a.id, b.id));
@@ -620,7 +620,7 @@ export function setConfirmed(root: string, id: string, value: boolean): ConfirmR
 
 // ---- version ・ released ・ kind ・ note を書く (課題 i261117-03。決定 269-A 〜 272-B) ----
 
-/** 書ける鍵: version ・ released ・ kind ・ note と、started ・ done (課題 i261120-01) */
+/** 書ける鍵: version ・ released ・ kind ・ note と、started ・ closed (課題 i261120-01。決定 287-D) */
 const WritableKeys = [...FieldKeys, ...StampKeys] as const;
 export type FieldValues = Partial<Record<(typeof WritableKeys)[number], string>>;
 /** 値が yyyy-mm-dd hh:mm (実在する日時) の鍵 */
@@ -648,11 +648,13 @@ function blockEnd(lines: string[], at: number, limit: number): number {
  */
 export function setFields(root: string, id: string, values: FieldValues, dryRun = false): FieldsResult {
 	const entries = WritableKeys.filter((k) => values[k] !== undefined);
-	if (entries.length === 0) throw new UsageError('書く鍵が無い (--version ・ --released ・ --kind ・ --note ・ --started ・ --done)');
+	if (entries.length === 0) throw new UsageError('書く鍵が無い (--version ・ --released ・ --kind ・ --note ・ --started ・ --closed)');
 	for (const key of entries) {
 		const v = (values[key] ?? '').replace(/\r\n?/g, '\n').replace(/\s+$/, '');
 		if (key !== 'note' && v.includes('\n')) throw new UsageError(`--${key} に改行は書けない (複数行にできるのは --note だけ)`);
-		if (DateTimeKeys.includes(key) && v.trim() !== '' && !isRealDateTime(v.trim())) throw new UsageError(`--${key} が実在する yyyy-mm-dd hh:mm でない: ${v} (例: 2026-11-17 11:30)`);
+		if (key === 'closed') {
+			if (v.trim() !== '' && !isRealClosed(v.trim())) throw new UsageError(`--closed が実在する yyyy-mm-dd hh:mm (または yyyy-mm-dd) でない: ${v} (例: 2026-11-17 11:30)`);
+		} else if (DateTimeKeys.includes(key) && v.trim() !== '' && !isRealDateTime(v.trim())) throw new UsageError(`--${key} が実在する yyyy-mm-dd hh:mm でない: ${v} (例: 2026-11-17 11:30)`);
 	}
 	const located = locateIssue(root, id);
 	const rel = `${ItemsRel}/${located.folder}/${located.name}`;
@@ -754,8 +756,8 @@ export function searchIssues(root: string, term: string, folders: Folder[], grou
 				if (hit(line)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, SnippetMax).join('') });
 			});
 			if (matches.length === 0) continue;
-			const done = get('done');
-			hits.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), ...(done !== '' ? { done } : {}), file: loaded.rel, matches });
+			const closed = get('closed');
+			hits.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), ...(closed !== '' ? { closed } : {}), file: loaded.rel, matches });
 		}
 	}
 	return hits.sort((a, b) => compareId(a.id, b.id));

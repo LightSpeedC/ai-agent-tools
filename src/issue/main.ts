@@ -23,7 +23,7 @@
 		issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]
 		issue search <語> [--regex] [--state … | --all] [--group <g>] [--root <dir>] [--json]
 		issue confirm <id> [--undo] [--root <dir>] [--json]         報告元の確認 (confirmed) を直す (その行だけ。フォルダは動かさない)
-		issue archive --done-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]
+		issue archive --closed-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]
 		issue archive <group|番号> ・ issue unarchive <group> [--root <dir>] [--json]
 		issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]
 		                                                            HTML を作る (開かない。既定は _issues.html。渡す用は --standalone --out)
@@ -40,7 +40,7 @@ import { spawnSync } from 'node:child_process';
 import { Folders, checkProject, findProjectRoot, hasItems, type Finding, type Folder } from './check.ts';
 import { renderHtml, writeIfChanged } from './render.ts';
 import {
-	Failure, StateOf, UsageError, archiveDoneBefore, archiveGroup, archiveOne, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setFields, setState, showIssue, unarchiveGroup,
+	Failure, StateOf, UsageError, archiveClosedBefore, archiveGroup, archiveOne, editTodo, initProject, listIssues, listTodos, newIssue, searchIssues, setConfirmed, setFields, setState, showIssue, unarchiveGroup,
 	type FieldValues,
 } from './ops.ts';
 import { FieldKeys, StampKeys } from './meta.ts';
@@ -65,10 +65,10 @@ const Usage = [
 	'  issue show <id> [--root <dir>] [--json]               課題を 1 件読む',
 	'  issue list [--state 未,着手,済,archived | --all] [--group <g>] [--missing <鍵,…>] [--root <dir>] [--json]   (--missing は version ・ released ・ kind ・ note のどれかを持たない課題)',
 	'  issue search <語> [--regex] [--state 未,着手,済,archived | --all] [--group <g>] [--root <dir>] [--json]',
-	'  issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>] [--started <yyyy-mm-dd hh:mm>] [--done <yyyy-mm-dd hh:mm>] [--root <dir>] [--json]',
-	'                                                                 状態を変える (隣のフォルダへ動かす。着手にすると started を、済にすると done を JST で書く) ・ 鍵を書く (値が空なら鍵を消す。note の複数行は | の塊で書く)',
+	'  issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>] [--started <yyyy-mm-dd hh:mm>] [--closed <yyyy-mm-dd hh:mm>] [--root <dir>] [--json]',
+	'                                                                 状態を変える (隣のフォルダへ動かす。着手にすると started を、済にすると closed を JST で書く) ・ 鍵を書く (値が空なら鍵を消す。note の複数行は | の塊で書く)',
 	'  issue stats [--since <yyyy-mm-dd>] [--until <yyyy-mm-dd>] [--root <dir>] [--json]   日別に 立てた ・ 着手にした ・ 済にした ・ 残り の数を出す (既定は、いちばん古い日付から今日まで)',
-	'  issue backfill-done [--dry-run | --apply] [--skip-commit <hash,…>] [--root <dir>] [--json]   済 (done/ ・ archived/) で done の無い課題に、git の履歴 (done/ ・ archived/ に現れた commit の日時、JST) から done を書く (既定は --dry-run。一度に 10 件以上が現れた commit は、移行とみなして飛ばす。書いたあとに確かめ、だめなら戻す)',
+	'  issue backfill-closed [--dry-run | --apply] [--skip-commit <hash,…>] [--root <dir>] [--json]   済 (done/ ・ archived/) で closed の無い課題に、git の履歴 (done/ ・ archived/ に現れた commit の日時、JST) から closed を書く (既定は --dry-run。一度に 10 件以上が現れた commit は、移行とみなして飛ばす。書いたあとに確かめ、だめなら戻す)',
 	'  issue todo <id> [--add <文> | --done <n> | --doing <n> | --undone <n>] [--root <dir>] [--json]',
 	'  issue confirm <id> [--undo] [--root <dir>] [--json]            報告元の確認 (confirmed) を true にする (--undo で false)',
 	'  issue render [<id>…] [--state … | --all] [--group <g>] [--out <ファイル>] [--standalone] [--root <dir>] [--json]',
@@ -76,7 +76,7 @@ const Usage = [
 	'  issue view [--state … | --all] [--group <g>] [--root <dir>] [--json]',
 	'                                                                 _issues.html を作り直して、既定のアプリで開く',
 	'  issue archive <group|番号> [--root <dir>] [--json]             グループの全件が済なら、archived/ へ動かす。番号なら済の課題 1 件だけを動かす',
-	'  issue archive --done-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]   済にした日 (done。無ければ立てた日) がその日より前の済の課題を、グループを問わずまとめて動かす',
+	'  issue archive --closed-before <yyyy-mm-dd> [--dry-run] [--root <dir>] [--json]   済にした日 (closed。無ければ立てた日) がその日より前の済の課題を、グループを問わずまとめて動かす',
 	'  issue unarchive <group> [--root <dir>] [--json]                archived/ のグループを、done/ へ戻す',
 	'  issue decide new --parent <番号> --title <問い> --option <文> [--option <文> …] --chosen <A|B|…|A,C>',
 	'                  [--status 決めた|仮に決めた|答え待ち] [--slug <件名>] [--refs <番号,…>] [--replaces <id,…>] [--legacy <:名前:旧番号,…>] [--body <本文>] [--root <dir>] [--json]',
@@ -270,7 +270,7 @@ function runSearch(rest: string[]): number {
 		console.log(JSON.stringify([...hits, ...decisionHits]));
 	} else {
 		for (const h of hits) {
-			console.log(`${h.id}  ${stateLabel(h.folder)}${h.done ? ` (${h.done})` : ''}  ${h.group}  ${h.title}`);
+			console.log(`${h.id}  ${stateLabel(h.folder)}${h.closed ? ` (${h.closed})` : ''}  ${h.group}  ${h.title}`);
 			for (const m of h.matches.slice(0, 3)) console.log(`    L${m.line}: ${m.text}`);
 		}
 		for (const d of decisionHits) {
@@ -294,8 +294,8 @@ function requireId(o: Options, usage: string): string {
 }
 
 function runSet(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root', '--state', '--version', '--released', '--kind', '--note', '--started', '--done'], flags: ['--json'], positionals: 1 });
-	const id = requireId(o, 'issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>] [--started <yyyy-mm-dd hh:mm>] [--done <yyyy-mm-dd hh:mm>]');
+	const o = parseOptions(rest, { valued: ['--root', '--state', '--version', '--released', '--kind', '--note', '--started', '--closed'], flags: ['--json'], positionals: 1 });
+	const id = requireId(o, 'issue set <id> [--state 未|着手|済] [--version <版>] [--released <yyyy-mm-dd hh:mm>] [--kind <種別>] [--note <説明>] [--started <yyyy-mm-dd hh:mm>] [--closed <yyyy-mm-dd hh:mm>]');
 	const state = o.values.get('--state');
 	const fields: FieldValues = {};
 	for (const k of [...FieldKeys, ...StampKeys]) {
@@ -303,7 +303,7 @@ function runSet(rest: string[]): number {
 		if (v !== undefined) fields[k] = v;
 	}
 	const hasFields = Object.keys(fields).length > 0;
-	if (state === undefined && !hasFields) throw new UsageError('--state (未 ・ 着手 ・ 済) か、--version ・ --released ・ --kind ・ --note ・ --started ・ --done が要る');
+	if (state === undefined && !hasFields) throw new UsageError('--state (未 ・ 着手 ・ 済) か、--version ・ --released ・ --kind ・ --note ・ --started ・ --closed が要る');
 	const root = existingRoot(o);
 	// --state と一緒のときは、先に鍵の検査だけをする (値の誤り・読めないファイル)。そのあと状態を動かし、動いたら鍵を書く。
 	// どれかが失敗すれば、何も変えない (鍵だけ書かれて、状態は動かないことが無い)。値が空なら、その鍵を消す
@@ -526,19 +526,19 @@ function runConfirm(rest: string[]): number {
 	return ExitOk;
 }
 
-/** archive --done-before <yyyy-mm-dd> [--dry-run] (216-A) */
+/** archive --closed-before <yyyy-mm-dd> [--dry-run] (216-A。決定 287-D) */
 function runArchiveBefore(rest: string[]): number {
-	const o = parseOptions(rest, { valued: ['--root', '--done-before'], flags: ['--json', '--dry-run'], positionals: 0 });
-	const before = o.values.get('--done-before') ?? '';
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(before)) throw new UsageError(`--done-before の日付は yyyy-mm-dd で渡す: ${before}`);
+	const o = parseOptions(rest, { valued: ['--root', '--closed-before', '--done-before'], flags: ['--json', '--dry-run'], positionals: 0 });
+	const before = o.values.get('--closed-before') ?? o.values.get('--done-before') ?? '';
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(before)) throw new UsageError(`--closed-before の日付は yyyy-mm-dd で渡す: ${before}`);
 	const root = existingRoot(o);
 	const dryRun = o.flags.has('--dry-run');
-	const r = archiveDoneBefore(root, before, dryRun);
+	const r = archiveClosedBefore(root, before, dryRun);
 	if (o.flags.has('--json')) {
 		console.log(JSON.stringify({ before, dryRun, moved: r.moved, count: r.moved.length, skipped: r.skipped }));
 	} else {
 		const verb = dryRun ? '動かす (--dry-run。まだ動かしていない)' : 'archived/ へ動かした';
-		console.log(`[OK] ${before} より前 (済にした日。done が無ければ立てた日) の済の課題 ${r.moved.length} 件を${verb}${r.moved.length > 0 ? ': ' + r.moved.join(' ・ ') : ''}`);
+		console.log(`[OK] ${before} より前 (済にした日。closed が無ければ立てた日) の済の課題 ${r.moved.length} 件を${verb}${r.moved.length > 0 ? ': ' + r.moved.join(' ・ ') : ''}`);
 		for (const s of r.skipped) console.log(`[飛ばした] ${s.id}: ${s.reason}`);
 	}
 	if (!dryRun && r.moved.length > 0) autoRender(root, true);
@@ -564,14 +564,14 @@ function runStats(rest: string[]): number {
 	}
 	console.log('日付          立てた  着手  済  残り');
 	for (const d of r.days) {
-		console.log(`${d.date}  ${String(d.created).padStart(6)}  ${String(d.started).padStart(4)}  ${String(d.done).padStart(2)}  ${String(d.remaining).padStart(4)}`);
+		console.log(`${d.date}  ${String(d.created).padStart(6)}  ${String(d.started).padStart(4)}  ${String(d.closed).padStart(2)}  ${String(d.remaining).padStart(4)}`);
 	}
-	if (r.undatedDone > 0) console.log(`済 (done/ ・ archived/) だが done が無い課題: ${r.undatedDone} 件 (済にした日が分からないため、残りに数えない。その前の日の残りは少なめに出る)`);
+	if (r.undatedClosed > 0) console.log(`済 (done/ ・ archived/) だが closed が無い課題: ${r.undatedClosed} 件 (済にした日が分からないため、残りに数えない。その前の日の残りは少なめに出る)`);
 	return ExitOk;
 }
 
-/** backfill-done [--dry-run | --apply] [--skip-commit <hash,…>] [--json] (課題 i261120-01。決定 281-A) */
-function runBackfillDone(rest: string[]): number {
+/** backfill-closed [--dry-run | --apply] [--skip-commit <hash,…>] [--json] (課題 i261120-01。決定 281-A) */
+function runBackfillClosed(rest: string[]): number {
 	const o = parseOptions(rest, { valued: ['--root', '--skip-commit'], flags: ['--json', '--dry-run', '--apply'], positionals: 0 });
 	if (o.flags.has('--dry-run') && o.flags.has('--apply')) throw new UsageError('--dry-run と --apply は一緒に渡せない');
 	const apply = o.flags.has('--apply');
@@ -580,10 +580,10 @@ function runBackfillDone(rest: string[]): number {
 	const r = planBackfill(root, skip);
 	if (apply && r.plan.length > 0) applyBackfill(root, r.plan);
 	if (o.flags.has('--json')) {
-		console.log(JSON.stringify({ mode: apply ? 'apply' : 'dry-run', plan: r.plan.map((p) => ({ id: p.id, done: p.done, commit: p.commit })), skipped: r.skipped, count: r.plan.length }));
+		console.log(JSON.stringify({ mode: apply ? 'apply' : 'dry-run', plan: r.plan.map((p) => ({ id: p.id, closed: p.closed, commit: p.commit })), skipped: r.skipped, count: r.plan.length }));
 	} else {
-		console.log(`[OK] done を${apply ? '書いた' : '書く (--dry-run。まだ書いていない。書くには --apply)'}: ${r.plan.length} 件`);
-		for (const p of r.plan) console.log(`  ${p.id}  ${p.done}  (commit ${p.commit})`);
+		console.log(`[OK] closed を${apply ? '書いた' : '書く (--dry-run。まだ書いていない。書くには --apply)'}: ${r.plan.length} 件`);
+		for (const p of r.plan) console.log(`  ${p.id}  ${p.closed}  (commit ${p.commit})`);
 		for (const s of r.skipped) console.log(`[飛ばした] ${s.id}: ${s.reason}`);
 	}
 	if (apply && r.plan.length > 0) autoRender(root, true);
@@ -594,7 +594,7 @@ function runBackfillDone(rest: string[]): number {
 const IdArgPattern = /^i\d{6}-[0-9a-zA-Z]{2}$/;
 
 function runGroupMove(rest: string[], kind: 'archive' | 'unarchive'): number {
-	if (kind === 'archive' && rest.includes('--done-before')) return runArchiveBefore(rest);
+	if (kind === 'archive' && (rest.includes('--closed-before') || rest.includes('--done-before'))) return runArchiveBefore(rest);
 	const o = parseOptions(rest, { valued: ['--root'], flags: ['--json'], positionals: 1 });
 	const group = o.positionals[0];
 	if (group === undefined || group === '') throw new UsageError(`グループが要る (issue ${kind} <group>)`);
@@ -640,7 +640,7 @@ function runList(rest: string[]): number {
 	if (o.flags.has('--json')) {
 		console.log(JSON.stringify(items));
 	} else {
-		for (const i of items) console.log(`${i.id}  ${stateLabel(i.folder)}${i.done ? ` (${i.done})` : ''}  ${i.group}  ${i.title}`);
+		for (const i of items) console.log(`${i.id}  ${stateLabel(i.folder)}${i.closed ? ` (${i.closed})` : ''}  ${i.group}  ${i.title}`);
 		console.log(`${items.length} 件`);
 	}
 	return ExitOk;
@@ -941,7 +941,7 @@ const commands: Record<string, (rest: string[]) => number> = {
 	render: runRender,
 	view: runView,
 	stats: runStats,
-	'backfill-done': runBackfillDone,
+	'backfill-closed': runBackfillClosed,
 	archive: (rest) => runGroupMove(rest, 'archive'),
 	unarchive: (rest) => runGroupMove(rest, 'unarchive'),
 	migrate: runMigrate,

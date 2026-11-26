@@ -864,17 +864,17 @@ created: 2026-11-01
 | コマンド | 何をするか |
 |---|---|
 | `issue new --title <題> --group <グループ>` | 課題を立てる。番号は自動で振る。`--refs` には課題 ・ 計画 ・ 調査の番号のほか、chat の発言の番号 (`#1923`) も並べられる |
-| `issue list` | 未・着手の一覧 (`--state` ・ `--all` で変える)。`--missing version,note` なら、その鍵のどれかを持たない課題だけ。`done` があれば日時も表示し、`--json` でも参照できる |
+| `issue list` | 未・着手の一覧 (`--state` ・ `--all` で変える)。`--missing version,note` なら、その鍵のどれかを持たない課題だけ。`closed` があれば日時も表示し、`--json` でも参照できる |
 | `issue show <id>` | 1 件を読む |
-| `issue search <語>` | 本文から探す。決定も探す (親の課題が archived でも。`--group` を付けたら課題だけ)。既定は語の部分一致。`--regex` を付けると正規表現で探す (`"表\|幅"` 等)。どちらも英字の大小を区別しない。`done` も表示・参照できる |
+| `issue search <語>` | 本文から探す。決定も探す (親の課題が archived でも。`--group` を付けたら課題だけ)。既定は語の部分一致。`--regex` を付けると正規表現で探す (`"表\|幅"` 等)。どちらも英字の大小を区別しない。`closed` も表示・参照できる |
 | `issue todo <id> --add <文>` | やることを足す。`--done <n>` ・ `--doing <n>` ・ `--undone <n>` で n 番目の状態を変える |
-| `issue set <id> --state 済` | 課題の状態を変える (フォルダを動かす)。着手にすると `started` を、済にすると `done` を、JST の `yyyy-mm-dd hh:mm` で書く (`started` は最初の 1 回だけ。済から戻すと `done` を消す。すでに済なら上書きしない)。`git mv` は rename だけを stage するので、日時の書き込みは stage 前の変更 (`RM`) として残る |
-| `issue set <id> --done "2026-11-18 17:45" --started "2026-11-17 09:00"` | `done` ・ `started` を手で書く (値が空なら消す。形は `yyyy-mm-dd hh:mm`) |
-| `issue stats [--since <日>] [--until <日>] [--json]` | 日別に 立てた ・ 着手にした ・ 済にした ・ 残り の数を出す (消化の速さを測る)。残りは、`done` の無い済 (移行前の分など) を数えない近似で、その前の日の残りは少なめに出る。その件数は末尾 (`--json` では `undatedDone`) に出る。残り ≠ 立てた累計 − 済にした累計 (差が `undatedDone`) |
-| `issue backfill-done [--dry-run \| --apply]` | 既存の済の `done` を、git の履歴 (済のフォルダに最後に入った commit の author の日時) から埋める。既定は `--dry-run`。一度に 10 件以上が現れた commit (移行) の分は飛ばす |
+| `issue set <id> --state 済` | 課題の状態を変える (フォルダを動かす)。着手にすると `started` を、済にすると `closed` を、JST の `yyyy-mm-dd hh:mm` で書く (`started` は最初の 1 回だけ。済から戻すと `closed` を消す。すでに済なら上書きしない)。`git mv` は rename だけを stage するので、日時の書き込みは stage 前の変更 (`RM`) として残る |
+| `issue set <id> --closed "2026-11-18 17:45" --started "2026-11-17 09:00"` | `closed` ・ `started` を手で書く (値が空なら消す。形は `yyyy-mm-dd hh:mm`。`closed` は `yyyy-mm-dd` (日付だけ) も書ける) |
+| `issue stats [--since <日>] [--until <日>] [--json]` | 日別に 立てた ・ 着手にした ・ 済にした ・ 残り の数を出す (消化の速さを測る)。残りは、`closed` の無い済 (移行前の分など) を数えない近似で、その前の日の残りは少なめに出る。その件数は末尾 (`--json` では `undatedClosed`) に出る。残り ≠ 立てた累計 − 済にした累計 (差が `undatedClosed`) |
+| `issue backfill-closed [--dry-run \| --apply]` | 既存の済の `closed` を、git の履歴 (済のフォルダに最後に入った commit の author の日時) から埋める。既定は `--dry-run`。一度に 10 件以上が現れた commit (移行) の分は飛ばす |
 | `issue set <id> --version <版> --released "2026-11-17 11:30" --kind fix --note "説明"` | version ・ released ・ kind ・ note を書く (その行だけ。知らない鍵は残る。値が空ならその鍵を消す)。`--note` は複数行にでき、`note: \|` の塊で書く。`released` はハイフン区切りの `yyyy-mm-dd hh:mm` だけ |
 | `issue confirm <id>` | 報告元の確認が取れたことを記録する |
-| `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす。`issue archive <番号>` なら、済の課題 1 件だけを動かす。`issue archive --done-before <yyyy-mm-dd>` なら、済にした日 (`done`。無ければ立てた日) がその日より前の済の課題をまとめて動かす (`--dry-run` で先に一覧を見る)。保管したグループにも、`issue new` で立てられる |
+| `issue archive <グループ>` | 全件が済のグループを `archived/` へ動かす。`issue archive <番号>` なら、済の課題 1 件だけを動かす。`issue archive --closed-before <yyyy-mm-dd>` なら、済にした日 (`closed`。無ければ立てた日) がその日より前の済の課題をまとめて動かす (`--dry-run` で先に一覧を見る。旧名の `--done-before` も受ける)。保管したグループにも、`issue new` で立てられる |
 | `issue check` | 課題ファイルを検査する。commit の前に流す |
 | `issue render` ・ `issue view` | 一覧の HTML を作る (`view` は作って開く)。`--out` ・ id ・ `--group` を渡さない `render` は、`_issues.html` と保管の `_issues-archive.html` の両方を作り直す (中身が同じなら書かない。240-A)。`--all` は `_issues.html` に保管も含める指定。決定は、親の課題の下と、最後の「課題の外の決定」の章に出る |
 | `issue choice next` | 選択肢の通し番号 (`202-A` の `202`) を 1 つ予約して出す。案を出す前に呼び、出た番号を使う (子セッションでも重ならない)。予約のほか、決定の `legacy_ids` と、決定の題の頭の番号 (`243: …`) も、使った番号として数える |
