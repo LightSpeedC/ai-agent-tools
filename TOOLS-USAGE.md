@@ -2,7 +2,7 @@
 
 HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。
 
-> 📅 作成: 2026-09-04 / 更新: 2026-11-20
+> 📅 作成: 2026-09-04 / 更新: 2026-11-26
 
 [^^](README.md) ／ [タグ対応仕様](notes/10_plan/html2md-tag-spec.md) ／ [クラス名の取り決め](notes/90_rules/html-class-rules.md)
 
@@ -864,9 +864,9 @@ created: 2026-11-01
 | コマンド | 何をするか |
 |---|---|
 | `issue new --title <題> --group <グループ>` | 課題を立てる。番号は自動で振る。`--refs` には課題 ・ 計画 ・ 調査の番号のほか、chat の発言の番号 (`#1923`) も並べられる |
-| `issue list` | 未・着手の一覧 (`--state` ・ `--all` で変える)。`--missing version,note` なら、その鍵のどれかを持たない課題だけ |
+| `issue list` | 未・着手の一覧 (`--state` ・ `--all` で変える)。`--missing version,note` なら、その鍵のどれかを持たない課題だけ。`done` があれば日時も表示し、`--json` でも参照できる |
 | `issue show <id>` | 1 件を読む |
-| `issue search <語>` | 本文から探す。決定も探す (親の課題が archived でも。`--group` を付けたら課題だけ)。既定は語の部分一致。`--regex` を付けると正規表現で探す (`"表\|幅"` 等)。どちらも英字の大小を区別しない |
+| `issue search <語>` | 本文から探す。決定も探す (親の課題が archived でも。`--group` を付けたら課題だけ)。既定は語の部分一致。`--regex` を付けると正規表現で探す (`"表\|幅"` 等)。どちらも英字の大小を区別しない。`done` も表示・参照できる |
 | `issue todo <id> --add <文>` | やることを足す。`--done <n>` ・ `--doing <n>` ・ `--undone <n>` で n 番目の状態を変える |
 | `issue set <id> --state 済` | 課題の状態を変える (フォルダを動かす)。着手にすると `started` を、済にすると `done` を、JST の `yyyy-mm-dd hh:mm` で書く (`started` は最初の 1 回だけ。済から戻すと `done` を消す。すでに済なら上書きしない)。`git mv` は rename だけを stage するので、日時の書き込みは stage 前の変更 (`RM`) として残る |
 | `issue set <id> --done "2026-11-18 17:45" --started "2026-11-17 09:00"` | `done` ・ `started` を手で書く (値が空なら消す。形は `yyyy-mm-dd hh:mm`) |

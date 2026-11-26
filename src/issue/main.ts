@@ -270,7 +270,7 @@ function runSearch(rest: string[]): number {
 		console.log(JSON.stringify([...hits, ...decisionHits]));
 	} else {
 		for (const h of hits) {
-			console.log(`${h.id}  ${stateLabel(h.folder)}  ${h.group}  ${h.title}`);
+			console.log(`${h.id}  ${stateLabel(h.folder)}${h.done ? ` (${h.done})` : ''}  ${h.group}  ${h.title}`);
 			for (const m of h.matches.slice(0, 3)) console.log(`    L${m.line}: ${m.text}`);
 		}
 		for (const d of decisionHits) {
@@ -640,7 +640,7 @@ function runList(rest: string[]): number {
 	if (o.flags.has('--json')) {
 		console.log(JSON.stringify(items));
 	} else {
-		for (const i of items) console.log(`${i.id}  ${stateLabel(i.folder)}  ${i.group}  ${i.title}`);
+		for (const i of items) console.log(`${i.id}  ${stateLabel(i.folder)}${i.done ? ` (${i.done})` : ''}  ${i.group}  ${i.title}`);
 		console.log(`${items.length} 件`);
 	}
 	return ExitOk;

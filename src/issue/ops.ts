@@ -274,7 +274,7 @@ export function showIssue(root: string, id: string): IssueView {
 	return { id, state: StateOf[loaded.folder], folder: loaded.folder, file: loaded.rel, meta, body: parts.body, todos, text: loaded.text };
 }
 
-export type ListItem = { id: string; state: string; folder: Folder; group: string; title: string; created: string; file: string };
+export type ListItem = { id: string; state: string; folder: Folder; group: string; title: string; created: string; done?: string; file: string };
 
 /**
  * 指定のフォルダの課題を、id の順に並べて返す。メタ情報が読めないものは飛ばし、warn で知らせる。
@@ -301,7 +301,8 @@ export function listIssues(root: string, folders: Folder[], group: string | null
 			const get = (k: string): string => parts.parsed.pairs.find((p) => p.key === k)?.value ?? '';
 			if (group !== null && get('group') !== group) continue;
 			if (missing.length > 0 && !missing.some((k) => get(k) === '')) continue;
-			items.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), file: loaded.rel });
+			const done = get('done');
+			items.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), ...(done !== '' ? { done } : {}), file: loaded.rel });
 		}
 	}
 	return items.sort((a, b) => compareId(a.id, b.id));
@@ -753,7 +754,8 @@ export function searchIssues(root: string, term: string, folders: Folder[], grou
 				if (hit(line)) matches.push({ line: index + 1, text: [...line.trim()].slice(0, SnippetMax).join('') });
 			});
 			if (matches.length === 0) continue;
-			hits.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), file: loaded.rel, matches });
+			const done = get('done');
+			hits.push({ id: nameMatch[1], state: StateOf[folder], folder, group: get('group'), title: get('title'), created: get('created'), ...(done !== '' ? { done } : {}), file: loaded.rel, matches });
 		}
 	}
 	return hits.sort((a, b) => compareId(a.id, b.id));

@@ -176,7 +176,7 @@
 	<div class="inner">
 		<h1>ai-agent-tools を他のプロジェクトから使う</h1>
 		<p class="lead">HTML と Markdown、文字コード、公開前の検査。自プロジェクトには何もインストールしない。</p>
-		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-20</p>
+		<p class="date">📅 作成: 2026-09-04 / 更新: 2026-11-26</p>
 	</div>
 </div>
 
@@ -1121,9 +1121,9 @@ created: 2026-11-01
 		<thead><tr><th>コマンド</th><th>何をするか</th></tr></thead>
 		<tbody>
 			<tr><td class="nowrap"><code>issue new --title &lt;題&gt; --group &lt;グループ&gt;</code></td><td>課題を立てる。番号は自動で振る。<code>--refs</code> には課題 ・ 計画 ・ 調査の番号のほか、chat の発言の番号 (<code>#1923</code>) も並べられる</td></tr>
-			<tr><td class="nowrap"><code>issue list</code></td><td>未・着手の一覧 (<code>--state</code> ・ <code>--all</code> で変える)。<code>--missing version,note</code> なら、その鍵のどれかを持たない課題だけ</td></tr>
+			<tr><td class="nowrap"><code>issue list</code></td><td>未・着手の一覧 (<code>--state</code> ・ <code>--all</code> で変える)。<code>--missing version,note</code> なら、その鍵のどれかを持たない課題だけ。<code>done</code> があれば日時も表示し、<code>--json</code> でも参照できる</td></tr>
 			<tr><td class="nowrap"><code>issue show &lt;id&gt;</code></td><td>1 件を読む</td></tr>
-			<tr><td class="nowrap"><code>issue search &lt;語&gt;</code></td><td>本文から探す。決定も探す (親の課題が archived でも。<code>--group</code> を付けたら課題だけ)。既定は語の部分一致。<code>--regex</code> を付けると正規表現で探す (<code>"表|幅"</code> 等)。どちらも英字の大小を区別しない</td></tr>
+			<tr><td class="nowrap"><code>issue search &lt;語&gt;</code></td><td>本文から探す。決定も探す (親の課題が archived でも。<code>--group</code> を付けたら課題だけ)。既定は語の部分一致。<code>--regex</code> を付けると正規表現で探す (<code>"表|幅"</code> 等)。どちらも英字の大小を区別しない。<code>done</code> も表示・参照できる</td></tr>
 			<tr><td class="nowrap"><code>issue todo &lt;id&gt; --add &lt;文&gt;</code></td><td>やることを足す。<code>--done &lt;n&gt;</code> ・ <code>--doing &lt;n&gt;</code> ・ <code>--undone &lt;n&gt;</code> で n 番目の状態を変える</td></tr>
 			<tr><td class="nowrap"><code>issue set &lt;id&gt; --state 済</code></td><td>課題の状態を変える (フォルダを動かす)。着手にすると <code>started</code> を、済にすると <code>done</code> を、JST の <code>yyyy-mm-dd hh:mm</code> で書く (<code>started</code> は最初の 1 回だけ。済から戻すと <code>done</code> を消す。すでに済なら上書きしない)。<code>git mv</code> は rename だけを stage するので、日時の書き込みは stage 前の変更 (<code>RM</code>) として残る</td></tr>
 			<tr><td class="nowrap"><code>issue set &lt;id&gt; --done "2026-11-18 17:45" --started "2026-11-17 09:00"</code></td><td><code>done</code> ・ <code>started</code> を手で書く (値が空なら消す。形は <code>yyyy-mm-dd hh:mm</code>)</td></tr>
