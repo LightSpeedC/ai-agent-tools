@@ -529,6 +529,7 @@ function runConfirm(rest: string[]): number {
 /** archive --closed-before <yyyy-mm-dd> [--dry-run] (216-A。決定 287-D) */
 function runArchiveBefore(rest: string[]): number {
 	const o = parseOptions(rest, { valued: ['--root', '--closed-before', '--done-before'], flags: ['--json', '--dry-run'], positionals: 0 });
+	if (o.values.has('--closed-before') && o.values.has('--done-before')) throw new UsageError('--closed-before と --done-before (旧名) を一緒に渡せない (--closed-before だけにする)');
 	const before = o.values.get('--closed-before') ?? o.values.get('--done-before') ?? '';
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(before)) throw new UsageError(`--closed-before の日付は yyyy-mm-dd で渡す: ${before}`);
 	const root = existingRoot(o);

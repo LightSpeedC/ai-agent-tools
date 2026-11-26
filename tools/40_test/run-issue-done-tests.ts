@@ -227,6 +227,20 @@ console.log('--- archive --closed-before');
 	let p: { moved?: string[] } = {};
 	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
 	check('日付だけの closed も、頭 10 文字で選ぶ (11-03 は動かし、11-05 は境界で動かさない)', JSON.stringify(p.moved) === JSON.stringify(['i261001-01']), r.out + r.err);
+	check('--closed-before と旧名の --done-before を両方渡せば終了コード 5', run(['archive', '--closed-before', '2026-11-05', '--done-before', '2026-11-05'], dir).code === 5);
+	check('旧名の --done-before だけでも動く', run(['archive', '--done-before', '2026-11-05', '--dry-run', '--json'], dir).code === 0);
+}
+{
+	// 本文の行頭の「closed: …」を拾わない。不正な値 (形が誤り) は created に落とす
+	const dir = std('before-body-bad', {
+		[Done + 'i261001-01-body.md']: issueText({ id: 'i261001-01', created: '2026-12-01' }, '\nclosed: 2026-10-02\n本文\n'),
+		[Done + 'i261001-02-bad.md']: issueText({ id: 'i261001-02', created: '2026-12-01', closed: '2026-1' }),
+		[Done + 'i261001-03-badold.md']: issueText({ id: 'i261001-03', created: '2026-10-01', closed: '2026-1' }),
+	});
+	const r = run(['archive', '--closed-before', '2026-11-05', '--dry-run', '--json'], dir);
+	let p: { moved?: string[] } = {};
+	try { p = JSON.parse(r.out); } catch { /* 下で失敗にする */ }
+	check('本文の行頭の closed: を拾わず (created の 12-01 で選ばない)、不正な値 (2026-1) は created で選ぶ (12-01 は選ばず、10-01 は選ぶ)', JSON.stringify(p.moved) === JSON.stringify(['i261001-03']), r.out + r.err);
 }
 
 // ---- stats (決定 283-A) ----

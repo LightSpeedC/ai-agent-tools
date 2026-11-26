@@ -488,9 +488,15 @@ export function archiveOne(root: string, id: string): GroupMoveResult {
  */
 export function archiveClosedBefore(root: string, before: string, dryRun: boolean): { moved: string[]; skipped: { id: string; reason: string }[] } {
 	const { members } = loadAll(root, ['done']);
-	const get = (text: string, k: string): string => new RegExp(`^${k}:[ \\t]*(.*)$`, 'm').exec(text.replace(/\r/g, ''))?.[1].trim() ?? '';
+	// frontmatter の鍵だけを見る (本文の行頭の「closed: …」を拾わない)。closed の形が正しいときだけ頭 10 文字を使い、誤りなら created に落とす (stats と同じ選び方)
+	const get = (text: string, k: string): string => {
+		const parts = splitIssue(text.replace(/\r/g, ''));
+		if (!parts.broken) return (parts.parsed.pairs.find((p) => p.key === k)?.value ?? '').trim();
+		return new RegExp(`^${k}:[ \\t]*(.*)$`, 'm').exec(text.replace(/\r/g, ''))?.[1].trim() ?? '';   // メタ情報を読めない課題は、飛ばす理由が出る (doneBlockers)
+	};
 	const targets = members.filter((m) => {
-		const d = get(m.text, 'closed').slice(0, 10);
+		const raw = get(m.text, 'closed');
+		const d = raw !== '' && isRealClosed(raw) ? raw.slice(0, 10) : '';
 		const c = d !== '' ? d : get(m.text, 'created');
 		return c !== '' && c < before;
 	}).sort((a, b) => compareId(a.id, b.id));

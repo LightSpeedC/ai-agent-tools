@@ -376,7 +376,7 @@ issue check --json           # 結果を JSON で出す</code></pre>
 			<tr><td class="nowrap"><code>duplicate</code></td><td>エラー</td><td>同じ <code>id</code> のファイルが複数ある (4 つのフォルダをまたぐ場合も)。別の PC やクラウドで、件名違いで同じ番号が立つと、git は競合を出さないので、ここで止める</td></tr>
 			<tr><td class="nowrap"><code>todo</code></td><td>エラー</td><td>やることの状態が 3 つ以外 ・ <code>done/</code> か <code>archived/</code> にあるのに、<code>未</code> か <code>着手</code> のやることが残っている</td></tr>
 			<tr><td class="nowrap"><code>confirmed</code></td><td>エラー / 警告</td><td><code>from</code> があるのに <code>confirmed</code> が無い (エラー) ・ <code>done/</code> か <code>archived/</code> にあるのに <code>confirmed</code> が <code>true</code> でない (エラー) ・ <code>from</code> が無いのに <code>confirmed</code> がある (警告)</td></tr>
-			<tr><td class="nowrap"><code>closed-folder</code></td><td>警告</td><td><code>done/</code> ・ <code>archived/</code> 以外にある課題が <code>closed</code> を持つ (決定 284-A)</td></tr>
+			<tr><td class="nowrap"><code>closed-folder</code></td><td>警告</td><td><code>done/</code> ・ <code>archived/</code> 以外にある課題が <code>closed</code> を持つ (決定 284-A)。<strong>code は <code>closed-folder</code></strong> (決定 287-D)。develop の i261123-01 が先に出した警告 <code>closed</code> は、この <code>closed-folder</code> に置き換わった。<code>--json</code> の <code>findings[].code</code> を読む側は、<code>closed</code> でなく <code>closed-folder</code> を見る</td></tr>
 			<tr><td class="nowrap"><code>before-created</code></td><td>警告</td><td><code>started</code> ・ <code>closed</code> の日付が <code>created</code> より前 (同じ日は警告しない)</td></tr>
 			<tr><td class="nowrap"><code>key-order</code></td><td>警告</td><td>キーの順が、表の順と違う</td></tr>
 			<tr><td class="nowrap"><code>unknown-key</code></td><td>警告</td><td>知らないキーがある</td></tr>
